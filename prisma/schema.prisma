@@ -1,0 +1,305 @@
+// Healify - Prisma Schema
+// Sistema de Auto-Curación Inteligente de Tests
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// USUARIOS Y PROYECTOS
+// ============================================
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  role          String    @default("user") // user, admin
+  accounts      Account[]
+  sessions      Session[]
+  projects      Project[]
+  subscription  Subscription?
+  notifications Notification[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("users")
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?
+  access_token       String?
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  type      String   // "info", "success", "warning", "error"
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+
+  @@map("notifications")
+}
+
+model Subscription {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  user             User     @relation(fields: [userId], references: [id])
+  stripeCustomerId String?  @unique
+  stripePriceId    String?
+  plan             Plan     @default(FREE)
+  status           String   @default("active") // active, canceled, past_due
+  currentPeriodEnd DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("subscriptions")
+}
+
+enum Plan {
+  FREE
+  STARTER
+  PRO
+  ENTERPRISE
+}
+
+model Project {
+  id            String         @id @default(cuid())
+  name          String
+  description   String?
+  repository    String?        // GitHub repo URL
+  apiKey        String         @unique @default(cuid())
+  userId        String?
+  user          User?          @relation(fields: [userId], references: [id])
+  testRuns      TestRun[]
+  selectors     TrackedSelector[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@map("projects")
+}
+
+// ============================================
+// TEST RUNS Y EJECUCIONES
+// ============================================
+
+model TestRun {
+  id            String         @id @default(cuid())
+  projectId     String
+  project       Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  status        TestStatus     @default(PENDING)
+  branch        String?
+  commitSha     String?
+  commitMessage String?
+  triggeredBy   String?        // "manual", "webhook", "scheduled"
+  startedAt     DateTime       @default(now())
+  finishedAt    DateTime?
+  duration      Int?           // milliseconds
+  totalTests    Int            @default(0)
+  passedTests   Int            @default(0)
+  failedTests   Int            @default(0)
+  healedTests   Int            @default(0)
+  healingEvents HealingEvent[]
+  screenshots   Screenshot[]
+  jobId         String?        @unique // BullMQ Job ID
+  retries       Int            @default(0)
+  error         String?        // Execution error if failed
+  createdAt     DateTime       @default(now())
+
+  @@index([projectId, startedAt])
+  @@map("test_runs")
+}
+
+enum TestStatus {
+  PENDING
+  RUNNING
+  PASSED
+  FAILED
+  HEALED      // Failed but auto-fixed
+  PARTIAL     // Some tests passed, some failed
+  CANCELLED
+}
+
+// ============================================
+// HEALING EVENTS - El core de Healify
+// ============================================
+
+model HealingEvent {
+  id              String        @id @default(cuid())
+  testRunId       String
+  testRun         TestRun       @relation(fields: [testRunId], references: [id], onDelete: Cascade)
+  
+  // Información del test fallido
+  testName        String
+  testFile        String?
+  failedSelector  String
+  selectorType    SelectorType
+  errorMessage    String
+  stackTrace      String?
+  
+  // Snapshots de DOM
+  oldDomSnapshot  String?
+  newDomSnapshot  String?
+  
+  // Análisis y sugerencia del LLM
+  newSelector     String?
+  newSelectorType SelectorType?
+  confidence      Float?
+  status          HealingStatus @default(ANALYZING)
+  reasoning       String?
+  
+  // Acción tomada
+  actionTaken     String?       // "auto_fixed", "suggested", "ticket_created", "ignored"
+  appliedAt       DateTime?
+  appliedBy       String?       // userId or "system"
+  
+  // Screenshots
+  screenshotBefore String?
+  screenshotAfter  String?
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([testRunId])
+  @@index([status])
+  @@map("healing_events")
+}
+
+enum SelectorType {
+  CSS
+  XPATH
+  TESTID
+  ROLE
+  TEXT
+  MIXED
+  UNKNOWN
+}
+
+enum HealingStatus {
+  ANALYZING
+  HEALED_AUTO       // Autocurado automáticamente (>95% confidence)
+  HEALED_MANUAL     // Curado por usuario (sugerencia aceptada)
+  BUG_DETECTED      // El fallo es un bug real
+  REMOVED_LEGIT     // Elemento eliminado legítimamente
+  NEEDS_REVIEW      // Requiere revisión humana
+  FAILED            // No se pudo analizar
+  IGNORED           // Usuario ignoró la sugerencia
+}
+
+// ============================================
+// SELECTORES RASTREADOS
+// ============================================
+
+model TrackedSelector {
+  id            String       @id @default(cuid())
+  projectId     String
+  project       Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  selector      String
+  type          SelectorType
+  file          String       // Archivo donde se usa
+  line          Int          // Línea aproximada
+  element       String?      // Descripción del elemento (ej: "Login button")
+  
+  // Estadísticas
+  timesUsed     Int          @default(1)
+  timesFailed   Int          @default(0)
+  timesHealed   Int          @default(0)
+  robustness    Float        @default(0.5) // 0-1, qué tan robusto es
+  
+  firstSeen     DateTime     @default(now())
+  lastSeen      DateTime     @default(now())
+  lastFailed    DateTime?
+  lastHealed    DateTime?
+  
+  @@index([projectId, selector])
+  @@map("tracked_selectors")
+}
+
+// ============================================
+// SCREENSHOTS
+// ============================================
+
+model Screenshot {
+  id            String   @id @default(cuid())
+  testRunId     String
+  testRun       TestRun  @relation(fields: [testRunId], references: [id], onDelete: Cascade)
+  
+  testName      String
+  type          String   // "before", "after", "error"
+  path          String   // Ruta al archivo
+  url           String?  // URL pública si aplica
+  
+  createdAt     DateTime @default(now())
+
+  @@map("screenshots")
+}
+
+// ============================================
+// CONFIGURACIÓN Y MÉTRICAS
+// ============================================
+
+model Settings {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
+
+  @@map("settings")
+}
+
+model AnalyticsEvent {
+  id          String   @id @default(cuid())
+  eventType   String   // "test_run", "healing", "project_created"
+  projectId   String?
+  metadata    String   // JSON
+  createdAt   DateTime @default(now())
+
+  @@index([eventType, createdAt])
+  @@map("analytics_events")
+}

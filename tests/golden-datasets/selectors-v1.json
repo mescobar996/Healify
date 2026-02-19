@@ -1,0 +1,32 @@
+[
+    {
+        "id": "case_01_id_change",
+        "description": "ID del botón cambia pero el texto se mantiene",
+        "failedSelector": "#btn-login-old",
+        "errorMessage": "Element #btn-login-old not found",
+        "oldDom": "<html><body><button id='btn-login-old'>Login</button></body></html>",
+        "newDom": "<html><body><button id='btn-login-new'>Login</button></body></html>",
+        "expectedSelector": "text=Login",
+        "expectedType": "TEXT"
+    },
+    {
+        "id": "case_02_class_change",
+        "description": "Clase dinámica cambia, pero data-testid es estable",
+        "failedSelector": ".button_v123",
+        "errorMessage": "Element .button_v123 not found",
+        "oldDom": "<html><body><button class='button_v123' data-testid='submit-form'>Submit</button></body></html>",
+        "newDom": "<html><body><button class='button_v999' data-testid='submit-form'>Submit</button></body></html>",
+        "expectedSelector": "[data-testid='submit-form']",
+        "expectedType": "TEST_ID"
+    },
+    {
+        "id": "case_03_structural_move",
+        "description": "El elemento se mueve de un div a un span",
+        "failedSelector": "div > button",
+        "errorMessage": "Element div > button not found",
+        "oldDom": "<html><body><div><button>Click me</button></div></body></html>",
+        "newDom": "<html><body><span><button>Click me</button></span></body></html>",
+        "expectedSelector": "text=Click me",
+        "expectedType": "TEXT"
+    }
+]
