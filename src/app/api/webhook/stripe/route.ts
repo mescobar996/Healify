@@ -24,7 +24,6 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 })
     }
 
-    // Handle the event
     switch (event.type) {
         case 'checkout.session.completed': {
             const session = event.data.object as Stripe.Checkout.Session
@@ -33,15 +32,16 @@ export async function POST(request: Request) {
             const subscriptionId = session.subscription as string
 
             if (userId) {
-                // Get subscription details
-                const subscription = await stripe.subscriptions.retrieve(subscriptionId)
+                // Cast explicitly to Stripe.Subscription to avoid Response<> wrapper type issue
+                const subscription = await stripe.subscriptions.retrieve(subscriptionId) as unknown as Stripe.Subscription
                 const priceId = subscription.items.data[0].price.id
 
-                // Map priceId to Plan enum
                 let plan: Plan = Plan.FREE
                 if (priceId === process.env.STRIPE_STARTER_PRICE_ID) plan = Plan.STARTER
                 if (priceId === process.env.STRIPE_PRO_PRICE_ID) plan = Plan.PRO
                 if (priceId === process.env.STRIPE_ENTERPRISE_PRICE_ID) plan = Plan.ENTERPRISE
+
+                const periodEnd = new Date((subscription.current_period_end as number) * 1000)
 
                 await db.subscription.upsert({
                     where: { userId },
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
                         stripePriceId: priceId,
                         plan,
                         status: subscription.status,
-                        currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+                        currentPeriodEnd: periodEnd,
                     },
                     create: {
                         userId,
@@ -58,7 +58,7 @@ export async function POST(request: Request) {
                         stripePriceId: priceId,
                         plan,
                         status: subscription.status,
-                        currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+                        currentPeriodEnd: periodEnd,
                     },
                 })
             }
@@ -67,6 +67,7 @@ export async function POST(request: Request) {
 
         case 'customer.subscription.updated':
         case 'customer.subscription.deleted': {
+            // event.data.object here IS Stripe.Subscription directly — no wrapper issue
             const subscription = event.data.object as Stripe.Subscription
             const customerId = subscription.customer as string
 
@@ -79,7 +80,7 @@ export async function POST(request: Request) {
                     where: { id: subInDb.id },
                     data: {
                         status: subscription.status,
-                        currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+                        currentPeriodEnd: new Date((subscription.current_period_end as number) * 1000),
                     },
                 })
             }
