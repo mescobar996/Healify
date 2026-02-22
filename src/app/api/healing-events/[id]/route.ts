@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { HealingStatus } from '@prisma/client';
+import { HealingStatus } from '@/lib/enums';
 
 // PATCH /api/healing-events/:id - Update healing event (accept/reject suggestion)
 export async function PATCH(

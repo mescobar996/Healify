@@ -41,6 +41,12 @@ function StatusBadge({ status }: { status: TestRunStatus }) {
     RUNNING: { bg: "bg-blue-500/10", text: "text-blue-400", icon: RefreshCw, label: "Ejecutando" },
     PENDING: { bg: "bg-amber-500/10", text: "text-amber-400", icon: Clock, label: "Pendiente" },
     CANCELLED: { bg: "bg-gray-500/10", text: "text-gray-400", icon: XCircle, label: "Cancelado" },
+      PARTIAL: {
+      bg: "bg-orange-500/10",
+      text: "text-orange-400",
+      icon: AlertTriangle,
+      label: "Parcial",
+    },
   };
   const { bg, text, icon: Icon, label } = config[status] || config.PENDING;
   return (
@@ -200,7 +206,7 @@ export default function TestRunDetailPage() {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="text-lg font-semibold text-white">{testRun.project.name}</h1>
+                  <h1 className="text-lg font-semibold text-white">{testRun.project?.name}</h1>
                   <StatusBadge status={testRun.status} />
                 </div>
                 <p className="text-xs text-gray-500 flex items-center gap-2 mt-0.5">
@@ -248,7 +254,7 @@ export default function TestRunDetailPage() {
           <div className="p-4 grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <p className="text-[11px] text-gray-500 uppercase tracking-wide mb-1">Proyecto</p>
-              <p className="text-sm text-gray-200">{testRun.project.name}</p>
+              <p className="text-sm text-gray-200">{testRun.project?.name}</p>
             </div>
             <div>
               <p className="text-[11px] text-gray-500 uppercase tracking-wide mb-1">Branch</p>

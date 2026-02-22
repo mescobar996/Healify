@@ -111,7 +111,7 @@ export const redis = {
       return 0
     }
   },
-} as Redis
+} as unknown as Redis
 
 // Exportar función para obtener la instancia real de Redis (para BullMQ y otros casos especiales)
 export function getRedisInstance(): Redis | null {

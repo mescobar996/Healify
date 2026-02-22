@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import ZAI from 'z-ai-web-dev-sdk';
-import { SelectorType, HealingStatus } from '@prisma/client';
+import { SelectorType, HealingStatus } from '@/lib/enums';
 
 interface HealRequestBody {
   testName: string;

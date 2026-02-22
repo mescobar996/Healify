@@ -1,4 +1,4 @@
-import { SelectorType } from '@prisma/client'
+import { SelectorType } from '@/lib/enums'
 
 export interface AnalyzedSelector {
     selector: string

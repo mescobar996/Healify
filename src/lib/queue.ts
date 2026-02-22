@@ -1,14 +1,15 @@
 import { Queue } from 'bullmq'
-import { getRedisInstance } from './redis'
 
 export const TEST_QUEUE_NAME = 'test_execution_queue'
 
-// Crear queue solo si Redis está disponible (no durante build time)
-const redisConnection = getRedisInstance()
+// Use Redis URL directly — avoids ioredis version mismatch between bullmq and app
+const redisUrl = process.env.REDIS_URL
 
-export const testQueue = redisConnection 
+export const testQueue = redisUrl
   ? new Queue(TEST_QUEUE_NAME, {
-      connection: redisConnection,
+      connection: {
+        url: redisUrl,
+      },
       defaultJobOptions: {
         attempts: 3,
         backoff: {
@@ -22,12 +23,12 @@ export const testQueue = redisConnection
   : null
 
 export async function addTestJob(projectId: string, commitSha?: string) {
-    if (!testQueue) {
-        console.warn('Test queue not available (Redis not connected)')
-        return null
-    }
-    return await testQueue.add('execute_tests', {
-        projectId,
-        commitSha,
-    })
+  if (!testQueue) {
+    console.warn('Test queue not available (REDIS_URL not set)')
+    return null
+  }
+  return await testQueue.add('execute_tests', {
+    projectId,
+    commitSha,
+  })
 }

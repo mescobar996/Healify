@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { TestStatus } from '@prisma/client'
+import { TestStatus } from '@/lib/enums'
 import { testRunner } from '@/lib/test-runner'
 import { gitAnalyzer } from '@/lib/git-analyzer'
 import { createHmac, timingSafeEqual } from 'crypto'

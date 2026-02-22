@@ -1,6 +1,6 @@
 import { chromium, Browser, Page } from 'playwright'
 import { db } from '@/lib/db'
-import { TestStatus, HealingStatus, SelectorType } from '@prisma/client'
+import { TestStatus, HealingStatus, SelectorType } from '@/lib/enums'
 import { getProjectConfig } from './test-config'
 import path from 'path'
 import fs from 'fs'

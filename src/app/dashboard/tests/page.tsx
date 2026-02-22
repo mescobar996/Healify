@@ -61,6 +61,11 @@ function StatusBadge({ status }: { status: TestRunStatus }) {
       text: "text-gray-400",
       icon: XCircle,
     },
+    PARTIAL: {
+      bg: "bg-orange-500/10",
+      text: "text-orange-400",
+      icon: AlertTriangle,
+    },
   };
 
   const variant = variants[status] || variants.PENDING;
@@ -73,6 +78,7 @@ function StatusBadge({ status }: { status: TestRunStatus }) {
     RUNNING: "Ejecutando",
     PENDING: "Pendiente",
     CANCELLED: "Cancelado",
+    PARTIAL: "Parcial",
   };
 
   return (
@@ -198,7 +204,7 @@ function TestsContent() {
     const query = searchQuery.toLowerCase();
     return testRuns.filter(
       (run) =>
-        run.project.name.toLowerCase().includes(query) ||
+        run.project?.name.toLowerCase().includes(query) ||
         run.branch?.toLowerCase().includes(query)
     );
   }, [testRuns, searchQuery]);
@@ -411,7 +417,7 @@ function TestsContent() {
                   <FileCode className="w-4 h-4 text-gray-500 flex-shrink-0" />
                   <div className="min-w-0">
                     <p className="text-sm text-gray-200 truncate group-hover:text-white transition-colors">
-                      {run.project.name}
+                      {run.project?.name}
                     </p>
                     <p className="text-[11px] text-gray-500 truncate">
                       {run.commitMessage || run.commitSha?.slice(0, 7) || "Manual run"}
@@ -422,7 +428,7 @@ function TestsContent() {
                 {/* Project */}
                 <div className="col-span-2 flex items-center">
                   <span className="text-sm text-gray-400 truncate">
-                    {run.project.name}
+                    {run.project?.name}
                   </span>
                 </div>
 
@@ -497,7 +503,7 @@ function TestsContent() {
                     <div className="flex items-center gap-2 min-w-0">
                       <FileCode className="w-4 h-4 text-gray-500 flex-shrink-0" />
                       <span className="text-sm text-gray-200 truncate group-hover:text-white">
-                        {run.project.name}
+                        {run.project?.name}
                       </span>
                     </div>
                     <StatusBadge status={run.status} />

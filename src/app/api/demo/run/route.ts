@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { TestStatus, HealingStatus, SelectorType } from '@prisma/client'
+import { TestStatus, HealingStatus, SelectorType } from '@/lib/enums'
 
 export async function POST() {
     try {
