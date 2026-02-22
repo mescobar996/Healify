@@ -1,0 +1,53 @@
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00F5C8" />
+      <stop offset="50%" stop-color="#7B5EF8" />
+      <stop offset="100%" stop-color="#FF6BFF" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <path
+    d="M8 12 L20 12 L24 36 L16 36 Z"
+    fill="url(#logoGradient)"
+    filter="url(#glow)"
+    opacity="0.9"
+  />
+  <path
+    d="M28 12 L40 12 L32 36 L24 36 Z"
+    fill="url(#logoGradient)"
+    filter="url(#glow)"
+    opacity="0.9"
+  />
+  <path
+    d="M14 20 L10 24 L14 28"
+    stroke="url(#logoGradient)"
+    stroke-width="2.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    fill="none"
+    filter="url(#glow)"
+  />
+  <path
+    d="M18 18 L22 30"
+    stroke="url(#logoGradient)"
+    stroke-width="2.5"
+    stroke-linecap="round"
+    filter="url(#glow)"
+  />
+  <path
+    d="M34 20 L38 24 L34 28"
+    stroke="url(#logoGradient)"
+    stroke-width="2.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    fill="none"
+    filter="url(#glow)"
+  />
+</svg>
