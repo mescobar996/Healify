@@ -67,16 +67,6 @@ export async function createProject(data: {
       },
     })
 
-    // Create API key for the project
-    await db.apiKey.create({
-      data: {
-        projectId: project.id,
-        keyHash: generateApiKey(), // Store hash, not plain key
-        prefix: `hf_${project.id.slice(0, 8)}`,
-        name: 'Default API Key',
-      },
-    })
-
     revalidatePath('/dashboard/projects')
     return { success: true, project }
   } catch (error) {
@@ -298,13 +288,6 @@ export async function getDashboardStats() {
 // HELPER FUNCTIONS
 // ============================================
 
-import { randomBytes } from 'crypto'
-
-function generateApiKey(): string {
-  // Use cryptographically secure random bytes
-  const secret = randomBytes(32).toString('hex')
-  return `healify_${secret}_${Date.now().toString(36)}`
-}
 
 // ============================================
 // AUTHORIZATION HELPERS
