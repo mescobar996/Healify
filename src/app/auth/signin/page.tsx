@@ -2,103 +2,55 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { redirect } from 'next/navigation'
 import { SignInButton } from '@/components/SignInButton'
+import { HealifyLogo } from '@/components/HealifyLogo'
 
 export default async function SignInPage() {
   const session = await getServerSession(authOptions)
-  
-  if (session) {
-    redirect('/dashboard')
-  }
+  if (session) redirect('/dashboard')
 
   return (
-    <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center px-4">
-      {/* Background gradient effect */}
-      <div className="absolute inset-0 bg-gradient-to-br from-violet-950/20 via-transparent to-teal-950/20 pointer-events-none" />
-      
-      {/* Grid pattern */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.02)_1px,transparent_1px)] bg-[size:64px_64px] pointer-events-none" />
-      
+    <div className="min-h-screen bg-[#0A0E1A] flex flex-col items-center justify-center px-4">
+      {/* Ambient orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#00F5C8]/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#7B5EF8]/5 rounded-full blur-3xl" />
+      </div>
+
       <div className="relative w-full max-w-md">
-        {/* Logo & Brand */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-teal-500 mb-4">
-            <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-          </div>
-          <h1 className="text-2xl font-semibold text-white tracking-tight">
+        {/* Logo */}
+        <div className="flex flex-col items-center mb-8">
+          <HealifyLogo size="lg" showText={false} />
+          <h1 className="mt-4 text-2xl font-bold text-[#E8F0FF] tracking-tight font-orbitron">
             Healify
           </h1>
-          <p className="text-zinc-400 text-sm mt-2">
-            AI-Powered Test Self-Healing Platform
+          <p className="mt-2 text-sm text-[#E8F0FF]/50">
+            AI-powered test self-healing platform
           </p>
         </div>
 
-        {/* Sign In Card */}
-        <div className="bg-zinc-900/50 border border-white/10 rounded-2xl p-6 backdrop-blur-sm">
-          <div className="space-y-4">
-            <div className="text-center mb-6">
-              <h2 className="text-lg font-medium text-white mb-1">
-                Welcome back
-              </h2>
-              <p className="text-sm text-zinc-500">
-                Sign in to continue to your dashboard
-              </p>
-            </div>
-
-            <SignInButton />
-
-            {/* Divider */}
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-white/5" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-zinc-900 px-2 text-zinc-500">
-                  Secure authentication
-                </span>
-              </div>
-            </div>
-
-            {/* Features list */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-3 text-sm text-zinc-400">
-                <div className="w-5 h-5 rounded-full bg-teal-500/10 flex items-center justify-center flex-shrink-0">
-                  <svg className="w-3 h-3 text-teal-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <span>Automatic test healing with AI</span>
-              </div>
-              <div className="flex items-center gap-3 text-sm text-zinc-400">
-                <div className="w-5 h-5 rounded-full bg-violet-500/10 flex items-center justify-center flex-shrink-0">
-                  <svg className="w-3 h-3 text-violet-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <span>Smart selector suggestions</span>
-              </div>
-              <div className="flex items-center gap-3 text-sm text-zinc-400">
-                <div className="w-5 h-5 rounded-full bg-blue-500/10 flex items-center justify-center flex-shrink-0">
-                  <svg className="w-3 h-3 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <span>GitHub integration built-in</span>
-              </div>
-            </div>
+        {/* Card */}
+        <div className="glass-elite rounded-2xl p-8 space-y-4">
+          <div className="text-center mb-6">
+            <h2 className="text-lg font-semibold text-[#E8F0FF]">Iniciar sesión</h2>
+            <p className="text-sm text-[#E8F0FF]/40 mt-1">
+              Elegí tu proveedor para continuar
+            </p>
           </div>
+
+          <SignInButton provider="github" />
+          <SignInButton provider="google" />
+
+          <p className="text-xs text-center text-[#E8F0FF]/30 pt-2">
+            Al continuar, aceptás nuestros{' '}
+            <a href="/terms" className="text-[#00F5C8]/70 hover:text-[#00F5C8]">Términos</a>
+            {' '}y{' '}
+            <a href="/privacy" className="text-[#00F5C8]/70 hover:text-[#00F5C8]">Política de privacidad</a>
+          </p>
         </div>
 
-        {/* Footer */}
-        <p className="text-center text-xs text-zinc-600 mt-6">
-          By signing in, you agree to our{' '}
-          <a href="#" className="text-zinc-400 hover:text-white transition-colors">
-            Terms of Service
-          </a>{' '}
-          and{' '}
-          <a href="#" className="text-zinc-400 hover:text-white transition-colors">
-            Privacy Policy
+        <p className="text-center mt-6">
+          <a href="/" className="text-sm text-[#E8F0FF]/40 hover:text-[#00F5C8] transition-colors">
+            ← Volver al inicio
           </a>
         </p>
       </div>

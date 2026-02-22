@@ -10,6 +10,7 @@ async function fetcher<T>(
   options?: RequestInit
 ): Promise<T> {
   const res = await fetch(url, {
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     ...options,
   })
