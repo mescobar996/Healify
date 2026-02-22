@@ -2,17 +2,24 @@
 // HEALIFY — GLOBAL TYPES
 // ============================================
 
+// ---- HEALING ----
+
 export type HealingStatus = 'curado' | 'fallido' | 'pendiente'
 
 export interface HealingHistoryItem {
   id: string
   testName: string
+  testFile?: string
   status: HealingStatus
   confidence: number
   timestamp: string
   oldSelector: string
   newSelector: string | null
+  errorMessage?: string | null
+  reasoning?: string | null
 }
+
+// ---- DASHBOARD ----
 
 export interface DashboardMetrics {
   testsExecutedToday: number
@@ -44,22 +51,56 @@ export interface DashboardData {
   fragileSelectors: FragileSelector[]
 }
 
+// ---- PROJECTS ----
+
 export interface Project {
   id: string
   name: string
   description: string | null
-  repository: string
+  repository: string | null
   testRunCount: number
   lastTestRun: {
-    status: string
-    startedAt: Date
+    status: TestRunStatus
+    startedAt: string
     passedTests: number
     totalTests: number
     healedTests: number
   } | null
-  createdAt: Date
-  updatedAt: Date
+  createdAt: string
+  updatedAt: string
 }
+
+// ---- TEST RUNS ----
+
+export type TestRunStatus =
+  | 'PENDING'
+  | 'RUNNING'
+  | 'PASSED'
+  | 'FAILED'
+  | 'HEALED'
+  | 'PARTIAL'
+  | 'CANCELLED'
+
+export interface TestRun {
+  id: string
+  status: TestRunStatus
+  startedAt: string
+  finishedAt: string | null
+  duration: number | null
+  branch: string | null
+  commitSha: string | null
+  commitMessage: string | null
+  totalTests: number
+  passedTests: number
+  failedTests: number
+  healedTests: number
+  project?: {
+    id: string
+    name: string
+  }
+}
+
+// ---- NOTIFICATIONS ----
 
 export interface NotificationItem {
   id: string

@@ -146,3 +146,23 @@ export function formatRelativeTime(date: string | Date): string {
   if (hrs < 24) return `${hrs}h ago`
   return `${days}d ago`
 }
+
+// ============================================
+// REPO HELPERS
+// ============================================
+
+/**
+ * Extracts the "owner/repo" short name from a full GitHub URL
+ * e.g. "https://github.com/mescobar996/Healify" → "mescobar996/Healify"
+ */
+export function extractRepoName(url: string): string {
+  if (!url) return ''
+  try {
+    const u = new URL(url)
+    // Remove leading slash and trailing .git
+    return u.pathname.replace(/^\//, '').replace(/\.git$/, '')
+  } catch {
+    // If not a valid URL, try simple split
+    return url.split('github.com/').pop() || url
+  }
+}
