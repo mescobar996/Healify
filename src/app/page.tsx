@@ -172,8 +172,9 @@ function LandingHero() {
             </Button>
           </motion.div>
 
-          {/* Dashboard Preview Mockup Flotante */}
+          {/* Dashboard Preview Mockup Flotante — destino del botón "Watch Demo" */}
           <motion.div
+            id="demo-section"
             initial={{ opacity: 0, y: 60, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 1, delay: 0.5, type: 'spring' }}

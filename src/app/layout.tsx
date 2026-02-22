@@ -28,8 +28,8 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
-// Base URL for all metadata
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://healify.dev";
+// Base URL for all metadata (producción: healify-sigma.vercel.app)
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://healify-sigma.vercel.app";
 
 // Complete SEO Metadata configuration
 export const metadata: Metadata = {
@@ -73,7 +73,7 @@ export const metadata: Metadata = {
 };
 
 // Viewport configuration - DARK ONLY
-export const   viewport: Viewport = {
+export const viewport: Viewport = {
   themeColor: "#0A0E1A",
   width: "device-width",
   initialScale: 1,

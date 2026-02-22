@@ -109,6 +109,22 @@ export default function PricingPage() {
           All plans include a 14-day free trial · No setup fees · Cancel anytime
         </motion.p>
       </div>
+
+      {/* Footer consistente con landing */}
+      <footer className="relative py-12 mt-16 border-t border-white/10">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-[#E8F0FF]/60">
+            <div className="flex items-center gap-3">
+              <HealifyLogo size="sm" showText={true} />
+            </div>
+            <div className="flex items-center gap-6">
+              <a href="https://github.com/mescobar996/Healify/wiki" target="_blank" rel="noopener noreferrer" className="hover:text-[#00F5C8] transition-colors">Documentation</a>
+              <a href="https://github.com/mescobar996/Healify" target="_blank" rel="noopener noreferrer" className="hover:text-[#00F5C8] transition-colors">GitHub</a>
+              <a href="mailto:support@healify.dev" className="hover:text-[#00F5C8] transition-colors">Support</a>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }
