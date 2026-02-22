@@ -25,13 +25,13 @@ export async function POST(request: NextRequest) {
                 branch,
                 commitSha,
                 triggeredBy: 'cli',
-                totalTests: 1, // Por ahora recibimos fallos individuales
+                totalTests: 1,
                 failedTests: 1,
             }
         })
 
-        // 3. Crear HealingEvent (Solo el inicio)
-        const healingEvent = await db.healingEvent.create({
+        // 3. Crear HealingEvent
+        await db.healingEvent.create({
             data: {
                 testRunId: testRun.id,
                 testName,
@@ -39,24 +39,26 @@ export async function POST(request: NextRequest) {
                 failedSelector: failedSelector || 'unknown',
                 selectorType: 'UNKNOWN',
                 errorMessage: errorMessage || '',
-                oldDomSnapshot: domSnapshot, // El DOM que nos envía el CLI
+                oldDomSnapshot: domSnapshot,
                 status: 'ANALYZING',
             }
         })
 
-        // 4. Encolar Job en BullMQ
+        // 4. Encolar Job en BullMQ (puede retornar null si Redis no está disponible)
         const job = await addTestJob(project.id, commitSha)
 
-        // 5. Vincular JobId
-        await db.testRun.update({
-            where: { id: testRun.id },
-            data: { jobId: job.id }
-        })
+        // 5. Vincular JobId solo si el job fue creado exitosamente
+        if (job?.id) {
+            await db.testRun.update({
+                where: { id: testRun.id },
+                data: { jobId: job.id }
+            })
+        }
 
         return NextResponse.json({
             success: true,
             testRunId: testRun.id,
-            jobId: job.id,
+            jobId: job?.id ?? null,
             message: 'Healing job queued successfully'
         })
 
