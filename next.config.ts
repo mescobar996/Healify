@@ -3,9 +3,11 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
   typescript: {
-    ignoreBuildErrors: true,
+    // ✅ HEAL-003 FIX: No ignorar errores — TypeScript debe validar en build
+    ignoreBuildErrors: false,
   },
-  reactStrictMode: false,
+  // ✅ HEAL-003 FIX: StrictMode detecta bugs antes de producción
+  reactStrictMode: true,
 
   // ============================================
   // SECURITY HEADERS

@@ -92,8 +92,8 @@ export async function GET() {
     const session = await getServerSession(authOptions)
 
     if (!session?.user?.id) {
-      // Return mock data for unauthenticated demo view
-      return NextResponse.json(getMockDashboardData())
+      // ✅ HEAL-007 FIX: No exponer datos (ni mock) a usuarios no autenticados
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     try {

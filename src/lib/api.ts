@@ -3,7 +3,7 @@
 // Centralised fetch wrapper for all API calls
 // ============================================
 
-import type { DashboardData, Project, NotificationItem } from '@/types'
+import type { DashboardData, Project, NotificationItem, TestRun } from '@/types'
 
 async function fetcher<T>(
   url: string,
@@ -80,6 +80,25 @@ export const api = {
     }),
 
   // TEST RUNS
+  getTestRuns: (params?: {
+    limit?: number
+    offset?: number
+    projectId?: string
+    status?: string
+    branch?: string
+  }) => {
+    const qs = new URLSearchParams()
+    if (params?.limit) qs.set('limit', String(params.limit))
+    if (params?.offset) qs.set('offset', String(params.offset))
+    if (params?.projectId) qs.set('projectId', params.projectId)
+    if (params?.status) qs.set('status', params.status)
+    if (params?.branch) qs.set('branch', params.branch)
+    return fetcher<{
+      testRuns: TestRun[]
+      pagination: { total: number; limit: number; offset: number; hasMore: boolean }
+    }>(`/api/test-runs?${qs}`)
+  },
+
   getTestRun: (id: string) =>
     fetcher<unknown>(`/api/test-runs/${id}`),
 

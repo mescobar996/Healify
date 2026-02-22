@@ -3,11 +3,45 @@ import { db } from '@/lib/db'
 import { TestStatus } from '@prisma/client'
 import { testRunner } from '@/lib/test-runner'
 import { gitAnalyzer } from '@/lib/git-analyzer'
+import { createHmac, timingSafeEqual } from 'crypto'
+
+// ✅ HEAL-001 FIX: Verificar firma HMAC de GitHub para evitar inyección de eventos falsos
+function verifyGitHubSignature(body: string, signature: string | null): boolean {
+    const secret = process.env.GITHUB_WEBHOOK_SECRET
+    if (!secret) {
+        console.warn('GITHUB_WEBHOOK_SECRET not set — webhook verification disabled')
+        return false
+    }
+    if (!signature) return false
+
+    const hmac = createHmac('sha256', secret)
+    hmac.update(body, 'utf8')
+    const digest = `sha256=${hmac.digest('hex')}`
+
+    try {
+        return timingSafeEqual(
+            Buffer.from(signature),
+            Buffer.from(digest)
+        )
+    } catch {
+        return false
+    }
+}
 
 export async function POST(request: Request) {
     try {
-        const payload = await request.json()
+        // Leer body como texto ANTES de parsear para poder verificar firma
+        const body = await request.text()
+        const signature = request.headers.get('x-hub-signature-256')
         const event = request.headers.get('x-github-event')
+
+        // ✅ Verificar firma antes de procesar cualquier dato
+        if (!verifyGitHubSignature(body, signature)) {
+            console.warn('GitHub webhook: invalid or missing HMAC signature')
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
+        const payload = JSON.parse(body)
 
         if (event === 'ping') {
             return NextResponse.json({ message: 'pong' })
@@ -46,7 +80,6 @@ export async function POST(request: Request) {
             })
 
             // Trigger test execution asynchronously
-            // In a real environment, we'd use a queue like BullMQ
             testRunner.runProjectTests(project.id, testRun.id).catch(err => {
                 console.error('Failed to run tests from webhook:', err)
             })
