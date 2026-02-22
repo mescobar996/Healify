@@ -1,11 +1,12 @@
 import NextAuth, { NextAuthOptions } from 'next-auth'
 import GitHubProvider from 'next-auth/providers/github'
 import GoogleProvider from 'next-auth/providers/google'
-import { PrismaAdapter } from '@auth/prisma-adapter'
+import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import { db } from '@/lib/db'
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(db) as any,
+  // @next-auth/prisma-adapter v1 is compatible with NextAuth v4
+  adapter: PrismaAdapter(db),
 
   providers: [
     GitHubProvider({
@@ -15,7 +16,7 @@ export const authOptions: NextAuthOptions = {
         return {
           id: String(profile.id),
           name: profile.name || profile.login,
-          email: profile.email,
+          email: profile.email ?? null,
           image: profile.avatar_url,
         }
       },
@@ -34,22 +35,20 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
 
-  // Use JWT strategy — works without DB session table issues
+  // JWT strategy: avoids DB session table read/write on every request
   session: {
     strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
 
   callbacks: {
-    async jwt({ token, user, account, profile }: any) {
-      // On first sign-in, persist user data into the token
+    async jwt({ token, user, profile }: any) {
       if (user) {
         token.id = user.id
-        token.role = user.role || 'user'
+        token.role = (user as any).role || 'user'
       }
-      // Always refresh image from provider if available
       if (profile) {
-        token.image = (profile as any).avatar_url || (profile as any).picture || token.image
+        token.picture = (profile as any).avatar_url || (profile as any).picture || token.picture
         token.name = (profile as any).name || (profile as any).login || token.name
       }
       return token
@@ -58,13 +57,9 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.id = token.id as string
         session.user.role = token.role as string
-        // Ensure image is always set from token
-        if (token.image && !session.user.image) {
-          session.user.image = token.image as string
-        }
-        if (token.name && !session.user.name) {
-          session.user.name = token.name as string
-        }
+        // Sync avatar from JWT token to session
+        if (token.picture) session.user.image = token.picture as string
+        if (token.name) session.user.name = token.name as string
       }
       return session
     },
@@ -76,9 +71,6 @@ export const authOptions: NextAuthOptions = {
   },
 
   secret: process.env.NEXTAUTH_SECRET,
-
-  // Debug only in development
-  debug: process.env.NODE_ENV === 'development',
 }
 
 const handler = NextAuth(authOptions)
