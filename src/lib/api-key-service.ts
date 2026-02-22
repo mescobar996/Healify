@@ -1,6 +1,6 @@
 /**
  * HEALIFY - API Key Service
- * Secure API Key validation and management
+ * Secure API Key validation using the apiKey field on Project model
  */
 
 import { db } from '@/lib/db'
@@ -18,53 +18,34 @@ export interface ApiKeyValidation {
 }
 
 export interface ApiKeyCreate {
-  id: string
-  key: string // Only returned once on creation
+  key: string
   projectId: string
-  prefix: string
-  createdAt: Date
 }
 
 // ============================================
 // CONSTANTS
 // ============================================
 
-const API_KEY_PREFIX = 'hf_live_'
-const API_KEY_LENGTH = 32
 const KEY_CACHE_TTL = 60000 // 1 minute cache
 
-// In-memory cache for API key validation (ultra-fast)
+// In-memory cache for API key validation
 const keyCache = new Map<string, { projectId: string; timestamp: number }>()
 
 // ============================================
 // API KEY GENERATION
 // ============================================
 
-/**
- * Generate a new API key with format: hf_live_xxxxxxxxxxxxxxxx
- */
 export function generateApiKey(): string {
-  const randomString = randomBytes(API_KEY_LENGTH)
-    .toString('base64')
-    .replace(/[+/=]/g, '') // Remove special chars
-    .slice(0, API_KEY_LENGTH)
-  
-  return `${API_KEY_PREFIX}${randomString}`
+  return randomBytes(32).toString('hex')
 }
 
-/**
- * Hash an API key for storage (never store plain text)
- */
 export function hashApiKey(key: string): string {
   return createHash('sha256').update(key).digest('hex')
 }
 
-/**
- * Get the prefix for display (hf_live_...xxxx)
- */
 export function getKeyPrefix(key: string): string {
   if (key.length < 12) return key
-  return `${key.slice(0, 9)}...${key.slice(-4)}`
+  return `${key.slice(0, 6)}...${key.slice(-4)}`
 }
 
 // ============================================
@@ -72,88 +53,41 @@ export function getKeyPrefix(key: string): string {
 // ============================================
 
 /**
- * Validate an API key against the database
- * Uses in-memory cache for ultra-fast validation
+ * Validate an API key — looks up the apiKey field on Project directly
  */
 export async function validateApiKey(
   apiKey: string | null | undefined
 ): Promise<ApiKeyValidation> {
-  // Check if key is provided
   if (!apiKey) {
     return { valid: false, error: 'API key is required' }
   }
 
-  // Check format
-  if (!apiKey.startsWith(API_KEY_PREFIX)) {
-    return { valid: false, error: 'Invalid API key format' }
-  }
-
-  // Check cache first (ultra-fast path)
+  // Check cache first
   const cached = keyCache.get(apiKey)
   if (cached && Date.now() - cached.timestamp < KEY_CACHE_TTL) {
-    const project = await db.project.findUnique({
-      where: { id: cached.projectId },
-      select: { id: true, name: true, isActive: true },
-    })
-
-    if (project?.isActive) {
-      return {
-        valid: true,
-        projectId: project.id,
-        projectName: project.name,
-      }
+    return {
+      valid: true,
+      projectId: cached.projectId,
     }
   }
 
-  // Hash the key for database lookup
-  const keyHash = hashApiKey(apiKey)
-
-  // Find the key in database
-  const apiKeyRecord = await db.apiKey.findUnique({
-    where: { keyHash },
-    include: {
-      project: {
-        select: { id: true, name: true, isActive: true },
-      },
-    },
+  // Look up project by apiKey field
+  const project = await db.project.findUnique({
+    where: { apiKey },
+    select: { id: true, name: true },
   })
 
-  // Key not found
-  if (!apiKeyRecord) {
+  if (!project) {
     return { valid: false, error: 'Invalid API key' }
   }
 
-  // Key revoked
-  if (!apiKeyRecord.isActive) {
-    return { valid: false, error: 'API key has been revoked' }
-  }
-
-  // Project inactive
-  if (!apiKeyRecord.project.isActive) {
-    return { valid: false, error: 'Project is inactive' }
-  }
-
-  // Key expired
-  if (apiKeyRecord.expiresAt && apiKeyRecord.expiresAt < new Date()) {
-    return { valid: false, error: 'API key has expired' }
-  }
-
   // Update cache
-  keyCache.set(apiKey, {
-    projectId: apiKeyRecord.projectId,
-    timestamp: Date.now(),
-  })
-
-  // Update last used timestamp (async, non-blocking)
-  db.apiKey.update({
-    where: { id: apiKeyRecord.id },
-    data: { lastUsedAt: new Date() },
-  }).catch(() => {})
+  keyCache.set(apiKey, { projectId: project.id, timestamp: Date.now() })
 
   return {
     valid: true,
-    projectId: apiKeyRecord.projectId,
-    projectName: apiKeyRecord.project.name,
+    projectId: project.id,
+    projectName: project.name,
   }
 }
 
@@ -162,99 +96,53 @@ export async function validateApiKey(
 // ============================================
 
 /**
- * Create a new API key for a project
+ * Rotate the API key for a project (generates a new cuid via Prisma default)
  */
-export async function createApiKeyForProject(
-  projectId: string,
-  name?: string
-): Promise<ApiKeyCreate> {
-  const key = generateApiKey()
-  const keyHash = hashApiKey(key)
-  const prefix = getKeyPrefix(key)
+export async function rotateApiKey(projectId: string): Promise<ApiKeyCreate> {
+  const newKey = generateApiKey()
 
-  const apiKeyRecord = await db.apiKey.create({
-    data: {
-      keyHash,
-      prefix,
-      name: name || 'Default API Key',
-      projectId,
-    },
+  await db.project.update({
+    where: { id: projectId },
+    data: { apiKey: newKey },
   })
 
+  // Invalidate cache for this project
+  for (const [key, value] of keyCache.entries()) {
+    if (value.projectId === projectId) keyCache.delete(key)
+  }
+
+  return { key: newKey, projectId }
+}
+
+/**
+ * List projects accessible via API key (for display — never expose the key itself)
+ */
+export async function getProjectApiKeyInfo(projectId: string) {
+  const project = await db.project.findUnique({
+    where: { id: projectId },
+    select: { id: true, name: true, apiKey: true, createdAt: true },
+  })
+  if (!project) return null
   return {
-    id: apiKeyRecord.id,
-    key, // Only returned once!
-    projectId,
-    prefix,
-    createdAt: apiKeyRecord.createdAt,
+    id: project.id,
+    name: project.name,
+    keyPrefix: getKeyPrefix(project.apiKey),
+    createdAt: project.createdAt,
   }
 }
 
-/**
- * Revoke an API key
- */
-export async function revokeApiKey(keyId: string): Promise<boolean> {
-  try {
-    await db.apiKey.update({
-      where: { id: keyId },
-      data: { isActive: false },
-    })
-    
-    // Clear from cache
-    for (const [key, value] of keyCache.entries()) {
-      // We'd need to store keyId in cache for proper invalidation
-      // For now, clear entire cache on revocation
-    }
-    keyCache.clear()
-    
-    return true
-  } catch {
-    return false
-  }
-}
-
-/**
- * List API keys for a project (without revealing the actual key)
- */
-export async function listApiKeysForProject(projectId: string) {
-  return db.apiKey.findMany({
-    where: { projectId, isActive: true },
-    select: {
-      id: true,
-      prefix: true,
-      name: true,
-      createdAt: true,
-      lastUsedAt: true,
-      expiresAt: true,
-    },
-    orderBy: { createdAt: 'desc' },
-  })
-}
-
 // ============================================
-// MIDDLEWARE HELPER
+// MIDDLEWARE HELPERS
 // ============================================
 
-/**
- * Extract API key from request headers
- */
 export function extractApiKey(request: Request): string | null {
-  // Check x-api-key header (preferred)
   const apiKeyHeader = request.headers.get('x-api-key')
   if (apiKeyHeader) return apiKeyHeader
-
-  // Check Authorization: Bearer header
   const authHeader = request.headers.get('authorization')
-  if (authHeader?.startsWith('Bearer ')) {
-    return authHeader.slice(7)
-  }
-
+  if (authHeader?.startsWith('Bearer ')) return authHeader.slice(7)
   return null
 }
 
-/**
- * Middleware-like function to validate API key from request
- */
 export async function validateApiKeyFromRequest(
   request: Request
 ): Promise<ApiKeyValidation> {
