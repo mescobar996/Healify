@@ -1,110 +1,114 @@
 'use client'
 
 import { useState } from 'react'
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardFooter,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Check, Loader2, Sparkles } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { Check, Loader2, Sparkles, ArrowRight } from 'lucide-react'
 import { PLANS } from '@/lib/stripe'
 import { cn } from '@/lib/utils'
+import { HealifyLogo } from '@/components/HealifyLogo'
+import Link from 'next/link'
+import { useSession, signIn } from 'next-auth/react'
+import { Github } from 'lucide-react'
 
 export default function PricingPage() {
-    const [loadingPlan, setLoadingPlan] = useState<string | null>(null)
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null)
+  const { status } = useSession()
 
-    const handleSubscribe = async (priceId: string, planId: string) => {
-        setLoadingPlan(planId)
-        try {
-            const res = await fetch('/api/checkout', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ priceId }),
-            })
-            const { url } = await res.json()
-            if (url) {
-                window.location.href = url
-            }
-        } catch (error) {
-            console.error('Checkout error:', error)
-        } finally {
-            setLoadingPlan(null)
-        }
+  const handleSubscribe = async (priceId: string, planId: string) => {
+    if (status !== 'authenticated') {
+      signIn('github', { callbackUrl: '/pricing' })
+      return
     }
+    setLoadingPlan(planId)
+    try {
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ priceId }),
+      })
+      const { url, error } = await res.json()
+      if (url) window.location.href = url
+      else console.error('Checkout error:', error)
+    } catch (error) {
+      console.error('Checkout error:', error)
+    } finally {
+      setLoadingPlan(null)
+    }
+  }
 
-    return (
-        <div className="min-h-screen bg-muted/30 py-12 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-7xl mx-auto">
-                <div className="text-center mb-12">
-                    <h1 className="text-4xl font-extrabold tracking-tight mb-4">
-                        Simple, Transparent Pricing
-                    </h1>
-                    <p className="text-xl text-muted-foreground">
-                        Choose the plan that's right for your team and start healing your tests.
-                    </p>
-                </div>
+  const plans = Object.values(PLANS)
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    {Object.values(PLANS).map((plan) => (
-                        <Card
-                            key={plan.id}
-                            className={cn(
-                                "relative flex flex-col",
-                                plan.id === 'pro' && "border-primary shadow-lg scale-105 z-10"
-                            )}
-                        >
-                            {plan.id === 'pro' && (
-                                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2">
-                                    <span className="bg-primary text-primary-foreground text-xs font-bold px-3 py-1 rounded-full uppercase flex items-center gap-1">
-                                        <Sparkles className="h-3 w-3" /> Popular
-                                    </span>
-                                </div>
-                            )}
-                            <CardHeader>
-                                <CardTitle className="text-2xl">{plan.name}</CardTitle>
-                                <CardDescription>Perfect for {plan.id === 'starter' ? 'small teams' : plan.id === 'pro' ? 'growing teams' : 'large scale organizations'}.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="flex-1">
-                                <div className="mb-6">
-                                    <span className="text-4xl font-bold">${plan.price}</span>
-                                    <span className="text-muted-foreground">/mo</span>
-                                </div>
-                                <ul className="space-y-3">
-                                    {plan.features.map((feature) => (
-                                        <li key={feature} className="flex items-center gap-2 text-sm">
-                                            <Check className="h-4 w-4 text-emerald-500" />
-                                            {feature}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </CardContent>
-                            <CardFooter>
-                                <Button
-                                    className="w-full"
-                                    variant={plan.id === 'pro' ? 'default' : 'outline'}
-                                    disabled={loadingPlan === plan.id}
-                                    onClick={() => handleSubscribe(plan.priceId!, plan.id)}
-                                >
-                                    {loadingPlan === plan.id ? (
-                                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                    ) : null}
-                                    Get Started
-                                </Button>
-                            </CardFooter>
-                        </Card>
-                    ))}
-                </div>
+  return (
+    <div className="min-h-screen bg-[#0A0E1A] text-[#E8F0FF] relative overflow-hidden">
+      <div className="fixed top-[20%] left-[10%] w-[500px] h-[500px] rounded-full pointer-events-none animate-float-y" style={{ background: 'radial-gradient(circle, rgba(123,94,248,0.1) 0%, transparent 70%)', filter: 'blur(100px)' }} />
+      <div className="fixed top-[50%] right-[10%] w-[400px] h-[400px] rounded-full pointer-events-none animate-float-y-delay-2" style={{ background: 'radial-gradient(circle, rgba(0,245,200,0.08) 0%, transparent 70%)', filter: 'blur(80px)' }} />
 
-                <div className="mt-12 text-center">
-                    <p className="text-muted-foreground">
-                        Need something else? <a href="#" className="text-primary hover:underline font-medium">Contact our sales team</a> for a custom enterprise plan.
-                    </p>
-                </div>
-            </div>
+      <header className="sticky top-0 z-50 glass-elite border-b border-white/10 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <Link href="/"><HealifyLogo size="md" showText={true} /></Link>
+          <Link href="/" className="text-sm text-[#E8F0FF]/60 hover:text-[#00F5C8] transition-colors">← Volver</Link>
         </div>
-    )
+      </header>
+
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-24 relative z-10">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="text-center mb-16">
+          <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium glass-elite border border-[#00F5C8]/30 text-[#00F5C8] mb-6">
+            <Sparkles className="w-3 h-3" /> Simple, Transparent Pricing
+          </span>
+          <h1 className="text-5xl sm:text-6xl font-bold tracking-tight mb-4 font-heading" style={{ background: 'linear-gradient(135deg, #E8F0FF 0%, #00F5C8 50%, #7B5EF8 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+            Heal Your Tests
+          </h1>
+          <p className="text-lg text-[#E8F0FF]/60 max-w-2xl mx-auto">
+            Choose the plan that fits your team. No credit card for the first 14 days.
+          </p>
+        </motion.div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+          {plans.map((plan, i) => {
+            const isPro = plan.id === 'pro'
+            return (
+              <motion.div key={plan.id} initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: i * 0.1 }} className={cn('glass-elite glass-elite-hover relative flex flex-col', isPro && 'border-[#00F5C8]/30')} style={isPro ? { boxShadow: '0 0 40px rgba(0,245,200,0.12), inset 0 1px 0 rgba(255,255,255,0.1)' } : undefined}>
+                {isPro && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <span className="text-[#0A0E1A] text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1" style={{ background: 'linear-gradient(135deg, #00F5C8, #7B5EF8)' }}>
+                      <Sparkles className="h-3 w-3" /> Most Popular
+                    </span>
+                  </div>
+                )}
+                <div className="p-6 flex-1 flex flex-col">
+                  <div className="mb-6">
+                    <h2 className="text-lg font-bold text-[#E8F0FF] mb-1 font-heading">{plan.name}</h2>
+                    <p className="text-sm text-[#E8F0FF]/50">{plan.id === 'starter' ? 'Perfect for small teams' : plan.id === 'pro' ? 'Best for growing teams' : 'For large organizations'}</p>
+                  </div>
+                  <div className="mb-6">
+                    <div className="flex items-end gap-1">
+                      <span className="text-5xl font-bold font-heading" style={isPro ? { background: 'linear-gradient(135deg, #00F5C8, #7B5EF8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' } : undefined}>${plan.price}</span>
+                      <span className="text-[#E8F0FF]/40 mb-1.5 text-sm">/month</span>
+                    </div>
+                    <p className="text-xs text-[#E8F0FF]/40 mt-1">Billed monthly · Cancel anytime</p>
+                  </div>
+                  <ul className="space-y-3 flex-1 mb-8">
+                    {plan.features.map((feature) => (
+                      <li key={feature} className="flex items-center gap-3 text-sm text-[#E8F0FF]/80">
+                        <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(0,245,200,0.15)' }}>
+                          <Check className="h-3 w-3 text-[#00F5C8]" />
+                        </div>
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                  <button disabled={loadingPlan === plan.id} onClick={() => handleSubscribe(plan.priceId!, plan.id)} className={cn('w-full py-3 px-6 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed', isPro ? 'text-[#0A0E1A]' : 'text-[#E8F0FF] border border-white/10 hover:border-white/20 hover:bg-white/5')} style={isPro ? { background: 'linear-gradient(135deg, #00F5C8, #7B5EF8)', boxShadow: '0 0 20px rgba(0,245,200,0.4)' } : undefined}>
+                    {loadingPlan === plan.id ? <Loader2 className="h-4 w-4 animate-spin" /> : status !== 'authenticated' ? <><Github className="w-4 h-4" /> Sign in to start</> : <>Get Started <ArrowRight className="w-4 h-4" /></>}
+                  </button>
+                </div>
+              </motion.div>
+            )
+          })}
+        </div>
+        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="text-center text-sm text-[#E8F0FF]/40 mt-12">
+          All plans include a 14-day free trial · No setup fees · Cancel anytime
+        </motion.p>
+      </div>
+    </div>
+  )
 }
