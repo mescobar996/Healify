@@ -57,7 +57,7 @@ function MetricCard({
   icon: React.ElementType;
 }) {
   return (
-    <div className="group relative p-4 rounded-lg bg-[#111113] border border-white/5 hover:border-white/10 transition-all duration-150">
+    <div className="group relative p-4 rounded-lg glass-elite hover:border-white/10 transition-all duration-150">
       <div className="flex items-start justify-between">
         <div className="space-y-2">
           <p className="text-[11px] font-medium tracking-widest text-gray-500 uppercase">
@@ -356,7 +356,7 @@ function DashboardContent() {
               size="sm"
               onClick={handleRunTests}
               disabled={isRunning}
-              className="bg-violet-600 hover:bg-violet-700 text-white disabled:opacity-50"
+              className="btn-neon text-[#0A0E1A] disabled:opacity-50"
             >
               {isRunning ? (
                 <>
@@ -408,7 +408,7 @@ function DashboardContent() {
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Chart Section */}
-          <div className="lg:col-span-2 rounded-lg bg-[#111113] border border-white/5 p-4">
+          <div className="lg:col-span-2 rounded-lg glass-elite p-4">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-sm font-medium text-white">
@@ -486,7 +486,7 @@ function DashboardContent() {
           </div>
 
           {/* Fragile Selectors */}
-          <div className="rounded-lg bg-[#111113] border border-white/5 p-4">
+          <div className="rounded-lg glass-elite p-4">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-medium text-white">
                 Selectores Frágiles
@@ -539,7 +539,7 @@ function DashboardContent() {
           <ActivityFeed limit={5} />
 
           {/* Healing History List - Linear Style */}
-          <div className="rounded-lg bg-[#111113] border border-white/5">
+          <div className="rounded-lg glass-elite">
           {/* List Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
             <div className="flex items-center gap-3">

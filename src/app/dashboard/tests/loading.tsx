@@ -18,7 +18,7 @@ export default function Loading() {
       {/* Stats Cards Skeleton */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="p-4 rounded-lg bg-[#111113] border border-zinc-800">
+          <div key={i} className="p-4 rounded-lg glass-elite">
             <div className="flex items-start justify-between">
               <div className="space-y-2">
                 <Skeleton className="h-3 w-16 bg-zinc-800" />
@@ -41,7 +41,7 @@ export default function Loading() {
       </div>
 
       {/* Table Skeleton */}
-      <div className="rounded-lg bg-[#111113] border border-zinc-800">
+      <div className="rounded-lg glass-elite">
         {/* Table Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
           <div className="flex items-center gap-3">

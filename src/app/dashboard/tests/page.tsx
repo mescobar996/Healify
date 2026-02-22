@@ -101,7 +101,7 @@ function StatCard({
   iconColor: string;
 }) {
   return (
-    <div className="group relative p-4 rounded-lg bg-[#111113] border border-white/5 hover:border-white/10 transition-all duration-150">
+    <div className="group relative p-4 rounded-lg glass-elite hover:border-white/10 transition-all duration-150">
       <div className="flex items-start justify-between">
         <div className="space-y-2">
           <p className="text-[11px] font-medium tracking-widest text-gray-500 uppercase">
@@ -333,7 +333,7 @@ function TestsContent() {
             placeholder="Buscar tests..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 bg-[#111113] border-white/5 text-gray-200 placeholder:text-gray-500 focus:border-white/10"
+            className="pl-9 input-glass text-[#E8F0FF] placeholder:text-[#E8F0FF]/30"
           />
         </div>
         <div className="flex gap-2 flex-wrap">
@@ -361,7 +361,7 @@ function TestsContent() {
       </div>
 
       {/* Test List - Linear Data Grid Style */}
-      <div className="rounded-lg bg-[#111113] border border-white/5">
+      <div className="rounded-lg glass-elite">
         {/* List Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
           <div className="flex items-center gap-3">

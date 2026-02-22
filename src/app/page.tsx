@@ -163,6 +163,10 @@ function LandingHero() {
               size="lg"
               variant="outline"
               className="h-14 px-8 glass-elite border-[#00F5C8]/30 text-[#E8F0FF] hover:border-[#00F5C8]/50 hover:bg-white/5"
+              onClick={() => {
+                const el = document.getElementById('demo-section')
+                el ? el.scrollIntoView({ behavior: 'smooth' }) : signIn('github', { callbackUrl: '/dashboard' })
+              }}
             >
               Watch Demo
             </Button>
@@ -372,9 +376,9 @@ function Footer() {
             <HealifyLogo size="sm" showText={true} />
           </div>
           <div className="flex items-center gap-6">
-            <a href="#" className="hover:text-[#00F5C8] transition-colors">Documentation</a>
-            <a href="#" className="hover:text-[#00F5C8] transition-colors">API</a>
-            <a href="#" className="hover:text-[#00F5C8] transition-colors">Support</a>
+            <a href="https://github.com/mescobar996/Healify/wiki" target="_blank" rel="noopener noreferrer" className="hover:text-[#00F5C8] transition-colors">Documentation</a>
+            <a href="https://github.com/mescobar996/Healify" target="_blank" rel="noopener noreferrer" className="hover:text-[#00F5C8] transition-colors">GitHub</a>
+            <a href="mailto:support@healify.dev" className="hover:text-[#00F5C8] transition-colors">Support</a>
           </div>
         </div>
       </div>

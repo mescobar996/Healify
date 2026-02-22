@@ -218,7 +218,7 @@ export default function TestRunDetailPage() {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          <div className="p-4 rounded-lg bg-[#111113] border border-white/5">
+          <div className="p-4 rounded-lg glass-elite">
             <p className="text-[11px] text-gray-500 uppercase tracking-wide">Total Tests</p>
             <p className="text-2xl font-semibold text-white mt-1">{testRun.totalTests}</p>
           </div>
@@ -234,14 +234,14 @@ export default function TestRunDetailPage() {
             <p className="text-[11px] text-violet-400 uppercase tracking-wide">Curados</p>
             <p className="text-2xl font-semibold text-violet-400 mt-1">{testRun.healedTests}</p>
           </div>
-          <div className="p-4 rounded-lg bg-[#111113] border border-white/5">
+          <div className="p-4 rounded-lg glass-elite">
             <p className="text-[11px] text-gray-500 uppercase tracking-wide">Duración</p>
             <p className="text-2xl font-semibold text-white mt-1">{duration}</p>
           </div>
         </div>
 
         {/* Details Section */}
-        <div className="rounded-lg bg-[#111113] border border-white/5">
+        <div className="rounded-lg glass-elite">
           <div className="px-4 py-3 border-b border-white/5">
             <h2 className="text-sm font-medium text-white">Detalles</h2>
           </div>
@@ -276,7 +276,7 @@ export default function TestRunDetailPage() {
         </div>
 
         {/* Healing Events */}
-        <div className="rounded-lg bg-[#111113] border border-white/5">
+        <div className="rounded-lg glass-elite">
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
             <div className="flex items-center gap-3">
               <h2 className="text-sm font-medium text-white">Eventos de Curación</h2>

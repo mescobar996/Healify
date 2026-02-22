@@ -96,7 +96,7 @@ function AccountSection() {
       <div className="flex items-start gap-6">
         <Avatar className="w-16 h-16">
           <AvatarImage src={userData.avatar} />
-          <AvatarFallback className="bg-violet-500/20 text-violet-400 text-lg font-medium">
+          <AvatarFallback className="text-[#0A0E1A] text-lg font-medium" style={{background:"linear-gradient(135deg,#00F5C8,#7B5EF8)"}}>
             JD
           </AvatarFallback>
         </Avatar>
@@ -148,7 +148,7 @@ function AccountSection() {
           size="sm"
           onClick={handleSave}
           disabled={saving}
-          className="bg-violet-600 hover:bg-violet-700 text-white"
+          className="btn-neon text-[#0A0E1A]"
         >
           {saving ? (
             <>
@@ -416,7 +416,7 @@ function AppearanceSection() {
           <SelectTrigger className="w-32 bg-white/5 border-white/10 text-gray-200">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent className="bg-[#1a1a1c] border-gray-800">
+          <SelectContent className="bg-[#0D1117] border-white/10">
             <SelectItem value="light">Claro</SelectItem>
             <SelectItem value="dark">Oscuro</SelectItem>
             <SelectItem value="system">Sistema</SelectItem>
@@ -544,7 +544,7 @@ export default function SettingsPage() {
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <div className="rounded-lg bg-[#111113] border border-white/5">
+        <div className="rounded-lg glass-elite">
           {/* Header */}
           <div className="px-6 py-4 border-b border-white/5">
             <h2 className="text-base font-medium text-white">

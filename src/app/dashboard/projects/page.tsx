@@ -96,7 +96,7 @@ function ProjectCard({
   const failedTests = lastRun?.status === "FAILED" ? 1 : 0;
 
   return (
-    <div className="group relative p-4 rounded-lg bg-[#111113] border border-white/5 hover:border-white/10 transition-all duration-150">
+    <div className="group relative p-4 rounded-lg glass-elite hover:border-white/10 transition-all duration-150">
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
@@ -119,7 +119,7 @@ function ProjectCard({
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="end"
-            className="w-40 bg-[#1a1a1c] border-gray-800"
+            className="w-40 bg-[#0D1117] border-white/10"
           >
             <DropdownMenuItem 
               className="text-gray-300 text-sm focus:bg-white/5 focus:text-white cursor-pointer"
@@ -332,7 +332,7 @@ function NewProjectModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] bg-[#111113] border-white/10">
+      <DialogContent className="sm:max-w-[500px] bg-[#0D1117] border-white/10">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle className="text-white">Nuevo Proyecto</DialogTitle>
@@ -350,7 +350,7 @@ function NewProjectModal({
                 placeholder="Mi Proyecto"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="bg-[#0a0a0b] border-white/10 text-white placeholder:text-gray-600 focus:border-violet-500"
+                className="input-glass text-[#E8F0FF] placeholder:text-[#E8F0FF]/30 focus:border-[#00F5C8]/50"
                 required
                 disabled={isSubmitting}
               />
@@ -365,7 +365,7 @@ function NewProjectModal({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
-                className="bg-[#0a0a0b] border-white/10 text-white placeholder:text-gray-600 focus:border-violet-500 resize-none"
+                className="input-glass text-[#E8F0FF] placeholder:text-[#E8F0FF]/30 focus:border-[#00F5C8]/50 resize-none"
                 disabled={isSubmitting}
               />
             </div>
@@ -379,7 +379,7 @@ function NewProjectModal({
                 value={repository}
                 onChange={(e) => setRepository(e.target.value)}
                 type="url"
-                className="bg-[#0a0a0b] border-white/10 text-white placeholder:text-gray-600 focus:border-violet-500"
+                className="input-glass text-[#E8F0FF] placeholder:text-[#E8F0FF]/30 focus:border-[#00F5C8]/50"
                 disabled={isSubmitting}
               />
             </div>
@@ -547,7 +547,7 @@ export default function ProjectsPage() {
               placeholder="Buscar proyectos..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 bg-[#111113] border-white/5 text-gray-200 placeholder:text-gray-500 focus:border-white/10"
+              className="pl-9 input-glass text-[#E8F0FF] placeholder:text-[#E8F0FF]/30"
             />
           </div>
           <div className="flex gap-2">

@@ -207,7 +207,7 @@ export default function HealingDetailPage() {
         <div className="lg:col-span-2 space-y-4">
           {/* Error */}
           {data.errorMessage && (
-            <div className="rounded-lg bg-[#111113] border border-white/5">
+            <div className="rounded-lg glass-elite">
               <div className="flex items-center gap-2 px-4 py-3 border-b border-white/5">
                 <AlertTriangle className="w-4 h-4 text-amber-400" />
                 <span className="text-sm font-medium text-gray-200">Error Original</span>
@@ -219,7 +219,7 @@ export default function HealingDetailPage() {
           )}
 
           {/* Selectors */}
-          <div className="rounded-lg bg-[#111113] border border-white/5">
+          <div className="rounded-lg glass-elite">
             <div className="flex items-center gap-2 px-4 py-3 border-b border-white/5">
               <FileCode className="w-4 h-4 text-violet-400" />
               <span className="text-sm font-medium text-gray-200">Cambios Propuestos</span>
@@ -232,7 +232,7 @@ export default function HealingDetailPage() {
 
           {/* DOM Snapshots */}
           {(data.oldDomSnapshot || data.newDomSnapshot) && (
-            <div className="rounded-lg bg-[#111113] border border-white/5">
+            <div className="rounded-lg glass-elite">
               <div className="px-4 py-3 border-b border-white/5">
                 <span className="text-sm font-medium text-gray-200">Contexto del DOM</span>
               </div>
@@ -261,7 +261,7 @@ export default function HealingDetailPage() {
         {/* Right - Info */}
         <div className="space-y-4">
           {/* AI Analysis */}
-          <div className="rounded-lg bg-[#111113] border border-white/5">
+          <div className="rounded-lg glass-elite">
             <div className="flex items-center gap-2 px-4 py-3 border-b border-white/5">
               <Sparkles className="w-4 h-4 text-violet-400" />
               <span className="text-sm font-medium text-gray-200">Análisis de IA</span>
@@ -281,7 +281,7 @@ export default function HealingDetailPage() {
           </div>
 
           {/* Details */}
-          <div className="rounded-lg bg-[#111113] border border-white/5">
+          <div className="rounded-lg glass-elite">
             <div className="px-4 py-3 border-b border-white/5">
               <span className="text-sm font-medium text-gray-200">Detalles</span>
             </div>
