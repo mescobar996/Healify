@@ -3,6 +3,8 @@
 import { revalidatePath } from 'next/cache'
 import { db } from '@/lib/db'
 import { analyzeAndHeal } from '@/lib/engine/healing-engine'
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 
 // ============================================
 // PROJECTS ACTIONS
@@ -51,12 +53,17 @@ export async function createProject(data: {
   repository?: string
 }) {
   try {
-    // Validate input with Zod-like checks
+    // Get session to link project to the logged-in user
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      return { success: false, error: 'Debés iniciar sesión para crear un proyecto' }
+    }
+
     if (!data.name || data.name.trim().length < 3 || data.name.trim().length > 50) {
-      return { success: false, error: 'Project name must be between 3 and 50 characters' }
+      return { success: false, error: 'El nombre debe tener entre 3 y 50 caracteres' }
     }
     if (data.description && data.description.length > 200) {
-      return { success: false, error: 'Description must be less than 200 characters' }
+      return { success: false, error: 'La descripción debe tener menos de 200 caracteres' }
     }
 
     const project = await db.project.create({
@@ -64,6 +71,7 @@ export async function createProject(data: {
         name: data.name.trim(),
         description: data.description?.trim() || null,
         repository: data.repository?.trim() || null,
+        userId: session.user.id,
       },
     })
 

@@ -36,9 +36,10 @@ import { toast } from "sonner";
 // MOCK DATA
 // ============================================
 
+// userData is now populated from session — no hardcoded defaults
 const userData = {
-  name: "John Doe",
-  email: "john.doe@company.com",
+  name: "",
+  email: "",
   avatar: "/avatar.png",
   plan: "PRO",
 };
@@ -81,8 +82,17 @@ type TabId = typeof tabs[number]["id"];
 
 function AccountSection() {
   const { data: session } = useSession();
-  const [name, setName] = useState(userData.name);
-  const [email, setEmail] = useState(userData.email);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+
+  // Populate fields from session when it loads
+  React.useEffect(() => {
+    if (session?.user) {
+      setName(session.user.name || "");
+      setEmail(session.user.email || "");
+    }
+  }, [session]);
+
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
@@ -92,7 +102,7 @@ function AccountSection() {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: userData.name }),
+        body: JSON.stringify({ name }),
       });
       if (!res.ok) throw new Error('Error al guardar');
       toast.success("Perfil actualizado correctamente");
@@ -276,7 +286,7 @@ function BillingSection() {
           <div>
             <div className="flex items-center gap-2">
               <p className="text-sm font-medium text-white">
-                Plan {userData.plan}
+                Plan Free
               </p>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-400">
                 Activo
@@ -413,7 +423,6 @@ function NotificationsSection() {
 }
 
 function AppearanceSection() {
-  const [theme, setTheme] = useState("dark");
   const [accent, setAccent] = useState("violet");
 
   const accents = [
@@ -425,27 +434,11 @@ function AppearanceSection() {
 
   return (
     <div className="space-y-6">
-      {/* Theme */}
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-gray-200">Tema</p>
-          <p className="text-xs text-gray-500">
-            Selecciona el tema de la aplicación
-          </p>
-        </div>
-        <Select value={theme} onValueChange={setTheme}>
-          <SelectTrigger className="w-32 bg-white/5 border-white/10 text-gray-200">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="bg-[#0D1117] border-white/10">
-            <SelectItem value="light">Claro</SelectItem>
-            <SelectItem value="dark">Oscuro</SelectItem>
-            <SelectItem value="system">Sistema</SelectItem>
-          </SelectContent>
-        </Select>
+      {/* App is always dark mode — Healify design system */}
+      <div className="glass-elite rounded-xl p-4 flex items-center gap-3">
+        <div className="w-3 h-3 rounded-full bg-[#00F5C8] animate-pulse" />
+        <p className="text-sm text-[#E8F0FF]/70">Healify utiliza diseño oscuro permanente optimizado para desarrolladores.</p>
       </div>
-
-      <div className="h-px bg-white/5" />
 
       {/* Accent Color */}
       <div className="flex items-center justify-between">

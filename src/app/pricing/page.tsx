@@ -1,4 +1,5 @@
 'use client'
+import { toast } from 'sonner'
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
@@ -19,18 +20,29 @@ export default function PricingPage() {
       signIn('github', { callbackUrl: '/pricing' })
       return
     }
+    // Check if Stripe is configured
+    if (priceId.includes('mock') || priceId.includes('starter_mock') || priceId.includes('pro_mock')) {
+      toast.error('Pagos no configurados aún', {
+        description: 'El equipo de Healify está activando los pagos. Por ahora podés usar el plan gratuito.',
+      })
+      return
+    }
     setLoadingPlan(planId)
     try {
       const res = await fetch('/api/checkout', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ priceId }),
       })
       const { url, error } = await res.json()
-      if (url) window.location.href = url
-      else console.error('Checkout error:', error)
-    } catch (error) {
-      console.error('Checkout error:', error)
+      if (url) {
+        window.location.href = url
+      } else {
+        toast.error('Error al procesar el pago', { description: error || 'Intentá de nuevo en unos minutos' })
+      }
+    } catch {
+      toast.error('Error de conexión', { description: 'No se pudo conectar con el servidor de pagos' })
     } finally {
       setLoadingPlan(null)
     }
