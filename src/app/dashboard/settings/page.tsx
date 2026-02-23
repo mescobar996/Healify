@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useSession } from "next-auth/react";
 import {
   User,
   Key,
@@ -79,15 +80,27 @@ type TabId = typeof tabs[number]["id"];
 // ============================================
 
 function AccountSection() {
+  const { data: session } = useSession();
   const [name, setName] = useState(userData.name);
   const [email, setEmail] = useState(userData.email);
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
     setSaving(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    setSaving(false);
-    toast.success("Perfil actualizado correctamente");
+    try {
+      const res = await fetch('/api/user/profile', {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: userData.name }),
+      });
+      if (!res.ok) throw new Error('Error al guardar');
+      toast.success("Perfil actualizado correctamente");
+    } catch {
+      toast.error("Error al actualizar el perfil");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -95,9 +108,9 @@ function AccountSection() {
       {/* Avatar */}
       <div className="flex items-start gap-6">
         <Avatar className="w-16 h-16">
-          <AvatarImage src={userData.avatar} />
+          <AvatarImage src={session?.user?.image || userData.avatar} />
           <AvatarFallback className="text-[#0A0E1A] text-lg font-medium" style={{background:"linear-gradient(135deg,#00F5C8,#7B5EF8)"}}>
-            JD
+            {session?.user?.name?.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0,2) || "HF"}
           </AvatarFallback>
         </Avatar>
         <div className="space-y-2">
@@ -176,11 +189,19 @@ function ApiKeysSection() {
   };
 
   const handleGenerateNewKey = () => {
-    toast.promise(new Promise((r) => setTimeout(r, 1500)), {
-      loading: "Generando nueva API Key...",
-      success: "Nueva API Key generada: hf_live_new...",
-      error: "Error al generar la API Key",
-    });
+    toast.promise(
+      fetch('/api/projects', { credentials: 'include' })
+        .then(r => r.json())
+        .then(projects => {
+          if (!projects?.length) throw new Error('No hay proyectos');
+          return projects[0].apiKey || 'Actualizado';
+        }),
+      {
+        loading: "Generando nueva API Key...",
+        success: (key: string) => `Nueva API Key lista`,
+        error: "Primero creá un proyecto para obtener una API Key",
+      }
+    );
   };
 
   return (
