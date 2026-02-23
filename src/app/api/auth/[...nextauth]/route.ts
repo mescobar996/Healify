@@ -1,13 +1,14 @@
 import NextAuth, { NextAuthOptions } from 'next-auth'
 import GitHubProvider from 'next-auth/providers/github'
 import GoogleProvider from 'next-auth/providers/google'
-import { PrismaAdapter } from '@next-auth/prisma-adapter'
-import { db } from '@/lib/db'
 
+/**
+ * Auth config — JWT only (no DB adapter)
+ * Razón: Vercel es serverless, SQLite no funciona en Vercel.
+ * La DB real (PostgreSQL) se configura por separado.
+ * Con JWT puro el login funciona sin depender de ninguna DB.
+ */
 export const authOptions: NextAuthOptions = {
-  // @next-auth/prisma-adapter v1 is compatible with NextAuth v4
-  adapter: PrismaAdapter(db),
-
   providers: [
     GitHubProvider({
       clientId: process.env.GITHUB_CLIENT_ID || process.env.GITHUB_ID || '',
@@ -35,31 +36,32 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
 
-  // JWT strategy: avoids DB session table read/write on every request
   session: {
     strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 30 * 24 * 60 * 60,
   },
 
   callbacks: {
     async jwt({ token, user, profile }: any) {
       if (user) {
         token.id = user.id
-        token.role = (user as any).role || 'user'
+        token.role = 'user'
       }
       if (profile) {
+        // GitHub usa avatar_url, Google usa picture
         token.picture = (profile as any).avatar_url || (profile as any).picture || token.picture
         token.name = (profile as any).name || (profile as any).login || token.name
+        token.email = (profile as any).email || token.email
       }
       return token
     },
     async session({ session, token }: any) {
       if (session.user) {
-        session.user.id = token.id as string
-        session.user.role = token.role as string
-        // Sync avatar from JWT token to session
+        session.user.id = token.sub as string
+        session.user.role = 'user'
         if (token.picture) session.user.image = token.picture as string
         if (token.name) session.user.name = token.name as string
+        if (token.email) session.user.email = token.email as string
       }
       return session
     },
