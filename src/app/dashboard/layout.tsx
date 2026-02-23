@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -46,6 +46,48 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router     = useRouter();
   const { data: session } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // ── Notifications real state ──
+  interface Notif { id: string; type: string; title: string; message: string; read: boolean; link?: string; createdAt: string }
+  const [notifs, setNotifs] = useState<Notif[]>([]);
+  const [notifsOpen, setNotifsOpen] = useState(false);
+
+  const fetchNotifs = useCallback(async () => {
+    try {
+      const res = await fetch("/api/notifications", { credentials: "include" });
+      if (res.ok) setNotifs(await res.json());
+    } catch {}
+  }, []);
+
+  useEffect(() => { fetchNotifs(); }, [fetchNotifs]);
+
+  const markRead = async (id: string) => {
+    setNotifs(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    await fetch("/api/notifications", {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, read: true }),
+    });
+  };
+
+  const markAllRead = async () => {
+    const unread = notifs.filter(n => !n.read);
+    setNotifs(prev => prev.map(n => ({ ...n, read: true })));
+    await Promise.all(unread.map(n =>
+      fetch("/api/notifications", {
+        method: "PATCH", credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: n.id, read: true }),
+      })
+    ));
+  };
+
+  const unreadCount = notifs.filter(n => !n.read).length;
+
+  const notifDotColor: Record<string, string> = {
+    success: "#00F5C8", info: "#7B5EF8", warning: "#EAB308", error: "#EF4444",
+  };
 
   const handleSignOut = async () => {
     await signOut({ callbackUrl: "/" });
@@ -210,33 +252,54 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             {/* Right */}
             <div className="flex items-center gap-1">
-              {/* Notifications */}
-              <DropdownMenu>
+              {/* Notifications — real data from /api/notifications */}
+              <DropdownMenu open={notifsOpen} onOpenChange={(o) => { setNotifsOpen(o); if (o) fetchNotifs(); }}>
                 <DropdownMenuTrigger asChild>
                   <button className="relative p-2 rounded-lg text-[#E8F0FF]/50 hover:text-[#E8F0FF] hover:bg-white/5 transition-colors">
                     <Bell className="w-4 h-4" />
-                    <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-[#00F5C8] rounded-full ring-2 ring-[#0A0E1A]" />
+                    {unreadCount > 0 && (
+                      <span className="absolute top-1 right-1 min-w-[14px] h-[14px] px-[3px] bg-[#00F5C8] rounded-full ring-2 ring-[#0A0E1A] flex items-center justify-center">
+                        <span className="text-[#0A0E1A] text-[9px] font-bold leading-none">{unreadCount > 9 ? "9+" : unreadCount}</span>
+                      </span>
+                    )}
+                    {unreadCount === 0 && <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-[#E8F0FF]/20 rounded-full ring-2 ring-[#0A0E1A]" />}
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-72 bg-[#0D1117] border-white/10">
-                  <DropdownMenuLabel className="text-[#E8F0FF]/40 text-xs uppercase tracking-wider">
-                    Notificaciones
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator className="bg-white/8" />
-                  <div className="max-h-64 overflow-y-auto">
-                    {[
-                      { dot: "#00F5C8", title: "Test autocurado", detail: "login.spec.ts → Selector actualizado", time: "hace 5 minutos" },
-                      { dot: "#7B5EF8", title: "Nuevo proyecto", detail: "frontend-app conectado", time: "hace 1 hora" },
-                    ].map((n, i) => (
-                      <DropdownMenuItem key={i} className="flex flex-col items-start gap-1 p-3 focus:bg-white/5 cursor-pointer">
-                        <div className="flex items-center gap-2">
-                          <div className="w-1.5 h-1.5 rounded-full" style={{ background: n.dot }} />
-                          <p className="text-sm text-[#E8F0FF]/80">{n.title}</p>
-                        </div>
-                        <p className="text-xs text-[#E8F0FF]/40 pl-3.5">{n.detail}</p>
-                        <p className="text-[10px] text-[#E8F0FF]/20 pl-3.5 font-mono">{n.time}</p>
-                      </DropdownMenuItem>
-                    ))}
+                <DropdownMenuContent align="end" className="w-80 bg-[#0D1117] border-white/10 p-0">
+                  <div className="flex items-center justify-between px-3 py-2.5 border-b border-white/8">
+                    <span className="text-[#E8F0FF]/40 text-xs uppercase tracking-wider font-medium">Notificaciones</span>
+                    {unreadCount > 0 && (
+                      <button onClick={markAllRead} className="text-[10px] text-[#00F5C8]/70 hover:text-[#00F5C8] transition-colors">
+                        Marcar todas como leídas
+                      </button>
+                    )}
+                  </div>
+                  <div className="max-h-72 overflow-y-auto">
+                    {notifs.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-8 text-center">
+                        <Bell className="w-6 h-6 text-[#E8F0FF]/20 mb-2" />
+                        <p className="text-xs text-[#E8F0FF]/30">Sin notificaciones</p>
+                        <p className="text-[10px] text-[#E8F0FF]/20 mt-1">Te avisaremos cuando haya actividad</p>
+                      </div>
+                    ) : (
+                      notifs.map((n) => (
+                        <DropdownMenuItem
+                          key={n.id}
+                          className={cn("flex flex-col items-start gap-1 p-3 focus:bg-white/5 cursor-pointer border-b border-white/5 last:border-0", !n.read && "bg-white/3")}
+                          onClick={() => markRead(n.id)}
+                        >
+                          <div className="flex items-center gap-2 w-full">
+                            <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: notifDotColor[n.type] || "#7B5EF8" }} />
+                            <p className={cn("text-sm flex-1", n.read ? "text-[#E8F0FF]/60" : "text-[#E8F0FF]/90 font-medium")}>{n.title}</p>
+                            {!n.read && <div className="w-1.5 h-1.5 rounded-full bg-[#00F5C8] flex-shrink-0" />}
+                          </div>
+                          <p className="text-xs text-[#E8F0FF]/40 pl-3.5 line-clamp-2">{n.message}</p>
+                          <p className="text-[10px] text-[#E8F0FF]/20 pl-3.5 font-mono">
+                            {new Date(n.createdAt).toLocaleDateString("es-AR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                          </p>
+                        </DropdownMenuItem>
+                      ))
+                    )}
                   </div>
                 </DropdownMenuContent>
               </DropdownMenu>

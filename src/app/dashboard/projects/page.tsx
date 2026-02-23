@@ -23,6 +23,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -431,6 +441,8 @@ export default function ProjectsPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [isNewProjectOpen, setIsNewProjectOpen] = useState(false);
   const [runningTestsId, setRunningTestsId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchProjects = async () => {
     setLoading(true);
@@ -480,9 +492,22 @@ export default function ProjectsPage() {
 
   // Delete project handler
   const handleDeleteProject = async (projectId: string) => {
-    toast.error("Función no implementada", {
-      description: "La eliminación de proyectos estará disponible pronto",
-    });
+    setDeleteConfirmId(projectId);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirmId) return;
+    setIsDeleting(true);
+    try {
+      await api.deleteProject(deleteConfirmId);
+      toast.success("Proyecto eliminado");
+      setProjects(prev => prev.filter(p => p.id !== deleteConfirmId));
+    } catch {
+      toast.error("Error al eliminar el proyecto");
+    } finally {
+      setIsDeleting(false);
+      setDeleteConfirmId(null);
+    }
   };
 
   // Filter projects
