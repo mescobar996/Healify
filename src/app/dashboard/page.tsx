@@ -16,6 +16,10 @@ import {
   RefreshCw,
   Play,
   Pause,
+  DollarSign,
+  Sparkles,
+  ShieldCheck,
+  Timer,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import {
@@ -202,6 +206,23 @@ function DashboardContent() {
   // Sheet state
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<HealingHistoryItem | null>(null);
+
+  // ── ROI state ──────────────────────────────────────────────────────────────
+  interface ROIData {
+    timeSavedHours: number
+    totalCostSaved: number
+    autoHealedMonth: number
+    bugsDetectedMonth: number
+    healingRate: number
+    healedToday: number
+  }
+  const [roi, setRoi] = useState<ROIData | null>(null);
+  useEffect(() => {
+    fetch('/api/analytics', { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d && 'timeSavedHours' in d) setRoi(d) })
+      .catch(() => {})
+  }, []);
 
   // Stripe success ahora se maneja en /dashboard/upgrade-success
   // canceled desde /pricing?canceled=true — mostrar toast informativo
@@ -394,6 +415,84 @@ function DashboardContent() {
             icon={Clock}
           />
         </div>
+
+        {/* ROI Strip — Bloque 7 */}
+        {roi && (
+          <div className="rounded-xl border border-white/5 overflow-hidden"
+            style={{ background: 'linear-gradient(135deg, rgba(0,245,200,0.04), rgba(123,94,248,0.04))' }}>
+            <div className="px-4 py-2.5 border-b border-white/5 flex items-center gap-2">
+              <Sparkles className="w-3.5 h-3.5 text-[#00F5C8]" />
+              <span className="text-[11px] font-medium tracking-widest text-[#E8F0FF]/40 uppercase">
+                ROI de Healify — acumulado histórico
+              </span>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-0 divide-x divide-white/5">
+              {/* Horas ahorradas */}
+              <div className="px-5 py-4 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ background: 'rgba(0,245,200,0.1)' }}>
+                  <Timer className="w-4 h-4 text-[#00F5C8]" />
+                </div>
+                <div>
+                  <p className="text-lg font-bold text-[#E8F0FF] leading-none">
+                    {roi.timeSavedHours > 0 ? `${roi.timeSavedHours}h` : '—'}
+                  </p>
+                  <p className="text-[10px] text-[#E8F0FF]/40 mt-0.5">horas ahorradas</p>
+                </div>
+              </div>
+              {/* Ahorro en $ */}
+              <div className="px-5 py-4 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ background: 'rgba(123,94,248,0.1)' }}>
+                  <DollarSign className="w-4 h-4 text-[#7B5EF8]" />
+                </div>
+                <div>
+                  <p className="text-lg font-bold text-[#E8F0FF] leading-none">
+                    {roi.totalCostSaved > 0 ? `$${roi.totalCostSaved.toLocaleString()}` : '—'}
+                  </p>
+                  <p className="text-[10px] text-[#E8F0FF]/40 mt-0.5">ahorro estimado</p>
+                </div>
+              </div>
+              {/* Tests autocurados este mes */}
+              <div className="px-5 py-4 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ background: 'rgba(34,197,94,0.1)' }}>
+                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                </div>
+                <div>
+                  <p className="text-lg font-bold text-[#E8F0FF] leading-none">
+                    {roi.autoHealedMonth > 0 ? roi.autoHealedMonth : '—'}
+                  </p>
+                  <p className="text-[10px] text-[#E8F0FF]/40 mt-0.5">curados este mes</p>
+                </div>
+              </div>
+              {/* Tasa de autocuración */}
+              <div className="px-5 py-4 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ background: 'rgba(234,179,8,0.1)' }}>
+                  <TrendingUp className="w-4 h-4 text-yellow-400" />
+                </div>
+                <div>
+                  <p className="text-lg font-bold text-[#E8F0FF] leading-none">
+                    {roi.healingRate > 0 ? `${roi.healingRate}%` : '—'}
+                  </p>
+                  <p className="text-[10px] text-[#E8F0FF]/40 mt-0.5">tasa autocuración</p>
+                </div>
+              </div>
+            </div>
+            {/* Empty state si no hay datos todavía */}
+            {roi.timeSavedHours === 0 && roi.autoHealedMonth === 0 && (
+              <div className="px-5 py-3 border-t border-white/5">
+                <p className="text-[11px] text-[#E8F0FF]/25 text-center">
+                  Los datos de ROI aparecerán cuando Healify cure su primer test · 
+                  <a href="/dashboard/projects" className="text-[#00F5C8]/50 hover:text-[#00F5C8] transition-colors ml-1">
+                    Conectá tu primer repo →
+                  </a>
+                </p>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

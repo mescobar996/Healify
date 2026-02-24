@@ -83,17 +83,72 @@ export class AnalyticsService {
     }
 
     async getGlobalStats(userId: string) {
-        const totalHealingEvents = await db.healingEvent.count({
+        const now = new Date()
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+
+        // Tests autocurados este mes (HEALED_AUTO solamente — los manuales no son mérito de la IA)
+        const autoHealedMonth = await db.healingEvent.count({
+            where: {
+                status: 'HEALED_AUTO',
+                testRun: { project: { userId } },
+                createdAt: { gte: startOfMonth }
+            }
+        })
+
+        // Bugs reales detectados este mes (tests que fallaron y NO se pudieron curar)
+        const bugsDetectedMonth = await db.healingEvent.count({
+            where: {
+                status: 'BUG_DETECTED',
+                testRun: { project: { userId } },
+                createdAt: { gte: startOfMonth }
+            }
+        })
+
+        // Tests curados hoy
+        const healedToday = await db.healingEvent.count({
             where: {
                 status: { in: ['HEALED_AUTO', 'HEALED_MANUAL'] },
+                testRun: { project: { userId } },
+                createdAt: { gte: startOfToday }
+            }
+        })
+
+        // Total histórico para ROI acumulado
+        const totalAutoHealed = await db.healingEvent.count({
+            where: {
+                status: 'HEALED_AUTO',
                 testRun: { project: { userId } }
             }
         })
 
+        // Tasa de autocuración del mes
+        const totalHealingAttempts = await db.healingEvent.count({
+            where: {
+                status: { not: 'ANALYZING' },
+                testRun: { project: { userId } },
+                createdAt: { gte: startOfMonth }
+            }
+        })
+
+        const healingRate = totalHealingAttempts > 0
+            ? Math.round((autoHealedMonth / totalHealingAttempts) * 100)
+            : 0
+
+        const timeSavedHours = Math.round((totalAutoHealed * this.MINUTES_SAVED_PER_HEALING) / 60)
+        const totalCostSaved = Math.round(timeSavedHours * this.DEV_HOURLY_RATE)
+
         return {
-            totalTimeSavedPercent: 45, // Example improvement
-            totalCostSaved: (totalHealingEvents * this.MINUTES_SAVED_PER_HEALING / 60) * this.DEV_HOURLY_RATE,
-            totalHealedToday: 24,
+            // Métricas ROI acumuladas (históricas)
+            timeSavedHours,
+            totalCostSaved,
+            totalAutoHealed,
+            // Métricas del mes actual
+            autoHealedMonth,
+            bugsDetectedMonth,
+            healingRate,
+            // Métricas de hoy
+            healedToday,
         }
     }
 }
