@@ -326,6 +326,15 @@ function NewProjectModal({
         setRepository("");
         onOpenChange(false);
         onSuccess();
+      } else if (result.limitExceeded) {
+        toast.error("Límite de plan alcanzado", {
+          description: result.error,
+          action: {
+            label: "Actualizar plan →",
+            onClick: () => window.location.href = "/pricing",
+          },
+          duration: 8000,
+        });
       } else {
         toast.error("Error al crear proyecto", {
           description: result.error || "Ocurrió un error inesperado",

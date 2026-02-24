@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { db } from '@/lib/db'
+import { checkProjectLimit } from '@/lib/rate-limit'
 import { analyzeAndHeal } from '@/lib/engine/healing-engine'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
@@ -64,6 +65,17 @@ export async function createProject(data: {
     }
     if (data.description && data.description.length > 200) {
       return { success: false, error: 'La descripción debe tener menos de 200 caracteres' }
+    }
+
+    // ── Bloque 9: Rate limiting por plan ──────────────────────────────
+    const limitCheck = await checkProjectLimit(session.user.id)
+    if (!limitCheck.allowed) {
+      return {
+        success: false,
+        error: `Límite de ${limitCheck.limit} proyecto${limitCheck.limit !== 1 ? 's' : ''} alcanzado en el plan ${limitCheck.plan}. Actualizá tu plan en /pricing para crear más.`,
+        limitExceeded: true,
+        upgradeUrl: '/pricing',
+      }
     }
 
     const project = await db.project.create({

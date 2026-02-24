@@ -5,6 +5,18 @@
 
 import type { DashboardData, Project, NotificationItem, TestRun } from '@/types'
 
+// Error especial para límites de plan — el cliente puede distinguirlo
+export class PlanLimitError extends Error {
+  public upgradeUrl: string
+  public plan: string
+  constructor(message: string, plan: string, upgradeUrl = '/pricing') {
+    super(message)
+    this.name = 'PlanLimitError'
+    this.plan = plan
+    this.upgradeUrl = upgradeUrl
+  }
+}
+
 async function fetcher<T>(
   url: string,
   options?: RequestInit
@@ -17,6 +29,10 @@ async function fetcher<T>(
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
+    // 429 → error específico de plan para que la UI muestre CTA de upgrade
+    if (res.status === 429 && body?.limitExceeded) {
+      throw new PlanLimitError(body.error || 'Límite alcanzado', body.plan || 'FREE', body.upgradeUrl || '/pricing')
+    }
     throw new Error(body?.error || `HTTP ${res.status}`)
   }
 

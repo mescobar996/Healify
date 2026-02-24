@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { TestStatus } from '@/lib/enums';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { checkTestRunLimit, limitExceededResponse } from '@/lib/rate-limit';
 
 // GET /api/test-runs - List test runs with filters
 export async function GET(request: NextRequest) {
@@ -111,6 +112,12 @@ export async function POST(request: NextRequest) {
 
     if (!project) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+    }
+
+    // ── Bloque 9: Rate limiting por plan ──────────────────────────────
+    const limitCheck = await checkTestRunLimit(session.user.id)
+    if (!limitCheck.allowed) {
+      return limitExceededResponse('testRuns', limitCheck)
     }
 
     const testRun = await db.testRun.create({

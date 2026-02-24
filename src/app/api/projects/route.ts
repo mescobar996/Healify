@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { checkProjectLimit, limitExceededResponse } from '@/lib/rate-limit'
 
 // GET /api/projects - Get all projects
 export async function GET() {
@@ -73,6 +74,12 @@ export async function POST(request: NextRequest) {
         { error: 'Project name is required' },
         { status: 400 }
       )
+    }
+
+    // ── Bloque 9: Rate limiting por plan ──────────────────────────────
+    const limitCheck = await checkProjectLimit(session.user.id)
+    if (!limitCheck.allowed) {
+      return limitExceededResponse('projects', limitCheck)
     }
 
     const project = await db.project.create({
