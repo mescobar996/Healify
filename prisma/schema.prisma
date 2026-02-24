@@ -21,7 +21,8 @@ model User {
   email         String?   @unique
   emailVerified DateTime?
   image         String?
-  role          String    @default("user") // user, admin
+  role             String    @default("user") // user, admin
+  slackWebhookUrl  String?   // URL del Slack Incoming Webhook del usuario
   accounts      Account[]
   sessions      Session[]
   projects      Project[]

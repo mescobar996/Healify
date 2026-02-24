@@ -12,25 +12,24 @@ export async function PATCH(request: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        const { name } = await request.json()
+        const body = await request.json()
+        const { name, slackWebhookUrl } = body
 
-        // Validar input
-        if (!name || typeof name !== 'string' || name.trim().length < 2) {
-            return NextResponse.json(
-                { error: 'El nombre debe tener al menos 2 caracteres' },
-                { status: 400 }
-            )
+        if (name !== undefined && (typeof name !== 'string' || name.trim().length < 2)) {
+            return NextResponse.json({ error: 'El nombre debe tener al menos 2 caracteres' }, { status: 400 })
         }
 
-        // Truncar a 100 caracteres máximo
-        const sanitizedName = name.trim().slice(0, 100)
+        if (slackWebhookUrl && !slackWebhookUrl.startsWith('https://hooks.slack.com/')) {
+            return NextResponse.json({ error: 'URL de Slack inválida. Debe ser un Incoming Webhook.' }, { status: 400 })
+        }
 
-        await db.user.update({
-            where: { id: session.user.id },
-            data: { name: sanitizedName },
-        })
+        const updateData: { name?: string; slackWebhookUrl?: string | null } = {}
+        if (name !== undefined)             updateData.name = name.trim().slice(0, 100)
+        if (slackWebhookUrl !== undefined)  updateData.slackWebhookUrl = slackWebhookUrl || null
 
-        return NextResponse.json({ success: true, name: sanitizedName })
+        await db.user.update({ where: { id: session.user.id }, data: updateData })
+
+        return NextResponse.json({ success: true, ...updateData })
     } catch (error) {
         console.error('Error updating user profile:', error)
         return NextResponse.json(

@@ -353,70 +353,127 @@ function BillingSection() {
 }
 
 function NotificationsSection() {
-  const [settings, setSettings] = useState({
-    emailHealing: true,
-    alerts: true,
-    weekly: false,
-  });
+  const { data: session } = useSession();
+  const [slackUrl, setSlackUrl] = useState("");
+  const [slackSaving, setSlackSaving] = useState(false);
+  const [slackSaved, setSlackSaved] = useState(false);
 
-  const toggleSetting = (key: keyof typeof settings) => {
-    setSettings((prev) => ({ ...prev, [key]: !prev[key] }));
-    toast.success("Preferencias actualizadas");
+  // Load existing slack URL
+  React.useEffect(() => {
+    fetch("/api/user/profile/slack", { credentials: "include" })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.slackWebhookUrl) setSlackUrl(d.slackWebhookUrl) })
+      .catch(() => {})
+  }, []);
+
+  const handleSlackSave = async () => {
+    setSlackSaving(true);
+    try {
+      const res = await fetch("/api/user/profile", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slackWebhookUrl: slackUrl }),
+      });
+      if (res.ok) {
+        setSlackSaved(true);
+        toast.success("Slack configurado", { description: "Las notificaciones se enviarán a tu canal." });
+        setTimeout(() => setSlackSaved(false), 3000);
+      } else {
+        const { error } = await res.json();
+        toast.error(error || "Error al guardar");
+      }
+    } catch {
+      toast.error("Error inesperado");
+    } finally {
+      setSlackSaving(false);
+    }
+  };
+
+  const handleSlackDisconnect = async () => {
+    setSlackUrl("");
+    await fetch("/api/user/profile", {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ slackWebhookUrl: null }),
+    });
+    toast.success("Slack desconectado");
   };
 
   return (
     <div className="space-y-4">
-      {[
-        {
-          key: "emailHealing",
-          title: "Email de autocuración",
-          description: "Recibe un email cuando un test se autocure",
-          checked: settings.emailHealing,
-        },
-        {
-          key: "alerts",
-          title: "Alertas de fallos",
-          description: "Notificación cuando un test falle sin curación",
-          checked: settings.alerts,
-        },
-        {
-          key: "weekly",
-          title: "Reporte semanal",
-          description: "Resumen semanal de actividad",
-          checked: settings.weekly,
-        },
-      ].map((item, i) => (
-        <div key={item.key}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-200">{item.title}</p>
-              <p className="text-xs text-gray-500">{item.description}</p>
-            </div>
-            <Switch
-              checked={item.checked}
-              onCheckedChange={() => toggleSetting(item.key as keyof typeof settings)}
-            />
+      {/* Email — informativo, viene del OAuth */}
+      <div>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-gray-200">Email de autocuración</p>
+            <p className="text-xs text-gray-500">
+              {session?.user?.email
+                ? <>Emails enviados a <span className="text-[#00F5C8]">{session.user.email}</span></>
+                : "Recibe un email cuando un test se autocure"}
+            </p>
           </div>
-          {i < 2 && <div className="h-px bg-white/5 mt-4" />}
+          <Switch checked disabled className="opacity-50" />
         </div>
-      ))}
+      </div>
 
       <div className="h-px bg-white/5" />
 
-      <div className="flex items-center justify-between">
+      <div>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-gray-200">Alertas de fallos</p>
+            <p className="text-xs text-gray-500">Notificación cuando un test falle sin curación</p>
+          </div>
+          <Switch checked disabled className="opacity-50" />
+        </div>
+      </div>
+
+      <div className="h-px bg-white/5" />
+
+      {/* Slack — input real */}
+      <div className="space-y-3">
         <div>
           <p className="text-sm font-medium text-gray-200">Slack integration</p>
           <p className="text-xs text-gray-500">
-            Enviar notificaciones a Slack
+            Pegá el <span className="text-[#00F5C8]">Incoming Webhook URL</span> de tu canal de Slack.{" "}
+            <a
+              href="https://api.slack.com/messaging/webhooks"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline text-[#E8F0FF]/30 hover:text-[#E8F0FF]/60 transition-colors"
+            >
+              ¿Cómo crearlo?
+            </a>
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          className="bg-white/5 border-white/10 text-gray-300 hover:bg-white/10"
-        >
-          Conectar
-        </Button>
+        <div className="flex gap-2">
+          <Input
+            value={slackUrl}
+            onChange={(e) => setSlackUrl(e.target.value)}
+            placeholder="https://hooks.slack.com/services/..."
+            className="flex-1 bg-white/5 border-white/10 text-sm text-[#E8F0FF] placeholder:text-[#E8F0FF]/25 focus:border-[#00F5C8]/40"
+          />
+          {slackUrl ? (
+            <Button
+              size="sm"
+              onClick={handleSlackSave}
+              disabled={slackSaving}
+              className="btn-neon text-[#0A0E1A] text-xs px-3 shrink-0"
+            >
+              {slackSaving ? "..." : slackSaved ? "✓ Guardado" : "Guardar"}
+            </Button>
+          ) : null}
+        </div>
+        {slackUrl && (
+          <button
+            onClick={handleSlackDisconnect}
+            className="text-xs text-red-400/60 hover:text-red-400 transition-colors"
+          >
+            Desconectar Slack
+          </button>
+        )}
       </div>
     </div>
   );
