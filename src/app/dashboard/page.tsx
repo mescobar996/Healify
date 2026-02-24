@@ -203,23 +203,13 @@ function DashboardContent() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<HealingHistoryItem | null>(null);
 
-  // Show success toast after Stripe payment
+  // Stripe success ahora se maneja en /dashboard/upgrade-success
+  // canceled desde /pricing?canceled=true — mostrar toast informativo
   useEffect(() => {
-    const success = searchParams.get('success')
     const canceled = searchParams.get('canceled')
-    
-    if (success === 'true') {
-      toast.success('🎉 ¡Pago exitoso!', {
-        description: 'Tu suscripción está activa. Bienvenido a Healify Pro.',
-        duration: 6000,
-      })
-      // Clean URL
-      window.history.replaceState({}, '', '/dashboard')
-    }
-    
     if (canceled === 'true') {
       toast.info('Pago cancelado', {
-        description: 'Puedes intentar de nuevo cuando estés listo.',
+        description: 'Podés intentarlo de nuevo cuando estés listo.',
       })
       window.history.replaceState({}, '', '/dashboard')
     }

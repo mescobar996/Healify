@@ -39,7 +39,7 @@ export async function createCheckoutSession(userId: string, email: string, price
             },
         ],
         mode: 'subscription',
-        success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?success=true`,
+        success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/upgrade-success?plan=${priceId}`,
         cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/pricing?canceled=true`,
         metadata: {
             userId,
