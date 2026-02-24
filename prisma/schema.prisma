@@ -203,6 +203,10 @@ model HealingEvent {
   screenshotBefore String?
   screenshotAfter  String?
   
+  // Auto-PR generado por Healify cuando confidence >= 0.95
+  prUrl           String?       // URL del Pull Request abierto en GitHub
+  prBranch        String?       // Nombre de la rama del PR
+  
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 

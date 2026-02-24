@@ -275,6 +275,33 @@ function ApiKeysSection() {
 }
 
 function BillingSection() {
+  const [sub, setSub] = React.useState<{
+    plan: string; status: string; currentPeriodEnd: string | null
+  } | null>(null)
+  const [subLoading, setSubLoading] = React.useState(true)
+
+  React.useEffect(() => {
+    fetch('/api/user/subscription', { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setSub(d) })
+      .catch(() => {})
+      .finally(() => setSubLoading(false))
+  }, [])
+
+  const planMeta: Record<string, { label: string; price: string; color: string; projects: string; runs: string }> = {
+    FREE:       { label: 'Free',       price: '$0/mes',   color: 'text-gray-400',    projects: '1',       runs: '50/mes' },
+    STARTER:    { label: 'Starter',    price: '$49/mes',  color: 'text-cyan-400',    projects: '5',       runs: '100/mes' },
+    PRO:        { label: 'Pro',        price: '$99/mes',  color: 'text-violet-400',  projects: '∞',       runs: '1.000/mes' },
+    ENTERPRISE: { label: 'Enterprise', price: '$499/mes', color: 'text-amber-400',   projects: '∞',       runs: '∞' },
+  }
+
+  const planKey = sub?.plan || 'FREE'
+  const meta = planMeta[planKey] || planMeta.FREE
+  const isActive = sub?.status === 'active' || !sub
+  const renewalDate = sub?.currentPeriodEnd
+    ? new Date(sub.currentPeriodEnd).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })
+    : null
+
   return (
     <div className="space-y-6">
       {/* Current Plan */}
@@ -284,17 +311,26 @@ function BillingSection() {
             <Shield className="w-5 h-5 text-violet-400" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <p className="text-sm font-medium text-white">
-                Plan Free
-              </p>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-400">
-                Activo
-              </span>
-            </div>
-            <p className="text-xs text-gray-500">
-              $29/mes • Renovación: 15 Feb 2024
-            </p>
+            {subLoading ? (
+              <div className="h-4 w-24 bg-white/10 rounded animate-pulse" />
+            ) : (
+              <>
+                <div className="flex items-center gap-2">
+                  <p className={`text-sm font-medium ${meta.color}`}>
+                    Plan {meta.label}
+                  </p>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                    isActive ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
+                  }`}>
+                    {isActive ? 'Activo' : sub?.status || 'Inactivo'}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {meta.price}
+                  {renewalDate && ` • Renovación: ${renewalDate}`}
+                </p>
+              </>
+            )}
           </div>
         </div>
         <Button
@@ -305,48 +341,29 @@ function BillingSection() {
         >
           <a href="/pricing">
             <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
-            Cambiar plan
+            {planKey === 'FREE' ? 'Actualizar plan' : 'Cambiar plan'}
           </a>
         </Button>
       </div>
 
-      {/* Limits */}
+      {/* Limits reales por plan */}
       <div>
         <h4 className="text-[11px] font-medium tracking-widest text-gray-500 uppercase mb-3">
-          Límites actuales
+          Límites del plan actual
         </h4>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
           {[
-            { value: "5", label: "Proyectos" },
-            { value: "10K", label: "Tests/mes" },
-            { value: "500", label: "Curaciones/mes" },
-            { value: "24/7", label: "Soporte" },
+            { value: meta.projects, label: 'Proyectos' },
+            { value: meta.runs,     label: 'Test runs/mes' },
+            { value: planKey === 'FREE' ? 'Email' : 'Email + Slack', label: 'Notificaciones' },
+            { value: planKey === 'ENTERPRISE' ? 'Dedicado' : planKey === 'PRO' ? 'Prioritario' : 'Email', label: 'Soporte' },
           ].map((item) => (
             <div key={item.label} className="text-center p-3 rounded-md bg-white/[0.02]">
               <p className="text-lg font-semibold text-white">{item.value}</p>
-              <p className="text-[10px] text-gray-500 uppercase tracking-wide">
-                {item.label}
-              </p>
+              <p className="text-[10px] text-gray-500 uppercase tracking-wide">{item.label}</p>
             </div>
           ))}
         </div>
-      </div>
-
-      <div className="h-px bg-white/5" />
-
-      {/* Payment Method */}
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-gray-200">Método de pago</p>
-          <p className="text-xs text-gray-500">•••• •••• •••• 4242</p>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          className="bg-white/5 border-white/10 text-gray-300 hover:bg-white/10"
-        >
-          Actualizar
-        </Button>
       </div>
     </div>
   );

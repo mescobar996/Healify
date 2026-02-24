@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { tryOpenAutoPR } from '@/lib/github/auto-pr'
 import { db } from '@/lib/db'
 import { TestStatus, HealingStatus, SelectorType } from '@/lib/enums'
 
@@ -71,7 +72,7 @@ export async function POST() {
 
         const randomEvent = demoEvents[Math.floor(Math.random() * demoEvents.length)]
 
-        await db.healingEvent.create({
+        const createdHealingEvent = await db.healingEvent.create({
             data: {
                 testRunId: updatedRun.id,
                 testName: randomEvent.testName,
@@ -87,6 +88,11 @@ export async function POST() {
                 actionTaken: 'auto_fixed',
             },
         })
+
+        // ── Bloque 8: Auto-PR si confidence >= 0.95 ─────────────────
+        tryOpenAutoPR(createdHealingEvent.id).then(result => {
+            console.log('[Demo Auto-PR]', result.opened ? `✅ ${result.prUrl}` : result.reason)
+        }).catch(() => {})
 
         return NextResponse.json({
             message: 'Demo run completed',

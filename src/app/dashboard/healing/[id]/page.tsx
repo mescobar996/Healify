@@ -45,6 +45,8 @@ interface HealingDiffData {
   reasoning: string | null;
   branch: string | null;
   commitSha: string | null;
+  prUrl: string | null;
+  prBranch: string | null;
 }
 
 // ============================================
@@ -227,6 +229,25 @@ export default function HealingDetailPage() {
             <div className="p-4 space-y-4">
               <CodeBlock label="Selector Anterior (Roto)" code={data.oldSelector} type="old" />
               {data.newSelector && <CodeBlock label="Selector Sugerido (IA)" code={data.newSelector} type="new" />}
+
+              {/* Auto-PR Banner — Bloque 8 */}
+              {data.prUrl && (
+                <a
+                  href={data.prUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10 transition-colors group"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
+                    <ExternalLink className="w-4 h-4 text-emerald-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-emerald-400">Pull Request abierto automáticamente</p>
+                    <p className="text-[10px] text-[#E8F0FF]/40 truncate mt-0.5">{data.prUrl}</p>
+                  </div>
+                  <span className="text-[10px] text-emerald-400/60 group-hover:text-emerald-400 transition-colors shrink-0">Ver PR →</span>
+                </a>
+              )}
             </div>
           </div>
 

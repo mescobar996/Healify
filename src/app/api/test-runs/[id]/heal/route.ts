@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { tryOpenAutoPR } from '@/lib/github/auto-pr';
 import { db } from '@/lib/db';
 import ZAI from 'z-ai-web-dev-sdk';
 import { SelectorType, HealingStatus } from '@/lib/enums';
@@ -179,12 +180,23 @@ Respond in JSON format:
                 failedTests: { increment: 1 },
               },
             });
+
+            // ── Bloque 8: Auto-PR cuando confidence >= 0.95 ────────────
+            // Se ejecuta async para no bloquear la respuesta
+            tryOpenAutoPR(updatedEvent.id).then(result => {
+              if (result.opened) {
+                console.log(`[Auto-PR] PR abierto: ${result.prUrl}`)
+              } else {
+                console.log(`[Auto-PR] No abierto: ${result.reason}`)
+              }
+            }).catch(err => console.error('[Auto-PR] Error async:', err))
           }
 
           return NextResponse.json({
             success: true,
             healingEvent: updatedEvent,
             analysis: analysisResult,
+            autoPR: healingStatus === 'HEALED_AUTO' ? 'triggered' : 'skipped',
           });
         }
       }
