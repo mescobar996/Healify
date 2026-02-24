@@ -29,9 +29,6 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Instalar bun
-RUN npm install -g bun
-
 # Crear directorio de trabajo
 WORKDIR /app
 
@@ -40,14 +37,14 @@ COPY package.json ./
 COPY bun.lock* bun.lockb* package-lock.json* ./
 COPY prisma ./prisma/
 
-# Instalar dependencias
-RUN bun install || npm install
+# Instalar dependencias con npm (más compatible)
+RUN npm install
 
 # Instalar SOLO Chromium (no todos los navegadores)
-RUN bunx playwright install chromium || npx playwright install chromium
+RUN npx playwright install chromium
 
 # Generar Prisma Client
-RUN bunx prisma generate || npx prisma generate
+RUN npx prisma generate
 
 # Copiar el resto del código
 COPY . .
@@ -59,5 +56,5 @@ RUN mkdir -p storage/snapshots
 ENV NODE_ENV=production
 ENV PLAYWRIGHT_BROWSERS_PATH=/root/.cache/ms-playwright
 
-# Comando para ejecutar el worker
-CMD ["bun", "run", "worker:railway"]
+# Comando para ejecutar el worker con node + tsx
+CMD ["npx", "tsx", "src/workers/railway-worker.ts"]
