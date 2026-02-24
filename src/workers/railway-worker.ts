@@ -287,10 +287,8 @@ async function runPlaywrightTests(
         const err = error instanceof Error ? error : new Error(String(error))
         logError(jobId, `Test execution error: ${err.message}`)
         
-        // @ts-expect-error - stdout/stderr may exist on exec error
-        result.rawOutput = (err as NodeJS.ErrnoException & { stdout?: string; stderr?: string }).stdout || '' +
-            // @ts-expect-error
-            (err as NodeJS.ErrnoException & { stderr?: string }).stderr || ''
+        const execErr = err as NodeJS.ErrnoException & { stdout?: string; stderr?: string }
+        result.rawOutput = execErr.stdout || '' + execErr.stderr || ''
         
         result.failed = 1
         result.failures.push({
