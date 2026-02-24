@@ -14,11 +14,12 @@ RUN npm install -g bun
 WORKDIR /app
 
 # Copiar archivos de dependencias
-COPY package.json bun.lock* package-lock.json* ./
+COPY package.json ./
+COPY bun.lock* bun.lockb* package-lock.json* ./
 COPY prisma ./prisma/
 
-# Instalar dependencias
-RUN bun install --frozen-lockfile || npm ci
+# Instalar dependencias (flexible para manejar lockfiles)
+RUN bun install || npm install
 
 # Generar Prisma Client
 RUN bunx prisma generate || npx prisma generate
