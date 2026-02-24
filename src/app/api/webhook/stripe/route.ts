@@ -73,7 +73,7 @@ export async function POST(request: Request) {
                     update: {
                         plan,
                         status: 'active',
-                        stripeSubscriptionId: subscriptionId,
+                        stripePriceId: priceId,
                         stripeCustomerId: session.customer as string,
                         currentPeriodEnd: periodEnd,
                     },
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
                         userId,
                         plan,
                         status: 'active',
-                        stripeSubscriptionId: subscriptionId,
+                        stripePriceId: priceId,
                         stripeCustomerId: session.customer as string,
                         currentPeriodEnd: periodEnd,
                     },
