@@ -100,7 +100,7 @@ export async function getJobStatus(jobId: string): Promise<{
   
   return {
     state,
-    progress: job.progress || 0,
+    progress: typeof job.progress === 'number' ? job.progress : 0,
     failedReason: job.failedReason,
     returnValue: job.returnvalue,
   }
