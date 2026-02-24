@@ -21,7 +21,6 @@ import { promisify } from 'util'
 import fs from 'fs/promises'
 import path from 'path'
 import os from 'os'
-import { chromium, Browser, Page } from 'playwright'
 import { db } from '../lib/db'
 import { TestStatus, HealingStatus, SelectorType } from '../lib/enums'
 import { getRedisInstance } from '../lib/redis'
@@ -42,28 +41,27 @@ interface TestFailure {
     errorMessage: string
     stackTrace?: string
     domSnapshot?: string
-    screenshot?: Buffer
 }
 
-interface PlaywrightTestResult {
-    status: 'passed' | 'failed'
+interface TestResult {
+    passed: number
+    failed: number
+    failures: TestFailure[]
     duration: number
-    error?: {
-        message: string
-        stack?: string
-    }
+    rawOutput: string
 }
 
 // ============================================
 // UTILIDADES
 // ============================================
 
-function log(jobId: string, message: string) {
+function log(jobId: string, message: string): void {
     console.log(`[Job ${jobId}] ${message}`)
 }
 
-function logError(jobId: string, message: string, error?: any) {
-    console.error(`[Job ${jobId}] ERROR: ${message}`, error?.message || error)
+function logError(jobId: string, message: string, error?: Error | unknown): void {
+    const errorMsg = error instanceof Error ? error.message : String(error)
+    console.error(`[Job ${jobId}] ERROR: ${message}`, errorMsg)
 }
 
 // ============================================
@@ -84,24 +82,19 @@ async function cloneRepository(
     log(jobId, `Creating work directory: ${workDir}`)
     await fs.mkdir(workDir, { recursive: true })
     
-    // Clonar el repo
-    // Para repos privados, necesitaríamos token de GitHub del usuario
-    const cloneUrl = repositoryUrl // Por ahora solo repos públicos
+    const cloneUrl = repositoryUrl
     
     log(jobId, `Cloning repository: ${repositoryUrl} (branch: ${branch})`)
     
     try {
-        // Clone con profundidad 1 para ser más rápido
         execSync(`git clone --depth 1 --branch ${branch} ${cloneUrl} .`, {
             cwd: workDir,
             stdio: 'pipe',
-            timeout: 60000 // 1 minuto máximo para clonar
+            timeout: 60000
         })
         
-        // Si hay commitSha específico, hacer checkout
         if (commitSha) {
             log(jobId, `Checking out commit: ${commitSha}`)
-            // Con --depth 1, necesitamos fetch del commit específico
             try {
                 execSync(`git fetch --depth 1 origin ${commitSha} && git checkout ${commitSha}`, {
                     cwd: workDir,
@@ -113,9 +106,10 @@ async function cloneRepository(
         }
         
         return workDir
-    } catch (error: any) {
-        logError(jobId, `Failed to clone repository: ${error.message}`)
-        throw new Error(`Failed to clone repository: ${error.message}`)
+    } catch (error) {
+        const err = error instanceof Error ? error : new Error(String(error))
+        logError(jobId, `Failed to clone repository: ${err.message}`)
+        throw new Error(`Failed to clone repository: ${err.message}`)
     }
 }
 
@@ -129,13 +123,11 @@ async function detectTestFramework(workDir: string): Promise<{
 }> {
     const files = await fs.readdir(workDir)
     
-    // Detectar package manager
     let packageManager: 'npm' | 'yarn' | 'pnpm' | 'bun' = 'npm'
     if (files.includes('bun.lockb')) packageManager = 'bun'
     else if (files.includes('pnpm-lock.yaml')) packageManager = 'pnpm'
     else if (files.includes('yarn.lock')) packageManager = 'yarn'
     
-    // Leer package.json para detectar test command
     let hasPlaywright = false
     let testCommand = 'test'
     
@@ -143,12 +135,10 @@ async function detectTestFramework(workDir: string): Promise<{
         const pkgJson = JSON.parse(await fs.readFile(path.join(workDir, 'package.json'), 'utf-8'))
         const scripts = pkgJson.scripts || {}
         
-        // Buscar comandos de Playwright
         if (scripts['test:e2e']) testCommand = 'test:e2e'
         else if (scripts['test:playwright']) testCommand = 'test:playwright'
         else if (scripts['test']) testCommand = 'test'
         
-        // Verificar si tiene Playwright instalado
         const deps = { ...pkgJson.dependencies, ...pkgJson.devDependencies }
         hasPlaywright = !!(deps['@playwright/test'] || deps['playwright'])
         
@@ -169,23 +159,26 @@ async function installDependencies(
 ): Promise<void> {
     log(jobId, `Installing dependencies with ${packageManager}...`)
     
-    const installCmd = {
+    const installCmds: Record<string, string> = {
         npm: 'npm ci --prefer-offline',
         yarn: 'yarn install --frozen-lockfile',
         pnpm: 'pnpm install --frozen-lockfile',
         bun: 'bun install --frozen-lockfile'
-    }[packageManager] || 'npm install'
+    }
+    
+    const installCmd = installCmds[packageManager] || 'npm install'
     
     try {
         execSync(installCmd, {
             cwd: workDir,
             stdio: 'pipe',
-            timeout: 300000 // 5 minutos máximo
+            timeout: 300000
         })
         log(jobId, 'Dependencies installed successfully')
-    } catch (error: any) {
-        logError(jobId, `Failed to install dependencies: ${error.message}`)
-        throw new Error(`Failed to install dependencies: ${error.message}`)
+    } catch (error) {
+        const err = error instanceof Error ? error : new Error(String(error))
+        logError(jobId, `Failed to install dependencies: ${err.message}`)
+        throw new Error(`Failed to install dependencies: ${err.message}`)
     }
 }
 
@@ -196,17 +189,15 @@ async function installPlaywrightBrowsers(jobId: string, workDir: string): Promis
     log(jobId, 'Ensuring Playwright browsers are installed...')
     
     try {
-        // Los navegadores ya deberían estar instalados en la imagen de Docker de Railway
-        // Pero por si acaso, intentamos instalar solo chromium
         execSync('npx playwright install chromium --with-deps', {
             cwd: workDir,
             stdio: 'pipe',
-            timeout: 180000 // 3 minutos
+            timeout: 180000
         })
         log(jobId, 'Playwright browsers ready')
-    } catch (error: any) {
-        log(jobId, `Playwright browser install warning: ${error.message}`)
-        // No lanzamos error, puede que ya estén instalados
+    } catch (error) {
+        const err = error instanceof Error ? error : new Error(String(error))
+        log(jobId, `Playwright browser install warning: ${err.message}`)
     }
 }
 
@@ -222,40 +213,32 @@ async function runPlaywrightTests(
     workDir: string,
     packageManager: string,
     testCommand: string
-): Promise<{
-    passed: number
-    failed: number
-    failures: TestFailure[]
-    duration: number
-    rawOutput: string
-}> {
+): Promise<TestResult> {
     log(jobId, `Running Playwright tests: ${testCommand}`)
     
     const runCmd = `${packageManager} run ${testCommand} --reporter=json || true`
     
-    let rawOutput = ''
-    let result = {
+    const result: TestResult = {
         passed: 0,
         failed: 0,
-        failures: [] as TestFailure[],
-        duration: 0
+        failures: [],
+        duration: 0,
+        rawOutput: ''
     }
     
     try {
         const { stdout, stderr } = await execAsync(runCmd, {
             cwd: workDir,
-            timeout: 600000, // 10 minutos máximo para tests
-            maxBuffer: 10 * 1024 * 1024 // 10MB de buffer
+            timeout: 600000,
+            maxBuffer: 10 * 1024 * 1024
         })
-        rawOutput = stdout + stderr
+        result.rawOutput = stdout + stderr
         
         // Intentar parsear el output de Playwright JSON
-        // Playwright genera un reporte JSON en test-results/
         try {
             const reportPath = path.join(workDir, 'test-results', 'report.json')
             const reportData = JSON.parse(await fs.readFile(reportPath, 'utf-8'))
             
-            // Parsear resultados
             for (const suite of reportData.suites || []) {
                 for (const spec of suite.specs || []) {
                     for (const test of spec.tests || []) {
@@ -277,15 +260,18 @@ async function runPlaywrightTests(
         } catch {
             // Si no hay reporte JSON, parsear el output de texto
             log(jobId, 'No JSON report found, parsing text output')
-            const passedMatch = rawOutput.match(/(\d+) passed/)
-            const failedMatch = rawOutput.match(/(\d+) failed/)
             
-            if (passedMatch) result.passed = parseInt(passedMatch[1])
-            if (failedMatch) result.failed = parseInt(failedMatch[1])
+            const passedMatch = result.rawOutput.match(/(\d+) passed/)
+            const failedMatch = result.rawOutput.match(/(\d+) failed/)
             
-            // Extraer errores básicos del output
-            const errorMatches = rawOutput.matchAll(/Error:(.*?)(?=\n\n|\n  at|$)/gs)
-            for (const match of errorMatches) {
+            if (passedMatch) result.passed = parseInt(passedMatch[1], 10)
+            if (failedMatch) result.failed = parseInt(failedMatch[1], 10)
+            
+            // Extraer errores básicos del output (sin usar flag 's' para compatibilidad ES5)
+            // Usamos [\s\S] en lugar de . con flag s
+            const errorRegex = /Error:([\s\S]*?)(?=\n\n|\n  at|$)/g
+            let match
+            while ((match = errorRegex.exec(result.rawOutput)) !== null) {
                 result.failures.push({
                     testName: 'Unknown test',
                     testFile: 'Unknown file',
@@ -295,19 +281,23 @@ async function runPlaywrightTests(
             }
         }
         
-        result.duration = Date.now() // Placeholder, se actualizará
+        result.duration = Date.now()
         
-    } catch (error: any) {
-        logError(jobId, `Test execution error: ${error.message}`)
-        rawOutput = error.stdout + error.stderr
+    } catch (error) {
+        const err = error instanceof Error ? error : new Error(String(error))
+        logError(jobId, `Test execution error: ${err.message}`)
         
-        // Intentar extraer info del error
+        // @ts-expect-error - stdout/stderr may exist on exec error
+        result.rawOutput = (err as NodeJS.ErrnoException & { stdout?: string; stderr?: string }).stdout || '' +
+            // @ts-expect-error
+            (err as NodeJS.ErrnoException & { stderr?: string }).stderr || ''
+        
         result.failed = 1
         result.failures.push({
             testName: 'Test execution failed',
             testFile: 'System',
             failedSelector: '',
-            errorMessage: error.message
+            errorMessage: err.message
         })
     }
     
@@ -319,11 +309,10 @@ async function runPlaywrightTests(
  * Extrae el selector fallido de un mensaje de error de Playwright
  */
 function extractSelectorFromError(errorMessage: string): string {
-    // Patrones comunes de errores de selector en Playwright
     const patterns = [
         /Waiting for selector ["']([^"']+)["']/,
-        /Element not found: ([^\s]+)/,
-        /Unable to locate element: ([^\s]+)/,
+        /Element not found: (\S+)/,
+        /Unable to locate element: (\S+)/,
         /selector ["']([^"']+)["'] not found/,
         / locator\(["']([^"']+)["']\)/,
     ]
@@ -346,7 +335,7 @@ function extractSelectorFromError(errorMessage: string): string {
 async function healTestFailure(
     jobId: string,
     failure: TestFailure,
-    workDir: string
+    _workDir: string
 ): Promise<{
     healed: boolean
     suggestion?: {
@@ -354,17 +343,11 @@ async function healTestFailure(
         confidence: number
         reasoning: string
     }
-    prUrl?: string
 }> {
     log(jobId, `Analyzing failure: ${failure.testName}`)
     
-    // Intentar obtener snapshot del DOM del archivo de test o generado
-    let domSnapshot = failure.domSnapshot || '<html><body>DOM not captured</body></html>'
+    const domSnapshot = failure.domSnapshot || '<html><body>DOM not captured</body></html>'
     
-    // Si el test tiene un screenshot, intentar capturar el DOM de la página
-    // (Esto requeriría que el test guarde el DOM, lo cual es una mejora futura)
-    
-    // Analizar con el healing service
     const suggestion = await analyzeBrokenSelector(
         failure.failedSelector,
         failure.errorMessage,
@@ -392,11 +375,10 @@ async function healTestFailure(
  */
 async function createHealingPR(
     jobId: string,
-    project: any,
+    project: { id: string; repository: string | null },
     failure: TestFailure,
     suggestion: { newSelector: string; confidence: number; reasoning: string }
 ): Promise<string | null> {
-    // Obtener el GitHub access token del usuario
     const projectWithUser = await db.project.findUnique({
         where: { id: project.id },
         include: { 
@@ -414,7 +396,6 @@ async function createHealingPR(
         return null
     }
     
-    // Parsear owner/repo del repository URL
     const repoUrl = project.repository || ''
     const parts = repoUrl.replace('https://github.com/', '').split('/')
     const owner = parts[0]
@@ -432,26 +413,19 @@ async function createHealingPR(
             githubAccount.access_token,
             owner,
             repo,
-            'main', // TODO: obtener la rama del webhook
+            'main',
             failure.testFile,
             `// Healed by Healify\nconst selector = '${suggestion.newSelector}';`,
             `🪄 Healify: Fix broken selector in ${failure.testName}`,
-            `Healify identified a broken selector and automatically fixed it.
-
-**Original:** \`${failure.failedSelector}\`
-**New:** \`${suggestion.newSelector}\`
-**Confidence:** ${(suggestion.confidence * 100).toFixed(1)}%
-
-**Reasoning:** ${suggestion.reasoning}
-
-**Error was:** ${failure.errorMessage}`
+            `Healify identified a broken selector and automatically fixed it.\n\n**Original:** \`${failure.failedSelector}\`\n**New:** \`${suggestion.newSelector}\`\n**Confidence:** ${(suggestion.confidence * 100).toFixed(1)}%\n\n**Reasoning:** ${suggestion.reasoning}\n\n**Error was:** ${failure.errorMessage}`
         )
         
         log(jobId, `PR created: ${pr.html_url}`)
         return pr.html_url
         
-    } catch (error: any) {
-        logError(jobId, `Failed to create PR: ${error.message}`)
+    } catch (error) {
+        const err = error instanceof Error ? error : new Error(String(error))
+        logError(jobId, `Failed to create PR: ${err.message}`)
         return null
     }
 }
@@ -460,9 +434,6 @@ async function createHealingPR(
 // CLEANUP
 // ============================================
 
-/**
- * Limpia el directorio de trabajo temporal
- */
 async function cleanupWorkDir(workDir: string): Promise<void> {
     try {
         await fs.rm(workDir, { recursive: true, force: true })
@@ -475,13 +446,15 @@ async function cleanupWorkDir(workDir: string): Promise<void> {
 // WORKER PRINCIPAL
 // ============================================
 
-async function processJob(job: Job<TestJobData>): Promise<{
+interface ProcessJobResult {
     success: boolean
     passed: number
     failed: number
     healed: number
     error?: string
-}> {
+}
+
+async function processJob(job: Job<TestJobData>): Promise<ProcessJobResult> {
     const { projectId, commitSha, testRunId, branch, repository } = job.data
     const jobId = job.id || 'unknown'
     
@@ -491,7 +464,6 @@ async function processJob(job: Job<TestJobData>): Promise<{
     let workDir: string | null = null
     
     try {
-        // 1. Actualizar estado del TestRun a RUNNING
         await db.testRun.update({
             where: { id: testRunId },
             data: { 
@@ -500,7 +472,6 @@ async function processJob(job: Job<TestJobData>): Promise<{
             }
         })
         
-        // 2. Obtener el proyecto
         const project = await db.project.findUnique({
             where: { id: projectId }
         })
@@ -509,7 +480,6 @@ async function processJob(job: Job<TestJobData>): Promise<{
             throw new Error(`Project ${projectId} not found`)
         }
         
-        // 3. Clonar el repositorio
         workDir = await cloneRepository(
             jobId, 
             repository || project.repository || '',
@@ -517,7 +487,6 @@ async function processJob(job: Job<TestJobData>): Promise<{
             commitSha
         )
         
-        // 4. Detectar framework e instalar dependencias
         const framework = await detectTestFramework(workDir)
         
         if (!framework.hasPlaywright) {
@@ -527,7 +496,6 @@ async function processJob(job: Job<TestJobData>): Promise<{
         await installDependencies(jobId, workDir, framework.packageManager)
         await installPlaywrightBrowsers(jobId, workDir)
         
-        // 5. Ejecutar tests
         job.updateProgress(30)
         const testStartTime = Date.now()
         
@@ -541,14 +509,11 @@ async function processJob(job: Job<TestJobData>): Promise<{
         const testDuration = Date.now() - testStartTime
         job.updateProgress(60)
         
-        // 6. Procesar fallos y aplicar healing
-        const healingEvents: any[] = []
         let healedCount = 0
         
         for (const failure of testResults.failures) {
             const healing = await healTestFailure(jobId, failure, workDir)
             
-            // Crear HealingEvent en la DB
             const healingEvent = await db.healingEvent.create({
                 data: {
                     testRunId,
@@ -565,7 +530,6 @@ async function processJob(job: Job<TestJobData>): Promise<{
                 }
             })
             
-            // Si hay healing automático, crear PR
             if (healing.healed && healing.suggestion) {
                 const prUrl = await createHealingPR(jobId, project, failure, healing.suggestion)
                 
@@ -583,13 +547,10 @@ async function processJob(job: Job<TestJobData>): Promise<{
                     healedCount++
                 }
             }
-            
-            healingEvents.push(healingEvent)
         }
         
         job.updateProgress(90)
         
-        // 7. Actualizar TestRun con resultados finales
         const finalStatus = testResults.failed === 0 
             ? TestStatus.PASSED 
             : healedCount === testResults.failed 
@@ -619,15 +580,15 @@ async function processJob(job: Job<TestJobData>): Promise<{
             healed: healedCount
         }
         
-    } catch (error: any) {
-        logError(jobId, `Job failed: ${error.message}`, error)
+    } catch (error) {
+        const err = error instanceof Error ? error : new Error(String(error))
+        logError(jobId, `Job failed: ${err.message}`)
         
-        // Actualizar TestRun con error
         await db.testRun.update({
             where: { id: testRunId },
             data: {
                 status: TestStatus.FAILED,
-                error: error.message,
+                error: err.message,
                 finishedAt: new Date()
             }
         })
@@ -637,11 +598,10 @@ async function processJob(job: Job<TestJobData>): Promise<{
             passed: 0,
             failed: 0,
             healed: 0,
-            error: error.message
+            error: err.message
         }
         
     } finally {
-        // Cleanup
         if (workDir) {
             await cleanupWorkDir(workDir)
         }
@@ -673,29 +633,28 @@ const worker = new Worker<TestJobData>(
     async (job: Job<TestJobData>) => {
         console.log(`\n${'='.repeat(50)}`)
         console.log(`📥 Job received: ${job.id}`)
-        console.log(`${'='.repeat(50)}`)
+        console.log('='.repeat(50))
         
         const result = await processJob(job)
         
-        console.log(`${'='.repeat(50)}`)
+        console.log('='.repeat(50))
         console.log(`📤 Job completed: ${job.id}`)
         console.log(`   Success: ${result.success}`)
         console.log(`   Results: ${result.passed} passed, ${result.failed} failed, ${result.healed} healed`)
-        console.log(`${'='.repeat(50)}\n`)
+        console.log('='.repeat(50), '\n')
         
         return result
     },
     {
         connection: redisConnection,
-        concurrency: 2, // Procesar hasta 2 jobs en paralelo
+        concurrency: 2,
         limiter: {
-            max: 10, // Máximo 10 jobs
-            duration: 60000 // Por minuto
+            max: 10,
+            duration: 60000
         }
     }
 )
 
-// Event handlers
 worker.on('completed', (job: Job<TestJobData>) => {
     console.log(`✅ Job ${job.id} completed successfully`)
 })
@@ -714,7 +673,6 @@ worker.on('stalled', (jobId: string) => {
 
 console.log('\n🎯 Worker ready and listening for jobs...\n')
 
-// Graceful shutdown
 process.on('SIGTERM', async () => {
     console.log('\n🛑 SIGTERM received, shutting down gracefully...')
     await worker.close()
