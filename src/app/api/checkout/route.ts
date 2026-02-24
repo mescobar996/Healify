@@ -27,6 +27,17 @@ export async function POST(request: Request) {
             )
         }
 
+        // ✅ Detectar mock keys en el servidor (no en el cliente)
+        // Esto sucede cuando las env vars de Stripe no están configuradas en Vercel
+        if (priceId.includes('mock')) {
+            return NextResponse.json({ notConfigured: true }, { status: 200 })
+        }
+
+        // ✅ Verificar que la Stripe secret key no sea mock
+        if (!process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY === 'sk_test_mock') {
+            return NextResponse.json({ notConfigured: true }, { status: 200 })
+        }
+
         const stripeSession = await createCheckoutSession(
             session.user.id,
             session.user.email,

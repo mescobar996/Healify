@@ -5,7 +5,6 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { Check, Loader2, Sparkles, ArrowRight } from 'lucide-react'
-import { PLANS } from '@/lib/stripe'
 import { cn } from '@/lib/utils'
 import { HealifyLogo } from '@/components/HealifyLogo'
 import Link from 'next/link'
@@ -16,16 +15,18 @@ export default function PricingPage() {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null)
   const { status } = useSession()
 
+  // Plans fetched from server so env vars are always fresh (never stale from build-time bundle)
+  const [plans, setPlans] = useState<Array<{ id: string; name: string; price: number; priceId: string; features: string[] }>>([])
+  useEffect(() => {
+    fetch('/api/plans', { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.plans) setPlans(d.plans) })
+      .catch(() => {})
+  }, [])
+
   const handleSubscribe = async (priceId: string, planId: string) => {
     if (status !== 'authenticated') {
       signIn('github', { callbackUrl: '/pricing' })
-      return
-    }
-    // Check if Stripe is configured
-    if (priceId.includes('mock') || priceId.includes('starter_mock') || priceId.includes('pro_mock')) {
-      toast.error('Pagos no configurados aún', {
-        description: 'El equipo de Healify está activando los pagos. Por ahora podés usar el plan gratuito.',
-      })
       return
     }
     setLoadingPlan(planId)
@@ -36,11 +37,15 @@ export default function PricingPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ priceId }),
       })
-      const { url, error } = await res.json()
-      if (url) {
-        window.location.href = url
+      const data = await res.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else if (data.notConfigured) {
+        toast.error('Pagos no configurados aún', {
+          description: 'El equipo de Healify está activando los pagos. Por ahora podés usar el plan gratuito.',
+        })
       } else {
-        toast.error('Error al procesar el pago', { description: error || 'Intentá de nuevo en unos minutos' })
+        toast.error('Error al procesar el pago', { description: data.error || 'Intentá de nuevo en unos minutos' })
       }
     } catch {
       toast.error('Error de conexión', { description: 'No se pudo conectar con el servidor de pagos' })
@@ -49,7 +54,6 @@ export default function PricingPage() {
     }
   }
 
-  const plans = Object.values(PLANS)
 
   return (
     <div className="min-h-screen bg-[#0A0E1A] text-[#E8F0FF] relative overflow-hidden">
