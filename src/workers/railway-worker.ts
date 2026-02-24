@@ -23,7 +23,6 @@ import path from 'path'
 import os from 'os'
 import { db } from '../lib/db'
 import { TestStatus, HealingStatus, SelectorType } from '../lib/enums'
-import { getRedisInstance } from '../lib/redis'
 import { TEST_QUEUE_NAME, TestJobData } from '../lib/queue'
 import { analyzeBrokenSelector } from '../lib/ai/healing-service'
 import { createPullRequest } from '../lib/github/repos'
@@ -614,15 +613,15 @@ console.log('========================================')
 console.log('🚀 HEALIFY RAILWAY WORKER STARTING')
 console.log('========================================')
 
-const redisConnection = getRedisInstance()
+const redisUrl = process.env.REDIS_URL
 
-if (!redisConnection) {
-    console.error('❌ FATAL: Redis connection not available')
+if (!redisUrl) {
+    console.error('❌ FATAL: REDIS_URL not set')
     console.error('Make sure REDIS_URL is set in environment variables')
     process.exit(1)
 }
 
-console.log('✅ Redis connected')
+console.log('✅ Redis URL configured')
 console.log(`📦 Queue: ${TEST_QUEUE_NAME}`)
 console.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`)
 
@@ -644,7 +643,9 @@ const worker = new Worker<TestJobData>(
         return result
     },
     {
-        connection: redisConnection,
+        connection: {
+            url: redisUrl
+        },
         concurrency: 2,
         limiter: {
             max: 10,
