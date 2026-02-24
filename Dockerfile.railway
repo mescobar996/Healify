@@ -32,22 +32,36 @@ RUN apt-get update && apt-get install -y \
 # Crear directorio de trabajo
 WORKDIR /app
 
-# Copiar archivos de dependencias primero (para cache de Docker)
+# Copiar archivos de dependencias
 COPY package.json ./
-COPY bun.lock* bun.lockb* package-lock.json* ./
+COPY package-lock.json* ./
+COPY tsconfig.json ./
 COPY prisma ./prisma/
 
-# Instalar dependencias con npm (más compatible)
+# Instalar TODAS las dependencias (incluyendo devDependencies para esbuild)
 RUN npm install
 
-# Instalar SOLO Chromium (no todos los navegadores)
+# Instalar SOLO Chromium
 RUN npx playwright install chromium
 
 # Generar Prisma Client
 RUN npx prisma generate
 
-# Copiar el resto del código
-COPY . .
+# Copiar el código fuente
+COPY src ./src
+
+# Compilar el worker con esbuild (bundle a un solo archivo CJS)
+RUN npx esbuild src/workers/railway-worker.ts \
+    --bundle \
+    --platform=node \
+    --outfile=dist/worker.js \
+    --format=cjs \
+    --external:playwright \
+    --external:@playwright/test \
+    --external:bullmq \
+    --external:ioredis \
+    --external:@prisma/client \
+    --external:tsx
 
 # Crear directorio para snapshots
 RUN mkdir -p storage/snapshots
@@ -56,5 +70,5 @@ RUN mkdir -p storage/snapshots
 ENV NODE_ENV=production
 ENV PLAYWRIGHT_BROWSERS_PATH=/root/.cache/ms-playwright
 
-# Comando para ejecutar el worker con node + tsx
-CMD ["npx", "tsx", "src/workers/railway-worker.ts"]
+# Ejecutar el worker compilado
+CMD ["node", "dist/worker.js"]
