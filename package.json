@@ -13,6 +13,7 @@
     "db:reset": "prisma migrate reset",
     "worker": "tsx src/workers/test-worker.ts",
     "worker:dev": "nodemon --exec tsx src/workers/test-worker.ts",
+    "worker:railway": "tsx src/workers/railway-worker.ts",
     "trigger:test": "tsx scripts/test-queue.ts",
     "evaluate:ai": "tsx scripts/evaluate-ai.ts"
   },

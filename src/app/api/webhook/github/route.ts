@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { TestStatus } from '@/lib/enums'
-import { testRunner } from '@/lib/test-runner'
 import { gitAnalyzer } from '@/lib/git-analyzer'
 import { createHmac, timingSafeEqual } from 'crypto'
+import { addTestJob } from '@/lib/queue'
 
 // ✅ HEAL-001 FIX: Verificar firma HMAC de GitHub para evitar inyección de eventos falsos
 function verifyGitHubSignature(body: string, signature: string | null): boolean {
@@ -50,7 +50,9 @@ export async function POST(request: Request) {
         if (event === 'push') {
             const repository = payload.repository.html_url
             const branch = payload.ref.replace('refs/heads/', '')
+            const commitSha = payload.after // SHA del commit
             const commitMessage = payload.head_commit?.message || 'Push event'
+            const commitAuthor = payload.head_commit?.author?.username || 'unknown'
 
             // Find project associated with this repository
             const project = await db.project.findFirst({
@@ -70,6 +72,7 @@ export async function POST(request: Request) {
                     projectId: project.id,
                     status: TestStatus.PENDING,
                     branch,
+                    commitSha,
                     commitMessage,
                     triggeredBy: 'github_webhook',
                     totalTests: 0,
@@ -79,16 +82,43 @@ export async function POST(request: Request) {
                 },
             })
 
-            // Trigger test execution asynchronously
-            testRunner.runProjectTests(project.id, testRun.id).catch(err => {
-                console.error('Failed to run tests from webhook:', err)
+            // 🚀 AUTO-ENQUEUE: Agregar job a la cola de BullMQ
+            // El worker en Railway procesará este job y ejecutará Playwright
+            const job = await addTestJob(project.id, commitSha, testRun.id, {
+                branch,
+                commitMessage,
+                commitAuthor,
+                repository,
             })
 
-            return NextResponse.json({
-                message: 'Webhook received, test run initiated',
-                testRunId: testRun.id,
-                impactSummary: impact.summary
-            })
+            if (job) {
+                // Guardar jobId en TestRun para tracking
+                await db.testRun.update({
+                    where: { id: testRun.id },
+                    data: { jobId: job.id }
+                })
+
+                console.log(`[Webhook] TestRun ${testRun.id} enqueued as Job ${job.id}`)
+
+                return NextResponse.json({
+                    message: 'Webhook received, test run enqueued',
+                    testRunId: testRun.id,
+                    jobId: job.id,
+                    impactSummary: impact.summary,
+                    queueStatus: 'queued'
+                })
+            } else {
+                // Fallback: Redis no disponible, marcar como pendiente manual
+                console.warn(`[Webhook] Redis not available. TestRun ${testRun.id} created but not enqueued.`)
+
+                return NextResponse.json({
+                    message: 'Webhook received, test run created (manual trigger required)',
+                    testRunId: testRun.id,
+                    impactSummary: impact.summary,
+                    queueStatus: 'unavailable',
+                    hint: 'Configure REDIS_URL to enable automatic test execution'
+                })
+            }
         }
 
         return NextResponse.json({ message: 'Event not handled' })
