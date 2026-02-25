@@ -220,19 +220,36 @@ function TestsContent() {
 
   // Handler: Run all tests
   const handleRunAllTests = async () => {
-    setIsRunningAll(true);
-    toast.info("Iniciando ejecución de todos los tests...", {
-      description: "Este proceso puede tardar varios minutos",
-    });
-
-    // Simular proceso
-    setTimeout(() => {
-      toast.success("Todos los tests ejecutados", {
-        description: `${stats.passed} pasados, ${stats.failed} fallidos`,
-      });
-      setIsRunningAll(false);
-      fetchTestRuns();
-    }, 3000);
+    // Obtener proyectos únicos de los test runs visibles
+    const uniqueProjectIds = Array.from(
+      new Set(filteredTestRuns.map(r => r.project?.id).filter(Boolean) as string[])
+    )
+    if (uniqueProjectIds.length === 0) {
+      toast.error("No hay proyectos con tests para ejecutar")
+      return
+    }
+    setIsRunningAll(true)
+    toast.info(`Ejecutando tests en ${uniqueProjectIds.length} proyecto(s)...`)
+    let success = 0, failed = 0
+    await Promise.allSettled(
+      uniqueProjectIds.map(async (projectId) => {
+        try {
+          await fetch(`/api/projects/${projectId}/run`, {
+            method: "POST",
+            credentials: "include",
+          })
+          success++
+        } catch {
+          failed++
+        }
+      })
+    )
+    if (success > 0) toast.success(`${success} proyecto(s) iniciados`, {
+      description: failed > 0 ? `${failed} fallaron al iniciar` : "Los tests están en la cola del worker"
+    })
+    else toast.error("No se pudo iniciar ningún test")
+    setIsRunningAll(false)
+    setTimeout(fetchTestRuns, 2000)
   };
 
   // Loading State

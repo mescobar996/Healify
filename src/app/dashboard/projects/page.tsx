@@ -92,11 +92,13 @@ function PlanBadge({ plan }: { plan?: string }) {
 function ProjectCard({
   project,
   onDelete,
+  onEdit,
   onRunTests,
-  isRunningTests,
+  isRunningTests = false,
 }: {
   project: Project;
   onDelete?: (id: string) => void;
+  onEdit?: (id: string) => void;
   onRunTests?: (id: string) => void;
   isRunningTests?: boolean;
 }) {
@@ -153,7 +155,10 @@ function ProjectCard({
                 Ver tests
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem className="text-gray-300 text-sm focus:bg-white/5 focus:text-white">
+            <DropdownMenuItem
+              className="text-gray-300 text-sm focus:bg-white/5 focus:text-white cursor-pointer"
+              onClick={() => onEdit?.(project.id)}
+            >
               Editar
             </DropdownMenuItem>
             <DropdownMenuItem 
@@ -500,6 +505,10 @@ export default function ProjectsPage() {
   };
 
   // Delete project handler
+  const handleEditProject = (projectId: string) => {
+    router.push(`/dashboard/projects/${projectId}/connect`)
+  }
+
   const handleDeleteProject = async (projectId: string) => {
     setDeleteConfirmId(projectId);
   };
@@ -637,6 +646,7 @@ export default function ProjectsPage() {
                 onRunTests={handleRunTests}
                 isRunningTests={runningTestsId === project.id}
                 onDelete={handleDeleteProject}
+                onEdit={handleEditProject}
               />
             ))}
           </div>
@@ -652,6 +662,34 @@ export default function ProjectsPage() {
           router.refresh();
         }}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
+        <AlertDialogContent className="bg-[#0D1117] border-white/10 max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">¿Eliminar proyecto?</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400">
+              Esta acción eliminará el proyecto y todos sus test runs, selectores y eventos de autocuración.
+              <span className="block mt-2 text-red-400 font-medium">Esta acción no se puede deshacer.</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              className="bg-white/5 border-white/10 text-gray-300 hover:bg-white/10 hover:text-white"
+              onClick={() => setDeleteConfirmId(null)}
+            >
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 text-white border-0"
+            >
+              {isDeleting ? "Eliminando..." : "Sí, eliminar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

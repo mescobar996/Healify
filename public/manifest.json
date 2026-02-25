@@ -1,5 +1,5 @@
 {
-  "name": "Healify - AI-Powered Test Self-Healing Platform",
+  "name": "Healify",
   "short_name": "Healify",
   "description": "Automatically heal your failing E2E tests with AI. Zero broken tests, no manual intervention.",
   "start_url": "/",
@@ -9,16 +9,21 @@
   "orientation": "portrait-primary",
   "scope": "/",
   "lang": "en-US",
-  "categories": ["developer tools", "testing", "automation", "devops"],
+  "categories": [
+    "developer tools",
+    "testing",
+    "automation",
+    "devops"
+  ],
   "icons": [
     {
-      "src": "/healify-logo.png",
+      "src": "/favicon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/healify-logo.png",
+      "src": "/favicon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

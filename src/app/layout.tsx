@@ -34,8 +34,8 @@ const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://healify-sigma.vercel
 // Complete SEO Metadata configuration
 export const metadata: Metadata = {
   title: {
-    default: "Healify - AI-Powered Test Self-Healing Platform",
-    template: "%s | Healify",
+    default: "Healify",
+    template: "Healify",
   },
   description: 
     "Automatically heal your failing E2E tests with AI. Healify detects broken selectors, suggests fixes with high confidence scores, and opens PRs automatically.",
@@ -45,10 +45,13 @@ export const metadata: Metadata = {
   publisher: "Healify",
   icons: {
     icon: [
-      { url: "/healify-logo.svg", type: "image/svg+xml" },
-      { url: "/icon.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon.ico",    sizes: "any" },
+      { url: "/favicon-16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-48.png", sizes: "48x48", type: "image/png" },
     ],
-    apple: { url: "/healify-logo.svg", sizes: "180x180", type: "image/svg+xml" },
+    apple: { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    shortcut: "/favicon.ico",
   },
   manifest: "/manifest.json",
   openGraph: {
@@ -56,14 +59,14 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: baseUrl,
     siteName: "Healify",
-    title: "Healify - Tests That Heal Themselves",
+    title: "Healify",
     description: "AI-powered test self-healing platform.",
     images: [{ url: `${baseUrl}/opengraph-image`, width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",
     site: "@healify_dev",
-    title: "Healify - Tests That Heal Themselves",
+    title: "Healify",
     description: "AI-powered test self-healing platform.",
   },
   robots: { index: true, follow: true },

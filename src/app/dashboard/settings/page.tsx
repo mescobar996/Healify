@@ -44,22 +44,6 @@ const userData = {
   plan: "PRO",
 };
 
-const apiKeys = [
-  {
-    id: 1,
-    name: "Production Key",
-    key: "hf_live_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6",
-    createdAt: "2024-01-10",
-    lastUsed: "hace 5 min",
-  },
-  {
-    id: 2,
-    name: "Development Key",
-    key: "hf_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-    createdAt: "2024-01-08",
-    lastUsed: "hace 2 horas",
-  },
-];
 
 // ============================================
 // TAB COMPONENT
@@ -188,10 +172,12 @@ function AccountSection() {
 }
 
 function ApiKeysSection() {
-  const [showApiKey, setShowApiKey] = useState<number | null>(null);
-  const [copied, setCopied] = useState<number | null>(null);
+  const [showApiKey, setShowApiKey] = useState<number | string | null>(null);
+  const [dynamicApiKeys, setDynamicApiKeys] = useState<Array<{id: string|number, name: string, key: string, createdAt: string, lastUsed: string}>>([]);
+  const [copied, setCopied] = useState<number | string | null>(null);
 
-  const copyToClipboard = (text: string, id: number) => {
+  const copyToClipboard = (text: string, id: number | string) => {
+    void id; // suppress unused
     navigator.clipboard.writeText(text);
     setCopied(id);
     toast.success("API Key copiada al portapapeles");
@@ -216,7 +202,7 @@ function ApiKeysSection() {
 
   return (
     <div className="space-y-4">
-      {apiKeys.map((apiKey) => (
+      {dynamicApiKeys.length > 0 ? dynamicApiKeys.map((apiKey) => (
         <div
           key={apiKey.id}
           className="p-4 rounded-lg bg-white/[0.02] border border-white/5 space-y-2"
@@ -259,7 +245,11 @@ function ApiKeysSection() {
               : apiKey.key.slice(0, 12) + "•".repeat(24) + apiKey.key.slice(-4)}
           </code>
         </div>
-      ))}
+      )) : (
+        <div className="p-4 text-center text-gray-500 text-sm">
+          Creá un proyecto para obtener tu API Key
+        </div>
+      )}
 
       <Button
         variant="outline"
