@@ -15,6 +15,7 @@
  * - GITHUB_WEBHOOK_SECRET: Para clonar repos privados si es necesario
  */
 
+import { createServer } from 'http'
 import { Worker, Job } from 'bullmq'
 import { execSync, exec } from 'child_process'
 import { promisify } from 'util'
