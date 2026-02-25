@@ -98,7 +98,7 @@ function CodeBlock({ label, code, type }: { label: string; code: string; type: "
           {copied ? <CheckCheck className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-gray-500" />}
         </button>
       </div>
-      <pre className="p-4 bg-gray-900/50 text-sm overflow-x-auto">
+      <pre className="p-3 sm:p-4 bg-gray-900/50 text-xs sm:text-sm overflow-x-auto">
         <code className={cn("font-mono", type === "old" ? "text-red-300" : "text-emerald-300")}>{code}</code>
       </pre>
     </div>
@@ -191,7 +191,7 @@ export default function HealingDetailPage() {
             </div>
           </div>
           {data.status === "pendiente" && (
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Button variant="outline" size="sm" onClick={handleReject} disabled={actionLoading} className="bg-white/5 border-white/10 text-gray-300">
                 <X className="w-4 h-4 mr-1.5" />Rechazar
               </Button>
@@ -204,7 +204,7 @@ export default function HealingDetailPage() {
       </div>
 
       {/* Main Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
         {/* Left - Diff */}
         <div className="lg:col-span-2 space-y-4">
           {/* Error */}
@@ -214,7 +214,7 @@ export default function HealingDetailPage() {
                 <AlertTriangle className="w-4 h-4 text-amber-400" />
                 <span className="text-sm font-medium text-gray-200">Error Original</span>
               </div>
-              <pre className="p-4 text-sm overflow-x-auto">
+              <pre className="p-3 sm:p-4 text-xs sm:text-sm overflow-x-auto">
                 <code className="text-red-300 font-mono">{data.errorMessage}</code>
               </pre>
             </div>
@@ -257,7 +257,7 @@ export default function HealingDetailPage() {
               <div className="px-4 py-3 border-b border-white/5">
                 <span className="text-sm font-medium text-gray-200">Contexto del DOM</span>
               </div>
-              <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {data.oldDomSnapshot && (
                   <div>
                     <p className="text-[11px] text-gray-500 uppercase tracking-wide mb-2">Antes</p>

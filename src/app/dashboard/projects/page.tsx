@@ -184,7 +184,7 @@ function ProjectCard({
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-2 mb-4">
+      <div className="grid grid-cols-3 gap-1.5 sm:gap-2 mb-4">
         <div className="text-center p-2 rounded-md bg-white/5">
           <p className="text-lg font-semibold text-white">
             {project.testRunCount}
@@ -218,7 +218,7 @@ function ProjectCard({
         <Button
           variant="ghost"
           size="sm"
-          className="h-7 text-xs text-gray-400 hover:text-white"
+          className="h-8 sm:h-7 text-xs text-gray-400 hover:text-white"
           onClick={() => onRunTests?.(project.id)}
           disabled={isRunningTests}
         >
@@ -351,7 +351,7 @@ function NewProjectModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] bg-[#0D1117] border-white/10">
+      <DialogContent className="sm:max-w-[500px] w-[calc(100vw-2rem)] sm:w-auto bg-[#0D1117] border-white/10">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle className="text-white">Nuevo Proyecto</DialogTitle>
@@ -565,7 +565,7 @@ export default function ProjectsPage() {
           </div>
           <Button
             size="sm"
-            className="bg-violet-600 hover:bg-violet-700 text-white"
+            className="bg-violet-600 hover:bg-violet-700 text-white w-full sm:w-auto"
             onClick={() => setIsNewProjectOpen(true)}
           >
             <Plus className="w-3.5 h-3.5 mr-1.5" />

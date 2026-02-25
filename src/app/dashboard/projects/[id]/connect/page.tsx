@@ -294,7 +294,7 @@ export default function ConnectPage() {
       </div>
 
       {/* Framework Tabs */}
-      <div className="flex gap-3">
+      <div className="flex gap-2 flex-wrap sm:flex-nowrap overflow-x-auto pb-1 scrollbar-hide">
         {(Object.keys(snippets) as Array<keyof typeof snippets>).map((framework) => (
           <FrameworkTab
             key={framework}
@@ -341,7 +341,7 @@ export default function ConnectPage() {
         animate={{ opacity: 1, y: 0 }}
         className="glass-elite p-6"
       >
-        <div className="flex items-center gap-4">
+        <div className="flex items-start sm:items-center gap-3 sm:gap-4">
           <div className="p-3 rounded-full bg-emerald-500/10">
             <Check className="w-6 h-6 text-emerald-400" />
           </div>

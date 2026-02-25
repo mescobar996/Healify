@@ -140,7 +140,7 @@ function AccountSection() {
       <div className="h-px bg-white/5" />
 
       {/* Form */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="name" className="text-xs text-gray-400">
             Nombre
@@ -351,7 +351,7 @@ function BillingSection() {
         <h4 className="text-[11px] font-medium tracking-widest text-gray-500 uppercase mb-3">
           Límites del plan actual
         </h4>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {[
             { value: meta.projects, label: 'Proyectos' },
             { value: meta.runs,     label: 'Test runs/mes' },

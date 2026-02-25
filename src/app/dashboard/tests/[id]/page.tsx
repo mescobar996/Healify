@@ -27,6 +27,7 @@ import { toast } from "sonner";
 import { api, formatRelativeTime } from "@/lib/api";
 import { TestRunsSkeleton } from "@/components/ui/skeletons";
 import { TestDetailSheet } from "@/components/TestDetailSheet";
+import { JobProgressCard } from "@/components/JobProgressCard";
 import type { TestRun, TestRunStatus, HealingStatus, HealingHistoryItem } from "@/types";
 
 // ============================================
@@ -223,10 +224,10 @@ export default function TestRunDetailPage() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
           <div className="p-4 rounded-lg glass-elite">
             <p className="text-[11px] text-gray-500 uppercase tracking-wide">Total Tests</p>
-            <p className="text-2xl font-semibold text-white mt-1">{testRun.totalTests}</p>
+            <p className="text-xl sm:text-2xl font-semibold text-white mt-1">{testRun.totalTests}</p>
           </div>
           <div className="p-4 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
             <p className="text-[11px] text-emerald-400 uppercase tracking-wide">Pasados</p>
@@ -242,16 +243,28 @@ export default function TestRunDetailPage() {
           </div>
           <div className="p-4 rounded-lg glass-elite">
             <p className="text-[11px] text-gray-500 uppercase tracking-wide">Duración</p>
-            <p className="text-2xl font-semibold text-white mt-1">{duration}</p>
+            <p className="text-xl sm:text-2xl font-semibold text-white mt-1">{duration}</p>
           </div>
         </div>
+
+        {/* Worker Progress — shown when job is active */}
+        {(testRun.status === "PENDING" || testRun.status === "RUNNING") && (
+          <JobProgressCard
+            testRunId={testRun.id}
+            pollInterval={3000}
+            onComplete={() => {
+              // Reload page data when worker finishes
+              setTimeout(() => window.location.reload(), 1500)
+            }}
+          />
+        )}
 
         {/* Details Section */}
         <div className="rounded-lg glass-elite">
           <div className="px-4 py-3 border-b border-white/5">
             <h2 className="text-sm font-medium text-white">Detalles</h2>
           </div>
-          <div className="p-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
             <div>
               <p className="text-[11px] text-gray-500 uppercase tracking-wide mb-1">Proyecto</p>
               <p className="text-sm text-gray-200">{testRun.project?.name}</p>

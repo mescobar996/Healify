@@ -497,22 +497,29 @@ function TestsContent() {
                 <Link
                   key={run.id}
                   href={`/dashboard/tests/${run.id}`}
-                  className="group flex flex-col gap-2 px-4 py-3 hover:bg-white/[0.02] transition-colors duration-150"
+                  className="group flex flex-col gap-2 px-4 py-3.5 hover:bg-white/[0.02] active:bg-white/[0.04] transition-colors duration-150"
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
-                      <FileCode className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                      <span className="text-sm text-gray-200 truncate group-hover:text-white">
-                        {run.project?.name}
-                      </span>
+                      <FileCode className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
+                      <div className="min-w-0">
+                        <span className="text-sm text-gray-200 group-hover:text-white block truncate leading-tight">
+                          {run.project?.name}
+                        </span>
+                        {run.branch && (
+                          <span className="text-[10px] text-gray-500 font-mono truncate block mt-0.5">
+                            {run.branch}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <StatusBadge status={run.status} />
                   </div>
-                  <div className="flex items-center justify-between text-xs text-gray-500">
-                    <span>{formatRelativeTime(run.startedAt)}</span>
-                    <span>
-                      {run.passedTests}/{run.totalTests} pasados
-                    </span>
+                  <div className="flex items-center gap-3 text-[11px] text-gray-500 pl-6">
+                    <span className="text-emerald-400 font-medium">{run.passedTests}✓</span>
+                    {run.failedTests > 0 && <span className="text-red-400 font-medium">{run.failedTests}✗</span>}
+                    {run.healedTests > 0 && <span className="text-violet-400 font-medium">{run.healedTests}⚡</span>}
+                    <span className="ml-auto">{formatRelativeTime(run.startedAt)}</span>
                   </div>
                 </Link>
               ))}

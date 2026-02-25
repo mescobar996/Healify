@@ -67,7 +67,7 @@ export default function PricingPage() {
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-24 relative z-10">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 relative z-10">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="text-center mb-16">
           <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium glass-elite border border-[#00F5C8]/30 text-[#00F5C8] mb-6">
             <Sparkles className="w-3 h-3" /> Simple, Transparent Pricing
@@ -99,7 +99,7 @@ export default function PricingPage() {
                   </div>
                   <div className="mb-6">
                     <div className="flex items-end gap-1">
-                      <span className="text-5xl font-bold font-heading" style={isPro ? { background: 'linear-gradient(135deg, #00F5C8, #7B5EF8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' } : undefined}>${plan.price}</span>
+                      <span className="text-4xl sm:text-5xl font-bold font-heading" style={isPro ? { background: 'linear-gradient(135deg, #00F5C8, #7B5EF8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' } : undefined}>${plan.price}</span>
                       <span className="text-[#E8F0FF]/40 mb-1.5 text-sm">/month</span>
                     </div>
                     <p className="text-xs text-[#E8F0FF]/40 mt-1">Billed monthly · Cancel anytime</p>

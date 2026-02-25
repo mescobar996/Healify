@@ -128,7 +128,7 @@ function LandingHero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="text-5xl sm:text-7xl lg:text-8xl font-bold tracking-tight text-[#E8F0FF] font-heading"
+            className="text-4xl sm:text-7xl lg:text-8xl font-bold tracking-tight text-[#E8F0FF] font-heading"
           >
             <TypewriterText text="Tests That Heal Themselves" speed={80} />
           </motion.h1>
@@ -138,7 +138,7 @@ function LandingHero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="text-xl sm:text-2xl text-[#00F5C8] max-w-3xl mx-auto font-mono"
+            className="text-base sm:text-xl md:text-2xl text-[#00F5C8] max-w-3xl mx-auto font-mono"
           >
             Powered by AI · Zero Manual Maintenance
           </motion.p>
@@ -180,7 +180,7 @@ function LandingHero() {
             transition={{ duration: 1, delay: 0.5, type: 'spring' }}
             className="mt-16 max-w-5xl mx-auto"
           >
-            <DashboardPreview className="relative h-[600px]" />
+            <DashboardPreview className="relative h-[280px] sm:h-[400px] lg:h-[600px]" />
           </motion.div>
 
           {/* Stats */}
@@ -189,7 +189,7 @@ function LandingHero() {
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.6 }}
-            className="grid grid-cols-2 sm:grid-cols-4 gap-8 pt-16 border-t border-white/10 mt-16"
+            className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-8 pt-10 sm:pt-16 border-t border-white/10 mt-16"
           >
             <Stat value="500+" label="Teams" delay={0.7} />
             <Stat value="10K+" label="Tests Healed" delay={0.8} />
@@ -343,7 +343,7 @@ function CTASection() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="glass-elite glass-elite-large p-12 rounded-3xl text-center"
+          className="glass-elite glass-elite-large p-6 sm:p-10 lg:p-12 rounded-3xl text-center"
         >
           <h2 className="text-3xl sm:text-4xl font-bold text-[#E8F0FF] mb-4 font-heading">
             Ready to stop fixing broken tests?

@@ -385,7 +385,7 @@ function DashboardContent() {
         </div>
 
         {/* Metrics Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <MetricCard
             label="Tests Hoy"
             value={formatNumber(data.metrics.testsExecutedToday)}
@@ -426,7 +426,7 @@ function DashboardContent() {
                 ROI de Healify — acumulado histórico
               </span>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-0 divide-x divide-white/5">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-0 divide-y md:divide-y-0 divide-x-0 md:divide-x divide-white/5">
               {/* Horas ahorradas */}
               <div className="px-5 py-4 flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
@@ -495,7 +495,7 @@ function DashboardContent() {
         )}
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 lg:gap-4">
           {/* Chart Section */}
           <div className="lg:col-span-2 rounded-lg glass-elite p-4">
             <div className="flex items-center justify-between mb-4">
@@ -623,7 +623,7 @@ function DashboardContent() {
         </div>
 
         {/* Activity Feed & Healing History Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-4">
           {/* Activity Feed */}
           <ActivityFeed limit={5} />
 
@@ -689,13 +689,13 @@ function DashboardContent() {
                         {item.testName}
                       </p>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <code className="text-[11px] text-gray-500 font-mono truncate max-w-[200px]">
+                        <code className="text-[11px] text-gray-500 font-mono truncate max-w-[120px] sm:max-w-[200px]">
                           {item.oldSelector}
                         </code>
                         {item.newSelector && (
                           <>
                             <ChevronRight className="w-3 h-3 text-gray-600 flex-shrink-0" />
-                            <code className="text-[11px] text-emerald-400 font-mono truncate max-w-[200px]">
+                            <code className="text-[11px] text-emerald-400 font-mono truncate max-w-[120px] sm:max-w-[200px]">
                               {item.newSelector}
                             </code>
                           </>

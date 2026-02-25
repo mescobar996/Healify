@@ -265,7 +265,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     {unreadCount === 0 && <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-[#E8F0FF]/20 rounded-full ring-2 ring-[#0A0E1A]" />}
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-80 bg-[#0D1117] border-white/10 p-0">
+                <DropdownMenuContent align="end" className="w-[calc(100vw-1rem)] sm:w-80 bg-[#0D1117] border-white/10 p-0">
                   <div className="flex items-center justify-between px-3 py-2.5 border-b border-white/8">
                     <span className="text-[#E8F0FF]/40 text-xs uppercase tracking-wider font-medium">Notificaciones</span>
                     {unreadCount > 0 && (
@@ -335,7 +335,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         {/* Page content */}
-        <main className="p-4 lg:p-6 min-h-[calc(100vh-3.5rem)]">
+        <main className="p-4 lg:p-6 min-h-[calc(100vh-3.5rem)] pb-safe">
           {children}
         </main>
       </div>
