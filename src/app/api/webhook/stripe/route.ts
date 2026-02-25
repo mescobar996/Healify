@@ -10,7 +10,7 @@ import { Plan } from '@/lib/enums'
 function getStripeWebhook(): Stripe {
     const key = process.env.STRIPE_SECRET_KEY
     if (!key) throw new Error('[Webhook] STRIPE_SECRET_KEY no configurada')
-    return new Stripe(key, { apiVersion: '2026-01-28.clover' })
+    return new Stripe(key, { apiVersion: '2026-02-25.clover' })
 }
 
 function getPeriodEnd(subscription: Stripe.Subscription): Date {
