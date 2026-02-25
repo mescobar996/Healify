@@ -614,12 +614,40 @@ console.log('========================================')
 console.log('🚀 HEALIFY RAILWAY WORKER STARTING')
 console.log('========================================')
 
+// Imprimir env vars disponibles para debugging (sin mostrar valores secretos)
+console.log('🔍 Environment variables present:')
+const knownVars = ['REDIS_URL','DATABASE_URL','NODE_ENV','PORT','RAILWAY_ENVIRONMENT','RAILWAY_SERVICE_NAME']
+for (const v of knownVars) {
+    const val = process.env[v]
+    if (val) {
+        // Mostrar primeros 20 chars solo para confirmar que está seteada
+        console.log(`  ✅ ${v} = ${val.substring(0, 20)}...`)
+    } else {
+        console.log(`  ❌ ${v} = NOT SET`)
+    }
+}
+console.log('========================================')
+
 const redisUrl = process.env.REDIS_URL
 
 if (!redisUrl) {
     console.error('❌ FATAL: REDIS_URL not set')
-    console.error('Make sure REDIS_URL is set in environment variables')
-    process.exit(1)
+    console.error('Go to Railway → Your Service → Variables and add REDIS_URL directly')
+    console.error('(Shared Variables need to be referenced or copied to the service)')
+    // En vez de crash inmediato, arrancar el health server igual para que Railway
+    // no marque el container como crashlooping — así se pueden ver los logs
+    const http = require('http')
+    const port = parseInt(process.env.PORT || '8080', 10)
+    http.createServer((req: any, res: any) => {
+        res.writeHead(503, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ status: 'error', error: 'REDIS_URL not configured' }))
+    }).listen(port, '0.0.0.0', () => {
+        console.error(`⚠️ Health server on port ${port} (returning 503 until REDIS_URL is set)`)
+    })
+    // Esperar 60s para que los logs sean visibles antes de salir
+    setTimeout(() => process.exit(1), 60000)
+    // No continuar con la inicialización del worker
+    throw new Error('REDIS_URL_NOT_SET')
 }
 
 console.log('✅ Redis URL configured')
