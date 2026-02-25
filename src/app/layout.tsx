@@ -97,7 +97,7 @@ export default function RootLayout({
       <body
         className={`${orbitron.variable} ${exo2.variable} ${jetbrainsMono.variable} font-mono antialiased bg-[#0A0E1A] text-[#E8F0FF]`}
       >
-        {/* BackgroundSpace disabled — AMOLED clean */}
+        <BackgroundSpace />
         <Providers>
           {children}
           <Toaster />

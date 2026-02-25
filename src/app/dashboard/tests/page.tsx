@@ -107,7 +107,7 @@ function StatCard({
   iconColor: string;
 }) {
   return (
-    <div className="group relative p-4 rounded-lg glass-elite hover:border-[#1F1F26] transition-all duration-150">
+    <div className="group relative p-4 rounded-lg glass-elite hover:border-white/10 transition-all duration-150">
       <div className="flex items-start justify-between">
         <div className="space-y-2">
           <p className="text-[11px] font-medium tracking-widest text-gray-500 uppercase">
@@ -117,7 +117,7 @@ function StatCard({
             {value}
           </p>
         </div>
-        <div className={cn("p-2 rounded-md bg-[#15151A]", iconColor)}>
+        <div className={cn("p-2 rounded-md bg-white/5", iconColor)}>
           <Icon className="w-4 h-4" />
         </div>
       </div>
@@ -128,7 +128,7 @@ function StatCard({
 function EmptyState({ title, description }: { title: string; description: string }) {
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center">
-      <div className="p-3 rounded-full bg-[#15151A] mb-3">
+      <div className="p-3 rounded-full bg-white/5 mb-3">
         <FileCode className="w-5 h-5 text-gray-500" />
       </div>
       <p className="text-sm text-gray-400">{title}</p>
@@ -148,7 +148,7 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
         variant="outline"
         size="sm"
         onClick={onRetry}
-        className="bg-[#15151A] border-[#1F1F26] text-gray-300 hover:bg-white/10"
+        className="bg-white/5 border-white/10 text-gray-300 hover:bg-white/10"
       >
         <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
         Reintentar
@@ -283,7 +283,7 @@ function TestsContent() {
               toast.success(isPaused ? "Cola reanudada" : "Cola pausada");
             }}
             className={cn(
-              "bg-[#15151A] border-[#1F1F26] text-gray-300 hover:bg-white/10",
+              "bg-white/5 border-white/10 text-gray-300 hover:bg-white/10",
               isPaused && "bg-amber-500/10 border-amber-500/20 text-amber-400"
             )}
           >
@@ -356,7 +356,7 @@ function TestsContent() {
             placeholder="Buscar tests..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 input-glass text-[#F5F5F5] placeholder:text-[#F5F5F5]/30"
+            className="pl-9 input-glass text-[#E8F0FF] placeholder:text-[#E8F0FF]/30"
           />
         </div>
         <div className="flex gap-2 flex-wrap">
@@ -373,8 +373,8 @@ function TestsContent() {
               className={cn(
                 "px-3 py-1.5 rounded-md text-[13px] font-medium transition-all duration-150",
                 statusFilter === f.value
-                  ? "bg-[#15151A] text-white"
-                  : "text-gray-500 hover:text-gray-300 hover:bg-[#1C1C22]"
+                  ? "bg-white/5 text-white"
+                  : "text-gray-500 hover:text-gray-300 hover:bg-white/5"
               )}
             >
               {f.label}
@@ -386,7 +386,7 @@ function TestsContent() {
       {/* Test List - Linear Data Grid Style */}
       <div className="rounded-lg glass-elite">
         {/* List Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-[#1F1F26]">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
           <div className="flex items-center gap-3">
             <h2 className="text-sm font-medium text-white">Ejecuciones</h2>
             <span className="text-[10px] text-gray-500 bg-gray-800/50 px-1.5 py-0.5 rounded">
@@ -403,7 +403,7 @@ function TestsContent() {
         </div>
 
         {/* Column Headers */}
-        <div className="hidden md:grid grid-cols-12 gap-4 px-4 py-2 text-[11px] font-medium tracking-widest text-gray-500 uppercase border-b border-[#1F1F26]">
+        <div className="hidden md:grid grid-cols-12 gap-4 px-4 py-2 text-[11px] font-medium tracking-widest text-gray-500 uppercase border-b border-white/5">
           <div className="col-span-3">Test</div>
           <div className="col-span-2">Proyecto</div>
           <div className="col-span-1">Estado</div>
@@ -514,7 +514,7 @@ function TestsContent() {
                 <Link
                   key={run.id}
                   href={`/dashboard/tests/${run.id}`}
-                  className="group flex flex-col gap-2 px-4 py-3.5 hover:bg-white/[0.02] active:bg-[#111114] transition-colors duration-150"
+                  className="group flex flex-col gap-2 px-4 py-3.5 hover:bg-white/[0.02] active:bg-white/[0.04] transition-colors duration-150"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
@@ -546,7 +546,7 @@ function TestsContent() {
 
         {/* Load More */}
         {hasMore && filteredTestRuns.length > 0 && (
-          <div className="px-4 py-3 border-t border-[#1F1F26]">
+          <div className="px-4 py-3 border-t border-white/5">
             <button className="flex items-center justify-center gap-1 w-full text-xs text-gray-500 hover:text-gray-300 transition-colors">
               Cargar más
               <ChevronRight className="w-3 h-3" />

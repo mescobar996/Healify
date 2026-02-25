@@ -192,15 +192,15 @@ function CodeBlock({
           'absolute top-3 right-3 p-2 rounded-lg transition-all duration-300',
           copied 
             ? 'bg-emerald-500/20 text-emerald-400 neon-cyan' 
-            : 'bg-[#15151A] text-gray-400 hover:bg-white/10 hover:text-white'
+            : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
         )}
       >
         {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
       </button>
       
-      <div className="bg-[#0A0A0A]  border border-[#1F1F26] rounded-xl overflow-hidden">
+      <div className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden">
         {/* Language Badge */}
-        <div className="flex items-center gap-2 px-4 py-2 border-b border-[#1F1F26] bg-white/[0.02]">
+        <div className="flex items-center gap-2 px-4 py-2 border-b border-white/5 bg-white/[0.02]">
           <div className="w-3 h-3 rounded-full bg-red-500/60" />
           <div className="w-3 h-3 rounded-full bg-yellow-500/60" />
           <div className="w-3 h-3 rounded-full bg-green-500/60" />
@@ -240,10 +240,10 @@ function FrameworkTab({
       onClick={onClick}
       className={cn(
         'flex items-center gap-2 px-4 py-3 rounded-xl transition-all duration-300',
-        "transition-colors duration-150",
+        'glass-elite-hover',
         isActive 
-          ? 'bg-[#6366F1]/10 border-[#6366F1]/30' 
-          : 'bg-white/[0.02] border-[#1F1F26]'
+          ? 'bg-cyan-500/10 border-cyan-500/30 neon-cyan' 
+          : 'bg-white/[0.02] border-white/5'
       )}
     >
       <Icon className={cn('w-5 h-5', isActive ? 'text-cyan-400' : 'text-gray-400')} />
@@ -278,7 +278,7 @@ export default function ConnectPage() {
       </div>
 
       {/* Project ID Badge */}
-      <div className="bg-[#111114] border border-[#1F1F26] rounded-lg p-4">
+      <div className="glass-elite p-4">
         <div className="flex items-center justify-between">
           <div>
             <span className="text-xs text-gray-500 uppercase tracking-wider">Project ID</span>
@@ -286,7 +286,7 @@ export default function ConnectPage() {
           </div>
           <button 
             onClick={() => navigator.clipboard.writeText(projectId)}
-            className="p-2 rounded-lg bg-[#15151A] hover:bg-white/10 transition-colors"
+            className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
           >
             <Copy className="w-4 h-4 text-gray-400" />
           </button>
@@ -306,7 +306,7 @@ export default function ConnectPage() {
       </div>
 
       {/* Installation */}
-      <div className="bg-[#111114] border border-[#1F1F26] rounded-lg p-4">
+      <div className="glass-elite p-4">
         <h2 className="text-sm font-medium text-gray-400 mb-3">1. Install the SDK</h2>
         <CodeBlock 
           code={currentSnippet.install} 
@@ -316,7 +316,7 @@ export default function ConnectPage() {
       </div>
 
       {/* Integration Code */}
-      <div className="bg-[#111114] border border-[#1F1F26] rounded-lg p-4">
+      <div className="glass-elite p-4">
         <h2 className="text-sm font-medium text-gray-400 mb-3">2. Add to your test file</h2>
         <CodeBlock 
           code={codeWithProjectId} 
@@ -326,7 +326,7 @@ export default function ConnectPage() {
       </div>
 
       {/* Environment Variables */}
-      <div className="bg-[#111114] border border-[#1F1F26] rounded-lg p-4">
+      <div className="glass-elite p-4">
         <h2 className="text-sm font-medium text-gray-400 mb-3">3. Set environment variable</h2>
         <CodeBlock 
           code={`HEALIFY_API_KEY=hf_live_your_api_key_here`}
@@ -339,7 +339,7 @@ export default function ConnectPage() {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-[#111114] border border-[#1F1F26] rounded-lg p-6"
+        className="glass-elite p-6"
       >
         <div className="flex items-start sm:items-center gap-3 sm:gap-4">
           <div className="p-3 rounded-full bg-emerald-500/10">

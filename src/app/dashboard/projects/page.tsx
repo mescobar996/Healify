@@ -108,7 +108,7 @@ function ProjectCard({
   const failedTests = lastRun?.status === "FAILED" ? 1 : 0;
 
   return (
-    <div className="group relative p-4 rounded-lg bg-[#111114] border border-[#1F1F26] hover:bg-[#1C1C22] hover:border-[#2A2A33] transition-all duration-150">
+    <div className="group relative p-4 rounded-lg glass-elite hover:border-white/10 transition-all duration-150">
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
@@ -125,16 +125,16 @@ function ProjectCard({
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="p-1 rounded-md text-gray-500 hover:text-gray-300 hover:bg-[#1C1C22] transition-colors">
+            <button className="p-1 rounded-md text-gray-500 hover:text-gray-300 hover:bg-white/5 transition-colors">
               <MoreVertical className="w-4 h-4" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="end"
-            className="w-40 bg-[#111114] border-[#1F1F26]"
+            className="w-40 bg-[#0D1117] border-white/10"
           >
             <DropdownMenuItem 
-              className="text-gray-300 text-sm focus:bg-[#15151A] focus:text-white cursor-pointer"
+              className="text-gray-300 text-sm focus:bg-white/5 focus:text-white cursor-pointer"
               onClick={(e) => {
                 e.preventDefault();
                 onRunTests?.(project.id);
@@ -147,7 +147,7 @@ function ProjectCard({
               )}
               Ejecutar Tests
             </DropdownMenuItem>
-            <DropdownMenuItem className="text-gray-300 text-sm focus:bg-[#15151A] focus:text-white">
+            <DropdownMenuItem className="text-gray-300 text-sm focus:bg-white/5 focus:text-white">
               <Link
                 href={`/dashboard/tests?project=${project.id}`}
                 className="w-full flex items-center"
@@ -156,13 +156,13 @@ function ProjectCard({
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem
-              className="text-gray-300 text-sm focus:bg-[#15151A] focus:text-white cursor-pointer"
+              className="text-gray-300 text-sm focus:bg-white/5 focus:text-white cursor-pointer"
               onClick={() => onEdit?.(project.id)}
             >
               Editar
             </DropdownMenuItem>
             <DropdownMenuItem 
-              className="text-red-400 text-sm focus:bg-[#15151A] focus:text-red-300 cursor-pointer"
+              className="text-red-400 text-sm focus:bg-white/5 focus:text-red-300 cursor-pointer"
               onClick={() => onDelete?.(project.id)}
             >
               Eliminar
@@ -190,7 +190,7 @@ function ProjectCard({
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-1.5 sm:gap-2 mb-4">
-        <div className="text-center p-2 rounded-md bg-[#15151A]">
+        <div className="text-center p-2 rounded-md bg-white/5">
           <p className="text-lg font-semibold text-white">
             {project.testRunCount}
           </p>
@@ -213,7 +213,7 @@ function ProjectCard({
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between pt-3 border-t border-[#1F1F26]">
+      <div className="flex items-center justify-between pt-3 border-t border-white/5">
         <span className="text-[11px] text-gray-500 flex items-center gap-1.5">
           <Calendar className="w-3 h-3" />
           {lastRun
@@ -250,7 +250,7 @@ function EmptyState({
 }) {
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center">
-      <div className="p-3 rounded-full bg-[#15151A] mb-3">
+      <div className="p-3 rounded-full bg-white/5 mb-3">
         <FolderKanban className="w-5 h-5 text-gray-500" />
       </div>
       <p className="text-sm text-gray-400">{title}</p>
@@ -277,7 +277,7 @@ function ErrorState({
         variant="outline"
         size="sm"
         onClick={onRetry}
-        className="bg-[#15151A] border-[#1F1F26] text-gray-300 hover:bg-white/10"
+        className="bg-white/5 border-white/10 text-gray-300 hover:bg-white/10"
       >
         <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
         Reintentar
@@ -356,7 +356,7 @@ function NewProjectModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] w-[calc(100vw-2rem)] sm:w-auto bg-[#111114] border-[#1F1F26]">
+      <DialogContent className="sm:max-w-[500px] w-[calc(100vw-2rem)] sm:w-auto bg-[#0D1117] border-white/10">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle className="text-white">Nuevo Proyecto</DialogTitle>
@@ -374,7 +374,7 @@ function NewProjectModal({
                 placeholder="Mi Proyecto"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="input-glass text-[#F5F5F5] placeholder:text-[#F5F5F5]/30 focus:border-[#10B981]/50"
+                className="input-glass text-[#E8F0FF] placeholder:text-[#E8F0FF]/30 focus:border-[#00F5C8]/50"
                 required
                 disabled={isSubmitting}
               />
@@ -389,7 +389,7 @@ function NewProjectModal({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
-                className="input-glass text-[#F5F5F5] placeholder:text-[#F5F5F5]/30 focus:border-[#10B981]/50 resize-none"
+                className="input-glass text-[#E8F0FF] placeholder:text-[#E8F0FF]/30 focus:border-[#00F5C8]/50 resize-none"
                 disabled={isSubmitting}
               />
             </div>
@@ -403,7 +403,7 @@ function NewProjectModal({
                 value={repository}
                 onChange={(e) => setRepository(e.target.value)}
                 type="url"
-                className="input-glass text-[#F5F5F5] placeholder:text-[#F5F5F5]/30 focus:border-[#10B981]/50"
+                className="input-glass text-[#E8F0FF] placeholder:text-[#E8F0FF]/30 focus:border-[#00F5C8]/50"
                 disabled={isSubmitting}
               />
             </div>
@@ -413,7 +413,7 @@ function NewProjectModal({
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              className="bg-[#15151A] border-[#1F1F26] text-gray-300 hover:bg-white/10"
+              className="bg-white/5 border-white/10 text-gray-300 hover:bg-white/10"
               disabled={isSubmitting}
             >
               Cancelar
@@ -590,7 +590,7 @@ export default function ProjectsPage() {
               placeholder="Buscar proyectos..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 input-glass text-[#F5F5F5] placeholder:text-[#F5F5F5]/30"
+              className="pl-9 input-glass text-[#E8F0FF] placeholder:text-[#E8F0FF]/30"
             />
           </div>
           <div className="flex gap-2">
@@ -605,8 +605,8 @@ export default function ProjectsPage() {
                 className={cn(
                   "px-3 py-1.5 rounded-md text-[13px] font-medium transition-all duration-150",
                   statusFilter === f.value
-                    ? "bg-[#15151A] text-white"
-                    : "text-gray-500 hover:text-gray-300 hover:bg-[#1C1C22]"
+                    ? "bg-white/5 text-white"
+                    : "text-gray-500 hover:text-gray-300 hover:bg-white/5"
                 )}
               >
                 {f.label}
@@ -665,7 +665,7 @@ export default function ProjectsPage() {
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
-        <AlertDialogContent className="bg-[#111114] border-[#1F1F26] max-w-sm">
+        <AlertDialogContent className="bg-[#0D1117] border-white/10 max-w-sm">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-white">¿Eliminar proyecto?</AlertDialogTitle>
             <AlertDialogDescription className="text-gray-400">
@@ -675,7 +675,7 @@ export default function ProjectsPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel
-              className="bg-[#15151A] border-[#1F1F26] text-gray-300 hover:bg-white/10 hover:text-white"
+              className="bg-white/5 border-white/10 text-gray-300 hover:bg-white/10 hover:text-white"
               onClick={() => setDeleteConfirmId(null)}
             >
               Cancelar
