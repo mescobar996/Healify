@@ -29,7 +29,7 @@ export function WaveChart({ className = '' }: WaveChartProps) {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
 
       // Grid lines sutiles
-      ctx.strokeStyle = '#1A1A1A'
+      ctx.strokeStyle = '#1F1F26'
       ctx.lineWidth = 1
       for (let i = 0; i < canvas.height; i += 40) {
         ctx.beginPath()
@@ -39,8 +39,8 @@ export function WaveChart({ className = '' }: WaveChartProps) {
       }
 
       // Wave principal — indigo sólido, sin gradiente
-      ctx.strokeStyle = '#6366F1'
-      ctx.lineWidth = 3
+      ctx.strokeStyle = '#22C55E'
+      ctx.lineWidth = 2
       ctx.beginPath()
 
       const centerY = canvas.height / 2
@@ -62,7 +62,7 @@ export function WaveChart({ className = '' }: WaveChartProps) {
       ctx.shadowBlur = 0
 
       // Wave secundaria más pequeña
-      ctx.strokeStyle = 'rgba(99, 102, 241, 0.25)'
+      ctx.strokeStyle = 'rgba(34, 197, 94, 0.15)'
       ctx.lineWidth = 2
       ctx.beginPath()
 

@@ -68,17 +68,17 @@ function MetricCard({
   icon: React.ElementType;
 }) {
   return (
-    <div className="group relative p-4 rounded-lg bg-[#0F0F0F] border border-[#1C1C1C] hover:bg-[#111111] hover:border-[#2A2A2A] transition-all duration-150">
+    <div className="group relative p-4 rounded-lg bg-[#111114] border border-[#1F1F26] hover:bg-[#1C1C22] hover:border-[#2A2A33] transition-all duration-150 shadow-[0_1px_3px_rgba(0,0,0,0.4)]">
       <div className="flex items-start justify-between">
         <div className="space-y-2">
-          <p className="text-[11px] font-medium tracking-widest text-gray-500 uppercase">
+          <p className="text-[11px] font-medium tracking-widest text-[#8A8F98] uppercase">
             {label}
           </p>
-          <p className="text-2xl font-semibold text-white tracking-tight">
+          <p className="text-2xl font-bold text-[#F5F5F5] tracking-tight">
             {value}
           </p>
         </div>
-        <div className="p-2 rounded-md bg-[#111111]">
+        <div className="p-2 rounded-md bg-[#15151A] border border-[#1F1F26]">
           <Icon className="w-4 h-4 text-gray-400" />
         </div>
       </div>
@@ -375,7 +375,7 @@ function DashboardContent() {
               size="sm"
               onClick={handleRunTests}
               disabled={isRunning}
-              className="bg-[#6366F1] hover:bg-[#7274F3] text-white font-semibold px-4 h-9 rounded-lg text-sm transition-colors duration-150 disabled:opacity-50 flex items-center gap-1.5"
+              className="bg-[#6366F1] hover:bg-[#6E70F5] text-white font-semibold px-4 h-9 rounded-lg text-sm transition-all duration-150 disabled:opacity-50 flex items-center gap-1.5 shadow-[0_2px_8px_rgba(99,102,241,0.25)]"
             >
               {isRunning ? (
                 <>
@@ -437,7 +437,7 @@ function DashboardContent() {
             style={{ background: 'linear-gradient(135deg, rgba(0,245,200,0.04), rgba(123,94,248,0.04))' }}>
             <div className="px-4 py-2.5 border-b border-[#1C1C1C] flex items-center gap-2">
               <Sparkles className="w-3.5 h-3.5 text-[#6366F1]" />
-              <span className="text-[11px] font-medium tracking-widest text-[#E6E6E6]/40 uppercase">
+              <span className="text-[11px] font-medium tracking-widest text-[#F5F5F5]/40 uppercase">
                 ROI de Healify — acumulado histórico
               </span>
             </div>
@@ -449,10 +449,10 @@ function DashboardContent() {
                   <Timer className="w-4 h-4 text-[#6366F1]" />
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-[#E6E6E6] leading-none">
+                  <p className="text-lg font-bold text-[#F5F5F5] leading-none">
                     {roi.timeSavedHours > 0 ? `${roi.timeSavedHours}h` : '—'}
                   </p>
-                  <p className="text-[10px] text-[#E6E6E6]/40 mt-0.5">horas ahorradas</p>
+                  <p className="text-[10px] text-[#F5F5F5]/40 mt-0.5">horas ahorradas</p>
                 </div>
               </div>
               {/* Ahorro en $ */}
@@ -462,10 +462,10 @@ function DashboardContent() {
                   <DollarSign className="w-4 h-4 text-[#6366F1]" />
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-[#E6E6E6] leading-none">
+                  <p className="text-lg font-bold text-[#F5F5F5] leading-none">
                     {roi.totalCostSaved > 0 ? `$${roi.totalCostSaved.toLocaleString()}` : '—'}
                   </p>
-                  <p className="text-[10px] text-[#E6E6E6]/40 mt-0.5">ahorro estimado</p>
+                  <p className="text-[10px] text-[#F5F5F5]/40 mt-0.5">ahorro estimado</p>
                 </div>
               </div>
               {/* Tests autocurados este mes */}
@@ -475,10 +475,10 @@ function DashboardContent() {
                   <ShieldCheck className="w-4 h-4 text-emerald-400" />
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-[#E6E6E6] leading-none">
+                  <p className="text-lg font-bold text-[#F5F5F5] leading-none">
                     {roi.autoHealedMonth > 0 ? roi.autoHealedMonth : '—'}
                   </p>
-                  <p className="text-[10px] text-[#E6E6E6]/40 mt-0.5">curados este mes</p>
+                  <p className="text-[10px] text-[#F5F5F5]/40 mt-0.5">curados este mes</p>
                 </div>
               </div>
               {/* Tasa de autocuración */}
@@ -488,17 +488,17 @@ function DashboardContent() {
                   <TrendingUp className="w-4 h-4 text-yellow-400" />
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-[#E6E6E6] leading-none">
+                  <p className="text-lg font-bold text-[#F5F5F5] leading-none">
                     {roi.healingRate > 0 ? `${roi.healingRate}%` : '—'}
                   </p>
-                  <p className="text-[10px] text-[#E6E6E6]/40 mt-0.5">tasa autocuración</p>
+                  <p className="text-[10px] text-[#F5F5F5]/40 mt-0.5">tasa autocuración</p>
                 </div>
               </div>
             </div>
             {/* Empty state si no hay datos todavía */}
             {roi.timeSavedHours === 0 && roi.autoHealedMonth === 0 && (
               <div className="px-5 py-3 border-t border-[#1C1C1C]">
-                <p className="text-[11px] text-[#E6E6E6]/25 text-center">
+                <p className="text-[11px] text-[#F5F5F5]/25 text-center">
                   Los datos de ROI aparecerán cuando Healify cure su primer test · 
                   <a href="/dashboard/projects" className="text-[#6366F1]/50 hover:text-[#6366F1] transition-colors ml-1">
                     Conectá tu primer repo →
@@ -512,10 +512,10 @@ function DashboardContent() {
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 lg:gap-4">
           {/* Chart Section */}
-          <div className="lg:col-span-2 rounded-lg bg-[#0F0F0F] border border-[#1C1C1C] p-4">
+          <div className="lg:col-span-2 rounded-lg bg-[#111114] border border-[#1F1F26] p-4 shadow-[0_1px_3px_rgba(0,0,0,0.4)]">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-sm font-medium text-white">
+                <h2 className="text-sm font-medium text-[#F5F5F5]">
                   Tendencia de Curación
                 </h2>
                 <p className="text-xs text-gray-500 mt-0.5">Últimos 7 días</p>
@@ -590,9 +590,9 @@ function DashboardContent() {
           </div>
 
           {/* Fragile Selectors */}
-          <div className="rounded-lg bg-[#0F0F0F] border border-[#1C1C1C] p-4">
+          <div className="rounded-lg bg-[#111114] border border-[#1F1F26] p-4 shadow-[0_1px_3px_rgba(0,0,0,0.4)]">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-medium text-white">
+              <h2 className="text-sm font-medium text-[#F5F5F5]">
                 Selectores Frágiles
               </h2>
               <span className="text-[10px] text-gray-500 bg-gray-800/50 px-1.5 py-0.5 rounded">
@@ -643,11 +643,11 @@ function DashboardContent() {
           <ActivityFeed limit={5} />
 
           {/* Healing History List - Linear Style */}
-          <div className="rounded-lg bg-[#0F0F0F] border border-[#1C1C1C]">
+          <div className="rounded-lg bg-[#111114] border border-[#1F1F26] shadow-[0_1px_3px_rgba(0,0,0,0.4)]">
           {/* List Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-[#1C1C1C]">
             <div className="flex items-center gap-3">
-              <h2 className="text-sm font-medium text-white">
+              <h2 className="text-sm font-medium text-[#F5F5F5]">
                 Últimas Curaciones
               </h2>
               <span className="text-[10px] text-gray-500 bg-gray-800/50 px-1.5 py-0.5 rounded">

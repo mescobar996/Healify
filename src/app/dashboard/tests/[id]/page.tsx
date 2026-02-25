@@ -87,7 +87,7 @@ function ConfidenceBar({ confidence }: { confidence: number }) {
 function EmptyState({ title, description }: { title: string; description: string }) {
   return (
     <div className="flex flex-col items-center justify-center py-8 text-center">
-      <div className="p-3 rounded-full bg-[#111111] mb-3">
+      <div className="p-3 rounded-full bg-[#15151A] mb-3">
         <FileCode className="w-5 h-5 text-gray-500" />
       </div>
       <p className="text-sm text-gray-400">{title}</p>
@@ -225,7 +225,7 @@ export default function TestRunDetailPage() {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-          <div className="p-4 rounded-lg bg-[#0F0F0F] border border-[#1C1C1C]">
+          <div className="p-4 rounded-lg bg-[#111114] border border-[#1F1F26]">
             <p className="text-[11px] text-gray-500 uppercase tracking-wide">Total Tests</p>
             <p className="text-xl sm:text-2xl font-semibold text-white mt-1">{testRun.totalTests}</p>
           </div>
@@ -241,7 +241,7 @@ export default function TestRunDetailPage() {
             <p className="text-[11px] text-violet-400 uppercase tracking-wide">Curados</p>
             <p className="text-2xl font-semibold text-violet-400 mt-1">{testRun.healedTests}</p>
           </div>
-          <div className="p-4 rounded-lg bg-[#0F0F0F] border border-[#1C1C1C]">
+          <div className="p-4 rounded-lg bg-[#111114] border border-[#1F1F26]">
             <p className="text-[11px] text-gray-500 uppercase tracking-wide">Duración</p>
             <p className="text-xl sm:text-2xl font-semibold text-white mt-1">{duration}</p>
           </div>
@@ -260,8 +260,8 @@ export default function TestRunDetailPage() {
         )}
 
         {/* Details Section */}
-        <div className="rounded-lg bg-[#0F0F0F] border border-[#1C1C1C]">
-          <div className="px-4 py-3 border-b border-[#1C1C1C]">
+        <div className="rounded-lg bg-[#111114] border border-[#1F1F26]">
+          <div className="px-4 py-3 border-b border-[#1F1F26]">
             <h2 className="text-sm font-medium text-white">Detalles</h2>
           </div>
           <div className="p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
@@ -295,8 +295,8 @@ export default function TestRunDetailPage() {
         </div>
 
         {/* Healing Events */}
-        <div className="rounded-lg bg-[#0F0F0F] border border-[#1C1C1C]">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-[#1C1C1C]">
+        <div className="rounded-lg bg-[#111114] border border-[#1F1F26]">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-[#1F1F26]">
             <div className="flex items-center gap-3">
               <h2 className="text-sm font-medium text-white">Eventos de Curación</h2>
               <span className="text-[10px] text-gray-500 bg-gray-800/50 px-1.5 py-0.5 rounded">{healingEvents.length}</span>

@@ -41,142 +41,161 @@
 }
 
 /* ============================================
-   HEALIFY — AMOLED DARK DESIGN SYSTEM
-   Inspirado en Linear · Preciso · Profesional
+   HEALIFY — AMOLED LAYERED DESIGN SYSTEM
+   Black base + differentiated surfaces
+   No glow. No glass. Pure depth.
    ============================================ */
 
 :root {
   --radius: 0.5rem;
 
-  /* ── PALETA AMOLED ────────────────────────────── */
-  --background:   #000000;   /* AMOLED black real    */
-  --foreground:   #E6E6E6;   /* texto primario       */
+  /* ── CAPA DE FONDOS (de más oscuro a más claro) ── */
+  --layer-0:  #000000;   /* canvas base             */
+  --layer-1:  #0B0B0F;   /* sidebar, overlays       */
+  --layer-2:  #111114;   /* cards principales       */
+  --layer-3:  #15151A;   /* paneles internos        */
+  --layer-4:  #1C1C22;   /* hover                   */
+  --layer-5:  #232329;   /* hover activo / selected */
 
-  --card:         #0F0F0F;   /* cards sólidas        */
-  --card-foreground: #E6E6E6;
+  /* ── BORDES ── */
+  --border-1: #1F1F26;   /* borde principal         */
+  --border-2: #2A2A33;   /* borde enfatizado        */
 
-  --popover:      #0F0F0F;
-  --popover-foreground: #E6E6E6;
+  /* ── TIPOGRAFÍA ── */
+  --text-primary:   #F5F5F5;  /* números, títulos    */
+  --text-secondary: #8A8F98;  /* labels, subtítulos  */
+  --text-muted:     #4A4D57;  /* placeholder, disabled */
+  --text-accent:    #6366F1;  /* links, accent text  */
 
-  /* Accent — violeta técnico sobrio */
-  --primary:      #6366F1;
-  --primary-foreground: #ffffff;
+  /* ── ACCENT ── */
+  --accent-primary:  #6366F1;           /* indigo técnico   */
+  --accent-hover:    #6E70F5;           /* hover +8% claro  */
+  --accent-muted:    rgba(99,102,241,0.12); /* bg sutil     */
+  --accent-border:   rgba(99,102,241,0.25);
 
-  --secondary:    #111111;
-  --secondary-foreground: #9CA3AF;
-
-  --muted:        #111111;
-  --muted-foreground: #6B7280;
-
-  --accent:       #161616;
-  --accent-foreground: #E6E6E6;
-
-  /* Estados QA — sobrios, profesionales */
-  --state-passed:  #10B981;
+  /* ── ESTADOS QA — sobrios, profesionales ── */
+  --state-passed:  #22C55E;
   --state-failed:  #EF4444;
   --state-warning: #F59E0B;
   --state-info:    #3B82F6;
   --state-healed:  #6366F1;
+  --state-pending: #6B7280;
 
-  --destructive: #EF4444;
+  /* ── CSS VARS PARA TOKENS TAILWIND ── */
+  --background:   #000000;
+  --foreground:   #F5F5F5;
 
-  /* Bordes */
-  --border: #1C1C1C;
-  --input:  #111111;
-  --ring:   rgba(99, 102, 241, 0.4);
+  --card:              #111114;
+  --card-foreground:   #F5F5F5;
 
-  /* Charts */
+  --popover:           #111114;
+  --popover-foreground:#F5F5F5;
+
+  --primary:           #6366F1;
+  --primary-foreground:#ffffff;
+
+  --secondary:         #111114;
+  --secondary-foreground: #8A8F98;
+
+  --muted:             #0B0B0F;
+  --muted-foreground:  #4A4D57;
+
+  --accent:            #1C1C22;
+  --accent-foreground: #F5F5F5;
+
+  --destructive:       #EF4444;
+
+  --border: #1F1F26;
+  --input:  #111114;
+  --ring:   rgba(99, 102, 241, 0.35);
+
+  /* ── CHARTS ── */
   --chart-1: #6366F1;
-  --chart-2: #10B981;
+  --chart-2: #22C55E;
   --chart-3: #F59E0B;
   --chart-4: #3B82F6;
   --chart-5: #8B5CF6;
 
-  /* Sidebar */
-  --sidebar:            #0A0A0A;
-  --sidebar-foreground: #9CA3AF;
+  /* ── SIDEBAR ── */
+  --sidebar:            #0B0B0F;
+  --sidebar-foreground: #8A8F98;
   --sidebar-primary:    #6366F1;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent:     #111111;
-  --sidebar-accent-foreground: #E6E6E6;
-  --sidebar-border:     #111111;
+  --sidebar-accent:     #17171C;
+  --sidebar-accent-foreground: #F5F5F5;
+  --sidebar-border:     #1F1F26;
   --sidebar-ring:       rgba(99, 102, 241, 0.3);
-
-  /* Separadores */
-  --divider: #1C1C1C;
 }
 
+/* ============================================
+   BASE
+   ============================================ */
+
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
+  * { @apply border-border outline-ring/50; }
 
   body {
     @apply antialiased;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     background: #000000;
     min-height: 100vh;
-    color: #E6E6E6;
+    color: #F5F5F5;
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-weight: 600;
     letter-spacing: -0.02em;
-    color: #E6E6E6;
+    color: #F5F5F5;
   }
 
   .font-heading { font-family: 'Inter', sans-serif; }
   .font-mono    { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
 
-  /* Selection */
   ::selection {
     background: rgba(99, 102, 241, 0.3);
     color: #ffffff;
   }
 
-  /* Prefers Reduced Motion */
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
     }
   }
 }
 
 /* ============================================
-   DESIGN TOKENS — COMPONENTES ATÓMICOS
+   COMPONENTS — Design tokens atómicos
    ============================================ */
 
 @layer components {
 
-  /* ── Card base — negro sólido, borde sutil ── */
+  /* ── Surface / Card — profundidad por capas ── */
   .glass-elite {
-    background: #0F0F0F;
-    border: 1px solid #1C1C1C;
+    background: #111114;
+    border: 1px solid #1F1F26;
     border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3);
     position: relative;
     overflow: hidden;
     padding: 1rem;
   }
 
-  .glass-elite::before { display: none; } /* eliminar inner glow */
+  .glass-elite::before { display: none; }
 
-  /* Hover state — ligero feedback sin movimiento */
   .glass-elite-hover {
-    transition: border-color 150ms ease-out, background 150ms ease-out;
+    transition: background 150ms ease-out, border-color 150ms ease-out;
   }
-
   .glass-elite-hover:hover {
-    background: #111111;
-    border-color: #2A2A2A;
-    transform: none;    /* sin float */
-    box-shadow: none;   /* sin glow */
+    background: #1C1C22;
+    border-color: #2A2A33;
+    transform: none;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.5);
   }
 
-  .glass-elite-large { border-radius: 12px; }
+  .glass-elite-large { border-radius: 10px; }
 
-  /* ── Botón primario — sólido, sin gradiente ── */
+  /* ── Botón primario — accent sólido ── */
   .btn-neon {
     background: #6366F1;
     color: #ffffff;
@@ -185,105 +204,86 @@
     transition: background 150ms ease-out, box-shadow 150ms ease-out;
     box-shadow: none;
   }
-
   .btn-neon:hover {
-    background: #7274F3;
-    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);
+    background: #6E70F5;
+    box-shadow: 0 2px 8px rgba(99,102,241,0.3);
     transform: none;
   }
 
-  /* ── Botón secundario / outline ── */
+  /* ── Botón outline / secundario ── */
   .btn-glass {
     background: transparent;
-    border: 1px solid #2A2A2A;
-    color: #9CA3AF;
-    transition: background 150ms ease-out, border-color 150ms ease-out;
+    border: 1px solid #2A2A33;
+    color: #8A8F98;
+    transition: background 150ms ease-out, border-color 150ms ease-out, color 150ms ease-out;
   }
-
   .btn-glass:hover {
-    background: #111111;
-    border-color: #3A3A3A;
-    color: #E6E6E6;
-    box-shadow: none;
+    background: #1C1C22;
+    border-color: #333340;
+    color: #F5F5F5;
   }
 
-  /* ── Inputs ── */
+  /* ── Input ── */
   .input-glass {
-    background: #0F0F0F;
-    border: 1px solid #1C1C1C;
-    color: #E6E6E6;
+    background: #0B0B0F;
+    border: 1px solid #1F1F26;
+    color: #F5F5F5;
     transition: border-color 150ms ease-out;
   }
-
   .input-glass:focus {
-    background: #111111;
+    background: #111114;
     border-color: #6366F1;
-    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+    box-shadow: 0 0 0 2px rgba(99,102,241,0.15);
     outline: none;
   }
 
-  /* ── Nav activo — sidebar Linear style ── */
+  /* ── Nav activo — Linear style ── */
   .nav-active {
-    background: #111111;
+    background: #17171C;
     border-left: 3px solid #6366F1;
-    color: #E6E6E6;
+    color: #F5F5F5;
     box-shadow: none;
   }
-
   .nav-active .nav-icon { color: #6366F1; }
 
-  /* ── Badges de estado QA ── */
+  /* ── Status badges — sin backdrop-filter ── */
   .badge-success {
-    background: rgba(16, 185, 129, 0.1);
-    border: 1px solid rgba(16, 185, 129, 0.2);
-    color: #10B981;
+    background: rgba(34,197,94,0.1);
+    border: 1px solid rgba(34,197,94,0.2);
+    color: #22C55E;
   }
-
   .badge-warning {
-    background: rgba(245, 158, 11, 0.1);
-    border: 1px solid rgba(245, 158, 11, 0.2);
+    background: rgba(245,158,11,0.1);
+    border: 1px solid rgba(245,158,11,0.2);
     color: #F59E0B;
   }
-
   .badge-error {
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.2);
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.2);
     color: #EF4444;
   }
-
   .badge-info {
-    background: rgba(59, 130, 246, 0.1);
-    border: 1px solid rgba(59, 130, 246, 0.2);
+    background: rgba(59,130,246,0.1);
+    border: 1px solid rgba(59,130,246,0.2);
     color: #3B82F6;
   }
 
-  /* ── Texto con color accent ── */
-  .text-gradient {
-    color: #6366F1;
-    background: none;
-    -webkit-text-fill-color: unset;
-  }
-
-  .text-gradient-cyan   { color: #10B981; }
+  /* ── Texto accent ── */
+  .text-gradient        { color: #6366F1; background: none; -webkit-text-fill-color: unset; }
+  .text-gradient-cyan   { color: #22C55E; }
   .text-gradient-purple { color: #6366F1; }
   .text-gradient-pink   { color: #8B5CF6; }
 
-  /* ── Neon classes → apagadas (backward compat) ── */
+  /* ── Backward-compat: silenciar neon/glow ── */
   .neon-purple, .neon-cyan, .neon-pink { box-shadow: none; }
-  .glow-pulse  { animation: none; }
+  .glow-pulse   { animation: none; }
   .neon-border::after { display: none; }
+  .logo-glow    { filter: none; }
+  .card-magnetic        { transition: border-color 150ms ease-out; }
+  .card-magnetic:hover  { transform: none; }
+  .grid-lines   { background-image: none; opacity: 0; }
 
-  /* ── Logo: sin glow, imagen limpia ── */
-  .logo-glow { filter: none; }
-
-  /* ── Card magnética → sin movimiento ── */
-  .card-magnetic { transition: border-color 150ms ease-out; }
-  .card-magnetic:hover { transform: none; }
-
-  /* ── Grid lines → eliminadas ── */
-  .grid-lines { background-image: none; opacity: 0; }
-
-  /* ── Stagger utilities (se mantienen) ── */
+  /* ── Stagger ── */
   .stagger-1 { animation-delay: 0.05s; }
   .stagger-2 { animation-delay: 0.10s; }
   .stagger-3 { animation-delay: 0.15s; }
@@ -293,64 +293,38 @@
 }
 
 /* ============================================
-   ANIMACIONES — rápidas y limpias
+   ANIMACIONES — rápidas, sin float
    ============================================ */
 
 @layer utilities {
-  .animate-fade-in {
-    animation: fade-in 200ms ease-out forwards;
-  }
-
-  .animate-fade-in-up {
-    animation: fade-in-up 200ms ease-out forwards;
-  }
-
-  .animate-scale-in {
-    animation: scale-in 150ms ease-out forwards;
-  }
-
-  /* Float animations → apagadas */
+  .animate-fade-in     { animation: fade-in 200ms ease-out forwards; }
+  .animate-fade-in-up  { animation: fade-in-up 180ms ease-out forwards; }
+  .animate-scale-in    { animation: scale-in 150ms ease-out forwards; }
   .animate-float,
   .animate-float-y,
   .animate-float-y-delay-1,
   .animate-float-y-delay-2,
   .animate-float-y-delay-3,
-  .animate-float-y-delay-4 {
-    animation: none;
-  }
-
-  .animate-pulse-glow {
-    animation: none;
-  }
+  .animate-float-y-delay-4,
+  .animate-pulse-glow  { animation: none; }
 }
 
-@keyframes fade-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-
-@keyframes fade-in-up {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes scale-in {
-  from { opacity: 0; transform: scale(0.97); }
-  to   { opacity: 1; transform: scale(1); }
-}
+@keyframes fade-in    { from { opacity:0 } to { opacity:1 } }
+@keyframes fade-in-up { from { opacity:0; transform:translateY(6px) } to { opacity:1; transform:translateY(0) } }
+@keyframes scale-in   { from { opacity:0; transform:scale(0.97) } to { opacity:1; transform:scale(1) } }
 
 /* ============================================
-   SCROLLBAR — minimalista
+   SCROLLBAR
    ============================================ */
 
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track  { background: #000000; }
-::-webkit-scrollbar-thumb  { background: #2A2A2A; border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: #3A3A3A; }
+::-webkit-scrollbar       { width:4px; height:4px; }
+::-webkit-scrollbar-track { background:#000000; }
+::-webkit-scrollbar-thumb { background:#2A2A33; border-radius:2px; }
+::-webkit-scrollbar-thumb:hover { background:#3A3A45; }
 
 /* ============================================
-   PARTICLES / CURSOR GLOW → eliminados
+   PARTICLES / CURSOR → eliminados
    ============================================ */
 
-.space-particle { display: none; }
-.cursor-glow    { display: none; }
+.space-particle { display:none; }
+.cursor-glow    { display:none; }

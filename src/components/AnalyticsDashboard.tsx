@@ -120,10 +120,10 @@ export function AnalyticsDashboard({ projectId }: AnalyticsDashboardProps) {
                                     <defs>
                                         <linearGradient id="colorHealing" x1="0" y1="0" x2="0" y2="1">
                                             <stop offset="5%" stopColor="#6366F1" stopOpacity={0.3} />
-                                            <stop offset="95%" stopColor="#6366F1" stopOpacity={0} />
+                                            <stop offset="95%" stopColor="#6366F1" stopOpacity={0.02} />
                                         </linearGradient>
                                     </defs>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1A1A1A" />
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1F1F26" />
                                     <XAxis
                                         dataKey="date"
                                         axisLine={false}
@@ -162,10 +162,10 @@ export function AnalyticsDashboard({ projectId }: AnalyticsDashboardProps) {
                                     <defs>
                                         <linearGradient id="colorAccuracy" x1="0" y1="0" x2="0" y2="1">
                                             <stop offset="5%" stopColor="#10B981" stopOpacity={0.3} />
-                                            <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
+                                            <stop offset="95%" stopColor="#10B981" stopOpacity={0.02} />
                                         </linearGradient>
                                     </defs>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1A1A1A" />
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1F1F26" />
                                     <XAxis
                                         dataKey="date"
                                         axisLine={false}
