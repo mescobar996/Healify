@@ -63,8 +63,27 @@ export async function POST(request: Request) {
                 return NextResponse.json({ message: 'No project found for this repository' })
             }
 
-            // Analyze impact (simulated)
-            const impact = await gitAnalyzer.analyzeCommit('')
+            // Analyze impact usando archivos REALES del commit de GitHub
+            // payload.head_commit.added + modified + removed = todos los archivos tocados
+            const headCommit = payload.head_commit || {}
+            const changedFiles: string[] = [
+                ...(headCommit.added    || []),
+                ...(headCommit.modified || []),
+                ...(headCommit.removed  || []),
+            ]
+            // Si el push tiene múltiples commits, acumular archivos de todos
+            const allCommitFiles: string[] = [...changedFiles]
+            if (Array.isArray(payload.commits)) {
+                for (const commit of payload.commits) {
+                    allCommitFiles.push(
+                        ...(commit.added    || []),
+                        ...(commit.modified || []),
+                        ...(commit.removed  || []),
+                    )
+                }
+            }
+            const uniqueFiles = Array.from(new Set(allCommitFiles))
+            const impact = await gitAnalyzer.analyzeCommit('', uniqueFiles)
 
             // Create a new TestRun
             const testRun = await db.testRun.create({

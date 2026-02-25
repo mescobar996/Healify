@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { dashboardService } from '@/lib/dashboard-service'
+import { db } from '@/lib/db'
 import type { DashboardData } from '@/types'
 
 // ============================================
@@ -38,8 +39,11 @@ export async function GET() {
     }
 
     try {
-      const data = await dashboardService.getDashboardData(session.user.id)
-      return NextResponse.json(data)
+      const [data, projectCount] = await Promise.all([
+        dashboardService.getDashboardData(session.user.id),
+        db.project.count({ where: { userId: session.user.id } }),
+      ])
+      return NextResponse.json({ ...data, projectCount, isNewUser: projectCount === 0 })
     } catch (dbError) {
       // DB not connected — return empty state (no fake data)
       console.warn('DB unavailable, returning empty dashboard data:', dbError)

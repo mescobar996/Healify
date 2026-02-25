@@ -3,6 +3,7 @@
 import React, { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import {
   CheckCircle2,
   XCircle,
@@ -36,12 +37,18 @@ import { api, formatNumber } from "@/lib/api";
 import { DashboardSkeleton } from "@/components/ui/skeletons";
 import { TestDetailSheet } from "@/components/TestDetailSheet";
 import { ActivityFeed } from "@/components/ActivityFeed";
+import { OnboardingBanner } from "@/components/OnboardingBanner";
 import { toast } from "sonner";
 import type {
   DashboardData,
   HealingStatus,
   HealingHistoryItem,
 } from "@/types";
+
+interface DashboardResponse extends DashboardData {
+  isNewUser?: boolean
+  projectCount?: number
+}
 
 // ============================================
 // LINEAR STYLE COMPONENTS
@@ -216,6 +223,7 @@ function DashboardContent() {
     healingRate: number
     healedToday: number
   }
+  const { data: session } = useSession()
   const [roi, setRoi] = useState<ROIData | null>(null);
   useEffect(() => {
     fetch('/api/analytics', { credentials: 'include' })
@@ -383,6 +391,13 @@ function DashboardContent() {
             </Button>
           </div>
         </div>
+
+        {/* Onboarding Banner — visible solo si es usuario nuevo sin proyectos */}
+        {(data as DashboardResponse).isNewUser && (
+          <OnboardingBanner
+            userName={session?.user?.name || undefined}
+          />
+        )}
 
         {/* Metrics Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
