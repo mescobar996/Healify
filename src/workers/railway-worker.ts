@@ -671,16 +671,44 @@ worker.on('stalled', (jobId: string) => {
     console.warn(`⚠️ Job ${jobId} stalled`)
 })
 
+// ── Health check HTTP server ─────────────────────────────────────────
+// Railway hace healthcheck en /health — sin este servidor el deploy
+// queda UNHEALTHY aunque el worker esté procesando jobs correctamente.
+// PORT es inyectado por Railway automáticamente (default 8080).
+const PORT = parseInt(process.env.PORT || '8080', 10)
+
+const healthServer = createServer((req, res) => {
+    if (req.url === '/health' || req.url === '/') {
+        res.writeHead(200, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({
+            status: 'ok',
+            worker: 'healify-railway-worker',
+            queue: TEST_QUEUE_NAME,
+            uptime: Math.floor(process.uptime()),
+            timestamp: new Date().toISOString(),
+        }))
+    } else {
+        res.writeHead(404)
+        res.end('Not found')
+    }
+})
+
+healthServer.listen(PORT, '0.0.0.0', () => {
+    console.log(`🏥 Health server listening on 0.0.0.0:${PORT} -> GET /health`)
+})
+
 console.log('\n🎯 Worker ready and listening for jobs...\n')
 
 process.on('SIGTERM', async () => {
     console.log('\n🛑 SIGTERM received, shutting down gracefully...')
+    healthServer.close()
     await worker.close()
     process.exit(0)
 })
 
 process.on('SIGINT', async () => {
     console.log('\n🛑 SIGINT received, shutting down gracefully...')
+    healthServer.close()
     await worker.close()
     process.exit(0)
 })
