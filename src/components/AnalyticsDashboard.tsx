@@ -119,11 +119,11 @@ export function AnalyticsDashboard({ projectId }: AnalyticsDashboardProps) {
                                 <AreaChart data={data.healingTrend}>
                                     <defs>
                                         <linearGradient id="colorHealing" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.3} />
-                                            <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0} />
+                                            <stop offset="5%" stopColor="#6366F1" stopOpacity={0.3} />
+                                            <stop offset="95%" stopColor="#6366F1" stopOpacity={0} />
                                         </linearGradient>
                                     </defs>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1A1A1A" />
                                     <XAxis
                                         dataKey="date"
                                         axisLine={false}
@@ -139,7 +139,7 @@ export function AnalyticsDashboard({ projectId }: AnalyticsDashboardProps) {
                                     <Area
                                         type="monotone"
                                         dataKey="count"
-                                        stroke="#0ea5e9"
+                                        stroke="#6366F1"
                                         strokeWidth={2}
                                         fillOpacity={1}
                                         fill="url(#colorHealing)"
@@ -161,11 +161,11 @@ export function AnalyticsDashboard({ projectId }: AnalyticsDashboardProps) {
                                 <AreaChart data={data.aiAccuracyTrend}>
                                     <defs>
                                         <linearGradient id="colorAccuracy" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3} />
-                                            <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                                            <stop offset="5%" stopColor="#10B981" stopOpacity={0.3} />
+                                            <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
                                         </linearGradient>
                                     </defs>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1A1A1A" />
                                     <XAxis
                                         dataKey="date"
                                         axisLine={false}
@@ -181,7 +181,7 @@ export function AnalyticsDashboard({ projectId }: AnalyticsDashboardProps) {
                                     <Area
                                         type="monotone"
                                         dataKey="accuracy"
-                                        stroke="#8b5cf6"
+                                        stroke="#10B981"
                                         strokeWidth={2}
                                         fillOpacity={1}
                                         fill="url(#colorAccuracy)"

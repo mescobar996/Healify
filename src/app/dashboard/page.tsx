@@ -68,7 +68,7 @@ function MetricCard({
   icon: React.ElementType;
 }) {
   return (
-    <div className="group relative p-4 rounded-lg glass-elite hover:border-white/10 transition-all duration-150">
+    <div className="group relative p-4 rounded-lg bg-[#0F0F0F] border border-[#1C1C1C] hover:bg-[#111111] hover:border-[#2A2A2A] transition-all duration-150">
       <div className="flex items-start justify-between">
         <div className="space-y-2">
           <p className="text-[11px] font-medium tracking-widest text-gray-500 uppercase">
@@ -78,7 +78,7 @@ function MetricCard({
             {value}
           </p>
         </div>
-        <div className="p-2 rounded-md bg-white/5">
+        <div className="p-2 rounded-md bg-[#111111]">
           <Icon className="w-4 h-4 text-gray-400" />
         </div>
       </div>
@@ -169,7 +169,7 @@ function ConfidenceBar({ confidence }: { confidence: number }) {
 function EmptyState({ title, description }: { title: string; description: string }) {
   return (
     <div className="flex flex-col items-center justify-center py-8 text-center">
-      <div className="p-3 rounded-full bg-white/5 mb-3">
+      <div className="p-3 rounded-full bg-[#111111] mb-3">
         <AlertTriangle className="w-5 h-5 text-gray-500" />
       </div>
       <p className="text-sm text-gray-400">{title}</p>
@@ -190,7 +190,7 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
         variant="outline"
         size="sm"
         onClick={onRetry}
-        className="bg-white/5 border-white/10 text-gray-300 hover:bg-white/10"
+        className="bg-[#111111] border-[#1C1C1C] text-gray-300 hover:bg-white/10"
       >
         <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
         Reintentar
@@ -366,7 +366,7 @@ function DashboardContent() {
               variant="outline"
               size="sm"
               onClick={fetchDashboard}
-              className="bg-white/5 border-white/10 text-gray-300 hover:bg-white/10"
+              className="bg-[#111111] border-[#1C1C1C] text-gray-300 hover:bg-white/10"
             >
               <RefreshCw className={cn("w-3.5 h-3.5 mr-1.5", loading && "animate-spin")} />
               Actualizar
@@ -375,7 +375,7 @@ function DashboardContent() {
               size="sm"
               onClick={handleRunTests}
               disabled={isRunning}
-              className="btn-neon text-[#0A0E1A] disabled:opacity-50"
+              className="bg-[#6366F1] hover:bg-[#7274F3] text-white font-semibold px-4 h-9 rounded-lg text-sm transition-colors duration-150 disabled:opacity-50 flex items-center gap-1.5"
             >
               {isRunning ? (
                 <>
@@ -433,11 +433,11 @@ function DashboardContent() {
 
         {/* ROI Strip — Bloque 7 */}
         {roi && (
-          <div className="rounded-xl border border-white/5 overflow-hidden"
+          <div className="rounded-xl border border-[#1C1C1C] overflow-hidden"
             style={{ background: 'linear-gradient(135deg, rgba(0,245,200,0.04), rgba(123,94,248,0.04))' }}>
-            <div className="px-4 py-2.5 border-b border-white/5 flex items-center gap-2">
-              <Sparkles className="w-3.5 h-3.5 text-[#00F5C8]" />
-              <span className="text-[11px] font-medium tracking-widest text-[#E8F0FF]/40 uppercase">
+            <div className="px-4 py-2.5 border-b border-[#1C1C1C] flex items-center gap-2">
+              <Sparkles className="w-3.5 h-3.5 text-[#6366F1]" />
+              <span className="text-[11px] font-medium tracking-widest text-[#E6E6E6]/40 uppercase">
                 ROI de Healify — acumulado histórico
               </span>
             </div>
@@ -446,26 +446,26 @@ function DashboardContent() {
               <div className="px-5 py-4 flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                   style={{ background: 'rgba(0,245,200,0.1)' }}>
-                  <Timer className="w-4 h-4 text-[#00F5C8]" />
+                  <Timer className="w-4 h-4 text-[#6366F1]" />
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-[#E8F0FF] leading-none">
+                  <p className="text-lg font-bold text-[#E6E6E6] leading-none">
                     {roi.timeSavedHours > 0 ? `${roi.timeSavedHours}h` : '—'}
                   </p>
-                  <p className="text-[10px] text-[#E8F0FF]/40 mt-0.5">horas ahorradas</p>
+                  <p className="text-[10px] text-[#E6E6E6]/40 mt-0.5">horas ahorradas</p>
                 </div>
               </div>
               {/* Ahorro en $ */}
               <div className="px-5 py-4 flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                   style={{ background: 'rgba(123,94,248,0.1)' }}>
-                  <DollarSign className="w-4 h-4 text-[#7B5EF8]" />
+                  <DollarSign className="w-4 h-4 text-[#6366F1]" />
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-[#E8F0FF] leading-none">
+                  <p className="text-lg font-bold text-[#E6E6E6] leading-none">
                     {roi.totalCostSaved > 0 ? `$${roi.totalCostSaved.toLocaleString()}` : '—'}
                   </p>
-                  <p className="text-[10px] text-[#E8F0FF]/40 mt-0.5">ahorro estimado</p>
+                  <p className="text-[10px] text-[#E6E6E6]/40 mt-0.5">ahorro estimado</p>
                 </div>
               </div>
               {/* Tests autocurados este mes */}
@@ -475,10 +475,10 @@ function DashboardContent() {
                   <ShieldCheck className="w-4 h-4 text-emerald-400" />
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-[#E8F0FF] leading-none">
+                  <p className="text-lg font-bold text-[#E6E6E6] leading-none">
                     {roi.autoHealedMonth > 0 ? roi.autoHealedMonth : '—'}
                   </p>
-                  <p className="text-[10px] text-[#E8F0FF]/40 mt-0.5">curados este mes</p>
+                  <p className="text-[10px] text-[#E6E6E6]/40 mt-0.5">curados este mes</p>
                 </div>
               </div>
               {/* Tasa de autocuración */}
@@ -488,19 +488,19 @@ function DashboardContent() {
                   <TrendingUp className="w-4 h-4 text-yellow-400" />
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-[#E8F0FF] leading-none">
+                  <p className="text-lg font-bold text-[#E6E6E6] leading-none">
                     {roi.healingRate > 0 ? `${roi.healingRate}%` : '—'}
                   </p>
-                  <p className="text-[10px] text-[#E8F0FF]/40 mt-0.5">tasa autocuración</p>
+                  <p className="text-[10px] text-[#E6E6E6]/40 mt-0.5">tasa autocuración</p>
                 </div>
               </div>
             </div>
             {/* Empty state si no hay datos todavía */}
             {roi.timeSavedHours === 0 && roi.autoHealedMonth === 0 && (
-              <div className="px-5 py-3 border-t border-white/5">
-                <p className="text-[11px] text-[#E8F0FF]/25 text-center">
+              <div className="px-5 py-3 border-t border-[#1C1C1C]">
+                <p className="text-[11px] text-[#E6E6E6]/25 text-center">
                   Los datos de ROI aparecerán cuando Healify cure su primer test · 
-                  <a href="/dashboard/projects" className="text-[#00F5C8]/50 hover:text-[#00F5C8] transition-colors ml-1">
+                  <a href="/dashboard/projects" className="text-[#6366F1]/50 hover:text-[#6366F1] transition-colors ml-1">
                     Conectá tu primer repo →
                   </a>
                 </p>
@@ -512,7 +512,7 @@ function DashboardContent() {
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 lg:gap-4">
           {/* Chart Section */}
-          <div className="lg:col-span-2 rounded-lg glass-elite p-4">
+          <div className="lg:col-span-2 rounded-lg bg-[#0F0F0F] border border-[#1C1C1C] p-4">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-sm font-medium text-white">
@@ -590,7 +590,7 @@ function DashboardContent() {
           </div>
 
           {/* Fragile Selectors */}
-          <div className="rounded-lg glass-elite p-4">
+          <div className="rounded-lg bg-[#0F0F0F] border border-[#1C1C1C] p-4">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-medium text-white">
                 Selectores Frágiles
@@ -613,7 +613,7 @@ function DashboardContent() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    className="group flex items-center justify-between p-2 rounded-md hover:bg-white/5 transition-colors duration-150"
+                    className="group flex items-center justify-between p-2 rounded-md hover:bg-[#111111] transition-colors duration-150"
                   >
                     <div className="flex-1 min-w-0">
                       <code className="text-xs text-gray-300 font-mono truncate block">
@@ -643,9 +643,9 @@ function DashboardContent() {
           <ActivityFeed limit={5} />
 
           {/* Healing History List - Linear Style */}
-          <div className="rounded-lg glass-elite">
+          <div className="rounded-lg bg-[#0F0F0F] border border-[#1C1C1C]">
           {/* List Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-[#1C1C1C]">
             <div className="flex items-center gap-3">
               <h2 className="text-sm font-medium text-white">
                 Últimas Curaciones
@@ -737,7 +737,7 @@ function DashboardContent() {
 
           {/* List Footer */}
           {data.healingHistory.length > 0 && (
-            <div className="px-4 py-3 border-t border-white/5">
+            <div className="px-4 py-3 border-t border-[#1C1C1C]">
               <Link
                 href="/dashboard/tests"
                 className="flex items-center justify-center gap-1 text-xs text-gray-500 hover:text-gray-300 transition-colors"

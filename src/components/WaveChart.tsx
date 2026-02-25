@@ -29,7 +29,7 @@ export function WaveChart({ className = '' }: WaveChartProps) {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
 
       // Grid lines sutiles
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)'
+      ctx.strokeStyle = '#1A1A1A'
       ctx.lineWidth = 1
       for (let i = 0; i < canvas.height; i += 40) {
         ctx.beginPath()
@@ -38,13 +38,8 @@ export function WaveChart({ className = '' }: WaveChartProps) {
         ctx.stroke()
       }
 
-      // Wave principal con gradiente cyan → purple
-      const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0)
-      gradient.addColorStop(0, '#00F5C8')
-      gradient.addColorStop(0.5, '#7B5EF8')
-      gradient.addColorStop(1, '#FF6BFF')
-
-      ctx.strokeStyle = gradient
+      // Wave principal — indigo sólido, sin gradiente
+      ctx.strokeStyle = '#6366F1'
       ctx.lineWidth = 3
       ctx.beginPath()
 
@@ -62,16 +57,12 @@ export function WaveChart({ className = '' }: WaveChartProps) {
 
       // Glow effect
       ctx.shadowBlur = 20
-      ctx.shadowColor = '#00F5C8'
+      ctx.shadowColor = 'transparent'
       ctx.stroke()
       ctx.shadowBlur = 0
 
       // Wave secundaria más pequeña
-      const gradient2 = ctx.createLinearGradient(0, 0, canvas.width, 0)
-      gradient2.addColorStop(0, 'rgba(0, 245, 200, 0.3)')
-      gradient2.addColorStop(1, 'rgba(123, 94, 248, 0.3)')
-
-      ctx.strokeStyle = gradient2
+      ctx.strokeStyle = 'rgba(99, 102, 241, 0.25)'
       ctx.lineWidth = 2
       ctx.beginPath()
 

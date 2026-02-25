@@ -103,7 +103,7 @@ function AccountSection() {
       <div className="flex items-start gap-6">
         <Avatar className="w-16 h-16">
           <AvatarImage src={session?.user?.image || userData.avatar} />
-          <AvatarFallback className="text-[#0A0E1A] text-lg font-medium" style={{background:"linear-gradient(135deg,#00F5C8,#7B5EF8)"}}>
+          <AvatarFallback className="text-[#000000] text-lg font-medium" style={{background:"#6366F1"}}>
             {session?.user?.name?.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0,2) || "HF"}
           </AvatarFallback>
         </Avatar>
@@ -111,7 +111,7 @@ function AccountSection() {
           <Button
             variant="outline"
             size="sm"
-            className="bg-white/5 border-white/10 text-gray-300 hover:bg-white/10"
+            className="bg-[#111111] border-[#1C1C1C] text-gray-300 hover:bg-white/10"
           >
             Cambiar avatar
           </Button>
@@ -121,7 +121,7 @@ function AccountSection() {
         </div>
       </div>
 
-      <div className="h-px bg-white/5" />
+      <div className="h-px bg-[#111111]" />
 
       {/* Form */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -133,7 +133,7 @@ function AccountSection() {
             id="name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="bg-white/5 border-white/10 text-gray-200 focus:border-white/20"
+            className="bg-[#111111] border-[#1C1C1C] text-gray-200 focus:border-white/20"
           />
         </div>
         <div className="space-y-2">
@@ -145,7 +145,7 @@ function AccountSection() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="bg-white/5 border-white/10 text-gray-200 focus:border-white/20"
+            className="bg-[#111111] border-[#1C1C1C] text-gray-200 focus:border-white/20"
           />
         </div>
       </div>
@@ -155,7 +155,7 @@ function AccountSection() {
           size="sm"
           onClick={handleSave}
           disabled={saving}
-          className="btn-neon text-[#0A0E1A]"
+          className="btn-neon text-[#000000]"
         >
           {saving ? (
             <>
@@ -205,7 +205,7 @@ function ApiKeysSection() {
       {dynamicApiKeys.length > 0 ? dynamicApiKeys.map((apiKey) => (
         <div
           key={apiKey.id}
-          className="p-4 rounded-lg bg-white/[0.02] border border-white/5 space-y-2"
+          className="p-4 rounded-lg bg-white/[0.02] border border-[#1C1C1C] space-y-2"
         >
           <div className="flex items-center justify-between">
             <div>
@@ -219,7 +219,7 @@ function ApiKeysSection() {
                 onClick={() =>
                   setShowApiKey(showApiKey === apiKey.id ? null : apiKey.id)
                 }
-                className="p-1.5 rounded-md text-gray-500 hover:text-gray-300 hover:bg-white/5 transition-colors"
+                className="p-1.5 rounded-md text-gray-500 hover:text-gray-300 hover:bg-[#111111] transition-colors"
               >
                 {showApiKey === apiKey.id ? (
                   <EyeOff className="w-4 h-4" />
@@ -229,7 +229,7 @@ function ApiKeysSection() {
               </button>
               <button
                 onClick={() => copyToClipboard(apiKey.key, apiKey.id)}
-                className="p-1.5 rounded-md text-gray-500 hover:text-gray-300 hover:bg-white/5 transition-colors"
+                className="p-1.5 rounded-md text-gray-500 hover:text-gray-300 hover:bg-[#111111] transition-colors"
               >
                 {copied === apiKey.id ? (
                   <CheckCheck className="w-4 h-4 text-emerald-400" />
@@ -255,7 +255,7 @@ function ApiKeysSection() {
         variant="outline"
         size="sm"
         onClick={handleGenerateNewKey}
-        className="w-full bg-white/5 border-white/10 text-gray-300 hover:bg-white/10"
+        className="w-full bg-[#111111] border-[#1C1C1C] text-gray-300 hover:bg-white/10"
       >
         <Key className="w-3.5 h-3.5 mr-1.5" />
         Generar nueva API Key
@@ -326,7 +326,7 @@ function BillingSection() {
         <Button
           variant="outline"
           size="sm"
-          className="bg-white/5 border-white/10 text-gray-300 hover:bg-white/10"
+          className="bg-[#111111] border-[#1C1C1C] text-gray-300 hover:bg-white/10"
           asChild
         >
           <a href="/pricing">
@@ -417,7 +417,7 @@ function NotificationsSection() {
             <p className="text-sm font-medium text-gray-200">Email de autocuración</p>
             <p className="text-xs text-gray-500">
               {session?.user?.email
-                ? <>Emails enviados a <span className="text-[#00F5C8]">{session.user.email}</span></>
+                ? <>Emails enviados a <span className="text-[#6366F1]">{session.user.email}</span></>
                 : "Recibe un email cuando un test se autocure"}
             </p>
           </div>
@@ -425,7 +425,7 @@ function NotificationsSection() {
         </div>
       </div>
 
-      <div className="h-px bg-white/5" />
+      <div className="h-px bg-[#111111]" />
 
       <div>
         <div className="flex items-center justify-between">
@@ -437,19 +437,19 @@ function NotificationsSection() {
         </div>
       </div>
 
-      <div className="h-px bg-white/5" />
+      <div className="h-px bg-[#111111]" />
 
       {/* Slack — input real */}
       <div className="space-y-3">
         <div>
           <p className="text-sm font-medium text-gray-200">Slack integration</p>
           <p className="text-xs text-gray-500">
-            Pegá el <span className="text-[#00F5C8]">Incoming Webhook URL</span> de tu canal de Slack.{" "}
+            Pegá el <span className="text-[#6366F1]">Incoming Webhook URL</span> de tu canal de Slack.{" "}
             <a
               href="https://api.slack.com/messaging/webhooks"
               target="_blank"
               rel="noopener noreferrer"
-              className="underline text-[#E8F0FF]/30 hover:text-[#E8F0FF]/60 transition-colors"
+              className="underline text-[#E6E6E6]/30 hover:text-[#E6E6E6]/60 transition-colors"
             >
               ¿Cómo crearlo?
             </a>
@@ -460,14 +460,14 @@ function NotificationsSection() {
             value={slackUrl}
             onChange={(e) => setSlackUrl(e.target.value)}
             placeholder="https://hooks.slack.com/services/..."
-            className="flex-1 bg-white/5 border-white/10 text-sm text-[#E8F0FF] placeholder:text-[#E8F0FF]/25 focus:border-[#00F5C8]/40"
+            className="flex-1 bg-[#111111] border-[#1C1C1C] text-sm text-[#E6E6E6] placeholder:text-[#E6E6E6]/25 focus:border-[#10B981]/40"
           />
           {slackUrl ? (
             <Button
               size="sm"
               onClick={handleSlackSave}
               disabled={slackSaving}
-              className="btn-neon text-[#0A0E1A] text-xs px-3 shrink-0"
+              className="btn-neon text-[#000000] text-xs px-3 shrink-0"
             >
               {slackSaving ? "..." : slackSaved ? "✓ Guardado" : "Guardar"}
             </Button>
@@ -499,9 +499,9 @@ function AppearanceSection() {
   return (
     <div className="space-y-6">
       {/* App is always dark mode — Healify design system */}
-      <div className="glass-elite rounded-xl p-4 flex items-center gap-3">
-        <div className="w-3 h-3 rounded-full bg-[#00F5C8] animate-pulse" />
-        <p className="text-sm text-[#E8F0FF]/70">Healify utiliza diseño oscuro permanente optimizado para desarrolladores.</p>
+      <div className="bg-[#0F0F0F] border border-[#1C1C1C] rounded-lg p-4 flex items-center gap-3">
+        <div className="w-3 h-3 rounded-full bg-[#6366F1] animate-pulse" />
+        <p className="text-sm text-[#E6E6E6]/70">Healify utiliza diseño oscuro permanente optimizado para desarrolladores.</p>
       </div>
 
       {/* Accent Color */}
@@ -549,7 +549,7 @@ function IntegrationsSection() {
           <Button
             variant="outline"
             size="sm"
-            className="bg-white/5 border-white/10 text-gray-300 hover:bg-white/10"
+            className="bg-[#111111] border-[#1C1C1C] text-gray-300 hover:bg-white/10"
           >
             Desconectar
           </Button>
@@ -557,7 +557,7 @@ function IntegrationsSection() {
       </div>
 
       {/* Coming Soon */}
-      <div className="p-4 rounded-lg bg-white/[0.02] border border-white/5">
+      <div className="p-4 rounded-lg bg-white/[0.02] border border-[#1C1C1C]">
         <p className="text-sm text-gray-400">Más integraciones próximamente</p>
         <p className="text-xs text-gray-500 mt-1">
           GitLab, Bitbucket, Jenkins...
@@ -608,8 +608,8 @@ export default function SettingsPage() {
                 className={cn(
                   "w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium transition-all duration-150",
                   isActive
-                    ? "bg-white/5 text-white"
-                    : "text-gray-500 hover:text-gray-300 hover:bg-white/5"
+                    ? "bg-[#111111] text-white"
+                    : "text-gray-500 hover:text-gray-300 hover:bg-[#111111]"
                 )}
               >
                 <Icon className="w-4 h-4" />
@@ -622,9 +622,9 @@ export default function SettingsPage() {
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <div className="rounded-lg glass-elite">
+        <div className="rounded-lg bg-[#0F0F0F] border border-[#1C1C1C]">
           {/* Header */}
-          <div className="px-6 py-4 border-b border-white/5">
+          <div className="px-6 py-4 border-b border-[#1C1C1C]">
             <h2 className="text-base font-medium text-white">
               {tabs.find((t) => t.id === activeTab)?.label}
             </h2>

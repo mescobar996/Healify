@@ -88,13 +88,13 @@ function CodeBlock({ label, code, type }: { label: string; code: string; type: "
   const [copied, setCopied] = React.useState(false);
   const handleCopy = () => { navigator.clipboard.writeText(code); setCopied(true); toast.success("Copiado"); setTimeout(() => setCopied(false), 2000); };
   return (
-    <div className="rounded-lg overflow-hidden border border-white/5">
-      <div className={cn("flex items-center justify-between px-4 py-2.5 border-b border-white/5", type === "old" ? "bg-red-500/5" : "bg-emerald-500/5")}>
+    <div className="rounded-lg overflow-hidden border border-[#1C1C1C]">
+      <div className={cn("flex items-center justify-between px-4 py-2.5 border-b border-[#1C1C1C]", type === "old" ? "bg-red-500/5" : "bg-emerald-500/5")}>
         <div className="flex items-center gap-2">
           {type === "old" ? <XCircle className="w-4 h-4 text-red-400" /> : <CheckCircle2 className="w-4 h-4 text-emerald-400" />}
           <span className={cn("text-xs font-medium", type === "old" ? "text-red-400" : "text-emerald-400")}>{label}</span>
         </div>
-        <button onClick={handleCopy} className="p-1 rounded hover:bg-white/5 transition-colors">
+        <button onClick={handleCopy} className="p-1 rounded hover:bg-[#111111] transition-colors">
           {copied ? <CheckCheck className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-gray-500" />}
         </button>
       </div>
@@ -192,7 +192,7 @@ export default function HealingDetailPage() {
           </div>
           {data.status === "pendiente" && (
             <div className="flex gap-2 flex-wrap">
-              <Button variant="outline" size="sm" onClick={handleReject} disabled={actionLoading} className="bg-white/5 border-white/10 text-gray-300">
+              <Button variant="outline" size="sm" onClick={handleReject} disabled={actionLoading} className="bg-[#111111] border-[#1C1C1C] text-gray-300">
                 <X className="w-4 h-4 mr-1.5" />Rechazar
               </Button>
               <Button size="sm" onClick={handleApprove} disabled={actionLoading} className="bg-emerald-600 hover:bg-emerald-700">
@@ -209,8 +209,8 @@ export default function HealingDetailPage() {
         <div className="lg:col-span-2 space-y-4">
           {/* Error */}
           {data.errorMessage && (
-            <div className="rounded-lg glass-elite">
-              <div className="flex items-center gap-2 px-4 py-3 border-b border-white/5">
+            <div className="rounded-lg bg-[#0F0F0F] border border-[#1C1C1C]">
+              <div className="flex items-center gap-2 px-4 py-3 border-b border-[#1C1C1C]">
                 <AlertTriangle className="w-4 h-4 text-amber-400" />
                 <span className="text-sm font-medium text-gray-200">Error Original</span>
               </div>
@@ -221,8 +221,8 @@ export default function HealingDetailPage() {
           )}
 
           {/* Selectors */}
-          <div className="rounded-lg glass-elite">
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-white/5">
+          <div className="rounded-lg bg-[#0F0F0F] border border-[#1C1C1C]">
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-[#1C1C1C]">
               <FileCode className="w-4 h-4 text-violet-400" />
               <span className="text-sm font-medium text-gray-200">Cambios Propuestos</span>
             </div>
@@ -243,7 +243,7 @@ export default function HealingDetailPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium text-emerald-400">Pull Request abierto automáticamente</p>
-                    <p className="text-[10px] text-[#E8F0FF]/40 truncate mt-0.5">{data.prUrl}</p>
+                    <p className="text-[10px] text-[#E6E6E6]/40 truncate mt-0.5">{data.prUrl}</p>
                   </div>
                   <span className="text-[10px] text-emerald-400/60 group-hover:text-emerald-400 transition-colors shrink-0">Ver PR →</span>
                 </a>
@@ -253,8 +253,8 @@ export default function HealingDetailPage() {
 
           {/* DOM Snapshots */}
           {(data.oldDomSnapshot || data.newDomSnapshot) && (
-            <div className="rounded-lg glass-elite">
-              <div className="px-4 py-3 border-b border-white/5">
+            <div className="rounded-lg bg-[#0F0F0F] border border-[#1C1C1C]">
+              <div className="px-4 py-3 border-b border-[#1C1C1C]">
                 <span className="text-sm font-medium text-gray-200">Contexto del DOM</span>
               </div>
               <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -282,8 +282,8 @@ export default function HealingDetailPage() {
         {/* Right - Info */}
         <div className="space-y-4">
           {/* AI Analysis */}
-          <div className="rounded-lg glass-elite">
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-white/5">
+          <div className="rounded-lg bg-[#0F0F0F] border border-[#1C1C1C]">
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-[#1C1C1C]">
               <Sparkles className="w-4 h-4 text-violet-400" />
               <span className="text-sm font-medium text-gray-200">Análisis de IA</span>
             </div>
@@ -291,7 +291,7 @@ export default function HealingDetailPage() {
               <ConfidenceMeter confidence={data.confidence} />
               {data.reasoning && (
                 <>
-                  <div className="h-px bg-white/5" />
+                  <div className="h-px bg-[#111111]" />
                   <div>
                     <p className="text-[11px] text-gray-500 uppercase tracking-wide mb-2">Razonamiento</p>
                     <p className="text-sm text-gray-300 leading-relaxed">{data.reasoning}</p>
@@ -302,8 +302,8 @@ export default function HealingDetailPage() {
           </div>
 
           {/* Details */}
-          <div className="rounded-lg glass-elite">
-            <div className="px-4 py-3 border-b border-white/5">
+          <div className="rounded-lg bg-[#0F0F0F] border border-[#1C1C1C]">
+            <div className="px-4 py-3 border-b border-[#1C1C1C]">
               <span className="text-sm font-medium text-gray-200">Detalles</span>
             </div>
             <div className="p-4 space-y-3">
@@ -311,14 +311,14 @@ export default function HealingDetailPage() {
                 <span className="text-gray-500">Archivo</span>
                 <code className="text-gray-300">{data.testFile}</code>
               </div>
-              <div className="h-px bg-white/5" />
+              <div className="h-px bg-[#111111]" />
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-500">Timestamp</span>
                 <span className="text-gray-300 flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{data.timestamp}</span>
               </div>
               {data.branch && (
                 <>
-                  <div className="h-px bg-white/5" />
+                  <div className="h-px bg-[#111111]" />
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-500">Branch</span>
                     <span className="text-gray-300 flex items-center gap-1"><GitBranch className="w-3.5 h-3.5" />{data.branch}</span>
@@ -327,7 +327,7 @@ export default function HealingDetailPage() {
               )}
               {data.commitSha && (
                 <>
-                  <div className="h-px bg-white/5" />
+                  <div className="h-px bg-[#111111]" />
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-500">Commit</span>
                     <code className="text-violet-400">{data.commitSha.slice(0, 7)}</code>
