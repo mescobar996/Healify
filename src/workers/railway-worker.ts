@@ -11,7 +11,7 @@
  * Requiere las siguientes variables de entorno:
  * - DATABASE_URL: PostgreSQL connection string
  * - REDIS_URL: Redis connection for BullMQ
- * - OPENAI_API_KEY: Para IA de healing (opcional, hay fallback)
+ * - (IA via ZAI SDK — no se necesita env var adicional, viene integrado)
  * - GITHUB_WEBHOOK_SECRET: Para clonar repos privados si es necesario
  */
 
