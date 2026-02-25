@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 export type AuditAction =
     | 'PROJECT_CREATE'
     | 'PROJECT_DELETE'
+    | 'PROJECT_UPDATE'
     | 'TEST_RUN_START'
     | 'SUBSCRIPTION_CHANGE'
     | 'API_KEY_ROTATE'

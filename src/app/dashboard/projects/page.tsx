@@ -457,6 +457,11 @@ export default function ProjectsPage() {
   const [runningTestsId, setRunningTestsId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [editProjectId, setEditProjectId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editRepository, setEditRepository] = useState('');
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
 
   const fetchProjects = async () => {
     setLoading(true);
@@ -506,7 +511,35 @@ export default function ProjectsPage() {
 
   // Delete project handler
   const handleEditProject = (projectId: string) => {
-    router.push(`/dashboard/projects/${projectId}/connect`)
+    const p = projects.find(p => p.id === projectId)
+    if (!p) return
+    setEditName(p.name || '')
+    setEditDescription(p.description || '')
+    setEditRepository(p.repository || '')
+    setEditProjectId(projectId)
+  }
+
+  const confirmEdit = async () => {
+    if (!editProjectId || !editName.trim()) return
+    setIsSavingEdit(true)
+    try {
+      await api.updateProject(editProjectId, {
+        name: editName.trim(),
+        description: editDescription.trim() || undefined,
+        repository: editRepository.trim() || undefined,
+      })
+      toast.success('Proyecto actualizado')
+      setProjects(prev => prev.map(p =>
+        p.id === editProjectId
+          ? ({ ...p, name: editName.trim(), description: editDescription.trim() || null, repository: editRepository.trim() || null } as typeof p)
+          : p
+      ))
+      setEditProjectId(null)
+    } catch {
+      toast.error('Error al actualizar el proyecto')
+    } finally {
+      setIsSavingEdit(false)
+    }
   }
 
   const handleDeleteProject = async (projectId: string) => {
@@ -662,6 +695,62 @@ export default function ProjectsPage() {
           router.refresh();
         }}
       />
+
+      {/* Edit Project Dialog */}
+      <AlertDialog open={!!editProjectId} onOpenChange={(open) => !open && setEditProjectId(null)}>
+        <AlertDialogContent className="bg-[#0D1117] border-white/10 max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">Editar proyecto</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400 sr-only">
+              Actualizar datos del proyecto
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-3 py-2">
+            <div>
+              <label className="text-xs text-gray-400 mb-1 block">Nombre *</label>
+              <input
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-[#7B5EF8]/50"
+                value={editName}
+                onChange={e => setEditName(e.target.value)}
+                placeholder="Nombre del proyecto"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-400 mb-1 block">Descripción</label>
+              <input
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-[#7B5EF8]/50"
+                value={editDescription}
+                onChange={e => setEditDescription(e.target.value)}
+                placeholder="Descripción opcional"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-400 mb-1 block">Repositorio</label>
+              <input
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-[#7B5EF8]/50"
+                value={editRepository}
+                onChange={e => setEditRepository(e.target.value)}
+                placeholder="https://github.com/user/repo"
+              />
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              className="bg-white/5 border-white/10 text-gray-300 hover:bg-white/10 hover:text-white"
+              onClick={() => setEditProjectId(null)}
+            >
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmEdit}
+              disabled={isSavingEdit || !editName.trim()}
+              className="bg-[#7B5EF8] hover:bg-[#7B5EF8]/90 text-white border-0"
+            >
+              {isSavingEdit ? 'Guardando...' : 'Guardar cambios'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>

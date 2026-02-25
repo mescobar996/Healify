@@ -60,6 +60,12 @@ export const api = {
   deleteProject: (id: string) =>
     fetcher<void>(`/api/projects/${id}`, { method: 'DELETE' }),
 
+  updateProject: (id: string, data: { name?: string; description?: string; repository?: string; framework?: string }) =>
+    fetcher<{ id: string; name: string; description?: string; repository?: string; framework?: string }>(
+      `/api/projects/${id}`,
+      { method: 'PATCH', body: JSON.stringify(data) }
+    ),
+
   runProject: (id: string) =>
     fetcher<{ message: string; testRunId: string }>(`/api/projects/${id}/run`, {
       method: 'POST',
