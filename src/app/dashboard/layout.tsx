@@ -17,6 +17,7 @@ import {
   CreditCard,
   Key,
   Plus,
+  BookOpen,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -39,6 +40,7 @@ const navItems = [
   { name: "Proyectos",      href: "/dashboard/projects", icon: FolderKanban    },
   { name: "Tests",          href: "/dashboard/tests",    icon: TestTube2       },
   { name: "Configuración",  href: "/dashboard/settings", icon: Settings        },
+  { name: "Docs",            href: "/docs",               icon: BookOpen        },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

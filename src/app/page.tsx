@@ -377,7 +377,7 @@ function Footer() {
             <HealifyLogo size="sm" showText={true} />
           </div>
           <div className="flex items-center gap-6">
-            <a href="https://github.com/mescobar996/Healify/wiki" target="_blank" rel="noopener noreferrer" className="hover:text-[#00F5C8] transition-colors">Documentation</a>
+            <a href="/docs" className="hover:text-[#00F5C8] transition-colors">Documentation</a>
             <a href="https://github.com/mescobar996/Healify" target="_blank" rel="noopener noreferrer" className="hover:text-[#00F5C8] transition-colors">GitHub</a>
             <a href="mailto:support@healify.dev" className="hover:text-[#00F5C8] transition-colors">Support</a>
           </div>
@@ -407,6 +407,9 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <HealifyLogo size="md" showText={true} />
           <div className="flex items-center gap-4">
+            <a href="/docs" className="text-sm text-[#E8F0FF]/60 hover:text-[#00F5C8] transition-colors">
+              Docs
+            </a>
             <a href="/pricing" className="text-sm text-[#E8F0FF]/60 hover:text-[#00F5C8] transition-colors">
               Pricing
             </a>
