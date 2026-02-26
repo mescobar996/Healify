@@ -377,7 +377,7 @@ function Footer() {
             <HealifyLogo size="sm" showText={true} />
           </div>
           <div className="flex items-center gap-6">
-            <a href="https://github.com/mescobar996/Healify/wiki" target="_blank" rel="noopener noreferrer" className="hover:text-[#00F5C8] transition-colors">Documentation</a>
+            <a href="/docs" className="hover:text-[#00F5C8] transition-colors">Documentation</a>
             <a href="https://github.com/mescobar996/Healify" target="_blank" rel="noopener noreferrer" className="hover:text-[#00F5C8] transition-colors">GitHub</a>
             <a href="mailto:support@healify.dev" className="hover:text-[#00F5C8] transition-colors">Support</a>
           </div>
