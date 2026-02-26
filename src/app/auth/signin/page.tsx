@@ -1,3 +1,10 @@
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Iniciar sesión — Healify',
+  description: 'Iniciá sesión en Healify con tu cuenta de GitHub para empezar a autocurar tus tests.',
+}
+
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { redirect } from 'next/navigation'

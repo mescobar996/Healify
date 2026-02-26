@@ -1,3 +1,10 @@
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Política de Privacidad — Healify',
+  description: 'Cómo Healify recopila, usa y protege tus datos personales.',
+}
+
 import Link from 'next/link'
 import { HealifyLogo } from '@/components/HealifyLogo'
 export default function PrivacyPage() {

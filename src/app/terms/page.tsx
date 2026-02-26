@@ -1,3 +1,10 @@
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Términos de Servicio — Healify',
+  description: 'Términos y condiciones de uso de la plataforma Healify.',
+}
+
 import Link from 'next/link'
 import { HealifyLogo } from '@/components/HealifyLogo'
 export default function TermsPage() {
