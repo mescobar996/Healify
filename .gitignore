@@ -50,3 +50,10 @@ server.log
 # Skills directory
 /skills/
 .env
+
+# Playwright
+playwright-report/
+test-results/
+playwright/.auth/user.json
+/e2e/screenshots/
+/e2e/videos/
