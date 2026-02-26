@@ -8,6 +8,7 @@ import {
   Play,
   Pause,
   RefreshCw,
+  Download,
   CheckCircle2,
   XCircle,
   Clock,
@@ -218,6 +219,23 @@ function TestsContent() {
     return { passed, failed, healed, running };
   }, [testRuns]);
 
+  // Handler: Export CSV
+  const handleExport = () => {
+    const projectId = projectIdFilter || (filteredTestRuns[0]?.project?.id ?? '')
+    if (!projectId) {
+      toast.error('Seleccioná un proyecto para exportar')
+      return
+    }
+    const url = `/api/test-runs/export?projectId=${projectId}&format=csv`
+    const a = document.createElement('a')
+    a.href = url
+    a.download = ''
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    toast.success('Descargando CSV...')
+  }
+
   // Handler: Run all tests
   const handleRunAllTests = async () => {
     // Obtener proyectos únicos de los test runs visibles
@@ -393,13 +411,24 @@ function TestsContent() {
               {filteredTestRuns.length}
             </span>
           </div>
-          <button
-            onClick={fetchTestRuns}
-            className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-300 transition-colors"
-          >
-            <RefreshCw className="w-3 h-3" />
-            Actualizar
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleExport}
+              className="flex items-center gap-1 text-xs text-gray-500 hover:text-[#00F5C8] transition-colors"
+              title="Exportar como CSV"
+            >
+              <Download className="w-3 h-3" />
+              CSV
+            </button>
+            <span className="text-gray-700">·</span>
+            <button
+              onClick={fetchTestRuns}
+              className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-300 transition-colors"
+            >
+              <RefreshCw className="w-3 h-3" />
+              Actualizar
+            </button>
+          </div>
         </div>
 
         {/* Column Headers */}

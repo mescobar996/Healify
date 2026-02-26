@@ -152,7 +152,37 @@ export default function HealingDetailPage() {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-[400px]"><Loader2 className="w-8 h-8 animate-spin text-violet-500" /></div>;
+    return (
+      <div className="p-6 space-y-6 animate-pulse">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-white/5" />
+          <div className="h-6 w-48 rounded bg-white/5" />
+          <div className="h-5 w-20 rounded-full bg-white/5 ml-auto" />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          {[0,1,2,3].map(i => (
+            <div key={i} className="p-4 rounded-xl bg-white/[0.02] border border-white/5 space-y-2">
+              <div className="h-3 w-20 rounded bg-white/5" />
+              <div className="h-6 w-32 rounded bg-white/5" />
+            </div>
+          ))}
+        </div>
+        <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 space-y-3">
+          <div className="h-4 w-36 rounded bg-white/5" />
+          <div className="h-20 w-full rounded-lg bg-white/5" />
+        </div>
+        {[0,1,2].map(i => (
+          <div key={i} className="p-4 rounded-xl bg-white/[0.02] border border-white/5 space-y-2">
+            <div className="flex items-center gap-3">
+              <div className="h-4 w-4 rounded-full bg-white/5" />
+              <div className="h-4 w-40 rounded bg-white/5" />
+              <div className="h-5 w-16 rounded-full bg-white/5 ml-auto" />
+            </div>
+            <div className="h-3 w-full rounded bg-white/5" />
+          </div>
+        ))}
+      </div>
+    )
   }
 
   if (error) {
