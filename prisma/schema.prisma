@@ -309,3 +309,20 @@ model AnalyticsEvent {
   @@index([eventType, createdAt])
   @@map("analytics_events")
 }
+
+// ============================================
+// WAITLIST — Pagos
+// ============================================
+
+model WaitlistEntry {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  plan      String   @default("pro") // starter | pro | enterprise
+  source    String   @default("pricing") // pricing | landing | docs
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([createdAt])
+  @@map("waitlist_entries")
+}
