@@ -1,6 +1,7 @@
+// trigger redeploy 2026-02-24
 import { NextResponse } from 'next/server'
 
-// GET /api/plans
+// GET /api/plans - runtime env var evaluation
 // CRÍTICO: Lee env vars directamente en el handler, NO importa PLANS desde lib/stripe
 // porque ese archivo cachea process.env en build time.
 export async function GET() {
