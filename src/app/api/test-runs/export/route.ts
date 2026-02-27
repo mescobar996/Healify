@@ -3,12 +3,6 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { db } from '@/lib/db'
 
-/**
- * GET /api/test-runs/export?projectId=xxx&format=csv
- * 
- * Descarga los test runs de un proyecto como CSV o JSON.
- * Requiere autenticación y ownership del proyecto.
- */
 export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
@@ -24,7 +18,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'projectId is required' }, { status: 400 })
   }
 
-  // Verificar ownership
   const project = await db.project.findUnique({
     where: { id: projectId, userId: session.user.id },
     select: { id: true, name: true },
@@ -34,21 +27,31 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Project not found' }, { status: 404 })
   }
 
-  // Traer test runs con healing events
   const runs = await db.testRun.findMany({
-    where: { projectId },
+    where:   { projectId },
     orderBy: { startedAt: 'desc' },
-    take: limit,
-    include: {
+    take:    limit,
+    select: {
+      id:          true,
+      branch:      true,
+      commitSha:   true,
+      status:      true,
+      triggeredBy: true,
+      totalTests:  true,
+      passedTests: true,
+      failedTests: true,
+      healedTests: true,
+      startedAt:   true,
+      completedAt: true,
       healingEvents: {
         select: {
-          id: true,
-          testName: true,
+          id:             true,
+          testName:       true,
           failedSelector: true,
-          newSelector: true,
-          confidence: true,
-          status: true,
-          appliedAt: true,
+          newSelector:    true,
+          confidence:     true,
+          status:         true,
+          appliedAt:      true,
         },
       },
     },
@@ -57,20 +60,19 @@ export async function GET(request: NextRequest) {
   const timestamp = new Date().toISOString().split('T')[0]
   const filename  = `healify-${project.name.replace(/\s+/g, '-').toLowerCase()}-${timestamp}`
 
-  // ── JSON export ──────────────────────────────────────────
   if (format === 'json') {
-    return new NextResponse(JSON.stringify({ project: project.name, exportedAt: new Date().toISOString(), runs }, null, 2), {
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Disposition': `attachment; filename="${filename}.json"`,
-      },
-    })
+    return new NextResponse(
+      JSON.stringify({ project: project.name, exportedAt: new Date().toISOString(), runs }, null, 2),
+      {
+        headers: {
+          'Content-Type':        'application/json',
+          'Content-Disposition': `attachment; filename="${filename}.json"`,
+        },
+      }
+    )
   }
 
-  // ── CSV export ───────────────────────────────────────────
   const rows: string[] = []
-
-  // Header
   rows.push([
     'Run ID', 'Branch', 'Commit SHA', 'Status', 'Triggered By',
     'Total Tests', 'Passed', 'Failed', 'Healed',
@@ -85,16 +87,14 @@ export async function GET(request: NextRequest) {
       : ''
 
     if (run.healingEvents.length === 0) {
-      // Run sin healing events — una fila
       rows.push([
         run.id, run.branch || '', run.commitSha || '',
         run.status, run.triggeredBy || '',
         run.totalTests, run.passedTests, run.failedTests, run.healedTests,
         run.startedAt ? new Date(run.startedAt).toISOString() : '', duration,
         '', '', '', '', '', '', '',
-      ].map(v => `"${v}"`).join(','))
+      ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
     } else {
-      // Una fila por healing event
       for (const he of run.healingEvents) {
         rows.push([
           run.id, run.branch || '', run.commitSha || '',
@@ -110,11 +110,9 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const csv = rows.join('\n')
-
-  return new NextResponse(csv, {
+  return new NextResponse(rows.join('\n'), {
     headers: {
-      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Type':        'text/csv; charset=utf-8',
       'Content-Disposition': `attachment; filename="${filename}.csv"`,
     },
   })
