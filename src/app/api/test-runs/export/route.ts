@@ -42,7 +42,8 @@ export async function GET(request: NextRequest) {
       failedTests: true,
       healedTests: true,
       startedAt:   true,
-      completedAt: true,
+      finishedAt:  true,
+      duration:    true,
       healingEvents: {
         select: {
           id:             true,
@@ -82,8 +83,8 @@ export async function GET(request: NextRequest) {
   ].map(h => `"${h}"`).join(','))
 
   for (const run of runs) {
-    const duration = run.completedAt && run.startedAt
-      ? Math.round((new Date(run.completedAt).getTime() - new Date(run.startedAt).getTime()) / 1000)
+    const duration = run.duration !== null
+      ? Math.round((run.duration as number) / 1000)
       : ''
 
     if (run.healingEvents.length === 0) {
