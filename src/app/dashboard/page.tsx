@@ -435,7 +435,7 @@ function DashboardContent() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {session?.user?.role === 'admin' && (
+            {session?.user && (
               <Button
                 variant="outline"
                 size="sm"
