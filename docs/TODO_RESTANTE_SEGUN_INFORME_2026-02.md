@@ -66,10 +66,10 @@ Estado base: [`docs/INFORME_ESTADO_VISION_PRODUCTO_2026-02.md`](docs/INFORME_EST
 ## 8) Siguiente ejecución recomendada (operativo)
 
 - [ ] Decidir si avanzamos ahora con Plugin VS Code (bloque 5 pendiente) o lo dejamos para sprint dedicado.
-- [ ] Consolidar release y deploy en Vercel (`main`) para validar todo en web.
+- [x] Consolidar release y deploy en Vercel (`main`) para validar todo en web.
 - [ ] Validar en producción: landing demo, dashboard equipo, branch comparison, exports ROI, weekly report status.
 - [ ] Si todo está OK, cortar release note corto en `worklog.md`.
 
 ---
 
-Última actualización: 2026-02-27 (post bloque 6 + preparación deploy)
+Última actualización: 2026-02-27 (hotfix build Vercel publicado a `main`)
