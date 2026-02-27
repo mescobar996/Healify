@@ -67,14 +67,14 @@ Estado base: [`docs/INFORME_ESTADO_VISION_PRODUCTO_2026-02.md`](docs/INFORME_EST
 
 - [ ] Decidir si avanzamos ahora con Plugin VS Code (bloque 5 pendiente) o lo dejamos para sprint dedicado.
 - [x] Consolidar release y deploy en Vercel (`main`) para validar todo en web.
-- [ ] Validar en producción: landing demo, dashboard equipo, branch comparison, exports ROI, weekly report status.
+- [x] Validar en producción: landing demo, dashboard equipo, branch comparison, exports ROI, weekly report status.
 	- [x] Smoke público OK: `/` (200), `/docs` (200), `/api/openapi` (200).
 	- [x] Auth gate OK: `/dashboard`, `/dashboard/team`, `/dashboard/tests` redirigen a `/auth/signin`.
 	- [x] Endpoints privados OK (protegidos): `branch-comparison`, `exports ROI`, `weekly-report/status` responden `401` sin sesión.
 	- [x] Verificación manual con sesión: demo landing visible, branch comparison, export ROI y weekly status OK.
 	- [x] Fix UX: botón `Equipo` agregado en dashboard para usuarios autenticados (antes visible solo para `admin`).
-- [ ] Si todo está OK, cortar release note corto en `worklog.md`.
+- [x] Si todo está OK, cortar release note corto en `worklog.md`.
 
 ---
 
-Última actualización: 2026-02-27 (validación manual + fix botón Equipo)
+Última actualización: 2026-02-27 (cierre operativo + release note)

@@ -2,6 +2,32 @@
 ## Project Work Log
 
 ---
+## Release Note - 2026-02-27 (Operativo Bloques 3-6)
+
+### Summary
+- Se cerró la ejecución no bloqueada del roadmap (bloques 3, 4, 5* y 6).
+- Se publicó hotfix de build en Vercel y validación de producción.
+
+### Delivered
+- Demo animada en landing + onboarding MVP de 3 pasos.
+- Weekly report automático (cron + estado + trigger manual admin).
+- Visual teardown, branch comparison, limits por plan, try demo repo.
+- ROI export CSV/PDF, tags test runs, búsqueda full-text, retry flaky.
+- Dashboard de equipo, OpenAPI público, guías CI (GitHub/GitLab), Selenium básico, Jira en `BUG_DETECTED`.
+- Instrumentación onboarding y funnel/KPI interno.
+
+### Post-Deploy Validation
+- Smoke público: `/`, `/docs`, `/api/openapi` OK.
+- Auth gate y endpoints privados protegidos correctamente.
+- Verificación manual con sesión: branch comparison, export ROI y weekly status OK.
+- UX: acceso a `Equipo` visible para usuarios autenticados en dashboard.
+
+### Pending (intencional)
+- Plugin VS Code (fase posterior).
+- Bloque de pagos/credenciales externas (pausado por decisión).
+
+---
+
 ## Task ID: 2 - Dashboard Frontend Development
 ### Work Task
 Create the main dashboard UI for Healify, a test self-healing platform using Next.js, React, Tailwind CSS, and shadcn/ui components.
