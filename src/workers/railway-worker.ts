@@ -82,7 +82,13 @@ async function cloneRepository(
     log(jobId, `Creating work directory: ${workDir}`)
     await fs.mkdir(workDir, { recursive: true })
     
-    const cloneUrl = repositoryUrl
+    const githubToken = process.env.GITHUB_TOKEN || process.env.GH_PAT || ''
+    let cloneUrl = repositoryUrl
+
+    if (githubToken && repositoryUrl.startsWith('https://github.com/')) {
+        cloneUrl = repositoryUrl.replace('https://github.com/', `https://x-access-token:${githubToken}@github.com/`)
+        log(jobId, 'Using authenticated GitHub clone URL (token provided)')
+    }
     
     log(jobId, `Cloning repository: ${repositoryUrl} (branch: ${branch})`)
     
