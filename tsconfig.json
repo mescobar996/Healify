@@ -38,6 +38,7 @@
   ],
   "exclude": [
     "node_modules",
+    "mini-services",
     "examples",
     "scripts",
     "vitest.config.ts",
