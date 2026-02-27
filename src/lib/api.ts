@@ -109,6 +109,7 @@ export const api = {
     projectId?: string
     status?: string
     branch?: string
+    q?: string
   }) => {
     const qs = new URLSearchParams()
     if (params?.limit) qs.set('limit', String(params.limit))
@@ -116,6 +117,7 @@ export const api = {
     if (params?.projectId) qs.set('projectId', params.projectId)
     if (params?.status) qs.set('status', params.status)
     if (params?.branch) qs.set('branch', params.branch)
+    if (params?.q) qs.set('q', params.q)
     return fetcher<{
       testRuns: TestRun[]
       pagination: { total: number; limit: number; offset: number; hasMore: boolean }

@@ -43,6 +43,62 @@ function buildSlackPayload(title: string, body: string, type: NotificationType) 
     }
 }
 
+async function createJiraIssue(params: {
+    summary: string
+    description: string
+}): Promise<{ success: boolean; url?: string }> {
+    const baseUrl = process.env.JIRA_BASE_URL
+    const email = process.env.JIRA_EMAIL
+    const apiToken = process.env.JIRA_API_TOKEN
+    const projectKey = process.env.JIRA_PROJECT_KEY
+
+    if (!baseUrl || !email || !apiToken || !projectKey) {
+        return { success: false }
+    }
+
+    try {
+        const auth = Buffer.from(`${email}:${apiToken}`).toString('base64')
+        const response = await fetch(`${baseUrl}/rest/api/3/issue`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Basic ${auth}`,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+                fields: {
+                    project: { key: projectKey },
+                    summary: params.summary,
+                    description: {
+                        type: 'doc',
+                        version: 1,
+                        content: [
+                            {
+                                type: 'paragraph',
+                                content: [{ type: 'text', text: params.description }],
+                            },
+                        ],
+                    },
+                    issuetype: { name: 'Bug' },
+                },
+            }),
+        })
+
+        if (!response.ok) {
+            const body = await response.text().catch(() => '')
+            console.error('[JIRA] Error creating issue:', response.status, body)
+            return { success: false }
+        }
+
+        const data = await response.json()
+        const issueUrl = `${baseUrl}/browse/${data.key}`
+        return { success: true, url: issueUrl }
+    } catch (error) {
+        console.error('[JIRA] Unexpected error:', error)
+        return { success: false }
+    }
+}
+
 export class NotificationService {
 
     async sendInApp(userId: string, type: NotificationType, title: string, message: string, link?: string) {
@@ -109,6 +165,41 @@ export class NotificationService {
         await this.sendInApp(project.userId, 'success', `✨ ${title}`, message, '/dashboard/healing')
         if (project.user.email)           await this.sendEmail(project.user.email, `✨ ${title}`, message)
         if (project.user.slackWebhookUrl) await this.sendSlack(project.user.slackWebhookUrl, message, title, 'success')
+    }
+
+    async notifyBugDetected(projectId: string, testName: string, error: string, branch?: string | null) {
+        const project = await db.project.findUnique({ where: { id: projectId }, include: { user: true } })
+        if (!project?.userId || !project.user) return
+
+        const title = `Bug detectado: ${testName}`
+        const message = `Healify detectó un bug real en "${project.name}" (${branch || 'sin branch'}). Error: ${error.slice(0, 180)}`
+
+        const jira = await createJiraIssue({
+            summary: `[Healify] ${testName} — BUG_DETECTED`,
+            description: `${message}\n\nProyecto: ${project.name}\nRepositorio: ${project.repository || 'N/A'}`,
+        })
+
+        await this.sendInApp(
+            project.userId,
+            'warning',
+            `🐞 ${title}`,
+            jira.success && jira.url ? `${message} | Jira: ${jira.url}` : message,
+            jira.success && jira.url ? jira.url : '/dashboard/tests'
+        )
+
+        if (project.user.email) {
+            await this.sendEmail(
+                project.user.email,
+                `🐞 ${title}`,
+                jira.success && jira.url
+                    ? `${message}<br/><br/>Jira: <a href="${jira.url}">${jira.url}</a>`
+                    : `${message}<br/><br/>Tip: configurá variables de Jira para crear tickets automáticos.`
+            )
+        }
+
+        if (project.user.slackWebhookUrl) {
+            await this.sendSlack(project.user.slackWebhookUrl, message, title, 'warning')
+        }
     }
 }
 

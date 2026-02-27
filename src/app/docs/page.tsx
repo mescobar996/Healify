@@ -72,7 +72,10 @@ const TOC = [
   { id: 'playwright',    label: 'Playwright',          indent: true  },
   { id: 'cypress',       label: 'Cypress',             indent: true  },
   { id: 'jest',          label: 'Jest / Vitest',       indent: true  },
+  { id: 'selenium',      label: 'Selenium',            indent: true  },
   { id: 'api',           label: 'API Reference',       indent: false },
+  { id: 'ci',            label: 'CI Integrations',     indent: false },
+  { id: 'jira',          label: 'Jira Integration',    indent: false },
   { id: 'webhook',       label: 'GitHub Webhook',      indent: false },
   { id: 'dashboard',     label: 'Dashboard',           indent: false },
   { id: 'faq',           label: 'FAQ',                 indent: false },
@@ -155,6 +158,9 @@ export default function DocsPage() {
               Integrá Healify en tu pipeline de CI/CD en menos de 5 minutos.
               Cuando un test falla, Healify detecta el selector roto, genera una corrección
               y crea un Pull Request automáticamente.
+            </p>
+            <p className="text-xs text-[#E8F0FF]/35 mt-3">
+              Definiciones canónicas de métricas/KPI: <a href="/docs/METRICAS_Y_KPIS_2026.md" className="text-[#00F5C8]/70 hover:text-[#00F5C8]">METRICAS_Y_KPIS_2026.md</a>
             </p>
           </div>
 
@@ -283,6 +289,31 @@ export default defineConfig({
   },
 })`} />
 
+      <SubHeading id="selenium">Selenium (basic)</SubHeading>
+
+      <CodeBlock lang="python" code={`# pip install requests selenium
+import requests
+
+def report_to_healify(test_name, selector, error, html):
+  response = requests.post(
+    "https://healify-sigma.vercel.app/api/v1/report",
+    headers={
+      "x-api-key": "hf_live_xxx",
+      "Content-Type": "application/json",
+    },
+    json={
+      "testName": test_name,
+      "selector": selector,
+      "error": error,
+      "context": html,
+      "selectorType": "CSS",
+      "branch": "main",
+    },
+    timeout=15,
+  )
+  response.raise_for_status()
+  return response.json()`} />
+
           {/* ── API REFERENCE ── */}
           <SectionHeading id="api">
             <Terminal className="w-5 h-5 text-[#00F5C8]" /> API Reference
@@ -362,6 +393,74 @@ export default defineConfig({
   },
   "processingTimeMs": 1240
 }`} />
+
+          <SubHeading id="api-openapi">OpenAPI</SubHeading>
+          <p className="text-sm text-[#E8F0FF]/60 mb-3">
+            Especificación pública disponible en formato JSON:
+          </p>
+          <CodeBlock lang="url" code={`https://healify-sigma.vercel.app/api/openapi`} />
+
+          {/* ── CI INTEGRATIONS ── */}
+          <SectionHeading id="ci">
+            <Workflow className="w-5 h-5 text-[#7B5EF8]" /> CI Integrations
+          </SectionHeading>
+
+          <SubHeading id="ci-github">GitHub Actions</SubHeading>
+          <CodeBlock lang=".github/workflows/healify.yml" code={`name: Healify Reporter
+
+on:
+  push:
+    branches: [main, develop, feature/**]
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - run: npm run test:e2e:api
+        env:
+          HEALIFY_API_KEY: \\${{ secrets.HEALIFY_API_KEY }}
+          HEALIFY_BRANCH: \\${{ github.ref_name }}
+          HEALIFY_COMMIT_SHA: \\${{ github.sha }}`} />
+
+          <SubHeading id="ci-gitlab">GitLab CI</SubHeading>
+          <CodeBlock lang=".gitlab-ci.yml" code={`stages:
+  - test
+
+healify_tests:
+  stage: test
+  image: node:20
+  script:
+    - npm ci
+    - npm run test:e2e:api
+  variables:
+    HEALIFY_API_KEY: $HEALIFY_API_KEY
+    HEALIFY_BRANCH: $CI_COMMIT_REF_NAME
+    HEALIFY_COMMIT_SHA: $CI_COMMIT_SHA`} />
+
+          <Callout type="tip">
+            Guardá <code className="text-[#00F5C8] bg-white/5 px-1 rounded">HEALIFY_API_KEY</code> como secret en tu CI.
+            El reporter detecta automáticamente branch y commit cuando definís esas variables.
+          </Callout>
+
+          {/* ── JIRA ── */}
+          <SectionHeading id="jira">
+            <GitBranch className="w-5 h-5 text-[#FF6B9D]" /> Jira Integration
+          </SectionHeading>
+
+          <p className="text-sm text-[#E8F0FF]/60 mb-4 leading-relaxed">
+            Cuando Healify clasifica un evento como <code className="text-[#00F5C8] bg-white/5 px-1 rounded">BUG_DETECTED</code>,
+            puede abrir un ticket en Jira automáticamente (si configurás las variables).
+          </p>
+
+          <CodeBlock lang="env" code={`JIRA_BASE_URL=https://tu-org.atlassian.net
+JIRA_EMAIL=tu-email@empresa.com
+JIRA_API_TOKEN=tu_api_token
+JIRA_PROJECT_KEY=QA`} />
 
           <SubHeading id="api-errors">Códigos de error</SubHeading>
 

@@ -20,6 +20,9 @@ import {
   Calendar,
   Hash,
   ChevronRight,
+  Camera,
+  ScanLine,
+  GitPullRequest,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -29,6 +32,14 @@ import { TestRunsSkeleton } from "@/components/ui/skeletons";
 import { TestDetailSheet } from "@/components/TestDetailSheet";
 import { JobProgressCard } from "@/components/JobProgressCard";
 import type { TestRun, TestRunStatus, HealingStatus, HealingHistoryItem } from "@/types";
+
+type TeardownEvent = HealingHistoryItem & {
+  createdAt?: string;
+  statusRaw?: string;
+  screenshotBefore?: string | null;
+  screenshotAfter?: string | null;
+  prUrl?: string | null;
+};
 
 // ============================================
 // LINEAR STYLE COMPONENTS
@@ -104,7 +115,7 @@ export default function TestRunDetailPage() {
   const params = useParams();
   const router = useRouter();
   const [testRun, setTestRun] = useState<TestRun | null>(null);
-  const [healingEvents, setHealingEvents] = useState<HealingHistoryItem[]>([]);
+  const [healingEvents, setHealingEvents] = useState<TeardownEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<HealingHistoryItem | null>(null);
@@ -124,7 +135,29 @@ export default function TestRunDetailPage() {
         const eventsResponse = await fetch(`/api/healing-events?testRunId=${id}`);
         if (eventsResponse.ok) {
           const eventsData = await eventsResponse.json();
-          setHealingEvents(eventsData.healingEvents || eventsData || []);
+          const mappedEvents: TeardownEvent[] = (eventsData.healingEvents || eventsData || []).map((event: any) => ({
+            id: event.id,
+            testName: event.testName,
+            testFile: event.testFile || undefined,
+            status:
+              event.status === 'HEALED_AUTO' || event.status === 'HEALED_MANUAL'
+                ? 'curado'
+                : event.status === 'NEEDS_REVIEW' || event.status === 'ANALYZING'
+                  ? 'pendiente'
+                  : 'fallido',
+            confidence: Math.round((event.confidence || 0) * 100),
+            timestamp: event.createdAt || testRun?.startedAt || new Date().toISOString(),
+            oldSelector: event.failedSelector || '—',
+            newSelector: event.newSelector || null,
+            errorMessage: event.errorMessage || null,
+            reasoning: event.reasoning || null,
+            createdAt: event.createdAt,
+            statusRaw: event.status,
+            screenshotBefore: event.screenshotBefore || null,
+            screenshotAfter: event.screenshotAfter || null,
+            prUrl: event.prUrl || null,
+          }))
+          setHealingEvents(mappedEvents);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Error desconocido");
@@ -191,6 +224,50 @@ export default function TestRunDetailPage() {
   if (!testRun) return null;
 
   const duration = testRun.duration ? `${Math.floor(testRun.duration / 60000)}m ${Math.floor((testRun.duration % 60000) / 1000)}s` : "—";
+  const teardownSteps = healingEvents.flatMap((event) => {
+    const baseTime = event.createdAt || event.timestamp
+    const steps = [
+      {
+        key: `${event.id}-detected`,
+        label: `Fallo detectado: ${event.testName}`,
+        detail: event.errorMessage || `Selector roto: ${event.oldSelector}`,
+        time: baseTime,
+        tone: 'text-red-400',
+        icon: AlertTriangle,
+      },
+      {
+        key: `${event.id}-analyzing`,
+        label: 'Healify analizando DOM',
+        detail: event.reasoning || 'Comparando estructura y atributos del DOM para proponer selector robusto.',
+        time: baseTime,
+        tone: 'text-amber-400',
+        icon: ScanLine,
+      },
+      {
+        key: `${event.id}-proposal`,
+        label: event.newSelector ? 'Selector propuesto' : 'Sin selector sugerido',
+        detail: event.newSelector
+          ? `${event.oldSelector} → ${event.newSelector} (${event.confidence}%)`
+          : 'No se pudo encontrar selector alternativo confiable.',
+        time: baseTime,
+        tone: event.newSelector ? 'text-violet-400' : 'text-gray-400',
+        icon: Zap,
+      },
+    ]
+
+    if (event.prUrl) {
+      steps.push({
+        key: `${event.id}-pr`,
+        label: 'PR automático abierto',
+        detail: event.prUrl,
+        time: baseTime,
+        tone: 'text-[#00F5C8]',
+        icon: GitPullRequest,
+      })
+    }
+
+    return steps
+  })
 
   return (
     <>
@@ -258,6 +335,72 @@ export default function TestRunDetailPage() {
             }}
           />
         )}
+
+        {/* Visual Test Teardown */}
+        <div className="rounded-lg glass-elite">
+          <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between">
+            <h2 className="text-sm font-medium text-white">Visual Test Teardown</h2>
+            <span className="text-[10px] text-gray-500 bg-gray-800/50 px-1.5 py-0.5 rounded">
+              {teardownSteps.length} pasos
+            </span>
+          </div>
+
+          {teardownSteps.length === 0 ? (
+            <div className="px-4 py-8">
+              <EmptyState
+                title="Sin timeline todavía"
+                description="Los pasos aparecerán cuando Healify detecte y analice un fallo en este test run"
+              />
+            </div>
+          ) : (
+            <div className="p-4 space-y-3">
+              {teardownSteps.map((step) => {
+                const Icon = step.icon
+                return (
+                  <div key={step.key} className="flex items-start gap-3 p-3 rounded-md bg-white/[0.02] border border-white/5">
+                    <div className="w-7 h-7 rounded-md bg-white/5 flex items-center justify-center shrink-0">
+                      <Icon className={cn('w-3.5 h-3.5', step.tone)} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className={cn('text-sm font-medium', step.tone)}>{step.label}</p>
+                        <span className="text-[10px] text-gray-500 whitespace-nowrap">{formatRelativeTime(step.time)}</span>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-1 break-all">{step.detail}</p>
+                    </div>
+                  </div>
+                )
+              })}
+
+              {healingEvents.some((event) => event.screenshotBefore || event.screenshotAfter) && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+                  {healingEvents.map((event) => (
+                    <React.Fragment key={`${event.id}-shots`}>
+                      {event.screenshotBefore && (
+                        <a href={event.screenshotBefore} target="_blank" rel="noopener noreferrer" className="block rounded-md border border-white/10 overflow-hidden">
+                          <div className="px-3 py-2 text-[11px] text-gray-400 border-b border-white/10 flex items-center gap-1.5">
+                            <Camera className="w-3 h-3" />
+                            Screenshot before
+                          </div>
+                          <img src={event.screenshotBefore} alt="Screenshot before" className="w-full h-40 object-cover" />
+                        </a>
+                      )}
+                      {event.screenshotAfter && (
+                        <a href={event.screenshotAfter} target="_blank" rel="noopener noreferrer" className="block rounded-md border border-white/10 overflow-hidden">
+                          <div className="px-3 py-2 text-[11px] text-gray-400 border-b border-white/10 flex items-center gap-1.5">
+                            <Camera className="w-3 h-3" />
+                            Screenshot after
+                          </div>
+                          <img src={event.screenshotAfter} alt="Screenshot after" className="w-full h-40 object-cover" />
+                        </a>
+                      )}
+                    </React.Fragment>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Details Section */}
         <div className="rounded-lg glass-elite">

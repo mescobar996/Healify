@@ -3,6 +3,7 @@ import { tryOpenAutoPR } from '@/lib/github/auto-pr';
 import { db } from '@/lib/db';
 import ZAI from 'z-ai-web-dev-sdk';
 import { SelectorType, HealingStatus } from '@/lib/enums';
+import { notificationService } from '@/lib/notification-service';
 
 interface HealRequestBody {
   testName: string;
@@ -190,6 +191,29 @@ Respond in JSON format:
                 console.log(`[Auto-PR] No abierto: ${result.reason}`)
               }
             }).catch(err => console.error('[Auto-PR] Error async:', err))
+          }
+
+          if (healingStatus === 'HEALED_AUTO' || healingStatus === 'HEALED_MANUAL') {
+            await db.notification.create({
+              data: {
+                userId: testRun.project.userId,
+                type: 'info',
+                title: 'analytics_event:onboarding_step_3_first_healing',
+                message: JSON.stringify({ testRunId: id, healingEventId: updatedEvent.id }),
+                link: '/dashboard/healing',
+              },
+            }).catch(() => {})
+          }
+
+          if (healingStatus === 'BUG_DETECTED') {
+            notificationService.notifyBugDetected(
+              testRun.projectId,
+              testName,
+              errorMessage,
+              testRun.branch
+            ).catch((error) => {
+              console.error('[JIRA][BUG_DETECTED] Notification failed:', error)
+            })
           }
 
           return NextResponse.json({

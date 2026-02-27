@@ -4,6 +4,7 @@ import { TestStatus } from '@/lib/enums'
 import { gitAnalyzer } from '@/lib/git-analyzer'
 import { createHmac, timingSafeEqual } from 'crypto'
 import { addTestJob } from '@/lib/queue'
+import { checkTestRunLimit } from '@/lib/rate-limit'
 
 // ✅ HEAL-001 FIX: Verificar firma HMAC de GitHub para evitar inyección de eventos falsos
 function verifyGitHubSignature(body: string, signature: string | null): boolean {
@@ -61,6 +62,17 @@ export async function POST(request: Request) {
 
             if (!project) {
                 return NextResponse.json({ message: 'No project found for this repository' })
+            }
+
+            const limitCheck = await checkTestRunLimit(project.userId)
+            if (!limitCheck.allowed) {
+                return NextResponse.json({
+                    error: `Test run monthly limit reached for plan ${limitCheck.plan}`,
+                    limitExceeded: true,
+                    plan: limitCheck.plan,
+                    current: limitCheck.current,
+                    limit: limitCheck.limit,
+                }, { status: 429 })
             }
 
             // Analyze impact usando archivos REALES del commit de GitHub

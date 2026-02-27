@@ -6,6 +6,8 @@
   <p>
     <a href="https://healify-sigma.vercel.app">🌐 Live Demo</a> ·
     <a href="https://healify-sigma.vercel.app/docs">📚 Docs</a> ·
+    <a href="docs/INFORME_ESTADO_VISION_PRODUCTO_2026-02.md">🧭 Informe 2026</a> ·
+    <a href="docs/METRICAS_Y_KPIS_2026.md">📈 Métricas/KPI</a> ·
     <a href="#quick-start">🚀 Quick Start</a>
   </p>
 
@@ -13,7 +15,7 @@
     <img src="https://img.shields.io/badge/Next.js-16-black?logo=next.js" alt="Next.js" />
     <img src="https://img.shields.io/badge/TypeScript-5-blue?logo=typescript" alt="TypeScript" />
     <img src="https://img.shields.io/badge/Playwright-1.58-green?logo=playwright" alt="Playwright" />
-    <img src="https://img.shields.io/badge/tests-140%20passing-brightgreen" alt="Tests" />
+    <img src="https://img.shields.io/badge/tests-passing-brightgreen" alt="Tests" />
     <img src="https://img.shields.io/badge/Railway-Worker-purple" alt="Railway" />
   </p>
 </div>
@@ -90,11 +92,12 @@ npm run build:worker # Build the Railway worker
 | `STRIPE_ENTERPRISE_PRICE_ID` | Stripe Price ID for Enterprise plan |
 | `RESEND_API_KEY` | Resend API key for transactional emails |
 | `NEXT_PUBLIC_APP_URL` | Public URL of your app |
+| `CRON_SECRET` | Secret token to protect internal cron endpoints |
 
 ## 🧪 Testing
 
 ```bash
-npm test                  # Unit tests (Vitest) — 140 tests
+npm test                  # Unit tests (Vitest)
 npm run test:e2e          # E2E tests (Playwright)
 npm run test:e2e:api      # API tests only (no browser needed)
 npm run test:all          # Unit + API E2E tests
@@ -155,6 +158,27 @@ vercel deploy --prod
 The worker is deployed automatically. Set the start command to:
 ```
 node dist/worker.js
+```
+
+### Weekly report cron
+
+Trigger the weekly report endpoint with your secret:
+
+```bash
+curl -X GET "https://your-domain.com/api/cron/weekly-report" \
+  -H "Authorization: Bearer $CRON_SECRET"
+```
+
+For Vercel Cron, add a schedule (e.g. Mondays at 08:00 UTC) pointing to:
+
+```
+/api/cron/weekly-report
+```
+
+If `CRON_SECRET` is configured in your Vercel project, Vercel Cron automatically includes:
+
+```text
+Authorization: Bearer <CRON_SECRET>
 ```
 
 ## 📄 License

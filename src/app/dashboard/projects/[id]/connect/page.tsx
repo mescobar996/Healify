@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import { useParams } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { Copy, Check, Play, Code2, Terminal, FileCode } from 'lucide-react'
+import { Copy, Check, Play, Terminal, FileCode, Webhook } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { HealifyLogo } from '@/components/HealifyLogo'
 
@@ -262,9 +262,109 @@ export default function ConnectPage() {
   const params = useParams()
   const projectId = params.id as string
   const [activeFramework, setActiveFramework] = useState<keyof typeof snippets>('playwright')
+  const [detectedFramework, setDetectedFramework] = useState<keyof typeof snippets | null>(null)
+  const [projectRepository, setProjectRepository] = useState<string | null>(null)
+  const [trackedSdkStep, setTrackedSdkStep] = useState(false)
+
+  const appUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    (typeof window !== 'undefined' ? window.location.origin : 'https://healify.dev')
+  const webhookUrl = `${appUrl}/api/webhook/github`
+  const githubBadgeMarkdown = `[![Healed by Healify](https://img.shields.io/badge/Healed%20by-Healify-7B5EF8?style=for-the-badge)](${appUrl}/dashboard/tests?project=${projectId})`
+  const githubBadgeHtml = `<a href=\"${appUrl}/dashboard/tests?project=${projectId}\"><img src=\"https://img.shields.io/badge/Healed%20by-Healify-7B5EF8?style=for-the-badge\" alt=\"Healed by Healify\" /></a>`
+
+  const parseGithubRepo = (repositoryUrl: string) => {
+    const normalized = repositoryUrl.trim().replace(/\.git$/, '')
+    const match = normalized.match(/github\.com[:/]([^/]+)\/([^/]+)$/i)
+    if (!match) return null
+    return { owner: match[1], repo: match[2] }
+  }
+
+  const detectFrameworkFromPackageJson = (pkg: Record<string, unknown>): keyof typeof snippets => {
+    const dependencies = (pkg.dependencies as Record<string, string> | undefined) || {}
+    const devDependencies = (pkg.devDependencies as Record<string, string> | undefined) || {}
+    const scripts = (pkg.scripts as Record<string, string> | undefined) || {}
+
+    const allDeps = { ...dependencies, ...devDependencies }
+
+    if (allDeps['@playwright/test'] || allDeps['playwright']) return 'playwright'
+    if (allDeps['cypress']) return 'cypress'
+    if (allDeps['jest'] || allDeps['@jest/core']) return 'selenium'
+
+    const scriptValues = Object.values(scripts).join(' ').toLowerCase()
+    if (scriptValues.includes('playwright')) return 'playwright'
+    if (scriptValues.includes('cypress')) return 'cypress'
+    if (scriptValues.includes('jest')) return 'selenium'
+
+    return 'playwright'
+  }
+
+  React.useEffect(() => {
+    let mounted = true
+
+    const loadProjectAndDetectFramework = async () => {
+      try {
+        const res = await fetch(`/api/projects/${projectId}`)
+        if (!res.ok) return
+
+        const project = await res.json()
+        const repositoryUrl = project?.repository as string | null
+
+        if (mounted) setProjectRepository(repositoryUrl || null)
+
+        if (!repositoryUrl) return
+
+        const parsed = parseGithubRepo(repositoryUrl)
+        if (!parsed) return
+
+        const packageRes = await fetch(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}/contents/package.json`)
+        if (!packageRes.ok) return
+
+        const packageData = await packageRes.json()
+        if (!packageData?.content) return
+
+        const decoded = atob(packageData.content.replace(/\n/g, ''))
+        const pkg = JSON.parse(decoded)
+        const framework = detectFrameworkFromPackageJson(pkg)
+
+        if (mounted) {
+          setDetectedFramework(framework)
+          setActiveFramework(framework)
+        }
+      } catch {
+      }
+    }
+
+    void loadProjectAndDetectFramework()
+
+    return () => {
+      mounted = false
+    }
+  }, [projectId])
 
   const currentSnippet = snippets[activeFramework]
   const codeWithProjectId = currentSnippet.code.replace('{{PROJECT_ID}}', projectId)
+
+  const trackOnboardingStep2 = async () => {
+    if (trackedSdkStep) return
+    setTrackedSdkStep(true)
+    try {
+      await fetch('/api/analytics/events', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event: 'onboarding_step_2_sdk_installed',
+          metadata: {
+            projectId,
+            framework: activeFramework,
+            source: 'connect_page_copy',
+          },
+        }),
+      })
+    } catch {
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -293,7 +393,25 @@ export default function ConnectPage() {
         </div>
       </div>
 
-      {/* Framework Tabs */}
+      {/* Step 1: Webhook setup */}
+      <div className="glass-elite p-4">
+        <h2 className="text-sm font-medium text-gray-400 mb-3">Paso 1. Conectar webhook de GitHub</h2>
+        <p className="text-xs text-gray-500 mb-3">
+          Configurá este endpoint en tu repo de GitHub para que cada push dispare tests automáticamente.
+        </p>
+        <CodeBlock
+          code={webhookUrl}
+          language="url"
+          onCopy={() => {}}
+        />
+        {projectRepository && (
+          <p className="text-[11px] text-[#E8F0FF]/40 mt-3 break-all">
+            Repo conectado: {projectRepository}
+          </p>
+        )}
+      </div>
+
+      {/* Step 2: SDK setup */}
       <div className="flex gap-2 flex-wrap sm:flex-nowrap overflow-x-auto pb-1 scrollbar-hide">
         {(Object.keys(snippets) as Array<keyof typeof snippets>).map((framework) => (
           <FrameworkTab
@@ -305,37 +423,43 @@ export default function ConnectPage() {
         ))}
       </div>
 
+      {detectedFramework && (
+        <div className="-mt-1 text-[11px] text-[#00F5C8]/80">
+          Framework detectado automáticamente: {snippets[detectedFramework].name}
+        </div>
+      )}
+
       {/* Installation */}
       <div className="glass-elite p-4">
-        <h2 className="text-sm font-medium text-gray-400 mb-3">1. Install the SDK</h2>
+        <h2 className="text-sm font-medium text-gray-400 mb-3">Paso 2. Instalar SDK</h2>
         <CodeBlock 
           code={currentSnippet.install} 
           language="bash"
-          onCopy={() => {}}
+          onCopy={trackOnboardingStep2}
         />
       </div>
 
       {/* Integration Code */}
       <div className="glass-elite p-4">
-        <h2 className="text-sm font-medium text-gray-400 mb-3">2. Add to your test file</h2>
+        <h2 className="text-sm font-medium text-gray-400 mb-3">Paso 2.2 Agregar al test runner</h2>
         <CodeBlock 
           code={codeWithProjectId} 
           language={currentSnippet.name.toLowerCase()}
-          onCopy={() => {}}
+          onCopy={trackOnboardingStep2}
         />
       </div>
 
       {/* Environment Variables */}
       <div className="glass-elite p-4">
-        <h2 className="text-sm font-medium text-gray-400 mb-3">3. Set environment variable</h2>
+        <h2 className="text-sm font-medium text-gray-400 mb-3">Paso 2.3 Configurar API key</h2>
         <CodeBlock 
           code={`HEALIFY_API_KEY=hf_live_your_api_key_here`}
           language="env"
-          onCopy={() => {}}
+          onCopy={trackOnboardingStep2}
         />
       </div>
 
-      {/* Status */}
+      {/* Step 3 */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -346,11 +470,35 @@ export default function ConnectPage() {
             <Check className="w-6 h-6 text-emerald-400" />
           </div>
           <div>
-            <h3 className="text-white font-medium">Ready to Connect</h3>
-            <p className="text-gray-400 text-sm">Run your tests and Healify will start tracking</p>
+            <h3 className="text-white font-medium">Paso 3. Tu primer healing</h3>
+            <p className="text-gray-400 text-sm">Hacé un push con tests fallando y Healify intentará curarlos automáticamente.</p>
+            <div className="mt-2 inline-flex items-center gap-2 rounded-md border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] text-[#E8F0FF]/70">
+              <Webhook className="w-3 h-3 text-[#00F5C8]" />
+              Estado onboarding: listo para primer healing
+            </div>
           </div>
         </div>
       </motion.div>
+
+      {/* GitHub Badge */}
+      <div className="glass-elite p-4">
+        <h2 className="text-sm font-medium text-gray-400 mb-3">Badge “Healed by Healify”</h2>
+        <p className="text-xs text-gray-500 mb-3">
+          Agregá este badge en el README de tu repo para mostrar que los tests se autocuran con Healify.
+        </p>
+        <div className="space-y-3">
+          <CodeBlock
+            code={githubBadgeMarkdown}
+            language="markdown"
+            onCopy={() => {}}
+          />
+          <CodeBlock
+            code={githubBadgeHtml}
+            language="html"
+            onCopy={() => {}}
+          />
+        </div>
+      </div>
     </div>
   )
 }

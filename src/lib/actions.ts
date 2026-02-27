@@ -87,6 +87,16 @@ export async function createProject(data: {
       },
     })
 
+    await db.notification.create({
+      data: {
+        userId: session.user.id,
+        type: 'info',
+        title: 'analytics_event:onboarding_step_1_repo_connected',
+        message: JSON.stringify({ projectId: project.id, source: 'create_project_action' }),
+        link: '/dashboard/projects',
+      },
+    }).catch(() => {})
+
     revalidatePath('/dashboard/projects')
     return { success: true, project }
   } catch (error) {

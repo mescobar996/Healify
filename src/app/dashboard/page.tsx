@@ -21,6 +21,7 @@ import {
   Sparkles,
   ShieldCheck,
   Timer,
+  Download,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import {
@@ -48,6 +49,21 @@ import type {
 interface DashboardResponse extends DashboardData {
   isNewUser?: boolean
   projectCount?: number
+}
+
+interface WeeklyReportStatus {
+  enabled: boolean
+  scheduleUtc: string
+  nextScheduledAt: string
+  currentWeekKey: string
+  sentThisWeek: boolean
+  recentReports: number
+  lastReport: {
+    id: string
+    weekKey: string | null
+    sentAt: string
+    message: string
+  } | null
 }
 
 // ============================================
@@ -225,12 +241,69 @@ function DashboardContent() {
   }
   const { data: session } = useSession()
   const [roi, setRoi] = useState<ROIData | null>(null);
+  const [weeklyStatus, setWeeklyStatus] = useState<WeeklyReportStatus | null>(null)
+  const [sendingWeeklyReport, setSendingWeeklyReport] = useState(false)
+
+  const fetchWeeklyStatus = async () => {
+    try {
+      const response = await fetch('/api/cron/weekly-report/status', { credentials: 'include' })
+      if (!response.ok) return
+
+      const payload = await response.json()
+      if (payload && 'enabled' in payload) {
+        setWeeklyStatus(payload as WeeklyReportStatus)
+      }
+    } catch {
+    }
+  }
+
   useEffect(() => {
     fetch('/api/analytics', { credentials: 'include' })
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d && 'timeSavedHours' in d) setRoi(d) })
       .catch(() => {})
   }, []);
+
+  useEffect(() => {
+    void fetchWeeklyStatus()
+  }, [])
+
+  const handleManualWeeklyReport = async () => {
+    try {
+      setSendingWeeklyReport(true)
+      const response = await fetch('/api/cron/weekly-report', {
+        method: 'POST',
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => null)
+        throw new Error(body?.error || 'No se pudo ejecutar el weekly report')
+      }
+
+      const result = await response.json()
+      toast.success('Weekly report ejecutado', {
+        description: `Enviados: ${result.sent} · Omitidos: ${result.skipped}`,
+      })
+      void fetchWeeklyStatus()
+    } catch (error) {
+      toast.error('Error al ejecutar weekly report', {
+        description: error instanceof Error ? error.message : 'Inténtalo nuevamente',
+      })
+    } finally {
+      setSendingWeeklyReport(false)
+    }
+  }
+
+  const handleExportRoi = (format: 'csv' | 'pdf') => {
+    const a = document.createElement('a')
+    a.href = `/api/analytics/export?format=${format}`
+    a.download = ''
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    toast.success(`Export ${format.toUpperCase()} iniciado`)
+  }
 
   // Stripe success ahora se maneja en /dashboard/upgrade-success
   // canceled desde /pricing?canceled=true — mostrar toast informativo
@@ -362,6 +435,16 @@ function DashboardContent() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            {session?.user?.role === 'admin' && (
+              <Button
+                variant="outline"
+                size="sm"
+                asChild
+                className="bg-white/5 border-white/10 text-gray-300 hover:bg-white/10"
+              >
+                <Link href="/dashboard/team">Equipo</Link>
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -440,6 +523,22 @@ function DashboardContent() {
               <span className="text-[11px] font-medium tracking-widest text-[#E8F0FF]/40 uppercase">
                 ROI de Healify — acumulado histórico
               </span>
+              <div className="ml-auto flex items-center gap-2">
+                <button
+                  onClick={() => handleExportRoi('csv')}
+                  className="inline-flex items-center gap-1 text-[11px] text-[#E8F0FF]/45 hover:text-[#00F5C8] transition-colors"
+                >
+                  <Download className="w-3 h-3" />
+                  CSV
+                </button>
+                <button
+                  onClick={() => handleExportRoi('pdf')}
+                  className="inline-flex items-center gap-1 text-[11px] text-[#E8F0FF]/45 hover:text-[#00F5C8] transition-colors"
+                >
+                  <Download className="w-3 h-3" />
+                  PDF
+                </button>
+              </div>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-0 divide-y md:divide-y-0 divide-x-0 md:divide-x divide-white/5">
               {/* Horas ahorradas */}
@@ -506,6 +605,54 @@ function DashboardContent() {
                 </p>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Weekly Report Status */}
+        {weeklyStatus && (
+          <div className="rounded-xl border border-white/5 px-4 py-3 glass-elite">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+              <div>
+                <p className="text-[11px] font-medium tracking-widest text-[#E8F0FF]/40 uppercase">
+                  Weekly report automático
+                </p>
+                <p className="text-xs text-[#E8F0FF]/65 mt-1">
+                  {weeklyStatus.sentThisWeek
+                    ? `Enviado esta semana (${weeklyStatus.currentWeekKey})`
+                    : `Pendiente de envío esta semana (${weeklyStatus.currentWeekKey})`}
+                </p>
+              </div>
+              <div className="text-xs text-[#E8F0FF]/55">
+                Próximo envío: {new Date(weeklyStatus.nextScheduledAt).toLocaleString()}
+              </div>
+            </div>
+
+            {session?.user?.role === 'admin' && (
+              <div className="mt-3 flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={sendingWeeklyReport}
+                  onClick={handleManualWeeklyReport}
+                  className="bg-white/5 border-white/10 text-gray-300 hover:bg-white/10"
+                >
+                  <RefreshCw className={cn('w-3.5 h-3.5 mr-1.5', sendingWeeklyReport && 'animate-spin')} />
+                  {sendingWeeklyReport ? 'Enviando...' : 'Enviar ahora'}
+                </Button>
+                <span className="text-[11px] text-[#E8F0FF]/35">Solo admin/fundador</span>
+              </div>
+            )}
+
+            <div className="mt-2 text-[11px] text-[#E8F0FF]/45 flex flex-wrap gap-x-4 gap-y-1">
+              <span>Frecuencia: {weeklyStatus.scheduleUtc} (UTC)</span>
+              <span>Reportes enviados: {weeklyStatus.recentReports}</span>
+              <span>
+                Último envío:{' '}
+                {weeklyStatus.lastReport
+                  ? new Date(weeklyStatus.lastReport.sentAt).toLocaleString()
+                  : 'sin envíos todavía'}
+              </span>
+            </div>
           </div>
         )}
 

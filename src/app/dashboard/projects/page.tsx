@@ -462,6 +462,7 @@ export default function ProjectsPage() {
   const [editDescription, setEditDescription] = useState('');
   const [editRepository, setEditRepository] = useState('');
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [isSeedingDemo, setIsSeedingDemo] = useState(false)
 
   const fetchProjects = async () => {
     setLoading(true);
@@ -561,6 +562,42 @@ export default function ProjectsPage() {
     }
   };
 
+  const handleTryDemoRepo = async () => {
+    try {
+      setIsSeedingDemo(true)
+      toast.info('Preparando demo repo...')
+      const response = await fetch('/api/seed', {
+        method: 'GET',
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => null)
+        throw new Error(body?.error || 'No se pudo cargar la demo')
+      }
+
+      const body = await response.json()
+      if (body?.message?.includes('already seeded')) {
+        toast.success('Demo ya disponible', {
+          description: 'Ya tenés datos de demo cargados en tu cuenta.',
+        })
+      } else {
+        toast.success('Demo lista', {
+          description: 'Se crearon proyectos y test runs de ejemplo.',
+        })
+      }
+
+      await fetchProjects()
+      router.push('/dashboard/tests')
+    } catch (error) {
+      toast.error('Error al cargar demo', {
+        description: error instanceof Error ? error.message : 'Intentá nuevamente',
+      })
+    } finally {
+      setIsSeedingDemo(false)
+    }
+  }
+
   // Filter projects
   const filteredProjects = useMemo(() => {
     let filtered = projects;
@@ -605,14 +642,30 @@ export default function ProjectsPage() {
               Gestiona tus proyectos y monitorea sus tests
             </p>
           </div>
-          <Button
-            size="sm"
-            className="bg-violet-600 hover:bg-violet-700 text-white w-full sm:w-auto"
-            onClick={() => setIsNewProjectOpen(true)}
-          >
-            <Plus className="w-3.5 h-3.5 mr-1.5" />
-            Nuevo Proyecto
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={isSeedingDemo}
+              onClick={handleTryDemoRepo}
+              className="bg-white/5 border-white/10 text-gray-300 hover:bg-white/10"
+            >
+              {isSeedingDemo ? (
+                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+              ) : (
+                <Github className="w-3.5 h-3.5 mr-1.5" />
+              )}
+              Try with demo repo
+            </Button>
+            <Button
+              size="sm"
+              className="bg-violet-600 hover:bg-violet-700 text-white w-full sm:w-auto"
+              onClick={() => setIsNewProjectOpen(true)}
+            >
+              <Plus className="w-3.5 h-3.5 mr-1.5" />
+              Nuevo Proyecto
+            </Button>
+          </div>
         </div>
 
         {/* Search and Filters */}
@@ -659,14 +712,30 @@ export default function ProjectsPage() {
             }
             action={
               !searchQuery && (
-                <Button
-                  size="sm"
-                  className="bg-violet-600 hover:bg-violet-700 text-white"
-                  onClick={() => setIsNewProjectOpen(true)}
-                >
-                  <Plus className="w-3.5 h-3.5 mr-1.5" />
-                  Crear Proyecto
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={isSeedingDemo}
+                    className="bg-white/5 border-white/10 text-gray-300 hover:bg-white/10"
+                    onClick={handleTryDemoRepo}
+                  >
+                    {isSeedingDemo ? (
+                      <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                    ) : (
+                      <Github className="w-3.5 h-3.5 mr-1.5" />
+                    )}
+                    Try with demo repo
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="bg-violet-600 hover:bg-violet-700 text-white"
+                    onClick={() => setIsNewProjectOpen(true)}
+                  >
+                    <Plus className="w-3.5 h-3.5 mr-1.5" />
+                    Crear Proyecto
+                  </Button>
+                </div>
               )
             }
           />

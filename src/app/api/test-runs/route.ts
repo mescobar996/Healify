@@ -19,12 +19,20 @@ export async function GET(request: NextRequest) {
     const projectId = searchParams.get('projectId');
     const status = searchParams.get('status') as TestStatus | null;
     const branch = searchParams.get('branch');
+    const q = searchParams.get('q')?.trim();
 
     const where: {
       projectId?: string;
       status?: TestStatus;
       branch?: string;
       project?: { userId: string };
+      OR?: Array<{
+        branch?: { contains: string; mode: 'insensitive' }
+        commitMessage?: { contains: string; mode: 'insensitive' }
+        commitSha?: { contains: string; mode: 'insensitive' }
+        project?: { name?: { contains: string; mode: 'insensitive' } }
+        healingEvents?: { some: { testName: { contains: string; mode: 'insensitive' } } }
+      }>;
     } = {
       project: { userId: session.user.id }
     };
@@ -37,6 +45,15 @@ export async function GET(request: NextRequest) {
     }
     if (branch) {
       where.branch = branch;
+    }
+    if (q) {
+      where.OR = [
+        { branch: { contains: q, mode: 'insensitive' } },
+        { commitMessage: { contains: q, mode: 'insensitive' } },
+        { commitSha: { contains: q, mode: 'insensitive' } },
+        { project: { name: { contains: q, mode: 'insensitive' } } },
+        { healingEvents: { some: { testName: { contains: q, mode: 'insensitive' } } } },
+      ]
     }
 
     const testRuns = await db.testRun.findMany({

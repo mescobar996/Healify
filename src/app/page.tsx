@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { TypewriterText } from '@/components/TypewriterText'
 import { DashboardPreview } from '@/components/DashboardPreview'
+import { HealingDemo } from '@/components/HealingDemo'
 import { HealifyLogo } from '@/components/HealifyLogo'
 import { useEffect, useState } from 'react'
 
@@ -425,6 +426,7 @@ export default function HomePage() {
 
       {/* Landing Content */}
       <LandingHero />
+      <HealingDemo />
       <FeaturesSection />
       <HowItWorksSection />
       <CTASection />

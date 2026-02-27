@@ -17,6 +17,7 @@ import {
   FileCode,
   ArrowUpDown,
   AlertTriangle,
+  Tag,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -171,9 +172,37 @@ function TestsContent() {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [selectedTag, setSelectedTag] = useState<string>("all");
   const [hasMore, setHasMore] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [isRunningAll, setIsRunningAll] = useState(false);
+  const [runTags, setRunTags] = useState<Record<string, string[]>>({})
+  const [branchComparison, setBranchComparison] = useState<{
+    branches: string[]
+    base: { branch: string; runs: number; failedTests: number; failureRate: number; healedRuns: number }
+    compare: { branch: string; runs: number; failedTests: number; failureRate: number; healedRuns: number } | null
+    delta: { failedTests: number; failureRate: number; healedRuns: number } | null
+  } | null>(null)
+  const [compareBranch, setCompareBranch] = useState<string>('')
+
+  const fetchBranchComparison = async (branchToCompare?: string) => {
+    try {
+      const params = new URLSearchParams({ base: 'main' })
+      if (branchToCompare) params.set('compare', branchToCompare)
+
+      const response = await fetch(`/api/analytics/branch-comparison?${params.toString()}`, {
+        credentials: 'include',
+      })
+      if (!response.ok) return
+
+      const data = await response.json()
+      setBranchComparison(data)
+      if (!branchToCompare && data?.compare?.branch) {
+        setCompareBranch(data.compare.branch)
+      }
+    } catch {
+    }
+  }
 
   const fetchTestRuns = async () => {
     setLoading(true);
@@ -184,6 +213,7 @@ function TestsContent() {
         limit: 20,
         projectId: projectIdFilter || undefined,
         status: statusFilter !== "all" ? statusFilter : undefined,
+        q: searchQuery.trim() || undefined,
       });
       setTestRuns(response.testRuns);
       setHasMore(response.pagination.hasMore);
@@ -197,18 +227,62 @@ function TestsContent() {
 
   useEffect(() => {
     fetchTestRuns();
-  }, [projectIdFilter, statusFilter]);
+  }, [projectIdFilter, statusFilter, searchQuery]);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('healify_test_run_tags')
+      if (saved) {
+        setRunTags(JSON.parse(saved))
+      }
+    } catch {
+    }
+  }, [])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('healify_test_run_tags', JSON.stringify(runTags))
+    } catch {
+    }
+  }, [runTags])
+
+  const addTagToRun = (runId: string) => {
+    const rawTag = window.prompt('Nueva etiqueta para este test run (ej: flaky, login, checkout):')
+    if (!rawTag) return
+
+    const tag = rawTag.trim().toLowerCase()
+    if (!tag) return
+
+    setRunTags((previous) => {
+      const current = previous[runId] || []
+      if (current.includes(tag)) return previous
+      return {
+        ...previous,
+        [runId]: [...current, tag],
+      }
+    })
+  }
+
+  const removeTagFromRun = (runId: string, tag: string) => {
+    setRunTags((previous) => ({
+      ...previous,
+      [runId]: (previous[runId] || []).filter((existing) => existing !== tag),
+    }))
+  }
+
+  useEffect(() => {
+    void fetchBranchComparison()
+  }, [])
 
   // Filter test runs by search query
+  const allTags = useMemo(() => {
+    return Array.from(new Set(Object.values(runTags).flat())).sort()
+  }, [runTags])
+
   const filteredTestRuns = useMemo(() => {
-    if (!searchQuery.trim()) return testRuns;
-    const query = searchQuery.toLowerCase();
-    return testRuns.filter(
-      (run) =>
-        run.project?.name.toLowerCase().includes(query) ||
-        run.branch?.toLowerCase().includes(query)
-    );
-  }, [testRuns, searchQuery]);
+    if (selectedTag === 'all') return testRuns
+    return testRuns.filter((run) => (runTags[run.id] || []).includes(selectedTag))
+  }, [testRuns, runTags, selectedTag]);
 
   // Calculate stats from test runs
   const stats = useMemo(() => {
@@ -366,12 +440,81 @@ function TestsContent() {
         />
       </div>
 
+      {/* Branch Comparison */}
+      {branchComparison && (
+        <div className="rounded-lg glass-elite p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+            <div>
+              <h2 className="text-sm font-medium text-white">Branch comparison</h2>
+              <p className="text-xs text-gray-500 mt-0.5">main vs feature (últimos 30 días)</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-500">Comparar con:</span>
+              <select
+                value={compareBranch}
+                onChange={(event) => {
+                  const value = event.target.value
+                  setCompareBranch(value)
+                  void fetchBranchComparison(value)
+                }}
+                className="bg-white/5 border border-white/10 rounded-md px-2 py-1 text-xs text-gray-200"
+              >
+                {(branchComparison.branches || [])
+                  .filter((branch) => branch !== 'main')
+                  .map((branch) => (
+                    <option key={branch} value={branch}>
+                      {branch}
+                    </option>
+                  ))}
+              </select>
+            </div>
+          </div>
+
+          {branchComparison.compare ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="rounded-md bg-white/5 border border-white/5 p-3">
+                <p className="text-[11px] text-gray-500 uppercase tracking-wide">Fallos en tests</p>
+                <p className="text-sm text-white mt-1">
+                  {branchComparison.base.branch}: <span className="text-gray-300">{branchComparison.base.failedTests}</span>
+                </p>
+                <p className="text-sm text-white">
+                  {branchComparison.compare.branch}: <span className="text-gray-300">{branchComparison.compare.failedTests}</span>
+                </p>
+                <p className={cn('text-xs mt-1', (branchComparison.delta?.failedTests || 0) <= 0 ? 'text-emerald-400' : 'text-red-400')}>
+                  Δ {branchComparison.delta?.failedTests || 0}
+                </p>
+              </div>
+
+              <div className="rounded-md bg-white/5 border border-white/5 p-3">
+                <p className="text-[11px] text-gray-500 uppercase tracking-wide">Failure rate</p>
+                <p className="text-sm text-white mt-1">{branchComparison.base.branch}: {branchComparison.base.failureRate}%</p>
+                <p className="text-sm text-white">{branchComparison.compare.branch}: {branchComparison.compare.failureRate}%</p>
+                <p className={cn('text-xs mt-1', (branchComparison.delta?.failureRate || 0) <= 0 ? 'text-emerald-400' : 'text-red-400')}>
+                  Δ {branchComparison.delta?.failureRate || 0}%
+                </p>
+              </div>
+
+              <div className="rounded-md bg-white/5 border border-white/5 p-3">
+                <p className="text-[11px] text-gray-500 uppercase tracking-wide">Runs curados</p>
+                <p className="text-sm text-white mt-1">{branchComparison.base.branch}: {branchComparison.base.healedRuns}</p>
+                <p className="text-sm text-white">{branchComparison.compare.branch}: {branchComparison.compare.healedRuns}</p>
+                <p className={cn('text-xs mt-1', (branchComparison.delta?.healedRuns || 0) >= 0 ? 'text-emerald-400' : 'text-red-400')}>
+                  Δ {branchComparison.delta?.healedRuns || 0}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <p className="text-xs text-gray-500">No hay branch secundaria para comparar todavía.</p>
+          )}
+        </div>
+      )}
+
       {/* Filters - Linear Style */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
           <Input
-            placeholder="Buscar tests..."
+            placeholder="Buscar por test name, branch, commit..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9 input-glass text-[#E8F0FF] placeholder:text-[#E8F0FF]/30"
@@ -398,6 +541,16 @@ function TestsContent() {
               {f.label}
             </button>
           ))}
+          <select
+            value={selectedTag}
+            onChange={(event) => setSelectedTag(event.target.value)}
+            className="px-3 py-1.5 rounded-md text-[13px] font-medium bg-white/5 text-gray-300 border border-white/10"
+          >
+            <option value="all">Todas las etiquetas</option>
+            {allTags.map((tag) => (
+              <option key={tag} value={tag}>{tag}</option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -468,6 +621,31 @@ function TestsContent() {
                     <p className="text-[11px] text-gray-500 truncate">
                       {run.commitMessage || run.commitSha?.slice(0, 7) || "Manual run"}
                     </p>
+                    <div className="flex items-center gap-1 mt-1 flex-wrap">
+                      {(runTags[run.id] || []).map((tag) => (
+                        <button
+                          key={`${run.id}-${tag}`}
+                          onClick={(event) => {
+                            event.preventDefault()
+                            removeTagFromRun(run.id, tag)
+                          }}
+                          className="px-1.5 py-0.5 rounded bg-violet-500/10 text-violet-300 text-[10px]"
+                          title="Quitar etiqueta"
+                        >
+                          {tag}
+                        </button>
+                      ))}
+                      <button
+                        onClick={(event) => {
+                          event.preventDefault()
+                          addTagToRun(run.id)
+                        }}
+                        className="inline-flex items-center gap-1 text-[10px] text-gray-500 hover:text-[#00F5C8]"
+                      >
+                        <Tag className="w-3 h-3" />
+                        tag
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -566,6 +744,30 @@ function TestsContent() {
                     {run.failedTests > 0 && <span className="text-red-400 font-medium">{run.failedTests}✗</span>}
                     {run.healedTests > 0 && <span className="text-violet-400 font-medium">{run.healedTests}⚡</span>}
                     <span className="ml-auto">{formatRelativeTime(run.startedAt)}</span>
+                  </div>
+                  <div className="pl-6 flex items-center gap-1 flex-wrap mt-1">
+                    {(runTags[run.id] || []).map((tag) => (
+                      <button
+                        key={`${run.id}-mobile-${tag}`}
+                        onClick={(event) => {
+                          event.preventDefault()
+                          removeTagFromRun(run.id, tag)
+                        }}
+                        className="px-1.5 py-0.5 rounded bg-violet-500/10 text-violet-300 text-[10px]"
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                    <button
+                      onClick={(event) => {
+                        event.preventDefault()
+                        addTagToRun(run.id)
+                      }}
+                      className="inline-flex items-center gap-1 text-[10px] text-gray-500"
+                    >
+                      <Tag className="w-3 h-3" />
+                      tag
+                    </button>
                   </div>
                 </Link>
               ))}
