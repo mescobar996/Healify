@@ -5,6 +5,7 @@ import { testRunner } from '@/lib/test-runner'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { checkTestRunLimit, limitExceededResponse } from '@/lib/rate-limit'
+import { addTestJob } from '@/lib/queue'
 
 function normalizeStatus(status: string): 'pass' | 'fail' {
     if (status === TestStatus.PASSED || status === TestStatus.HEALED) return 'pass'
@@ -72,6 +73,27 @@ export async function POST(
                 healedTests: 0,
             },
         })
+
+        const enqueuedJob = await addTestJob(projectId, undefined, testRun.id, {
+            branch: 'main',
+            commitMessage: 'Manual dashboard run',
+            commitAuthor: session.user.email || session.user.name || 'manual',
+            repository: project.repository || undefined,
+        })
+
+        if (enqueuedJob?.id) {
+            await db.testRun.update({
+                where: { id: testRun.id },
+                data: { jobId: enqueuedJob.id },
+            })
+
+            return NextResponse.json({
+                message: 'Test run enqueued',
+                testRunId: testRun.id,
+                jobId: enqueuedJob.id,
+                queueStatus: 'queued',
+            })
+        }
 
         // 2. Execute tests (In prod this should be a background task)
         // We don't await here if we want it to be "async", but for demo we can wait 
