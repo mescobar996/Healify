@@ -1,23 +1,15 @@
 import type { Metadata, Viewport } from "next";
-import { Orbitron, Exo_2, JetBrains_Mono } from "next/font/google";
+import { Montserrat, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "sonner";
 import { Providers } from "@/components/Providers";
 import { BackgroundSpace } from "@/components/BackgroundSpace";
 
-// Tipografías Futuristas - OBLIGATORIAS
-const orbitron = Orbitron({
-  variable: "--font-orbitron",
+const montserrat = Montserrat({
+  variable: "--font-montserrat",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800", "900"],
-  display: "swap",
-});
-
-const exo2 = Exo_2({
-  variable: "--font-exo2",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800", "900"],
+  weight: ["300", "400", "500", "600", "700", "800"],
   display: "swap",
 });
 
@@ -95,7 +87,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body
-        className={`${orbitron.variable} ${exo2.variable} ${jetbrainsMono.variable} font-mono antialiased bg-[#0A0E1A] text-[#E8F0FF]`}
+        className={`${montserrat.variable} ${jetbrainsMono.variable} font-sans antialiased bg-[#0A0E1A] text-[#E8F0FF]`}
       >
         <BackgroundSpace />
         <Providers>

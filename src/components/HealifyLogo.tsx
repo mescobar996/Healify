@@ -28,7 +28,7 @@ export function HealifyLogo({
       {/* Logo real — PNG con el ícono V+</> */}
       <div className="relative shrink-0 group">
         <Image
-          src="/logo-icon-128.png"
+          src="/icon.png"
           alt="Healify"
           width={icon}
           height={icon}
