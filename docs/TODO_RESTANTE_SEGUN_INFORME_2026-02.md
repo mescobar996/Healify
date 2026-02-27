@@ -65,7 +65,7 @@ Estado base: [`docs/INFORME_ESTADO_VISION_PRODUCTO_2026-02.md`](docs/INFORME_EST
 
 ## 8) Siguiente ejecución recomendada (operativo)
 
-- [ ] Decidir si avanzamos ahora con Plugin VS Code (bloque 5 pendiente) o lo dejamos para sprint dedicado.
+- [x] Decidir si avanzamos ahora con Plugin VS Code (bloque 5 pendiente) o lo dejamos para sprint dedicado. (Decisión: avanzar ahora, sin pagos)
 - [x] Consolidar release y deploy en Vercel (`main`) para validar todo en web.
 - [x] Validar en producción: landing demo, dashboard equipo, branch comparison, exports ROI, weekly report status.
 	- [x] Smoke público OK: `/` (200), `/docs` (200), `/api/openapi` (200).
@@ -75,6 +75,14 @@ Estado base: [`docs/INFORME_ESTADO_VISION_PRODUCTO_2026-02.md`](docs/INFORME_EST
 	- [x] Fix UX: botón `Equipo` agregado en dashboard para usuarios autenticados (antes visible solo para `admin`).
 - [x] Si todo está OK, cortar release note corto en `worklog.md`.
 
+## 9) Próximo sprint activo (solo no-pago) 🟢
+
+- [ ] Plugin VS Code MVP (local): comando para abrir último test run y su estado.
+- [ ] Plugin VS Code MVP: panel simple con link al dashboard/tests.
+- [ ] Plugin VS Code MVP: configuración de `HEALIFY_APP_URL` en settings del plugin.
+- [ ] Worker: validar `GITHUB_TOKEN` en Railway para clone de repos privados.
+- [ ] Re-test end-to-end: ejecutar run manual y confirmar `jobId` + progreso de cola.
+
 ---
 
-Última actualización: 2026-02-27 (cierre operativo + release note)
+Última actualización: 2026-02-27 (modo ejecución no-pago + plugin sprint)
