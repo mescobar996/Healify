@@ -1,0 +1,46 @@
+{
+  "name": "healify-vscode-plugin",
+  "displayName": "Healify",
+  "description": "Quick access to Healify test runs from VS Code",
+  "version": "0.0.1",
+  "publisher": "healify",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Testing",
+    "Other"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "healify.openLatestRun",
+        "title": "Healify: Open Latest Test Run"
+      },
+      {
+        "command": "healify.openDashboardPanel",
+        "title": "Healify: Open Dashboard Panel"
+      }
+    ],
+    "configuration": {
+      "title": "Healify",
+      "properties": {
+        "healify.appUrl": {
+          "type": "string",
+          "default": "https://healify-sigma.vercel.app",
+          "description": "Base URL for your Healify app (e.g. https://healify-sigma.vercel.app)"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.90.0",
+    "typescript": "^5.8.2"
+  }
+}

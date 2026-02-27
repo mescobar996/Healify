@@ -77,12 +77,12 @@ Estado base: [`docs/INFORME_ESTADO_VISION_PRODUCTO_2026-02.md`](docs/INFORME_EST
 
 ## 9) Próximo sprint activo (solo no-pago) 🟢
 
-- [ ] Plugin VS Code MVP (local): comando para abrir último test run y su estado.
-- [ ] Plugin VS Code MVP: panel simple con link al dashboard/tests.
-- [ ] Plugin VS Code MVP: configuración de `HEALIFY_APP_URL` en settings del plugin.
+- [x] Plugin VS Code MVP (local): comando para abrir último test run y su estado.
+- [x] Plugin VS Code MVP: panel simple con link al dashboard/tests.
+- [x] Plugin VS Code MVP: configuración de `HEALIFY_APP_URL` en settings del plugin.
 - [ ] Worker: validar `GITHUB_TOKEN` en Railway para clone de repos privados.
 - [ ] Re-test end-to-end: ejecutar run manual y confirmar `jobId` + progreso de cola.
 
 ---
 
-Última actualización: 2026-02-27 (modo ejecución no-pago + plugin sprint)
+Última actualización: 2026-02-27 (plugin MVP implementado + compilado)
