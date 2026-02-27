@@ -423,9 +423,9 @@ jobs:
       - run: npm ci
       - run: npm run test:e2e:api
         env:
-          HEALIFY_API_KEY: \\${{ secrets.HEALIFY_API_KEY }}
-          HEALIFY_BRANCH: \\${{ github.ref_name }}
-          HEALIFY_COMMIT_SHA: \\${{ github.sha }}`} />
+          HEALIFY_API_KEY: \${{ secrets.HEALIFY_API_KEY }}
+          HEALIFY_BRANCH: \${{ github.ref_name }}
+          HEALIFY_COMMIT_SHA: \${{ github.sha }}`} />
 
           <SubHeading id="ci-gitlab">GitLab CI</SubHeading>
           <CodeBlock lang=".gitlab-ci.yml" code={`stages:

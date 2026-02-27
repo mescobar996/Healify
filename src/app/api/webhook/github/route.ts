@@ -64,6 +64,10 @@ export async function POST(request: Request) {
                 return NextResponse.json({ message: 'No project found for this repository' })
             }
 
+            if (!project.userId) {
+                return NextResponse.json({ message: 'Project owner not found' }, { status: 400 })
+            }
+
             const limitCheck = await checkTestRunLimit(project.userId)
             if (!limitCheck.allowed) {
                 return NextResponse.json({

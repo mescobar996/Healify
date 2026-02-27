@@ -193,7 +193,7 @@ Respond in JSON format:
             }).catch(err => console.error('[Auto-PR] Error async:', err))
           }
 
-          if (healingStatus === 'HEALED_AUTO' || healingStatus === 'HEALED_MANUAL') {
+          if (healingStatus === 'HEALED_AUTO') {
             await db.notification.create({
               data: {
                 userId: testRun.project.userId,
