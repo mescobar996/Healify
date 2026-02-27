@@ -45,7 +45,7 @@ Estado base: [`docs/INFORME_ESTADO_VISION_PRODUCTO_2026-02.md`](docs/INFORME_EST
 - [x] Soporte Selenium básico.
 - [x] API pública documentada (OpenAPI).
 - [x] Integración Jira (crear ticket en `BUG_DETECTED`).
-- [ ] Plugin VS Code (fase posterior, pausado por alcance actual).
+- [x] Plugin VS Code MVP (comandos + panel + setting `healify.appUrl`).
 
 ## 6) Checklist de calidad y GTM (recomendado)
 
@@ -85,4 +85,4 @@ Estado base: [`docs/INFORME_ESTADO_VISION_PRODUCTO_2026-02.md`](docs/INFORME_EST
 
 ---
 
-Última actualización: 2026-02-27 (plugin MVP + worker/cola validados)
+Última actualización: 2026-02-27 (deploy Vercel en verde + no-pago cerrado)
