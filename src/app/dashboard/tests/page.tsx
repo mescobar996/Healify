@@ -166,11 +166,13 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
 function TestsContent() {
   const searchParams = useSearchParams();
   const projectIdFilter = searchParams.get("project");
+  const runIdHighlight = searchParams.get("runId");
+  const queryFromUrl = searchParams.get("q") || "";
 
   const [testRuns, setTestRuns] = useState<TestRun[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(queryFromUrl);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedTag, setSelectedTag] = useState<string>("all");
   const [hasMore, setHasMore] = useState(false);
@@ -228,6 +230,10 @@ function TestsContent() {
   useEffect(() => {
     fetchTestRuns();
   }, [projectIdFilter, statusFilter, searchQuery]);
+
+  useEffect(() => {
+    setSearchQuery(queryFromUrl)
+  }, [queryFromUrl])
 
   useEffect(() => {
     try {
@@ -609,7 +615,10 @@ function TestsContent() {
               <Link
                 key={run.id}
                 href={`/dashboard/tests/${run.id}`}
-                className="group hidden md:grid grid-cols-12 gap-4 px-4 py-3 hover:bg-[var(--bg-hover)] transition-colors duration-150"
+                className={cn(
+                  "group hidden md:grid grid-cols-12 gap-4 px-4 py-3 hover:bg-[var(--bg-hover)] transition-colors duration-150",
+                  runIdHighlight === run.id && "bg-[rgba(94,106,210,0.08)]"
+                )}
               >
                 {/* Test Name */}
                 <div className="col-span-3 flex items-center gap-3 min-w-0">
@@ -721,7 +730,10 @@ function TestsContent() {
                 <Link
                   key={run.id}
                   href={`/dashboard/tests/${run.id}`}
-                  className="group flex flex-col gap-2 px-4 py-3.5 hover:bg-[var(--bg-hover)] active:bg-[var(--bg-hover)] transition-colors duration-150"
+                  className={cn(
+                    "group flex flex-col gap-2 px-4 py-3.5 hover:bg-[var(--bg-hover)] active:bg-[var(--bg-hover)] transition-colors duration-150",
+                    runIdHighlight === run.id && "bg-[rgba(94,106,210,0.08)]"
+                  )}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">

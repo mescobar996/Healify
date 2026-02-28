@@ -23,12 +23,25 @@ export function GlobalSearch() {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState("")
   const [results, setResults] = useState<SearchResponse>({ projects: [], testRuns: [], healingEvents: [] })
+  const [lastTrackedQuery, setLastTrackedQuery] = useState("")
+
+  const trackEvent = async (event: string, metadata: Record<string, unknown>) => {
+    try {
+      await fetch("/api/analytics/events", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event, metadata }),
+      })
+    } catch {}
+  }
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
         event.preventDefault()
         setOpen((prev) => !prev)
+        void trackEvent("search_open", { source: "keyboard" })
       }
     }
     window.addEventListener("keydown", onKey)
@@ -51,11 +64,22 @@ export function GlobalSearch() {
           testRuns: payload.testRuns || [],
           healingEvents: payload.healingEvents || [],
         })
+
+        if (q !== lastTrackedQuery) {
+          setLastTrackedQuery(q)
+          void trackEvent("search_query", {
+            query: q,
+            resultCount:
+              (payload.projects || []).length +
+              (payload.testRuns || []).length +
+              (payload.healingEvents || []).length,
+          })
+        }
       } catch {}
     }, 220)
 
     return () => clearTimeout(timer)
-  }, [query])
+  }, [query, lastTrackedQuery])
 
   const activeResults = query.trim().length < 2
     ? { projects: [], testRuns: [], healingEvents: [] }
@@ -69,7 +93,10 @@ export function GlobalSearch() {
   return (
     <>
       <button
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setOpen(true)
+          void trackEvent("search_open", { source: "button" })
+        }}
         className="hidden md:flex items-center justify-between gap-3 px-3.5 py-2 rounded-md bg-[#111111] border border-white/[0.08] hover:bg-[#151515] hover:border-white/[0.14] transition-all duration-150 group w-[380px] lg:w-[460px] xl:w-[560px]"
       >
         <div className="flex items-center gap-2.5 min-w-0">
@@ -97,7 +124,12 @@ export function GlobalSearch() {
               <CommandItem
                 key={p.id}
                 onSelect={() => {
-                  router.push("/dashboard/projects")
+                  void trackEvent("search_result_click", {
+                    type: "project",
+                    projectId: p.id,
+                    query: query.trim(),
+                  })
+                  router.push(`/dashboard/projects?q=${encodeURIComponent(p.name)}&projectId=${encodeURIComponent(p.id)}`)
                   setOpen(false)
                 }}
               >
@@ -112,7 +144,14 @@ export function GlobalSearch() {
               <CommandItem
                 key={run.id}
                 onSelect={() => {
-                  router.push("/dashboard/tests")
+                  void trackEvent("search_result_click", {
+                    type: "test_run",
+                    runId: run.id,
+                    projectId: run.project.id,
+                    query: query.trim(),
+                  })
+                  const q = run.branch || run.commitMessage || run.status
+                  router.push(`/dashboard/tests?project=${encodeURIComponent(run.project.id)}&q=${encodeURIComponent(q)}&runId=${encodeURIComponent(run.id)}`)
                   setOpen(false)
                 }}
               >
@@ -128,9 +167,21 @@ export function GlobalSearch() {
                 key={event.id}
                 onSelect={() => {
                   if (event.prUrl) {
+                    void trackEvent("search_result_click", {
+                      type: "healing_event_pr",
+                      healingEventId: event.id,
+                      query: query.trim(),
+                    })
                     window.open(event.prUrl, "_blank", "noopener,noreferrer")
                   } else {
-                    router.push("/dashboard/tests")
+                    void trackEvent("search_result_click", {
+                      type: "healing_event",
+                      healingEventId: event.id,
+                      runId: event.testRun.id,
+                      projectId: event.testRun.project.id,
+                      query: query.trim(),
+                    })
+                    router.push(`/dashboard/tests?project=${encodeURIComponent(event.testRun.project.id)}&q=${encodeURIComponent(event.testName)}&runId=${encodeURIComponent(event.testRun.id)}`)
                   }
                   setOpen(false)
                 }}

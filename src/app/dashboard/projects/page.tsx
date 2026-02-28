@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Plus,
   Search,
@@ -95,12 +95,14 @@ function ProjectCard({
   onEdit,
   onRunTests,
   isRunningTests = false,
+  isHighlighted = false,
 }: {
   project: Project;
   onDelete?: (id: string) => void;
   onEdit?: (id: string) => void;
   onRunTests?: (id: string) => void;
   isRunningTests?: boolean;
+  isHighlighted?: boolean;
 }) {
   const lastRun = project.lastTestRun;
   const totalTests = lastRun?.totalTests || 0;
@@ -108,7 +110,10 @@ function ProjectCard({
   const failedTests = lastRun?.status === "FAILED" ? 1 : 0;
 
   return (
-    <div className="group relative p-4 rounded-lg glass-elite hover:border-white/10 transition-all duration-150">
+    <div className={cn(
+      "group relative p-4 rounded-lg glass-elite hover:border-white/10 transition-all duration-150",
+      isHighlighted && "ring-1 ring-[#5E6AD2]/60 border-[#5E6AD2]/40"
+    )}>
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
@@ -448,10 +453,13 @@ function NewProjectModal({
 
 export default function ProjectsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialSearch = searchParams.get("q") || "";
+  const highlightedProjectId = searchParams.get("projectId");
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [isNewProjectOpen, setIsNewProjectOpen] = useState(false);
   const [runningTestsId, setRunningTestsId] = useState<string | null>(null);
@@ -482,6 +490,11 @@ export default function ProjectsPage() {
   useEffect(() => {
     fetchProjects();
   }, []);
+
+  useEffect(() => {
+    const q = searchParams.get("q") || "";
+    setSearchQuery(q);
+  }, [searchParams]);
 
   // Run Tests handler
   const handleRunTests = async (projectId: string) => {
@@ -749,6 +762,7 @@ export default function ProjectsPage() {
                 isRunningTests={runningTestsId === project.id}
                 onDelete={handleDeleteProject}
                 onEdit={handleEditProject}
+                isHighlighted={highlightedProjectId === project.id}
               />
             ))}
           </div>

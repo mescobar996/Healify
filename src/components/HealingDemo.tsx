@@ -107,6 +107,33 @@ export function HealingDemo({
   const elapsedMs = useDemoTimeline()
   const [selectedDemo, setSelectedDemo] = useState<DemoScenario['id']>('healing-pr')
 
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('healify_demo_scenario')
+      if (stored && DEMO_SCENARIOS.some((item) => item.id === stored)) {
+        setSelectedDemo(stored as DemoScenario['id'])
+      }
+    } catch {
+    }
+  }, [])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('healify_demo_scenario', selectedDemo)
+    } catch {
+    }
+
+    fetch('/api/analytics/events', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event: 'demo_scenario_selected',
+        metadata: { scenario: selectedDemo, embedded },
+      }),
+    }).catch(() => {})
+  }, [selectedDemo, embedded])
+
   const scenario = useMemo(
     () => DEMO_SCENARIOS.find((item) => item.id === selectedDemo) || DEMO_SCENARIOS[0],
     [selectedDemo]

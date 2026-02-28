@@ -7,6 +7,10 @@ const ALLOWED_EVENTS = new Set([
   'onboarding_step_1_repo_connected',
   'onboarding_step_2_sdk_installed',
   'onboarding_step_3_first_healing',
+  'search_open',
+  'search_query',
+  'search_result_click',
+  'demo_scenario_selected',
 ])
 
 export async function POST(request: NextRequest) {
@@ -24,15 +28,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid event' }, { status: 400 })
     }
 
-    await db.notification.create({
+    await db.analyticsEvent.create({
       data: {
-        userId: session.user.id,
-        type: 'info',
-        title: `analytics_event:${event}`,
-        message: JSON.stringify(metadata).slice(0, 1000),
-        link: '/dashboard',
+        eventType: event,
+        metadata: JSON.stringify({ userId: session.user.id, ...metadata }).slice(0, 2000),
       },
     })
+
+    if (event.startsWith('onboarding_step_')) {
+      await db.notification.create({
+        data: {
+          userId: session.user.id,
+          type: 'info',
+          title: `analytics_event:${event}`,
+          message: JSON.stringify(metadata).slice(0, 1000),
+          link: '/dashboard',
+        },
+      }).catch(() => {})
+    }
 
     return NextResponse.json({ ok: true })
   } catch (error) {
