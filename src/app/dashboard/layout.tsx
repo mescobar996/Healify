@@ -192,7 +192,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="flex items-center justify-between h-full px-4 lg:px-6">
 
             {/* Left */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
               <button className="lg:hidden p-1.5 rounded-md text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors"
                 onClick={() => setSidebarOpen(true)}>
                 <Menu className="w-5 h-5" />
@@ -203,7 +203,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <HealifyLogo size="sm" showText={true} />
               </div>
 
-              <GlobalSearch />
+              <div className="min-w-0">
+                <GlobalSearch />
+              </div>
             </div>
 
             {/* Right */}

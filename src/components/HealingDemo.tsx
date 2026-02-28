@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { CheckCircle2, GitPullRequest, Terminal } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, GitPullRequest, ShieldAlert, Terminal } from 'lucide-react'
 
 const LOOP_DURATION_MS = 7000
 const TICK_MS = 100
@@ -21,8 +21,96 @@ function useDemoTimeline() {
   return elapsedMs
 }
 
-export function HealingDemo() {
+type DemoScenario = {
+  id: 'healing-pr' | 'flaky-retry' | 'bug-detected'
+  label: string
+  testCommand: string
+  failedTitle: string
+  failedMessage: string
+  successTitle: string
+  branch: string
+  oldSelector: string
+  newSelector: string | null
+  confidenceLine: string
+  overlayText: string
+  footerReadyText: string
+  toastText: string
+  rightPanelTitle: string
+  rightPanelSubtitle: string
+}
+
+const DEMO_SCENARIOS: DemoScenario[] = [
+  {
+    id: 'healing-pr',
+    label: 'Autocuración + PR',
+    testCommand: 'playwright test login.spec.ts',
+    failedTitle: 'FAILED login.spec.ts:23',
+    failedMessage: 'Element not found: #btn-login',
+    successTitle: 'PASSED ✅',
+    branch: 'healify-fix/abc123',
+    oldSelector: '#btn-login',
+    newSelector: '[data-testid="login-btn"]',
+    confidenceLine: 'Confianza: 97% ✅',
+    overlayText: 'Healify analizando DOM para autocuración...',
+    footerReadyText: 'Healify detectó el cambio y abrió un PR en 3.2s',
+    toastText: 'PR #42 abierto en GitHub',
+    rightPanelTitle: 'GitHub PR abierto',
+    rightPanelSubtitle: 'selector diff',
+  },
+  {
+    id: 'flaky-retry',
+    label: 'Flaky retry',
+    testCommand: 'playwright test cart.spec.ts --retries=1',
+    failedTitle: 'FAILED cart.spec.ts:18 (attempt 1)',
+    failedMessage: 'Timeout in network wait · transient issue',
+    successTitle: 'PASSED on retry ✅',
+    branch: 'main',
+    oldSelector: '.cart-total',
+    newSelector: null,
+    confidenceLine: 'Clasificación: flaky test',
+    overlayText: 'Healify evaluando estabilidad y patrón de flaky...',
+    footerReadyText: 'Healify clasificó flaky y reintentó automáticamente',
+    toastText: 'Retry automático ejecutado',
+    rightPanelTitle: 'Diagnóstico de ejecución',
+    rightPanelSubtitle: 'resultado del retry',
+  },
+  {
+    id: 'bug-detected',
+    label: 'Bug detectado',
+    testCommand: 'playwright test checkout.spec.ts',
+    failedTitle: 'FAILED checkout.spec.ts:51',
+    failedMessage: 'HTTP 500 on /api/checkout',
+    successTitle: 'BUG DETECTED ⚠️',
+    branch: 'main',
+    oldSelector: 'button.pay-now',
+    newSelector: null,
+    confidenceLine: 'Clasificación: bug real (no autocurar)',
+    overlayText: 'Healify validando si es bug real o problema de selector...',
+    footerReadyText: 'Healify creó alerta accionable para revisión humana',
+    toastText: 'Ticket Jira sugerido',
+    rightPanelTitle: 'Alerta de bug',
+    rightPanelSubtitle: 'evidencia y recomendación',
+  },
+]
+
+interface HealingDemoProps {
+  embedded?: boolean
+  title?: string
+  subtitle?: string
+}
+
+export function HealingDemo({
+  embedded = false,
+  title = 'Demo interactivo',
+  subtitle = 'Seleccioná qué flujo querés ver: autocuración, flaky retry o bug detectado.',
+}: HealingDemoProps) {
   const elapsedMs = useDemoTimeline()
+  const [selectedDemo, setSelectedDemo] = useState<DemoScenario['id']>('healing-pr')
+
+  const scenario = useMemo(
+    () => DEMO_SCENARIOS.find((item) => item.id === selectedDemo) || DEMO_SCENARIOS[0],
+    [selectedDemo]
+  )
 
   const timeline = useMemo(() => {
     const seconds = elapsedMs / 1000
@@ -49,6 +137,26 @@ export function HealingDemo() {
           transition={{ duration: 0.5 }}
           className="glass-elite rounded-2xl sm:rounded-3xl border border-white/10 overflow-hidden"
         >
+          <div className="px-5 sm:px-8 pt-5 sm:pt-6 pb-3 border-b border-white/10">
+            <h3 className="text-lg sm:text-xl font-semibold text-[#E8F0FF]">{title}</h3>
+            <p className="text-xs sm:text-sm text-[#E8F0FF]/60 mt-1">{subtitle}</p>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              {DEMO_SCENARIOS.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => setSelectedDemo(item.id)}
+                  className={
+                    item.id === selectedDemo
+                      ? 'px-2.5 py-1 rounded-md text-xs bg-[#1A1A1A] border border-[#00F5C8]/40 text-[#00F5C8]'
+                      : 'px-2.5 py-1 rounded-md text-xs bg-[#101010] border border-white/[0.1] text-[#9B9B9B] hover:text-[#E8F0FF]'
+                  }
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="px-5 sm:px-8 pt-6 sm:pt-8 pb-4 border-b border-white/10">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6 text-sm font-semibold tracking-wide uppercase">
               <div className="text-[#FF5D7A]">Antes: tu test falla</div>
@@ -65,7 +173,7 @@ export function HealingDemo() {
                 </div>
 
                 <div className="space-y-2 text-[#E8F0FF]/75">
-                  <div>$ playwright test login.spec.ts</div>
+                  <div>$ {scenario.testCommand}</div>
                   <div>{timeline.hasPassed ? '✓ 1 passed (5.5s)' : 'running tests...'}</div>
 
                   <AnimatePresence mode="wait">
@@ -78,8 +186,8 @@ export function HealingDemo() {
                         transition={{ duration: 0.25 }}
                         className="pt-2 space-y-1"
                       >
-                        <div className="text-[#FF5D7A] font-semibold">FAILED login.spec.ts:23</div>
-                        <div className="text-[#FF5D7A]">Element not found: #btn-login</div>
+                        <div className="text-[#FF5D7A] font-semibold">{scenario.failedTitle}</div>
+                        <div className="text-[#FF5D7A]">{scenario.failedMessage}</div>
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -94,7 +202,7 @@ export function HealingDemo() {
                         transition={{ duration: 0.25 }}
                         className="pt-2 text-[#00F5C8] font-semibold"
                       >
-                        PASSED ✅
+                        {scenario.successTitle}
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -103,21 +211,27 @@ export function HealingDemo() {
 
               <div className="rounded-xl border border-white/10 bg-[#0F1528] p-4 sm:p-5 font-mono text-xs sm:text-sm min-h-[220px] relative">
                 <div className="flex items-center gap-2 text-[#E8F0FF]/80 mb-3">
-                  <GitPullRequest className="w-4 h-4" />
-                  <span>GitHub PR abierto</span>
+                  {scenario.id === 'bug-detected' ? <ShieldAlert className="w-4 h-4" /> : <GitPullRequest className="w-4 h-4" />}
+                  <span>{scenario.rightPanelTitle}</span>
                 </div>
 
                 <div className="space-y-2 text-[#E8F0FF]/75">
-                  <div className="text-[#00F5C8]">healify-fix/abc123</div>
-                  <div className="border-t border-white/10 pt-2">selector diff</div>
+                  <div className="text-[#00F5C8]">{scenario.branch}</div>
+                  <div className="border-t border-white/10 pt-2">{scenario.rightPanelSubtitle}</div>
                   <div className={timeline.showDiff ? 'text-[#FF5D7A]' : 'text-[#E8F0FF]/35'}>
-                    - selector: '#btn-login'
+                    - selector/error: {scenario.oldSelector}
                   </div>
+                  {scenario.newSelector ? (
+                    <div className={timeline.showDiff ? 'text-[#00F5C8]' : 'text-[#E8F0FF]/35'}>
+                      + selector: {scenario.newSelector}
+                    </div>
+                  ) : (
+                    <div className={timeline.showDiff ? 'text-[#E8F0FF]/85' : 'text-[#E8F0FF]/35'}>
+                      + acción: revisión humana / retry
+                    </div>
+                  )}
                   <div className={timeline.showDiff ? 'text-[#00F5C8]' : 'text-[#E8F0FF]/35'}>
-                    + selector: '[data-testid="login-btn"]'
-                  </div>
-                  <div className={timeline.showDiff ? 'text-[#00F5C8]' : 'text-[#E8F0FF]/35'}>
-                    Confianza: 97% ✅
+                    {scenario.confidenceLine}
                   </div>
                 </div>
 
@@ -130,7 +244,7 @@ export function HealingDemo() {
                       transition={{ duration: 0.2 }}
                       className="absolute right-3 top-3 rounded-lg border border-[#00F5C8]/30 bg-[#00F5C8]/10 px-3 py-2 text-[11px] text-[#00F5C8]"
                     >
-                      PR #42 abierto en GitHub
+                      {scenario.toastText}
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -148,7 +262,7 @@ export function HealingDemo() {
                 >
                   <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#00F5C8]/20 to-transparent animate-pulse" />
                   <div className="relative h-full flex items-center justify-center text-[#00F5C8] font-semibold tracking-wide">
-                    Healify analizando DOM...
+                    {scenario.overlayText}
                   </div>
                 </motion.div>
               )}
@@ -160,13 +274,17 @@ export function HealingDemo() {
               <CheckCircle2 className="w-4 h-4" />
               <span>
                 {timeline.showDiff
-                  ? 'Healify detectó el cambio en 3.2 segundos'
+                  ? scenario.footerReadyText
                   : 'Detectando cambios de UI en tiempo real...'}
               </span>
             </div>
           </div>
         </motion.div>
   )
+
+  if (embedded) {
+    return demoContent
+  }
 
   return (
     <section id="demo-section" className="relative py-16 sm:py-20">

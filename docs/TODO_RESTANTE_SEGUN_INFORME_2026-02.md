@@ -2,6 +2,8 @@
 
 Estado base: [`docs/INFORME_ESTADO_VISION_PRODUCTO_2026-02.md`](docs/INFORME_ESTADO_VISION_PRODUCTO_2026-02.md)
 
+TODO operativo vigente: [`docs/TODO_ACTIVO_POST_ROLLOUT_2026-02-27.md`](docs/TODO_ACTIVO_POST_ROLLOUT_2026-02-27.md)
+
 ## 1) Ya completado ✅
 
 - [x] Demo animada en landing (`HealingDemo`) en loop automático.

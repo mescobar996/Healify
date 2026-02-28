@@ -5,6 +5,7 @@ import {
   CheckCircle, Copy, ArrowRight, Book,
   Code2, Workflow, Shield, AlertTriangle
 } from 'lucide-react'
+import { HealingDemo } from '@/components/HealingDemo'
 
 export const metadata: Metadata = {
   title: 'Docs — Healify',
@@ -67,7 +68,7 @@ function Callout({ type = 'info', children }: { type?: 'info' | 'warning' | 'tip
 // ─── Nav TOC ────────────────────────────────────────────────────────
 const TOC = [
   { id: 'quickstart',    label: 'Quickstart',         indent: false },
-  { id: 'video-90s',     label: 'Video 90s',          indent: false },
+  { id: 'demo-interactivo', label: 'Demo Interactivo', indent: false },
   { id: 'installation',  label: 'Instalación',         indent: false },
   { id: 'configuration', label: 'Configuración',       indent: false },
   { id: 'playwright',    label: 'Playwright',          indent: true  },
@@ -192,18 +193,20 @@ export default function DocsPage() {
             ))}
           </div>
 
-          <SectionHeading id="video-90s">
-            <Workflow className="w-5 h-5 text-[#5E6AD2]" /> Video 90s
+          <SectionHeading id="demo-interactivo">
+            <Workflow className="w-5 h-5 text-[#5E6AD2]" /> Demo interactivo
           </SectionHeading>
 
           <p className="text-sm text-[#9B9B9B] mb-4">
-            Recorrido rápido del flujo completo: test roto → análisis IA → selector curado → PR abierto.
+            Elegí el flujo que querés explorar: autocuración con PR, flaky retry o bug detectado.
           </p>
 
           <div className="rounded-xl border border-white/[0.07] bg-[#111111] p-3 mb-6">
-            <video controls preload="metadata" className="w-full rounded-lg bg-[#151515]">
-              <source src={process.env.NEXT_PUBLIC_HEALIFY_90S_VIDEO_URL || '/videos/healify-90s.mp4'} type="video/mp4" />
-            </video>
+            <HealingDemo
+              embedded
+              title="Demo interactivo en docs"
+              subtitle="Probá el escenario de interés según tu caso de uso."
+            />
           </div>
 
           {/* ── INSTALLATION ── */}

@@ -70,11 +70,13 @@ export function GlobalSearch() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-md bg-[var(--bg-elevated)] border border-[var(--border-default)] hover:bg-[var(--bg-hover)] transition-all duration-150 group"
+        className="hidden md:flex items-center justify-between gap-3 px-3.5 py-2 rounded-md bg-[#111111] border border-white/[0.08] hover:bg-[#151515] hover:border-white/[0.14] transition-all duration-150 group w-[380px] lg:w-[460px] xl:w-[560px]"
       >
-        <Search className="w-3.5 h-3.5 text-[var(--text-tertiary)] group-hover:text-[var(--text-secondary)]" />
-        <span className="text-[13px] text-[var(--text-secondary)]">Buscar...</span>
-        <kbd className="hidden lg:inline-flex items-center gap-0.5 ml-4 text-[10px] text-[var(--text-tertiary)] bg-[#111111] px-1.5 py-0.5 rounded font-mono">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <Search className="w-4 h-4 text-[var(--text-tertiary)] group-hover:text-[var(--text-secondary)]" />
+          <span className="text-[13px] text-[var(--text-secondary)] truncate">Buscar proyectos, tests, PRs, commits...</span>
+        </div>
+        <kbd className="hidden lg:inline-flex items-center gap-0.5 text-[10px] text-[var(--text-tertiary)] bg-[#0B0B0B] border border-white/[0.08] px-1.5 py-0.5 rounded font-mono shrink-0">
           Ctrl K
         </kbd>
       </button>
