@@ -15,16 +15,16 @@ export const metadata: Metadata = {
 function CodeBlock({ code, lang = 'bash' }: { code: string; lang?: string }) {
   return (
     <div className="relative group">
-      <div className="flex items-center justify-between px-4 py-2 bg-white/[0.03] border-b border-white/8 rounded-t-xl">
-        <span className="text-[11px] text-[#E8F0FF]/30 font-mono uppercase tracking-widest">{lang}</span>
+      <div className="flex items-center justify-between px-4 py-2 bg-[#151515] border-b border-white/[0.07] rounded-t-xl">
+        <span className="text-[11px] text-[#6B6B6B] font-mono uppercase tracking-widest">{lang}</span>
         <div className="flex gap-1.5">
-          <span className="w-3 h-3 rounded-full bg-white/10" />
-          <span className="w-3 h-3 rounded-full bg-white/10" />
-          <span className="w-3 h-3 rounded-full bg-white/10" />
+          <span className="w-3 h-3 rounded-full bg-white/[0.12]" />
+          <span className="w-3 h-3 rounded-full bg-white/[0.12]" />
+          <span className="w-3 h-3 rounded-full bg-white/[0.12]" />
         </div>
       </div>
-      <pre className="p-4 rounded-b-xl bg-[#070B14] overflow-x-auto">
-        <code className="text-sm font-mono text-[#E8F0FF]/80 leading-relaxed">{code}</code>
+      <pre className="p-4 rounded-b-xl bg-[#111111] overflow-x-auto border border-t-0 border-white/[0.07]">
+        <code className="text-sm font-mono text-[#9B9B9B] leading-relaxed">{code}</code>
       </pre>
     </div>
   )
@@ -33,8 +33,8 @@ function CodeBlock({ code, lang = 'bash' }: { code: string; lang?: string }) {
 // ─── Section heading ────────────────────────────────────────────────
 function SectionHeading({ id, children }: { id: string; children: React.ReactNode }) {
   return (
-    <h2 id={id} className="text-xl font-semibold text-white mt-12 mb-4 scroll-mt-24 flex items-center gap-2 group">
-      <a href={`#${id}`} className="text-[#00F5C8]/0 group-hover:text-[#00F5C8]/60 transition-colors text-lg">#</a>
+    <h2 id={id} className="text-xl font-semibold text-[#EDEDED] mt-12 mb-4 scroll-mt-24 flex items-center gap-2 group">
+      <a href={`#${id}`} className="text-[#5E6AD2]/0 group-hover:text-[#5E6AD2]/70 transition-colors text-lg">#</a>
       {children}
     </h2>
   )
@@ -42,7 +42,7 @@ function SectionHeading({ id, children }: { id: string; children: React.ReactNod
 
 function SubHeading({ id, children }: { id: string; children: React.ReactNode }) {
   return (
-    <h3 id={id} className="text-base font-semibold text-[#E8F0FF]/90 mt-8 mb-3 scroll-mt-24">
+    <h3 id={id} className="text-base font-semibold text-[#EDEDED] mt-8 mb-3 scroll-mt-24">
       {children}
     </h3>
   )
@@ -51,15 +51,15 @@ function SubHeading({ id, children }: { id: string; children: React.ReactNode })
 // ─── Callout ────────────────────────────────────────────────────────
 function Callout({ type = 'info', children }: { type?: 'info' | 'warning' | 'tip'; children: React.ReactNode }) {
   const styles = {
-    info:    { bg: 'bg-[#3B82F6]/10', border: 'border-[#3B82F6]/25', icon: <Zap className="w-4 h-4 text-[#3B82F6] shrink-0 mt-0.5" /> },
-    warning: { bg: 'bg-[#F59E0B]/10', border: 'border-[#F59E0B]/25', icon: <AlertTriangle className="w-4 h-4 text-[#F59E0B] shrink-0 mt-0.5" /> },
-    tip:     { bg: 'bg-[#00F5C8]/10', border: 'border-[#00F5C8]/25', icon: <CheckCircle className="w-4 h-4 text-[#00F5C8] shrink-0 mt-0.5" /> },
+    info:    { bg: 'bg-[#151515]', border: 'border-white/[0.07]', icon: <Zap className="w-4 h-4 text-[#4E9FE8] shrink-0 mt-0.5" /> },
+    warning: { bg: 'bg-[#151515]', border: 'border-white/[0.07]', icon: <AlertTriangle className="w-4 h-4 text-[#E8A642] shrink-0 mt-0.5" /> },
+    tip:     { bg: 'bg-[#151515]', border: 'border-white/[0.07]', icon: <CheckCircle className="w-4 h-4 text-[#5E6AD2] shrink-0 mt-0.5" /> },
   }
   const s = styles[type]
   return (
     <div className={`flex gap-3 p-4 rounded-xl border ${s.bg} ${s.border} my-4`}>
       {s.icon}
-      <div className="text-sm text-[#E8F0FF]/70 leading-relaxed">{children}</div>
+      <div className="text-sm text-[#9B9B9B] leading-relaxed">{children}</div>
     </div>
   )
 }
@@ -84,23 +84,23 @@ const TOC = [
 // ══════════════════════════════════════════════════════════════════════
 export default function DocsPage() {
   return (
-    <div className="min-h-screen bg-[#0A0E1A] text-[#E8F0FF]">
+    <div className="min-h-screen bg-[#090909] text-[#EDEDED]">
 
       {/* ── Top nav ── */}
-      <header className="sticky top-0 z-40 border-b border-white/8 bg-[rgba(10,14,26,0.9)] backdrop-blur-xl">
+      <header className="sticky top-0 z-40 border-b border-white/[0.07] bg-[#090909]">
         <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-6">
-            <Link href="/" className="flex items-center gap-2 font-semibold text-white">
-              <Book className="w-4 h-4 text-[#00F5C8]" />
+            <Link href="/" className="flex items-center gap-2 font-semibold text-[#EDEDED]">
+              <Book className="w-4 h-4 text-[#5E6AD2]" />
               <span>Healify</span>
-              <span className="text-[#E8F0FF]/30">/</span>
-              <span className="text-[#E8F0FF]/60 font-normal">Docs</span>
+              <span className="text-[#6B6B6B]">/</span>
+              <span className="text-[#9B9B9B] font-normal">Docs</span>
             </Link>
-            <nav className="hidden md:flex items-center gap-4 text-sm text-[#E8F0FF]/50">
-              <a href="#quickstart" className="hover:text-white transition-colors">Quickstart</a>
-              <a href="#api" className="hover:text-white transition-colors">API</a>
-              <a href="#webhook" className="hover:text-white transition-colors">Webhook</a>
-              <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
+            <nav className="hidden md:flex items-center gap-4 text-sm text-[#6B6B6B]">
+              <a href="#quickstart" className="hover:text-[#EDEDED] transition-colors">Quickstart</a>
+              <a href="#api" className="hover:text-[#EDEDED] transition-colors">API</a>
+              <a href="#webhook" className="hover:text-[#EDEDED] transition-colors">Webhook</a>
+              <a href="#faq" className="hover:text-[#EDEDED] transition-colors">FAQ</a>
             </nav>
           </div>
           <div className="flex items-center gap-3">
@@ -108,13 +108,13 @@ export default function DocsPage() {
               href="https://github.com/mescobar996/Healify"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm text-[#E8F0FF]/50 hover:text-white transition-colors"
+              className="text-sm text-[#9B9B9B] hover:text-[#EDEDED] transition-colors"
             >
               GitHub
             </Link>
             <Link
               href="/dashboard"
-              className="text-sm px-3 py-1.5 rounded-lg bg-[#7B5EF8] text-white font-medium hover:bg-[#7B5EF8]/90 transition-colors"
+              className="text-sm px-3 py-1.5 rounded-lg bg-[#5E6AD2] text-white font-medium hover:bg-[#6B79E0] transition-colors"
             >
               Dashboard →
             </Link>
@@ -127,12 +127,12 @@ export default function DocsPage() {
         {/* ── Sidebar TOC ── */}
         <aside className="hidden lg:block w-52 shrink-0">
           <div className="sticky top-24 space-y-1">
-            <p className="text-[11px] font-medium tracking-widest text-[#E8F0FF]/30 uppercase mb-3">En esta página</p>
+            <p className="text-[11px] font-medium tracking-widest text-[#6B6B6B] uppercase mb-3">En esta página</p>
             {TOC.map(item => (
               <a
                 key={item.id}
                 href={`#${item.id}`}
-                className={`block text-sm py-1 transition-colors hover:text-white text-[#E8F0FF]/50 ${item.indent ? 'pl-3 text-xs' : ''}`}
+                className={`block text-sm py-1 transition-colors hover:text-[#EDEDED] text-[#6B6B6B] ${item.indent ? 'pl-3 text-xs' : ''}`}
               >
                 {item.label}
               </a>
@@ -146,30 +146,30 @@ export default function DocsPage() {
           {/* Hero */}
           <div className="mb-10">
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-[#00F5C8]/10 text-[#00F5C8] border border-[#00F5C8]/20">
+              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-[#1A1A1A] text-[#5E6AD2] border border-white/[0.12]">
                 SDK v1.0
               </span>
-              <span className="text-xs text-[#E8F0FF]/30">Última actualización: Feb 2026</span>
+              <span className="text-xs text-[#6B6B6B]">Última actualización: Feb 2026</span>
             </div>
-            <h1 className="text-3xl font-bold text-white mb-3 tracking-tight">
+            <h1 className="text-3xl font-bold text-[#EDEDED] mb-3 tracking-tight">
               Documentación del SDK
             </h1>
-            <p className="text-[#E8F0FF]/60 leading-relaxed max-w-xl">
+            <p className="text-[#9B9B9B] leading-relaxed max-w-xl">
               Integrá Healify en tu pipeline de CI/CD en menos de 5 minutos.
               Cuando un test falla, Healify detecta el selector roto, genera una corrección
               y crea un Pull Request automáticamente.
             </p>
-            <p className="text-xs text-[#E8F0FF]/35 mt-3">
-              Definiciones canónicas de métricas/KPI: <a href="/docs/METRICAS_Y_KPIS_2026.md" className="text-[#00F5C8]/70 hover:text-[#00F5C8]">METRICAS_Y_KPIS_2026.md</a>
+            <p className="text-xs text-[#6B6B6B] mt-3">
+              Definiciones canónicas de métricas/KPI: <a href="/docs/METRICAS_Y_KPIS_2026.md" className="text-[#5E6AD2] hover:text-[#6B79E0]">METRICAS_Y_KPIS_2026.md</a>
             </p>
           </div>
 
           {/* ── QUICKSTART ── */}
           <SectionHeading id="quickstart">
-            <Zap className="w-5 h-5 text-[#00F5C8]" /> Quickstart
+            <Zap className="w-5 h-5 text-[#5E6AD2]" /> Quickstart
           </SectionHeading>
 
-          <p className="text-sm text-[#E8F0FF]/60 mb-4 leading-relaxed">
+          <p className="text-sm text-[#9B9B9B] mb-4 leading-relaxed">
             3 pasos para conectar tu primer repositorio:
           </p>
 
@@ -179,13 +179,13 @@ export default function DocsPage() {
               { step: '2', title: 'Agregá tu API Key', desc: 'Desde Configuración → API Keys' },
               { step: '3', title: 'Conectá el webhook de GitHub', desc: 'Desde Proyectos → Conectar repo' },
             ].map(item => (
-              <div key={item.step} className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/8">
-                <span className="w-6 h-6 rounded-full bg-[#7B5EF8]/20 border border-[#7B5EF8]/30 text-[#7B5EF8] text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
+              <div key={item.step} className="flex items-start gap-3 p-3 rounded-xl bg-[#111111] border border-white/[0.07]">
+                <span className="w-6 h-6 rounded-full bg-[#1A1A1A] border border-white/[0.12] text-[#5E6AD2] text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
                   {item.step}
                 </span>
                 <div>
-                  <p className="text-sm font-medium text-white">{item.title}</p>
-                  <p className="text-xs text-[#E8F0FF]/40 font-mono mt-0.5">{item.desc}</p>
+                  <p className="text-sm font-medium text-[#EDEDED]">{item.title}</p>
+                  <p className="text-xs text-[#6B6B6B] font-mono mt-0.5">{item.desc}</p>
                 </div>
               </div>
             ))}
@@ -193,10 +193,10 @@ export default function DocsPage() {
 
           {/* ── INSTALLATION ── */}
           <SectionHeading id="installation">
-            <Package className="w-5 h-5 text-[#7B5EF8]" /> Instalación
+            <Package className="w-5 h-5 text-[#5E6AD2]" /> Instalación
           </SectionHeading>
 
-          <p className="text-sm text-[#E8F0FF]/60 mb-4">
+          <p className="text-sm text-[#9B9B9B] mb-4">
             Instalá el reporter como dependencia de desarrollo:
           </p>
 
@@ -206,16 +206,16 @@ export default function DocsPage() {
 
           <Callout type="info">
             El reporter solo se activa cuando detecta la variable de entorno{' '}
-            <code className="text-[#00F5C8] bg-white/5 px-1 rounded">HEALIFY_API_KEY</code>.
+            <code className="text-[#5E6AD2] bg-[#1A1A1A] px-1 rounded">HEALIFY_API_KEY</code>.
             En entornos sin la key, los tests corren normalmente sin overhead.
           </Callout>
 
           {/* ── CONFIGURATION ── */}
           <SectionHeading id="configuration">
-            <Code2 className="w-5 h-5 text-[#FF6B9D]" /> Configuración
+            <Code2 className="w-5 h-5 text-[#5E6AD2]" /> Configuración
           </SectionHeading>
 
-          <p className="text-sm text-[#E8F0FF]/60 mb-4">
+          <p className="text-sm text-[#9B9B9B] mb-4">
             Agregá tu API Key como variable de entorno. Nunca la commitees al repo.
           </p>
 
@@ -229,8 +229,8 @@ HEALIFY_COMMIT_SHA=\${GITHUB_SHA}`} />
           {/* ── PLAYWRIGHT ── */}
           <SubHeading id="playwright">Playwright</SubHeading>
 
-          <p className="text-sm text-[#E8F0FF]/60 mb-4">
-            Importá el reporter en tu <code className="text-[#00F5C8] bg-white/5 px-1 rounded">playwright.config.ts</code>:
+          <p className="text-sm text-[#9B9B9B] mb-4">
+            Importá el reporter en tu <code className="text-[#5E6AD2] bg-[#1A1A1A] px-1 rounded">playwright.config.ts</code>:
           </p>
 
           <CodeBlock lang="playwright.config.ts" code={`import { defineConfig } from '@playwright/test'
@@ -250,7 +250,7 @@ export default defineConfig({
 })`} />
 
           <Callout type="tip">
-            Activá <code className="text-[#00F5C8] bg-white/5 px-1 rounded">captureDOM: true</code> para
+            Activá <code className="text-[#5E6AD2] bg-[#1A1A1A] px-1 rounded">captureDOM: true</code> para
             que Healify tenga más contexto sobre la estructura del DOM al momento del fallo.
             Mejora la precisión de autocuración en un ~30%.
           </Callout>
@@ -316,16 +316,16 @@ def report_to_healify(test_name, selector, error, html):
 
           {/* ── API REFERENCE ── */}
           <SectionHeading id="api">
-            <Terminal className="w-5 h-5 text-[#00F5C8]" /> API Reference
+            <Terminal className="w-5 h-5 text-[#5E6AD2]" /> API Reference
           </SectionHeading>
 
-          <p className="text-sm text-[#E8F0FF]/60 mb-4">
+          <p className="text-sm text-[#9B9B9B] mb-4">
             Podés reportar fallos directamente desde tu pipeline sin usar el reporter de npm.
           </p>
 
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-xs font-bold px-2 py-0.5 rounded bg-[#00F5C8]/15 text-[#00F5C8] border border-[#00F5C8]/20 font-mono">POST</span>
-            <code className="text-sm text-[#E8F0FF]/70 font-mono">/api/v1/report</code>
+            <span className="text-xs font-bold px-2 py-0.5 rounded bg-[#1A1A1A] text-[#5E6AD2] border border-white/[0.12] font-mono">POST</span>
+            <code className="text-sm text-[#9B9B9B] font-mono">/api/v1/report</code>
           </div>
 
           <CodeBlock lang="curl" code={`curl -X POST https://healify-sigma.vercel.app/api/v1/report \\
@@ -344,17 +344,17 @@ def report_to_healify(test_name, selector, error, html):
 
           <SubHeading id="api-params">Parámetros</SubHeading>
 
-          <div className="rounded-xl border border-white/8 overflow-hidden mb-6">
+          <div className="rounded-xl border border-white/[0.07] overflow-hidden mb-6 bg-[#111111]">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-white/[0.03] border-b border-white/8">
-                  <th className="text-left px-4 py-3 text-[#E8F0FF]/50 font-medium text-xs tracking-wide">Campo</th>
-                  <th className="text-left px-4 py-3 text-[#E8F0FF]/50 font-medium text-xs tracking-wide">Tipo</th>
-                  <th className="text-left px-4 py-3 text-[#E8F0FF]/50 font-medium text-xs tracking-wide">Requerido</th>
-                  <th className="text-left px-4 py-3 text-[#E8F0FF]/50 font-medium text-xs tracking-wide">Descripción</th>
+                <tr className="bg-[#151515] border-b border-white/[0.07]">
+                  <th className="text-left px-4 py-3 text-[#6B6B6B] font-medium text-xs tracking-wide">Campo</th>
+                  <th className="text-left px-4 py-3 text-[#6B6B6B] font-medium text-xs tracking-wide">Tipo</th>
+                  <th className="text-left px-4 py-3 text-[#6B6B6B] font-medium text-xs tracking-wide">Requerido</th>
+                  <th className="text-left px-4 py-3 text-[#6B6B6B] font-medium text-xs tracking-wide">Descripción</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody className="divide-y divide-white/[0.07]">
                 {[
                   ['testName',     'string',  '✓', 'Nombre completo del test'],
                   ['selector',     'string',  '✓', 'El selector que falló (CSS, XPath, etc.)'],
@@ -365,11 +365,11 @@ def report_to_healify(test_name, selector, error, html):
                   ['branch',       'string',  '–', 'Branch de Git actual'],
                   ['commitSha',    'string',  '–', 'SHA del commit que disparó el fallo'],
                 ].map(([field, type, req, desc]) => (
-                  <tr key={field} className="hover:bg-white/[0.02]">
-                    <td className="px-4 py-3 font-mono text-[#00F5C8] text-xs">{field}</td>
-                    <td className="px-4 py-3 text-[#E8F0FF]/40 text-xs">{type}</td>
-                    <td className="px-4 py-3 text-center text-xs">{req === '✓' ? <span className="text-[#10B981]">✓</span> : <span className="text-[#E8F0FF]/20">—</span>}</td>
-                    <td className="px-4 py-3 text-[#E8F0FF]/60 text-xs">{desc}</td>
+                  <tr key={field} className="hover:bg-[#151515]">
+                    <td className="px-4 py-3 font-mono text-[#5E6AD2] text-xs">{field}</td>
+                    <td className="px-4 py-3 text-[#6B6B6B] text-xs">{type}</td>
+                    <td className="px-4 py-3 text-center text-xs">{req === '✓' ? <span className="text-[#3DB779]">✓</span> : <span className="text-[#6B6B6B]">—</span>}</td>
+                    <td className="px-4 py-3 text-[#9B9B9B] text-xs">{desc}</td>
                   </tr>
                 ))}
               </tbody>
@@ -395,14 +395,14 @@ def report_to_healify(test_name, selector, error, html):
 }`} />
 
           <SubHeading id="api-openapi">OpenAPI</SubHeading>
-          <p className="text-sm text-[#E8F0FF]/60 mb-3">
+          <p className="text-sm text-[#9B9B9B] mb-3">
             Especificación pública disponible en formato JSON:
           </p>
           <CodeBlock lang="url" code={`https://healify-sigma.vercel.app/api/openapi`} />
 
           {/* ── CI INTEGRATIONS ── */}
           <SectionHeading id="ci">
-            <Workflow className="w-5 h-5 text-[#7B5EF8]" /> CI Integrations
+            <Workflow className="w-5 h-5 text-[#5E6AD2]" /> CI Integrations
           </SectionHeading>
 
           <SubHeading id="ci-github">GitHub Actions</SubHeading>
@@ -443,17 +443,17 @@ healify_tests:
     HEALIFY_COMMIT_SHA: $CI_COMMIT_SHA`} />
 
           <Callout type="tip">
-            Guardá <code className="text-[#00F5C8] bg-white/5 px-1 rounded">HEALIFY_API_KEY</code> como secret en tu CI.
+            Guardá <code className="text-[#5E6AD2] bg-[#1A1A1A] px-1 rounded">HEALIFY_API_KEY</code> como secret en tu CI.
             El reporter detecta automáticamente branch y commit cuando definís esas variables.
           </Callout>
 
           {/* ── JIRA ── */}
           <SectionHeading id="jira">
-            <GitBranch className="w-5 h-5 text-[#FF6B9D]" /> Jira Integration
+            <GitBranch className="w-5 h-5 text-[#5E6AD2]" /> Jira Integration
           </SectionHeading>
 
-          <p className="text-sm text-[#E8F0FF]/60 mb-4 leading-relaxed">
-            Cuando Healify clasifica un evento como <code className="text-[#00F5C8] bg-white/5 px-1 rounded">BUG_DETECTED</code>,
+          <p className="text-sm text-[#9B9B9B] mb-4 leading-relaxed">
+            Cuando Healify clasifica un evento como <code className="text-[#5E6AD2] bg-[#1A1A1A] px-1 rounded">BUG_DETECTED</code>,
             puede abrir un ticket en Jira automáticamente (si configurás las variables).
           </p>
 
@@ -471,27 +471,27 @@ JIRA_PROJECT_KEY=QA`} />
               ['429', '#FF6B9D', 'Rate limit: máx. 60 reportes/minuto por proyecto'],
               ['500', '#E8F0FF', 'Error interno — contactar soporte'],
             ].map(([code, color, msg]) => (
-              <div key={code} className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.02] border border-white/8">
+              <div key={code} className="flex items-center gap-3 p-3 rounded-lg bg-[#111111] border border-white/[0.07]">
                 <code className="text-xs font-bold font-mono px-2 py-0.5 rounded" style={{ color, background: `${color}18` }}>{code}</code>
-                <span className="text-sm text-[#E8F0FF]/60">{msg}</span>
+                <span className="text-sm text-[#9B9B9B]">{msg}</span>
               </div>
             ))}
           </div>
 
           {/* ── WEBHOOK ── */}
           <SectionHeading id="webhook">
-            <GitBranch className="w-5 h-5 text-[#7B5EF8]" /> GitHub Webhook
+            <GitBranch className="w-5 h-5 text-[#5E6AD2]" /> GitHub Webhook
           </SectionHeading>
 
-          <p className="text-sm text-[#E8F0FF]/60 mb-4 leading-relaxed">
+          <p className="text-sm text-[#9B9B9B] mb-4 leading-relaxed">
             Configurar el webhook de GitHub permite que Healify analice automáticamente
             cada push y ejecute tus tests en el Railway Worker.
           </p>
 
           <div className="space-y-4 mb-6">
-            <div className="p-4 rounded-xl bg-white/[0.03] border border-white/8">
-              <p className="text-sm font-medium text-white mb-1">URL del webhook</p>
-              <code className="text-xs font-mono text-[#00F5C8] bg-black/30 px-2 py-1 rounded block">
+            <div className="p-4 rounded-xl bg-[#111111] border border-white/[0.07]">
+              <p className="text-sm font-medium text-[#EDEDED] mb-1">URL del webhook</p>
+              <code className="text-xs font-mono text-[#5E6AD2] bg-[#1A1A1A] px-2 py-1 rounded block">
                 https://healify-sigma.vercel.app/api/webhook/github
               </code>
             </div>
@@ -503,9 +503,9 @@ JIRA_PROJECT_KEY=QA`} />
                 ['SSL verify',   'Enabled ✓'],
                 ['Secret',       'Configurar en el repo → igual que GITHUB_WEBHOOK_SECRET'],
               ].map(([k, v]) => (
-                <div key={k} className="p-3 rounded-xl bg-white/[0.02] border border-white/8">
-                  <p className="text-[11px] text-[#E8F0FF]/30 uppercase tracking-widest mb-1">{k}</p>
-                  <p className="text-xs text-[#E8F0FF]/70 font-mono">{v}</p>
+                <div key={k} className="p-3 rounded-xl bg-[#111111] border border-white/[0.07]">
+                  <p className="text-[11px] text-[#6B6B6B] uppercase tracking-widest mb-1">{k}</p>
+                  <p className="text-xs text-[#9B9B9B] font-mono">{v}</p>
                 </div>
               ))}
             </div>
@@ -514,7 +514,7 @@ JIRA_PROJECT_KEY=QA`} />
           <Callout type="warning">
             El webhook usa HMAC-SHA256 para verificar la autenticidad de cada evento.
             Asegurate de configurar el mismo secreto tanto en GitHub como en{' '}
-            <code className="bg-white/5 px-1 rounded">GITHUB_WEBHOOK_SECRET</code> en tus env vars de Vercel.
+            <code className="bg-[#1A1A1A] px-1 rounded">GITHUB_WEBHOOK_SECRET</code> en tus env vars de Vercel.
           </Callout>
 
           <CodeBlock lang="Variables de entorno (Vercel)" code={`GITHUB_WEBHOOK_SECRET=tu-secreto-seguro-aqui
@@ -524,7 +524,7 @@ REDIS_URL=rediss://...`} />
 
           {/* ── DASHBOARD ── */}
           <SectionHeading id="dashboard">
-            <Workflow className="w-5 h-5 text-[#00F5C8]" /> Dashboard
+            <Workflow className="w-5 h-5 text-[#5E6AD2]" /> Dashboard
           </SectionHeading>
 
           <div className="grid sm:grid-cols-2 gap-4 mb-6">
@@ -532,37 +532,37 @@ REDIS_URL=rediss://...`} />
               {
                 title: 'Tests Hoy',
                 desc: 'Total de tests ejecutados en las últimas 24h, con variación respecto al día anterior.',
-                icon: <Zap className="w-4 h-4 text-[#7B5EF8]" />,
+                icon: <Zap className="w-4 h-4 text-[#5E6AD2]" />,
               },
               {
                 title: 'Autocuración',
                 desc: 'Porcentaje de tests fallidos que fueron curados automáticamente con confidence ≥ 95%.',
-                icon: <CheckCircle className="w-4 h-4 text-[#00F5C8]" />,
+                icon: <CheckCircle className="w-4 h-4 text-[#3DB779]" />,
               },
               {
                 title: 'Bugs Detectados',
                 desc: 'Fallos que requieren revisión manual (confidence < 95%). Aparecen en la cola de revisión.',
-                icon: <AlertTriangle className="w-4 h-4 text-[#F59E0B]" />,
+                icon: <AlertTriangle className="w-4 h-4 text-[#E8A642]" />,
               },
               {
                 title: 'Tiempo Promedio',
                 desc: 'Tiempo promedio de procesamiento por evento de healing, incluyendo análisis de IA.',
-                icon: <Terminal className="w-4 h-4 text-[#FF6B9D]" />,
+                icon: <Terminal className="w-4 h-4 text-[#4E9FE8]" />,
               },
             ].map(card => (
-              <div key={card.title} className="p-4 rounded-xl bg-white/[0.03] border border-white/8">
+              <div key={card.title} className="p-4 rounded-xl bg-[#111111] border border-white/[0.07]">
                 <div className="flex items-center gap-2 mb-2">
                   {card.icon}
-                  <p className="text-sm font-medium text-white">{card.title}</p>
+                  <p className="text-sm font-medium text-[#EDEDED]">{card.title}</p>
                 </div>
-                <p className="text-xs text-[#E8F0FF]/50 leading-relaxed">{card.desc}</p>
+                <p className="text-xs text-[#9B9B9B] leading-relaxed">{card.desc}</p>
               </div>
             ))}
           </div>
 
           {/* ── FAQ ── */}
           <SectionHeading id="faq">
-            <Shield className="w-5 h-5 text-[#FF6B9D]" /> FAQ
+            <Shield className="w-5 h-5 text-[#5E6AD2]" /> FAQ
           </SectionHeading>
 
           <div className="space-y-4">
@@ -592,24 +592,24 @@ REDIS_URL=rediss://...`} />
                 a: 'Sí. Podés usar solo el endpoint /api/v1/report para análisis on-demand. El worker de Railway es para el flujo automático: push → test → heal → PR.',
               },
             ].map(({ q, a }) => (
-              <details key={q} className="group p-4 rounded-xl bg-white/[0.02] border border-white/8 cursor-pointer">
-                <summary className="text-sm font-medium text-white list-none flex items-center justify-between">
+              <details key={q} className="group p-4 rounded-xl bg-[#111111] border border-white/[0.07] cursor-pointer">
+                <summary className="text-sm font-medium text-[#EDEDED] list-none flex items-center justify-between">
                   {q}
-                  <ArrowRight className="w-4 h-4 text-[#E8F0FF]/30 group-open:rotate-90 transition-transform" />
+                  <ArrowRight className="w-4 h-4 text-[#6B6B6B] group-open:rotate-90 transition-transform" />
                 </summary>
-                <p className="text-sm text-[#E8F0FF]/60 mt-3 leading-relaxed">{a}</p>
+                <p className="text-sm text-[#9B9B9B] mt-3 leading-relaxed">{a}</p>
               </details>
             ))}
           </div>
 
           {/* CTA bottom */}
-          <div className="mt-12 p-6 rounded-2xl bg-gradient-to-br from-[#7B5EF8]/10 to-[#00F5C8]/5 border border-[#7B5EF8]/20 text-center">
-            <p className="text-lg font-semibold text-white mb-2">¿Listo para empezar?</p>
-            <p className="text-sm text-[#E8F0FF]/60 mb-4">Conectá tu primer repositorio en menos de 5 minutos.</p>
+          <div className="mt-12 p-6 rounded-2xl bg-[#111111] border border-white/[0.07] text-center">
+            <p className="text-lg font-semibold text-[#EDEDED] mb-2">¿Listo para empezar?</p>
+            <p className="text-sm text-[#9B9B9B] mb-4">Conectá tu primer repositorio en menos de 5 minutos.</p>
             <div className="flex items-center justify-center gap-3">
               <Link
                 href="/dashboard/projects"
-                className="px-4 py-2 rounded-lg bg-[#7B5EF8] text-white text-sm font-semibold hover:bg-[#7B5EF8]/90 transition-colors"
+                className="px-4 py-2 rounded-lg bg-[#5E6AD2] text-white text-sm font-semibold hover:bg-[#6B79E0] transition-colors"
               >
                 Crear proyecto
               </Link>
@@ -617,7 +617,7 @@ REDIS_URL=rediss://...`} />
                 href="https://github.com/mescobar996/Healify"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-[#E8F0FF]/70 text-sm font-medium hover:bg-white/10 transition-colors"
+                className="px-4 py-2 rounded-lg bg-[#151515] border border-white/[0.07] text-[#9B9B9B] text-sm font-medium hover:bg-[#1A1A1A] hover:text-[#EDEDED] transition-colors"
               >
                 Ver en GitHub
               </Link>
