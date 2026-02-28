@@ -99,6 +99,21 @@ Estado base: [`docs/INFORME_ESTADO_VISION_PRODUCTO_2026-02.md`](docs/INFORME_EST
 - ⏸️ Pendiente manual externo: activación de credenciales de pago, Anthropic en Vercel y dominio productivo.
 - 🎯 Siguiente paso para cierre total de negocio: resolver los 5 ítems de la sección 2 y validar checkout en producción.
 
+## 12) Cierre de implementaciones pedidas (confirmación explícita) ✅
+
+- [x] Fase 2: Dashboard por tabs (Overview, Análisis, Funciones).
+- [x] Fase 3: Empty state/onboarding guiado con progreso de 3 pasos.
+- [x] Fase 4: Notification center accionable con apertura de links/PR.
+- [x] Fase 5: Quick search global real para proyectos, test runs y curaciones.
+- [x] Fase 6: Salud de proyectos en sidebar con indicadores visuales.
+- [x] Fase 7: Sandbox demo interactivo por usuario (setup + seed inicial).
+- [x] Fase 8: Video 90s en web y docs.
+
+### Verificación técnica
+- [x] Typecheck global sin errores (`npx tsc --noEmit`).
+- [x] Cambios publicados en `main` (commit `d5aafef`).
+- [x] Estado de git limpio post-push.
+
 ---
 
-Última actualización: 2026-02-27 (no-pago + UI refresh cerrados; pendientes solo externos)
+Última actualización: 2026-02-27 (fases UX 2-8 completadas; pendientes solo externos de credenciales/pagos/dominio)

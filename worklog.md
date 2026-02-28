@@ -2,6 +2,33 @@
 ## Project Work Log
 
 ---
+## Release Note - 2026-02-27 (Phases 2-8 UX/Product rollout)
+
+### Summary
+- Se completó la ejecución integral del plan por fases solicitado para UX/producto en dashboard, onboarding, notificaciones, búsqueda, sandbox y contenido de demo.
+- Se mantuvo implementación con datos reales (sin mocks de negocio) sobre endpoints existentes y nuevos endpoints dedicados.
+
+### Delivered
+- Dashboard por tabs: Overview, Análisis y Funciones.
+- Priorización de métrica en Tests monitoreados.
+- Empty state guiado con progreso real de 3 pasos y CTA accionables.
+- Notification Center accionable (panel lateral) con deep links para abrir recursos/PR.
+- Búsqueda global real (Ctrl+K) para proyectos, runs y curaciones.
+- Salud de proyectos en sidebar con dots por estado.
+- Sandbox interactivo por usuario (`/api/demo/sandbox`) y activación automática para usuario nuevo.
+- Video de 90 segundos integrado en landing y docs.
+- Notificación automática al abrir PR desde auto-healing con link directo al PR.
+
+### Validation
+- Typecheck global ejecutado: `npx tsc --noEmit` sin errores.
+- Commit publicado en `main`: `d5aafef`.
+- Validación git post-push: working tree limpio (`git status --short` sin cambios).
+
+### Scope Check
+- Cumplimiento funcional confirmado sobre todos los puntos pedidos en la iteración por fases (2 a 8).
+- No se incluyeron cambios de pagos/credenciales externas fuera del alcance acordado.
+
+---
 ## Cierre Operativo - 2026-02-27 (Todo técnico completado)
 
 ### Estado
