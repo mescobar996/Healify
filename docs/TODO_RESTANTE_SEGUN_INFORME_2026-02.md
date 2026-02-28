@@ -10,9 +10,9 @@ Estado base: [`docs/INFORME_ESTADO_VISION_PRODUCTO_2026-02.md`](docs/INFORME_EST
 - [x] Estado del weekly report visible en dashboard.
 - [x] Trigger manual “Enviar ahora” en dashboard (solo `admin`).
 
-## 2) Pausado por decisión (depende de pagos/credenciales) ⏸️
+## 2) Bloqueadores externos (depende de pagos/credenciales) ⏸️
 
-> No avanzar hasta confirmación explícita.
+> Requiere acceso a cuentas externas (Vercel/Stripe/MercadoPago/LemonSqueezy/registrar de dominio). No es ejecutable 100% desde este repo.
 
 - [ ] Configurar `ANTHROPIC_API_KEY` en Vercel.
 - [ ] Activar MercadoPago producción (planes + credenciales).
@@ -83,6 +83,22 @@ Estado base: [`docs/INFORME_ESTADO_VISION_PRODUCTO_2026-02.md`](docs/INFORME_EST
 - [x] Worker: validar `GITHUB_TOKEN` en Railway para clone de repos privados.
 - [x] Re-test end-to-end: ejecutar run manual y confirmar `jobId` + progreso de cola.
 
+## 10) UI Refresh Dashboard (Linear-style) ✅ completado
+
+- [x] Base de design tokens semánticos globales.
+- [x] Normalización de componentes base (`button`, `input`, `badge`).
+- [x] Rediseño del shell de dashboard (`/dashboard/layout`).
+- [x] Rediseño de Dashboard home (`/dashboard`).
+- [x] Rediseño de Test Runs (`/dashboard/tests`).
+- [x] Rediseño de Settings (`/dashboard/settings`).
+- [x] Registro de release note en `worklog.md`.
+
+## 11) Estado final del TODO (ejecutable en repo)
+
+- ✅ Completado: 100% del alcance técnico no-pago y de UI ejecutable en código.
+- ⏸️ Pendiente manual externo: activación de credenciales de pago, Anthropic en Vercel y dominio productivo.
+- 🎯 Siguiente paso para cierre total de negocio: resolver los 5 ítems de la sección 2 y validar checkout en producción.
+
 ---
 
-Última actualización: 2026-02-27 (deploy Vercel en verde + no-pago cerrado)
+Última actualización: 2026-02-27 (no-pago + UI refresh cerrados; pendientes solo externos)
