@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "../styles/design-tokens.css";
 
 @theme inline {
   --color-background: var(--background);
@@ -50,8 +51,8 @@
   
   /* PALETA DE COLORES OBLIGATORIA - HEALIFY GLASSMORPHISM */
   /* Background: Deep Navy Oscuro */
-  --background: #0A0E1A;
-  --foreground: #E8F0FF;
+  --background: var(--bg-app);
+  --foreground: var(--text-primary);
   
   /* Glassmorphism Panels */
   --card: rgba(255, 255, 255, 0.05);
@@ -107,11 +108,13 @@
 
   body {
     @apply antialiased;
-    font-family: var(--font-montserrat), 'Montserrat', 'Inter', sans-serif;
-    background: #0A0E1A;
+    font-family: var(--font-montserrat), 'Inter', sans-serif;
+    background: var(--bg-app);
     background-attachment: fixed;
     min-height: 100vh;
-    color: #E8F0FF;
+    color: var(--text-primary);
+    font-size: 13px;
+    line-height: 1.5;
   }
   
   /* Tipografía para Headings */
@@ -119,6 +122,7 @@
     font-family: var(--font-montserrat), 'Montserrat', 'Inter', sans-serif;
     font-weight: 700;
     letter-spacing: -0.02em;
+    color: var(--text-primary);
   }
   
   .font-heading {
@@ -163,16 +167,9 @@
 @layer components {
   /* Elite Glass Panel - Main Container - GLASSMORPHISM OBLIGATORIO */
   .glass-elite {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 
-      0 8px 32px rgba(0, 245, 200, 0.08),
-      inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    border-radius: 16px;
-    position: relative;
-    overflow: hidden;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
     padding: 1rem;
   }
   
@@ -198,32 +195,14 @@
     }
   }
   
-  /* Inner Glow Effect */
-  .glass-elite::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 50%;
-    background: linear-gradient(to bottom right, rgba(255, 255, 255, 0.05), transparent);
-    pointer-events: none;
-    border-radius: inherit;
-  }
-  
   /* Glass Panel Hover State */
   .glass-elite-hover {
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: border-color 150ms ease, background-color 150ms ease;
   }
   
   .glass-elite-hover:hover {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
-    border-color: rgba(0, 245, 200, 0.3);
-    transform: translateY(-4px);
-    box-shadow: 
-      0 12px 40px rgba(0, 245, 200, 0.15),
-      0 0 60px rgba(123, 94, 248, 0.1),
-      inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    background: var(--bg-card);
+    border-color: var(--border-default);
   }
   
   /* Glass Panel Large (24px radius) */

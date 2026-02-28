@@ -109,17 +109,17 @@ function StatCard({
   iconColor: string;
 }) {
   return (
-    <div className="group relative p-4 rounded-lg glass-elite hover:border-white/10 transition-all duration-150">
+    <div className="group relative p-4 rounded-lg border border-[var(--border-default)] bg-[var(--bg-card)] hover:bg-[var(--bg-hover)] transition-all duration-150">
       <div className="flex items-start justify-between">
         <div className="space-y-2">
-          <p className="text-[11px] font-medium tracking-widest text-gray-500 uppercase">
+          <p className="text-[11px] font-medium tracking-widest text-[var(--text-tertiary)] uppercase">
             {label}
           </p>
-          <p className="text-2xl font-semibold text-white tracking-tight">
+          <p className="text-2xl font-semibold text-[var(--text-primary)] tracking-tight">
             {value}
           </p>
         </div>
-        <div className={cn("p-2 rounded-md bg-white/5", iconColor)}>
+        <div className={cn("p-2 rounded-md bg-[var(--bg-elevated)] border border-[var(--border-subtle)]", iconColor)}>
           <Icon className="w-4 h-4" />
         </div>
       </div>
@@ -130,11 +130,11 @@ function StatCard({
 function EmptyState({ title, description }: { title: string; description: string }) {
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center">
-      <div className="p-3 rounded-full bg-white/5 mb-3">
-        <FileCode className="w-5 h-5 text-gray-500" />
+      <div className="p-3 rounded-full bg-[var(--bg-elevated)] mb-3">
+        <FileCode className="w-5 h-5 text-[var(--text-tertiary)]" />
       </div>
-      <p className="text-sm text-gray-400">{title}</p>
-      <p className="text-xs text-gray-500 mt-1">{description}</p>
+      <p className="text-sm text-[var(--text-secondary)]">{title}</p>
+      <p className="text-xs text-[var(--text-tertiary)] mt-1">{description}</p>
     </div>
   );
 }
@@ -145,12 +145,12 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
       <div className="p-3 rounded-full bg-red-500/10">
         <AlertTriangle className="w-6 h-6 text-red-400" />
       </div>
-      <p className="text-gray-400 text-sm">{message}</p>
+      <p className="text-[var(--text-secondary)] text-sm">{message}</p>
       <Button
         variant="outline"
         size="sm"
         onClick={onRetry}
-        className="bg-white/5 border-white/10 text-gray-300 hover:bg-white/10"
+        className=""
       >
         <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
         Reintentar
@@ -359,10 +359,10 @@ function TestsContent() {
       {/* Page Header - Linear Style */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-white tracking-tight">
+          <h1 className="text-xl font-semibold text-[var(--text-primary)] tracking-tight">
             Test Runs
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <p className="text-sm text-[var(--text-secondary)] mt-0.5">
             Historial de ejecuciones y autocuraciones
           </p>
         </div>
@@ -375,8 +375,8 @@ function TestsContent() {
               toast.success(isPaused ? "Cola reanudada" : "Cola pausada");
             }}
             className={cn(
-              "bg-white/5 border-white/10 text-gray-300 hover:bg-white/10",
-              isPaused && "bg-amber-500/10 border-amber-500/20 text-amber-400"
+              "",
+              isPaused && "bg-amber-500/10 border-amber-500/20 text-amber-300"
             )}
           >
             {isPaused ? (
@@ -395,7 +395,7 @@ function TestsContent() {
             size="sm" 
             onClick={handleRunAllTests}
             disabled={isRunningAll}
-            className="bg-violet-600 hover:bg-violet-700 text-white disabled:opacity-50"
+            className="disabled:opacity-50"
           >
             {isRunningAll ? (
               <>
@@ -442,14 +442,14 @@ function TestsContent() {
 
       {/* Branch Comparison */}
       {branchComparison && (
-        <div className="rounded-lg glass-elite p-4">
+        <div className="rounded-lg border border-[var(--border-default)] bg-[var(--bg-card)] p-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
             <div>
-              <h2 className="text-sm font-medium text-white">Branch comparison</h2>
-              <p className="text-xs text-gray-500 mt-0.5">main vs feature (últimos 30 días)</p>
+              <h2 className="text-sm font-medium text-[var(--text-primary)]">Branch comparison</h2>
+              <p className="text-xs text-[var(--text-secondary)] mt-0.5">main vs feature (últimos 30 días)</p>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-500">Comparar con:</span>
+              <span className="text-xs text-[var(--text-secondary)]">Comparar con:</span>
               <select
                 value={compareBranch}
                 onChange={(event) => {
@@ -457,7 +457,7 @@ function TestsContent() {
                   setCompareBranch(value)
                   void fetchBranchComparison(value)
                 }}
-                className="bg-white/5 border border-white/10 rounded-md px-2 py-1 text-xs text-gray-200"
+                className="bg-[var(--bg-elevated)] border border-[var(--border-default)] rounded-md px-2 py-1 text-xs text-[var(--text-primary)]"
               >
                 {(branchComparison.branches || [])
                   .filter((branch) => branch !== 'main')
@@ -472,39 +472,39 @@ function TestsContent() {
 
           {branchComparison.compare ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div className="rounded-md bg-white/5 border border-white/5 p-3">
-                <p className="text-[11px] text-gray-500 uppercase tracking-wide">Fallos en tests</p>
-                <p className="text-sm text-white mt-1">
-                  {branchComparison.base.branch}: <span className="text-gray-300">{branchComparison.base.failedTests}</span>
+              <div className="rounded-md bg-[var(--bg-elevated)] border border-[var(--border-subtle)] p-3">
+                <p className="text-[11px] text-[var(--text-tertiary)] uppercase tracking-wide">Fallos en tests</p>
+                <p className="text-sm text-[var(--text-primary)] mt-1">
+                  {branchComparison.base.branch}: <span className="text-[var(--text-secondary)]">{branchComparison.base.failedTests}</span>
                 </p>
-                <p className="text-sm text-white">
-                  {branchComparison.compare.branch}: <span className="text-gray-300">{branchComparison.compare.failedTests}</span>
+                <p className="text-sm text-[var(--text-primary)]">
+                  {branchComparison.compare.branch}: <span className="text-[var(--text-secondary)]">{branchComparison.compare.failedTests}</span>
                 </p>
                 <p className={cn('text-xs mt-1', (branchComparison.delta?.failedTests || 0) <= 0 ? 'text-emerald-400' : 'text-red-400')}>
                   Δ {branchComparison.delta?.failedTests || 0}
                 </p>
               </div>
 
-              <div className="rounded-md bg-white/5 border border-white/5 p-3">
-                <p className="text-[11px] text-gray-500 uppercase tracking-wide">Failure rate</p>
-                <p className="text-sm text-white mt-1">{branchComparison.base.branch}: {branchComparison.base.failureRate}%</p>
-                <p className="text-sm text-white">{branchComparison.compare.branch}: {branchComparison.compare.failureRate}%</p>
+              <div className="rounded-md bg-[var(--bg-elevated)] border border-[var(--border-subtle)] p-3">
+                <p className="text-[11px] text-[var(--text-tertiary)] uppercase tracking-wide">Failure rate</p>
+                <p className="text-sm text-[var(--text-primary)] mt-1">{branchComparison.base.branch}: {branchComparison.base.failureRate}%</p>
+                <p className="text-sm text-[var(--text-primary)]">{branchComparison.compare.branch}: {branchComparison.compare.failureRate}%</p>
                 <p className={cn('text-xs mt-1', (branchComparison.delta?.failureRate || 0) <= 0 ? 'text-emerald-400' : 'text-red-400')}>
                   Δ {branchComparison.delta?.failureRate || 0}%
                 </p>
               </div>
 
-              <div className="rounded-md bg-white/5 border border-white/5 p-3">
-                <p className="text-[11px] text-gray-500 uppercase tracking-wide">Runs curados</p>
-                <p className="text-sm text-white mt-1">{branchComparison.base.branch}: {branchComparison.base.healedRuns}</p>
-                <p className="text-sm text-white">{branchComparison.compare.branch}: {branchComparison.compare.healedRuns}</p>
+              <div className="rounded-md bg-[var(--bg-elevated)] border border-[var(--border-subtle)] p-3">
+                <p className="text-[11px] text-[var(--text-tertiary)] uppercase tracking-wide">Runs curados</p>
+                <p className="text-sm text-[var(--text-primary)] mt-1">{branchComparison.base.branch}: {branchComparison.base.healedRuns}</p>
+                <p className="text-sm text-[var(--text-primary)]">{branchComparison.compare.branch}: {branchComparison.compare.healedRuns}</p>
                 <p className={cn('text-xs mt-1', (branchComparison.delta?.healedRuns || 0) >= 0 ? 'text-emerald-400' : 'text-red-400')}>
                   Δ {branchComparison.delta?.healedRuns || 0}
                 </p>
               </div>
             </div>
           ) : (
-            <p className="text-xs text-gray-500">No hay branch secundaria para comparar todavía.</p>
+            <p className="text-xs text-[var(--text-secondary)]">No hay branch secundaria para comparar todavía.</p>
           )}
         </div>
       )}
@@ -512,12 +512,12 @@ function TestsContent() {
       {/* Filters - Linear Style */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-tertiary)]" />
           <Input
             placeholder="Buscar por test name, branch, commit..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 input-glass text-[#E8F0FF] placeholder:text-[#E8F0FF]/30"
+            className="pl-9"
           />
         </div>
         <div className="flex gap-2 flex-wrap">
@@ -532,10 +532,10 @@ function TestsContent() {
               key={f.value}
               onClick={() => setStatusFilter(f.value)}
               className={cn(
-                "px-3 py-1.5 rounded-md text-[13px] font-medium transition-all duration-150",
+                "px-3 py-1.5 rounded-md text-[13px] font-medium transition-all duration-150 border",
                 statusFilter === f.value
-                  ? "bg-white/5 text-white"
-                  : "text-gray-500 hover:text-gray-300 hover:bg-white/5"
+                  ? "bg-[var(--bg-elevated)] border-[var(--border-default)] text-[var(--text-primary)]"
+                  : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
               )}
             >
               {f.label}
@@ -544,7 +544,7 @@ function TestsContent() {
           <select
             value={selectedTag}
             onChange={(event) => setSelectedTag(event.target.value)}
-            className="px-3 py-1.5 rounded-md text-[13px] font-medium bg-white/5 text-gray-300 border border-white/10"
+            className="px-3 py-1.5 rounded-md text-[13px] font-medium bg-[var(--bg-elevated)] text-[var(--text-primary)] border border-[var(--border-default)]"
           >
             <option value="all">Todas las etiquetas</option>
             {allTags.map((tag) => (
@@ -555,28 +555,28 @@ function TestsContent() {
       </div>
 
       {/* Test List - Linear Data Grid Style */}
-      <div className="rounded-lg glass-elite">
+      <div className="rounded-lg border border-[var(--border-default)] bg-[var(--bg-card)]">
         {/* List Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-subtle)]">
           <div className="flex items-center gap-3">
-            <h2 className="text-sm font-medium text-white">Ejecuciones</h2>
-            <span className="text-[10px] text-gray-500 bg-gray-800/50 px-1.5 py-0.5 rounded">
+            <h2 className="text-sm font-medium text-[var(--text-primary)]">Ejecuciones</h2>
+            <span className="text-[10px] text-[var(--text-tertiary)] bg-[var(--bg-elevated)] px-1.5 py-0.5 rounded">
               {filteredTestRuns.length}
             </span>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={handleExport}
-              className="flex items-center gap-1 text-xs text-gray-500 hover:text-[#00F5C8] transition-colors"
+              className="flex items-center gap-1 text-xs text-[var(--text-secondary)] hover:text-[var(--accent-primary)] transition-colors"
               title="Exportar como CSV"
             >
               <Download className="w-3 h-3" />
               CSV
             </button>
-            <span className="text-gray-700">·</span>
+              <span className="text-[var(--text-tertiary)]">·</span>
             <button
               onClick={fetchTestRuns}
-              className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-300 transition-colors"
+              className="flex items-center gap-1 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
             >
               <RefreshCw className="w-3 h-3" />
               Actualizar
@@ -585,7 +585,7 @@ function TestsContent() {
         </div>
 
         {/* Column Headers */}
-        <div className="hidden md:grid grid-cols-12 gap-4 px-4 py-2 text-[11px] font-medium tracking-widest text-gray-500 uppercase border-b border-white/5">
+        <div className="hidden md:grid grid-cols-12 gap-4 px-4 py-2 text-[11px] font-medium tracking-widest text-[var(--text-tertiary)] uppercase border-b border-[var(--border-subtle)]">
           <div className="col-span-3">Test</div>
           <div className="col-span-2">Proyecto</div>
           <div className="col-span-1">Estado</div>
@@ -604,21 +604,21 @@ function TestsContent() {
             description={searchQuery ? "No se encontraron resultados para tu búsqueda" : "Los test runs aparecerán cuando se ejecuten tests"}
           />
         ) : (
-          <div className="divide-y divide-white/5">
+          <div className="divide-y divide-[var(--border-subtle)]">
             {filteredTestRuns.map((run) => (
               <Link
                 key={run.id}
                 href={`/dashboard/tests/${run.id}`}
-                className="group hidden md:grid grid-cols-12 gap-4 px-4 py-3 hover:bg-white/[0.02] transition-colors duration-150"
+                className="group hidden md:grid grid-cols-12 gap-4 px-4 py-3 hover:bg-[var(--bg-hover)] transition-colors duration-150"
               >
                 {/* Test Name */}
                 <div className="col-span-3 flex items-center gap-3 min-w-0">
-                  <FileCode className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                  <FileCode className="w-4 h-4 text-[var(--text-tertiary)] flex-shrink-0" />
                   <div className="min-w-0">
-                    <p className="text-sm text-gray-200 truncate group-hover:text-white transition-colors">
+                    <p className="text-sm text-[var(--text-primary)] truncate transition-colors">
                       {run.project?.name}
                     </p>
-                    <p className="text-[11px] text-gray-500 truncate">
+                    <p className="text-[11px] text-[var(--text-tertiary)] truncate">
                       {run.commitMessage || run.commitSha?.slice(0, 7) || "Manual run"}
                     </p>
                     <div className="flex items-center gap-1 mt-1 flex-wrap">
@@ -629,7 +629,7 @@ function TestsContent() {
                             event.preventDefault()
                             removeTagFromRun(run.id, tag)
                           }}
-                          className="px-1.5 py-0.5 rounded bg-violet-500/10 text-violet-300 text-[10px]"
+                          className="px-1.5 py-0.5 rounded bg-[rgba(94,106,210,0.10)] text-[var(--accent-primary)] text-[10px]"
                           title="Quitar etiqueta"
                         >
                           {tag}
@@ -640,7 +640,7 @@ function TestsContent() {
                           event.preventDefault()
                           addTagToRun(run.id)
                         }}
-                        className="inline-flex items-center gap-1 text-[10px] text-gray-500 hover:text-[#00F5C8]"
+                        className="inline-flex items-center gap-1 text-[10px] text-[var(--text-tertiary)] hover:text-[var(--accent-primary)]"
                       >
                         <Tag className="w-3 h-3" />
                         tag
@@ -651,7 +651,7 @@ function TestsContent() {
 
                 {/* Project */}
                 <div className="col-span-2 flex items-center">
-                  <span className="text-sm text-gray-400 truncate">
+                  <span className="text-sm text-[var(--text-secondary)] truncate">
                     {run.project?.name}
                   </span>
                 </div>
@@ -663,7 +663,7 @@ function TestsContent() {
 
                 {/* Total Tests */}
                 <div className="col-span-1 flex items-center justify-center">
-                  <span className="text-sm font-medium text-gray-300">
+                  <span className="text-sm font-medium text-[var(--text-primary)]">
                     {run.totalTests}
                   </span>
                 </div>
@@ -680,7 +680,7 @@ function TestsContent() {
                   <span
                     className={cn(
                       "text-sm font-medium",
-                      run.failedTests > 0 ? "text-red-400" : "text-gray-500"
+                      run.failedTests > 0 ? "text-red-400" : "text-[var(--text-tertiary)]"
                     )}
                   >
                     {run.failedTests}
@@ -692,7 +692,7 @@ function TestsContent() {
                   <span
                     className={cn(
                       "text-sm font-medium",
-                      run.healedTests > 0 ? "text-violet-400" : "text-gray-500"
+                      run.healedTests > 0 ? "text-[var(--accent-primary)]" : "text-[var(--text-tertiary)]"
                     )}
                   >
                     {run.healedTests}
@@ -701,14 +701,14 @@ function TestsContent() {
 
                 {/* Branch */}
                 <div className="col-span-1 flex items-center">
-                  <code className="text-[11px] text-gray-400 bg-gray-800/50 px-1.5 py-0.5 rounded truncate max-w-full">
+                  <code className="text-[11px] text-[var(--text-secondary)] bg-[var(--bg-elevated)] px-1.5 py-0.5 rounded truncate max-w-full">
                     {run.branch || "—"}
                   </code>
                 </div>
 
                 {/* Date */}
                 <div className="col-span-1 flex items-center">
-                  <span className="text-[11px] text-gray-500">
+                  <span className="text-[11px] text-[var(--text-tertiary)]">
                     {formatRelativeTime(run.startedAt)}
                   </span>
                 </div>
@@ -716,22 +716,22 @@ function TestsContent() {
             ))}
 
             {/* Mobile View */}
-            <div className="md:hidden divide-y divide-white/5">
+            <div className="md:hidden divide-y divide-[var(--border-subtle)]">
               {filteredTestRuns.map((run) => (
                 <Link
                   key={run.id}
                   href={`/dashboard/tests/${run.id}`}
-                  className="group flex flex-col gap-2 px-4 py-3.5 hover:bg-white/[0.02] active:bg-white/[0.04] transition-colors duration-150"
+                  className="group flex flex-col gap-2 px-4 py-3.5 hover:bg-[var(--bg-hover)] active:bg-[var(--bg-hover)] transition-colors duration-150"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
-                      <FileCode className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
+                      <FileCode className="w-4 h-4 text-[var(--text-tertiary)] flex-shrink-0 mt-0.5" />
                       <div className="min-w-0">
-                        <span className="text-sm text-gray-200 group-hover:text-white block truncate leading-tight">
+                        <span className="text-sm text-[var(--text-primary)] block truncate leading-tight">
                           {run.project?.name}
                         </span>
                         {run.branch && (
-                          <span className="text-[10px] text-gray-500 font-mono truncate block mt-0.5">
+                          <span className="text-[10px] text-[var(--text-tertiary)] font-mono truncate block mt-0.5">
                             {run.branch}
                           </span>
                         )}
@@ -739,7 +739,7 @@ function TestsContent() {
                     </div>
                     <StatusBadge status={run.status} />
                   </div>
-                  <div className="flex items-center gap-3 text-[11px] text-gray-500 pl-6">
+                  <div className="flex items-center gap-3 text-[11px] text-[var(--text-tertiary)] pl-6">
                     <span className="text-emerald-400 font-medium">{run.passedTests}✓</span>
                     {run.failedTests > 0 && <span className="text-red-400 font-medium">{run.failedTests}✗</span>}
                     {run.healedTests > 0 && <span className="text-violet-400 font-medium">{run.healedTests}⚡</span>}
@@ -753,7 +753,7 @@ function TestsContent() {
                           event.preventDefault()
                           removeTagFromRun(run.id, tag)
                         }}
-                        className="px-1.5 py-0.5 rounded bg-violet-500/10 text-violet-300 text-[10px]"
+                        className="px-1.5 py-0.5 rounded bg-[rgba(94,106,210,0.10)] text-[var(--accent-primary)] text-[10px]"
                       >
                         {tag}
                       </button>
@@ -763,7 +763,7 @@ function TestsContent() {
                         event.preventDefault()
                         addTagToRun(run.id)
                       }}
-                      className="inline-flex items-center gap-1 text-[10px] text-gray-500"
+                      className="inline-flex items-center gap-1 text-[10px] text-[var(--text-tertiary)]"
                     >
                       <Tag className="w-3 h-3" />
                       tag
@@ -777,8 +777,8 @@ function TestsContent() {
 
         {/* Load More */}
         {hasMore && filteredTestRuns.length > 0 && (
-          <div className="px-4 py-3 border-t border-white/5">
-            <button className="flex items-center justify-center gap-1 w-full text-xs text-gray-500 hover:text-gray-300 transition-colors">
+          <div className="px-4 py-3 border-t border-[var(--border-subtle)]">
+            <button className="flex items-center justify-center gap-1 w-full text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
               Cargar más
               <ChevronRight className="w-3 h-3" />
             </button>

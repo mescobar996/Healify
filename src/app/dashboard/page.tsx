@@ -84,18 +84,18 @@ function MetricCard({
   icon: React.ElementType;
 }) {
   return (
-    <div className="group relative p-4 rounded-lg glass-elite hover:border-white/10 transition-all duration-150">
+    <div className="group relative p-4 rounded-lg border border-[var(--border-default)] bg-[var(--bg-card)] hover:bg-[var(--bg-hover)] transition-all duration-150">
       <div className="flex items-start justify-between">
         <div className="space-y-2">
-          <p className="text-[11px] font-medium tracking-widest text-gray-500 uppercase">
+          <p className="text-[11px] font-medium tracking-widest text-[var(--text-tertiary)] uppercase">
             {label}
           </p>
-          <p className="text-2xl font-semibold text-white tracking-tight">
+          <p className="text-2xl font-semibold text-[var(--text-primary)] tracking-tight">
             {value}
           </p>
         </div>
-        <div className="p-2 rounded-md bg-white/5">
-          <Icon className="w-4 h-4 text-gray-400" />
+        <div className="p-2 rounded-md bg-[var(--bg-elevated)] border border-[var(--border-subtle)]">
+          <Icon className="w-4 h-4 text-[var(--text-secondary)]" />
         </div>
       </div>
       <div className="mt-3 flex items-center gap-1.5">
@@ -107,14 +107,14 @@ function MetricCard({
         <span
           className={cn(
             "text-xs font-medium",
-            trend === "up" && "text-emerald-500",
-            trend === "down" && "text-red-500",
-            trend === "neutral" && "text-gray-500"
+            trend === "up" && "text-emerald-400",
+            trend === "down" && "text-red-400",
+            trend === "neutral" && "text-[var(--text-tertiary)]"
           )}
         >
           {change}
         </span>
-        <span className="text-xs text-gray-600">vs ayer</span>
+        <span className="text-xs text-[var(--text-tertiary)]">vs ayer</span>
       </div>
     </div>
   );
@@ -147,7 +147,7 @@ function StatusBadge({ status }: { status: HealingStatus }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium",
+        "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium",
         bg,
         text
       )}
@@ -161,7 +161,7 @@ function StatusBadge({ status }: { status: HealingStatus }) {
 function ConfidenceBar({ confidence }: { confidence: number }) {
   return (
     <div className="flex items-center gap-2">
-      <div className="w-16 h-1.5 rounded-full bg-gray-800 overflow-hidden">
+      <div className="w-16 h-1.5 rounded-full bg-[var(--bg-elevated)] overflow-hidden">
         <div
           className={cn(
             "h-full rounded-full transition-all duration-300",
@@ -174,7 +174,7 @@ function ConfidenceBar({ confidence }: { confidence: number }) {
           style={{ width: `${confidence}%` }}
         />
       </div>
-      <span className="text-[11px] text-gray-500 font-mono">
+      <span className="text-[11px] text-[var(--text-tertiary)] font-mono">
         {confidence}%
       </span>
     </div>
@@ -185,11 +185,11 @@ function ConfidenceBar({ confidence }: { confidence: number }) {
 function EmptyState({ title, description }: { title: string; description: string }) {
   return (
     <div className="flex flex-col items-center justify-center py-8 text-center">
-      <div className="p-3 rounded-full bg-white/5 mb-3">
-        <AlertTriangle className="w-5 h-5 text-gray-500" />
+      <div className="p-3 rounded-full bg-[var(--bg-elevated)] mb-3">
+        <AlertTriangle className="w-5 h-5 text-[var(--text-tertiary)]" />
       </div>
-      <p className="text-sm text-gray-400">{title}</p>
-      <p className="text-xs text-gray-500 mt-1">{description}</p>
+      <p className="text-sm text-[var(--text-secondary)]">{title}</p>
+      <p className="text-xs text-[var(--text-tertiary)] mt-1">{description}</p>
     </div>
   );
 }
@@ -201,12 +201,12 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
       <div className="p-3 rounded-full bg-red-500/10">
         <XCircle className="w-6 h-6 text-red-400" />
       </div>
-      <p className="text-gray-400 text-sm">{message}</p>
+      <p className="text-[var(--text-secondary)] text-sm">{message}</p>
       <Button
         variant="outline"
         size="sm"
         onClick={onRetry}
-        className="bg-white/5 border-white/10 text-gray-300 hover:bg-white/10"
+        className=""
       >
         <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
         Reintentar
@@ -427,10 +427,10 @@ function DashboardContent() {
         {/* Page Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-semibold text-white tracking-tight">
+            <h1 className="text-xl font-semibold text-[var(--text-primary)] tracking-tight">
               Dashboard
             </h1>
-            <p className="text-sm text-gray-500 mt-0.5">
+            <p className="text-sm text-[var(--text-secondary)] mt-0.5">
               Vista general de tu actividad de tests
             </p>
           </div>
@@ -440,7 +440,7 @@ function DashboardContent() {
                 variant="outline"
                 size="sm"
                 asChild
-                className="bg-white/5 border-white/10 text-gray-300 hover:bg-white/10"
+                className=""
               >
                 <Link href="/dashboard/team">Equipo</Link>
               </Button>
@@ -449,7 +449,7 @@ function DashboardContent() {
               variant="outline"
               size="sm"
               onClick={fetchDashboard}
-              className="bg-white/5 border-white/10 text-gray-300 hover:bg-white/10"
+              className=""
             >
               <RefreshCw className={cn("w-3.5 h-3.5 mr-1.5", loading && "animate-spin")} />
               Actualizar
@@ -458,7 +458,7 @@ function DashboardContent() {
               size="sm"
               onClick={handleRunTests}
               disabled={isRunning}
-              className="btn-neon text-[#0A0E1A] disabled:opacity-50"
+              className="disabled:opacity-50"
             >
               {isRunning ? (
                 <>
@@ -516,31 +516,30 @@ function DashboardContent() {
 
         {/* ROI Strip — Bloque 7 */}
         {roi && (
-          <div className="rounded-xl border border-white/5 overflow-hidden"
-            style={{ background: 'linear-gradient(135deg, rgba(0,245,200,0.04), rgba(123,94,248,0.04))' }}>
-            <div className="px-4 py-2.5 border-b border-white/5 flex items-center gap-2">
-              <Sparkles className="w-3.5 h-3.5 text-[#00F5C8]" />
-              <span className="text-[11px] font-medium tracking-widest text-[#E8F0FF]/40 uppercase">
+          <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-card)] overflow-hidden">
+            <div className="px-4 py-2.5 border-b border-[var(--border-subtle)] flex items-center gap-2">
+              <Sparkles className="w-3.5 h-3.5 text-[var(--accent-primary)]" />
+              <span className="text-[11px] font-medium tracking-widest text-[var(--text-tertiary)] uppercase">
                 ROI de Healify — acumulado histórico
               </span>
               <div className="ml-auto flex items-center gap-2">
                 <button
                   onClick={() => handleExportRoi('csv')}
-                  className="inline-flex items-center gap-1 text-[11px] text-[#E8F0FF]/45 hover:text-[#00F5C8] transition-colors"
+                  className="inline-flex items-center gap-1 text-[11px] text-[var(--text-secondary)] hover:text-[var(--accent-primary)] transition-colors"
                 >
                   <Download className="w-3 h-3" />
                   CSV
                 </button>
                 <button
                   onClick={() => handleExportRoi('pdf')}
-                  className="inline-flex items-center gap-1 text-[11px] text-[#E8F0FF]/45 hover:text-[#00F5C8] transition-colors"
+                  className="inline-flex items-center gap-1 text-[11px] text-[var(--text-secondary)] hover:text-[var(--accent-primary)] transition-colors"
                 >
                   <Download className="w-3 h-3" />
                   PDF
                 </button>
               </div>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-0 divide-y md:divide-y-0 divide-x-0 md:divide-x divide-white/5">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-0 divide-y md:divide-y-0 divide-x-0 md:divide-x divide-[var(--border-subtle)]">
               {/* Horas ahorradas */}
               <div className="px-5 py-4 flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
@@ -548,10 +547,10 @@ function DashboardContent() {
                   <Timer className="w-4 h-4 text-[#00F5C8]" />
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-[#E8F0FF] leading-none">
+                  <p className="text-lg font-bold text-[var(--text-primary)] leading-none">
                     {roi.timeSavedHours > 0 ? `${roi.timeSavedHours}h` : '—'}
                   </p>
-                  <p className="text-[10px] text-[#E8F0FF]/40 mt-0.5">horas ahorradas</p>
+                  <p className="text-[10px] text-[var(--text-tertiary)] mt-0.5">horas ahorradas</p>
                 </div>
               </div>
               {/* Ahorro en $ */}
@@ -561,10 +560,10 @@ function DashboardContent() {
                   <DollarSign className="w-4 h-4 text-[#7B5EF8]" />
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-[#E8F0FF] leading-none">
+                  <p className="text-lg font-bold text-[var(--text-primary)] leading-none">
                     {roi.totalCostSaved > 0 ? `$${roi.totalCostSaved.toLocaleString()}` : '—'}
                   </p>
-                  <p className="text-[10px] text-[#E8F0FF]/40 mt-0.5">ahorro estimado</p>
+                  <p className="text-[10px] text-[var(--text-tertiary)] mt-0.5">ahorro estimado</p>
                 </div>
               </div>
               {/* Tests autocurados este mes */}
@@ -574,10 +573,10 @@ function DashboardContent() {
                   <ShieldCheck className="w-4 h-4 text-emerald-400" />
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-[#E8F0FF] leading-none">
+                  <p className="text-lg font-bold text-[var(--text-primary)] leading-none">
                     {roi.autoHealedMonth > 0 ? roi.autoHealedMonth : '—'}
                   </p>
-                  <p className="text-[10px] text-[#E8F0FF]/40 mt-0.5">curados este mes</p>
+                  <p className="text-[10px] text-[var(--text-tertiary)] mt-0.5">curados este mes</p>
                 </div>
               </div>
               {/* Tasa de autocuración */}
@@ -587,19 +586,19 @@ function DashboardContent() {
                   <TrendingUp className="w-4 h-4 text-yellow-400" />
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-[#E8F0FF] leading-none">
+                  <p className="text-lg font-bold text-[var(--text-primary)] leading-none">
                     {roi.healingRate > 0 ? `${roi.healingRate}%` : '—'}
                   </p>
-                  <p className="text-[10px] text-[#E8F0FF]/40 mt-0.5">tasa autocuración</p>
+                  <p className="text-[10px] text-[var(--text-tertiary)] mt-0.5">tasa autocuración</p>
                 </div>
               </div>
             </div>
             {/* Empty state si no hay datos todavía */}
             {roi.timeSavedHours === 0 && roi.autoHealedMonth === 0 && (
-              <div className="px-5 py-3 border-t border-white/5">
-                <p className="text-[11px] text-[#E8F0FF]/25 text-center">
+              <div className="px-5 py-3 border-t border-[var(--border-subtle)]">
+                <p className="text-[11px] text-[var(--text-tertiary)] text-center">
                   Los datos de ROI aparecerán cuando Healify cure su primer test · 
-                  <a href="/dashboard/projects" className="text-[#00F5C8]/50 hover:text-[#00F5C8] transition-colors ml-1">
+                  <a href="/dashboard/projects" className="text-[var(--accent-primary)]/70 hover:text-[var(--accent-primary)] transition-colors ml-1">
                     Conectá tu primer repo →
                   </a>
                 </p>
@@ -610,19 +609,19 @@ function DashboardContent() {
 
         {/* Weekly Report Status */}
         {weeklyStatus && (
-          <div className="rounded-xl border border-white/5 px-4 py-3 glass-elite">
+          <div className="rounded-xl border border-[var(--border-default)] px-4 py-3 bg-[var(--bg-card)]">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
               <div>
-                <p className="text-[11px] font-medium tracking-widest text-[#E8F0FF]/40 uppercase">
+                <p className="text-[11px] font-medium tracking-widest text-[var(--text-tertiary)] uppercase">
                   Weekly report automático
                 </p>
-                <p className="text-xs text-[#E8F0FF]/65 mt-1">
+                <p className="text-xs text-[var(--text-secondary)] mt-1">
                   {weeklyStatus.sentThisWeek
                     ? `Enviado esta semana (${weeklyStatus.currentWeekKey})`
                     : `Pendiente de envío esta semana (${weeklyStatus.currentWeekKey})`}
                 </p>
               </div>
-              <div className="text-xs text-[#E8F0FF]/55">
+              <div className="text-xs text-[var(--text-secondary)]">
                 Próximo envío: {new Date(weeklyStatus.nextScheduledAt).toLocaleString()}
               </div>
             </div>
@@ -634,16 +633,16 @@ function DashboardContent() {
                   variant="outline"
                   disabled={sendingWeeklyReport}
                   onClick={handleManualWeeklyReport}
-                  className="bg-white/5 border-white/10 text-gray-300 hover:bg-white/10"
+                  className=""
                 >
                   <RefreshCw className={cn('w-3.5 h-3.5 mr-1.5', sendingWeeklyReport && 'animate-spin')} />
                   {sendingWeeklyReport ? 'Enviando...' : 'Enviar ahora'}
                 </Button>
-                <span className="text-[11px] text-[#E8F0FF]/35">Solo admin/fundador</span>
+                <span className="text-[11px] text-[var(--text-tertiary)]">Solo admin/fundador</span>
               </div>
             )}
 
-            <div className="mt-2 text-[11px] text-[#E8F0FF]/45 flex flex-wrap gap-x-4 gap-y-1">
+            <div className="mt-2 text-[11px] text-[var(--text-secondary)] flex flex-wrap gap-x-4 gap-y-1">
               <span>Frecuencia: {weeklyStatus.scheduleUtc} (UTC)</span>
               <span>Reportes enviados: {weeklyStatus.recentReports}</span>
               <span>
@@ -659,22 +658,22 @@ function DashboardContent() {
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 lg:gap-4">
           {/* Chart Section */}
-          <div className="lg:col-span-2 rounded-lg glass-elite p-4">
+          <div className="lg:col-span-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-card)] p-4">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-sm font-medium text-white">
+                <h2 className="text-sm font-medium text-[var(--text-primary)]">
                   Tendencia de Curación
                 </h2>
-                <p className="text-xs text-gray-500 mt-0.5">Últimos 7 días</p>
+                <p className="text-xs text-[var(--text-secondary)] mt-0.5">Últimos 7 días</p>
               </div>
               <div className="flex items-center gap-4 text-xs">
                 <div className="flex items-center gap-1.5">
                   <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                  <span className="text-gray-400">Curados</span>
+                  <span className="text-[var(--text-secondary)]">Curados</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <div className="w-2 h-2 rounded-full bg-red-500" />
-                  <span className="text-gray-400">Rotos</span>
+                  <span className="text-[var(--text-secondary)]">Rotos</span>
                 </div>
               </div>
             </div>
@@ -737,12 +736,12 @@ function DashboardContent() {
           </div>
 
           {/* Fragile Selectors */}
-          <div className="rounded-lg glass-elite p-4">
+          <div className="rounded-lg border border-[var(--border-default)] bg-[var(--bg-card)] p-4">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-medium text-white">
+              <h2 className="text-sm font-medium text-[var(--text-primary)]">
                 Selectores Frágiles
               </h2>
-              <span className="text-[10px] text-gray-500 bg-gray-800/50 px-1.5 py-0.5 rounded">
+              <span className="text-[10px] text-[var(--text-tertiary)] bg-[var(--bg-elevated)] px-1.5 py-0.5 rounded">
                 TOP {data.fragileSelectors.length}
               </span>
             </div>
@@ -760,23 +759,23 @@ function DashboardContent() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    className="group flex items-center justify-between p-2 rounded-md hover:bg-white/5 transition-colors duration-150"
+                    className="group flex items-center justify-between p-2 rounded-md hover:bg-[var(--bg-hover)] transition-colors duration-150"
                   >
                     <div className="flex-1 min-w-0">
-                      <code className="text-xs text-gray-300 font-mono truncate block">
+                      <code className="text-xs text-[var(--text-primary)] font-mono truncate block">
                         {selector.selector}
                       </code>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-[10px] text-red-400">
                           {selector.failures} fallos
                         </span>
-                        <span className="text-[10px] text-gray-600">•</span>
-                        <span className="text-[10px] text-gray-500">
+                        <span className="text-[10px] text-[var(--text-tertiary)]">•</span>
+                        <span className="text-[10px] text-[var(--text-tertiary)]">
                           {selector.successRate}% éxito
                         </span>
                       </div>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <ChevronRight className="w-4 h-4 text-[var(--text-tertiary)] opacity-0 group-hover:opacity-100 transition-opacity" />
                   </motion.div>
                 ))}
               </div>
@@ -790,18 +789,18 @@ function DashboardContent() {
           <ActivityFeed limit={5} />
 
           {/* Healing History List - Linear Style */}
-          <div className="rounded-lg glass-elite">
+          <div className="rounded-lg border border-[var(--border-default)] bg-[var(--bg-card)]">
           {/* List Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-subtle)]">
             <div className="flex items-center gap-3">
-              <h2 className="text-sm font-medium text-white">
+              <h2 className="text-sm font-medium text-[var(--text-primary)]">
                 Últimas Curaciones
               </h2>
-              <span className="text-[10px] text-gray-500 bg-gray-800/50 px-1.5 py-0.5 rounded">
+              <span className="text-[10px] text-[var(--text-tertiary)] bg-[var(--bg-elevated)] px-1.5 py-0.5 rounded">
                 {data.healingHistory.length}
               </span>
             </div>
-            <button className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-300 transition-colors">
+            <button className="flex items-center gap-1 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
               <ArrowUpDown className="w-3 h-3" />
               Ordenar
             </button>
@@ -816,7 +815,7 @@ function DashboardContent() {
               />
             </div>
           ) : (
-            <div className="divide-y divide-white/5">
+            <div className="divide-y divide-[var(--border-subtle)]">
               {data.healingHistory.map((item, index) => (
                 <motion.div
                   key={item.id}
@@ -826,7 +825,7 @@ function DashboardContent() {
                 >
                   <button
                     onClick={() => handleOpenDetail(item)}
-                    className="group w-full flex items-center gap-4 px-4 py-3 hover:bg-white/[0.02] transition-colors duration-150 text-left"
+                    className="group w-full flex items-center gap-4 px-4 py-3 hover:bg-[var(--bg-hover)] transition-colors duration-150 text-left"
                   >
                     {/* Status Icon */}
                     <div className="flex-shrink-0">
@@ -847,16 +846,16 @@ function DashboardContent() {
 
                     {/* Test Name */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-200 truncate group-hover:text-white transition-colors">
+                      <p className="text-sm text-[var(--text-primary)] truncate transition-colors">
                         {item.testName}
                       </p>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <code className="text-[11px] text-gray-500 font-mono truncate max-w-[120px] sm:max-w-[200px]">
+                        <code className="text-[11px] text-[var(--text-tertiary)] font-mono truncate max-w-[120px] sm:max-w-[200px]">
                           {item.oldSelector}
                         </code>
                         {item.newSelector && (
                           <>
-                            <ChevronRight className="w-3 h-3 text-gray-600 flex-shrink-0" />
+                            <ChevronRight className="w-3 h-3 text-[var(--text-tertiary)] flex-shrink-0" />
                             <code className="text-[11px] text-emerald-400 font-mono truncate max-w-[120px] sm:max-w-[200px]">
                               {item.newSelector}
                             </code>
@@ -869,13 +868,13 @@ function DashboardContent() {
                     <div className="flex items-center gap-4 flex-shrink-0">
                       <ConfidenceBar confidence={item.confidence} />
                       <StatusBadge status={item.status} />
-                      <span className="text-[11px] text-gray-500 w-20 text-right">
+                      <span className="text-[11px] text-[var(--text-tertiary)] w-20 text-right">
                         {item.timestamp}
                       </span>
                     </div>
 
                     {/* Arrow */}
-                    <ChevronRight className="w-4 h-4 text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                    <ChevronRight className="w-4 h-4 text-[var(--text-tertiary)] opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
                   </button>
                 </motion.div>
               ))}
@@ -884,10 +883,10 @@ function DashboardContent() {
 
           {/* List Footer */}
           {data.healingHistory.length > 0 && (
-            <div className="px-4 py-3 border-t border-white/5">
+            <div className="px-4 py-3 border-t border-[var(--border-subtle)]">
               <Link
                 href="/dashboard/tests"
-                className="flex items-center justify-center gap-1 text-xs text-gray-500 hover:text-gray-300 transition-colors"
+                className="flex items-center justify-center gap-1 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
               >
                 Ver todos los tests
                 <ChevronRight className="w-3 h-3" />

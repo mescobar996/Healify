@@ -2,6 +2,26 @@
 ## Project Work Log
 
 ---
+## Release Note - 2026-02-28 (UI Refresh Linear)
+
+### Summary
+- Se aplicó un refresh visual completo del dashboard con estilo más sobrio tipo Linear.
+- Se mantuvo toda la lógica funcional existente (sin cambios de negocio ni pagos).
+
+### Delivered
+- Nuevo design baseline en componentes base: `button`, `input`, `badge`.
+- Shell de dashboard (`layout`) migrado a tokens semánticos: sidebar, header, dropdowns y estados activos.
+- Dashboard principal (`/dashboard`) con tarjetas, paneles y listas más compactas y consistentes.
+- Test Runs (`/dashboard/tests`) con toolbar/filtros/tablas en densidad uniforme y colorimetría unificada.
+- Settings (`/dashboard/settings`) rediseñado a tabs horizontales subrayadas + superficies consistentes.
+
+### Validation
+- Archivos modificados sin errores de TypeScript en diagnóstico por archivo.
+- `npx tsc --noEmit` global falla por resolución de `vitest` en tests existentes (preexistente del workspace).
+- `runTests` reporta fallo en setup E2E por `Unauthorized` en `e2e/global.setup.ts` (preexistente de entorno).
+
+---
+
 ## Release Note - 2026-02-27 (Operativo Bloques 3-6)
 
 ### Summary
