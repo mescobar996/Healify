@@ -41,9 +41,7 @@ export function HealingDemo() {
     }
   }, [elapsedMs])
 
-  return (
-    <section className="relative py-16 sm:py-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+  const demoContent = (
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -168,6 +166,12 @@ export function HealingDemo() {
             </div>
           </div>
         </motion.div>
+  )
+
+  return (
+    <section id="demo-section" className="relative py-16 sm:py-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {demoContent}
       </div>
     </section>
   )

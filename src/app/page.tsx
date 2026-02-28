@@ -19,7 +19,6 @@ import {
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { TypewriterText } from '@/components/TypewriterText'
-import { DashboardPreview } from '@/components/DashboardPreview'
 import { HealingDemo } from '@/components/HealingDemo'
 import { HealifyLogo } from '@/components/HealifyLogo'
 import { useEffect, useState } from 'react'
@@ -173,16 +172,14 @@ function LandingHero() {
             </Button>
           </motion.div>
 
-          {/* Dashboard Preview Mockup Flotante — destino del botón "Watch Demo" */}
-          <motion.div
-            id="demo-section"
-            initial={{ opacity: 0, y: 60, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 1, delay: 0.5, type: 'spring' }}
-            className="mt-16 max-w-5xl mx-auto"
+          <motion.p
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.45 }}
+            className="text-sm text-[#E8F0FF]/50"
           >
-            <DashboardPreview className="relative h-[280px] sm:h-[400px] lg:h-[600px]" />
-          </motion.div>
+            Mirá el flujo completo en 15s: test falla → Healify analiza → selector curado → PR abierto.
+          </motion.p>
 
           {/* Stats */}
           <motion.div
