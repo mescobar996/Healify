@@ -1,4 +1,5 @@
 import { writeFileSync } from 'node:fs'
+import { readFileSync, existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { db } from '../src/lib/db'
 
@@ -24,10 +25,45 @@ function fmt(value: number | null): string {
   return String(value)
 }
 
+function loadEnvValueFromFile(filePath: string, key: string): string | null {
+  if (!existsSync(filePath)) return null
+  const raw = readFileSync(filePath, 'utf-8')
+  const lines = raw.split(/\r?\n/)
+
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!trimmed || trimmed.startsWith('#')) continue
+    if (!trimmed.startsWith(`${key}=`)) continue
+
+    const value = trimmed.slice(key.length + 1).trim()
+    if (!value) return null
+    return value.replace(/^"|"$/g, '').replace(/^'|'$/g, '')
+  }
+
+  return null
+}
+
+function resolveDatabaseUrl(): string | null {
+  if (process.env.DATABASE_URL) return process.env.DATABASE_URL
+
+  const fromEnvLocal = loadEnvValueFromFile(resolve(process.cwd(), '.env.local'), 'DATABASE_URL')
+  if (fromEnvLocal) return fromEnvLocal
+
+  const fromEnv = loadEnvValueFromFile(resolve(process.cwd(), '.env'), 'DATABASE_URL')
+  if (fromEnv) return fromEnv
+
+  return null
+}
+
 async function main() {
   const target = resolve(process.cwd(), 'docs', 'KPI_BASELINE_LATEST.md')
 
-  if (!process.env.DATABASE_URL) {
+  const databaseUrl = resolveDatabaseUrl()
+  if (databaseUrl) {
+    process.env.DATABASE_URL = databaseUrl
+  }
+
+  if (!databaseUrl) {
     const now = new Date().toISOString()
     const pendingReport = `# Healify — KPI Baseline Report\n\nFecha de generación: ${now}\nEstado: pendiente por entorno\n\n## Motivo\n\nNo se encontró la variable de entorno \`DATABASE_URL\` en este entorno local.\n\n## Acción requerida\n\n1. Configurar \`DATABASE_URL\` del entorno objetivo.\n2. Ejecutar: \`npx tsx scripts/generate-kpi-baseline.ts\`\n\n## Nota\n\nEste archivo se genera automáticamente y se reemplaza cuando hay conexión a base de datos.\n`
     writeFileSync(target, pendingReport, 'utf-8')

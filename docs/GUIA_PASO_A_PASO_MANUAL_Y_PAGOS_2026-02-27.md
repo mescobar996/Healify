@@ -26,6 +26,13 @@ Resultado esperado:
 npm run kpi:baseline
 ```
 
+Si estás en PowerShell y querés probar rápido sin editar archivos:
+
+```powershell
+$env:DATABASE_URL="postgresql://USER:PASS@HOST:5432/DB?sslmode=require"
+npm run kpi:baseline
+```
+
 Resultado esperado:
 - Se actualiza `docs/KPI_BASELINE_LATEST.md` con valores reales.
 
