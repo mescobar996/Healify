@@ -17,6 +17,7 @@
     "build:worker": "esbuild src/workers/railway-worker.ts --bundle --platform=node --outfile=dist/worker.js --format=cjs --external:playwright --external:@playwright/test --external:bullmq --external:ioredis --external:@prisma/client",
     "trigger:test": "tsx scripts/test-queue.ts",
     "evaluate:ai": "tsx scripts/evaluate-ai.ts",
+    "kpi:baseline": "tsx scripts/generate-kpi-baseline.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",

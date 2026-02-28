@@ -4,12 +4,18 @@
 
 Implementación UX/producto solicitada completada en `main`.
 
+Guía de ejecución (sin pago primero): `docs/GUIA_PASO_A_PASO_MANUAL_Y_PAGOS_2026-02-27.md`
+
 Últimos ajustes aplicados:
 - Barra de búsqueda global ampliada visualmente en header dashboard.
 - Demo de video reemplazada por demo interactivo seleccionable.
 - Demo interactivo reutilizado en landing y docs.
 
 ## Lo que queda por hacer (real)
+
+Orden recomendado de ejecución:
+1. B + C (todo lo no-pago)
+2. A (pago/externo) al final
 
 ### A) Cierre externo de negocio (bloqueadores)
 - [ ] Configurar `ANTHROPIC_API_KEY` en Vercel de producción.

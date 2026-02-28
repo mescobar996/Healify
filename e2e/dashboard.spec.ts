@@ -35,11 +35,11 @@ test.describe('Dashboard — carga y estructura', () => {
   })
 
   test('las 4 tarjetas de métricas están presentes', async ({ page }) => {
-    // Cards: Tests Hoy, Autocuración, Bugs Detectados, Tiempo Promedio
+    // Cards: Tests monitoreados, Tests Hoy, Autocuración, Bugs detectados
+    await expect(page.getByText(/tests monitoreados/i)).toBeVisible()
     await expect(page.getByText(/tests hoy/i)).toBeVisible()
     await expect(page.getByText(/autocuración/i)).toBeVisible()
     await expect(page.getByText(/bugs detectados/i)).toBeVisible()
-    await expect(page.getByText(/tiempo promedio/i)).toBeVisible()
   })
 
   test('botón "Ejecutar Tests" es visible y clickeable', async ({ page }) => {
