@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -10,8 +10,6 @@ import {
   Settings,
   BookOpen,
   Menu,
-  Bell,
-  Search,
   ChevronDown,
   LogOut,
   User,
@@ -34,6 +32,9 @@ import {
 import { signOut, useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { HealifyLogo } from "@/components/HealifyLogo";
+import { GlobalSearch } from "@/components/GlobalSearch";
+import { NotificationCenter } from "@/components/NotificationCenter";
+import { SidebarProjectHealth } from "@/components/SidebarProjectHealth";
 
 const navItems = [
   { name: "Dashboard",      href: "/dashboard",          icon: LayoutDashboard },
@@ -48,48 +49,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router     = useRouter();
   const { data: session } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  // ── Notifications real state ──
-  interface Notif { id: string; type: string; title: string; message: string; read: boolean; link?: string; createdAt: string }
-  const [notifs, setNotifs] = useState<Notif[]>([]);
-  const [notifsOpen, setNotifsOpen] = useState(false);
-
-  const fetchNotifs = useCallback(async () => {
-    try {
-      const res = await fetch("/api/notifications", { credentials: "include" });
-      if (res.ok) setNotifs(await res.json());
-    } catch {}
-  }, []);
-
-  useEffect(() => { fetchNotifs(); }, [fetchNotifs]);
-
-  const markRead = async (id: string) => {
-    setNotifs(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-    await fetch("/api/notifications", {
-      method: "PATCH",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, read: true }),
-    });
-  };
-
-  const markAllRead = async () => {
-    const unread = notifs.filter(n => !n.read);
-    setNotifs(prev => prev.map(n => ({ ...n, read: true })));
-    await Promise.all(unread.map(n =>
-      fetch("/api/notifications", {
-        method: "PATCH", credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: n.id, read: true }),
-      })
-    ));
-  };
-
-  const unreadCount = notifs.filter(n => !n.read).length;
-
-  const notifDotColor: Record<string, string> = {
-    success: "#00F5C8", info: "#7B5EF8", warning: "#EAB308", error: "#EF4444",
-  };
 
   const handleSignOut = async () => {
     await signOut({ callbackUrl: "/" });
@@ -179,6 +138,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <span>Nuevo Proyecto</span>
             </button>
           </div>
+
+          <SidebarProjectHealth />
         </nav>
 
         {/* User bottom */}
@@ -242,69 +203,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <HealifyLogo size="sm" showText={true} />
               </div>
 
-              {/* Search */}
-              <button className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-md bg-[var(--bg-elevated)] border border-[var(--border-default)] hover:bg-[var(--bg-hover)] transition-all duration-150 group">
-                <Search className="w-3.5 h-3.5 text-[var(--text-tertiary)] group-hover:text-[var(--text-secondary)]" />
-                <span className="text-[13px] text-[var(--text-secondary)]">Buscar...</span>
-                <kbd className="hidden lg:inline-flex items-center gap-0.5 ml-4 text-[10px] text-[var(--text-tertiary)] bg-[#111111] px-1.5 py-0.5 rounded font-mono">
-                  ⌘K
-                </kbd>
-              </button>
+              <GlobalSearch />
             </div>
 
             {/* Right */}
             <div className="flex items-center gap-1">
-              {/* Notifications — real data from /api/notifications */}
-              <DropdownMenu open={notifsOpen} onOpenChange={(o) => { setNotifsOpen(o); if (o) fetchNotifs(); }}>
-                <DropdownMenuTrigger asChild>
-                  <button className="relative p-2 rounded-md text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors">
-                    <Bell className="w-4 h-4" />
-                    {unreadCount > 0 && (
-                      <span className="absolute top-1 right-1 min-w-[14px] h-[14px] px-[3px] bg-[var(--accent-primary)] rounded-full ring-2 ring-[var(--bg-sidebar)] flex items-center justify-center">
-                        <span className="text-white text-[9px] font-bold leading-none">{unreadCount > 9 ? "9+" : unreadCount}</span>
-                      </span>
-                    )}
-                    {unreadCount === 0 && <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-[var(--text-tertiary)] rounded-full ring-2 ring-[var(--bg-sidebar)]" />}
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-[calc(100vw-1rem)] sm:w-80 bg-[#111111] border-white/[0.07] p-0">
-                  <div className="flex items-center justify-between px-3 py-2.5 border-b border-[var(--border-subtle)]">
-                    <span className="text-[var(--text-tertiary)] text-xs uppercase tracking-wider font-medium">Notificaciones</span>
-                    {unreadCount > 0 && (
-                      <button onClick={markAllRead} className="text-[10px] text-[var(--accent-primary)]/80 hover:text-[var(--accent-primary)] transition-colors">
-                        Marcar todas como leídas
-                      </button>
-                    )}
-                  </div>
-                  <div className="max-h-72 overflow-y-auto">
-                    {notifs.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center py-8 text-center">
-                        <Bell className="w-6 h-6 text-[var(--text-tertiary)] mb-2" />
-                        <p className="text-xs text-[var(--text-secondary)]">Sin notificaciones</p>
-                        <p className="text-[10px] text-[var(--text-tertiary)] mt-1">Te avisaremos cuando haya actividad</p>
-                      </div>
-                    ) : (
-                      notifs.map((n) => (
-                        <DropdownMenuItem
-                          key={n.id}
-                          className={cn("flex flex-col items-start gap-1 p-3 focus:bg-[var(--bg-hover)] cursor-pointer border-b border-[var(--border-subtle)] last:border-0", !n.read && "bg-[var(--bg-hover)]")}
-                          onClick={() => markRead(n.id)}
-                        >
-                          <div className="flex items-center gap-2 w-full">
-                            <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: notifDotColor[n.type] || "#7B5EF8" }} />
-                            <p className={cn("text-sm flex-1", n.read ? "text-[var(--text-secondary)]" : "text-[var(--text-primary)] font-medium")}>{n.title}</p>
-                            {!n.read && <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent-primary)] flex-shrink-0" />}
-                          </div>
-                          <p className="text-xs text-[var(--text-secondary)] pl-3.5 line-clamp-2">{n.message}</p>
-                          <p className="text-[10px] text-[var(--text-tertiary)] pl-3.5 font-mono">
-                            {new Date(n.createdAt).toLocaleDateString("es-AR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
-                          </p>
-                        </DropdownMenuItem>
-                      ))
-                    )}
-                  </div>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <NotificationCenter />
 
               <div className="w-px h-5 bg-[var(--border-default)] mx-1" />
 

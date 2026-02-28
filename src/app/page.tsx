@@ -332,6 +332,31 @@ function HowItWorksSection() {
   )
 }
 
+function Video90Section() {
+  const videoUrl = process.env.NEXT_PUBLIC_HEALIFY_90S_VIDEO_URL || '/videos/healify-90s.mp4'
+
+  return (
+    <section className="relative py-20 sm:py-24" id="video-90s">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-8">
+          <h2 className="text-3xl sm:text-4xl font-bold text-[#E8F0FF] mb-2 font-heading">Video de 90 segundos</h2>
+          <p className="text-sm text-[#E8F0FF]/60">Demo completa: falla, análisis, autocuración y PR</p>
+        </div>
+
+        <div className="glass-elite rounded-2xl border border-white/10 p-3">
+          <video
+            controls
+            preload="metadata"
+            className="w-full rounded-xl bg-[#0F1528]"
+          >
+            <source src={videoUrl} type="video/mp4" />
+          </video>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 // CTA Section
 function CTASection() {
   return (
@@ -424,6 +449,7 @@ export default function HomePage() {
       {/* Landing Content */}
       <LandingHero />
       <HealingDemo />
+      <Video90Section />
       <FeaturesSection />
       <HowItWorksSection />
       <CTASection />

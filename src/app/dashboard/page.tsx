@@ -22,6 +22,7 @@ import {
   ShieldCheck,
   Timer,
   Download,
+  TestTube2,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import {
@@ -34,6 +35,7 @@ import {
 } from "recharts";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api, formatNumber } from "@/lib/api";
 import { DashboardSkeleton } from "@/components/ui/skeletons";
 import { TestDetailSheet } from "@/components/TestDetailSheet";
@@ -234,6 +236,7 @@ function DashboardContent() {
   const [roi, setRoi] = useState<ROIData | null>(null);
   const [weeklyStatus, setWeeklyStatus] = useState<WeeklyReportStatus | null>(null)
   const [sendingWeeklyReport, setSendingWeeklyReport] = useState(false)
+  const [autoSandboxDone, setAutoSandboxDone] = useState(false)
 
   const fetchWeeklyStatus = async () => {
     try {
@@ -327,6 +330,23 @@ function DashboardContent() {
     fetchDashboard();
   }, []);
 
+  useEffect(() => {
+    const payload = data as DashboardResponse | null
+    if (!payload?.isNewUser || autoSandboxDone) return
+
+    api.setupSandbox()
+      .then(() => {
+        setAutoSandboxDone(true)
+        toast.success('Sandbox demo preparado', {
+          description: 'Creamos un proyecto inicial para que explores Healify en segundos.',
+        })
+        fetchDashboard()
+      })
+      .catch(() => {
+        setAutoSandboxDone(true)
+      })
+  }, [data, autoSandboxDone])
+
   // Handler: Run Tests
   const handleRunTests = async () => {
     setIsRunning(true);
@@ -412,6 +432,24 @@ function DashboardContent() {
     return <ErrorState message="No se encontraron datos" onRetry={fetchDashboard} />;
   }
 
+  const monitoredTests = data.chartData.reduce((acc, day) => acc + day.curados + day.testsRotos, 0);
+
+  const handleSetupSandbox = async () => {
+    try {
+      const response = await api.setupSandbox();
+      toast.success("Sandbox activado", {
+        description: response.created
+          ? "Creamos tu proyecto demo con datos iniciales"
+          : "Tu sandbox ya estaba listo",
+      });
+      await fetchDashboard();
+    } catch (sandboxError) {
+      toast.error("No se pudo crear el sandbox", {
+        description: sandboxError instanceof Error ? sandboxError.message : "Inténtalo nuevamente",
+      });
+    }
+  };
+
   return (
     <>
       <div className="space-y-4">
@@ -470,11 +508,39 @@ function DashboardContent() {
         {(data as DashboardResponse).isNewUser && (
           <OnboardingBanner
             userName={session?.user?.name || undefined}
+            progress={{
+              projectConnected: ((data as DashboardResponse).projectCount || 0) > 0,
+              firstRunExecuted: data.metrics.testsExecutedToday > 0 || data.chartData.length > 0,
+              firstHealingDone: data.healingHistory.length > 0,
+            }}
+            onSetupSandbox={handleSetupSandbox}
           />
         )}
 
+        <Tabs defaultValue="overview" className="space-y-4">
+          <TabsList className="bg-[#111111] border border-white/[0.08]">
+            <TabsTrigger value="overview" className="data-[state=active]:bg-[#1A1A1A] data-[state=active]:text-[#EDEDED]">
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="analisis" className="data-[state=active]:bg-[#1A1A1A] data-[state=active]:text-[#EDEDED]">
+              Análisis
+            </TabsTrigger>
+            <TabsTrigger value="funciones" className="data-[state=active]:bg-[#1A1A1A] data-[state=active]:text-[#EDEDED]">
+              Funciones
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-4">
+
         {/* Metrics Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <MetricCard
+            label="Tests monitoreados"
+            value={formatNumber(monitoredTests)}
+            change={monitoredTests > 0 ? "+activo" : "Sin actividad"}
+            trend={monitoredTests > 0 ? "up" : "neutral"}
+            icon={TestTube2}
+          />
           <MetricCard
             label="Tests Hoy"
             value={formatNumber(data.metrics.testsExecutedToday)}
@@ -490,18 +556,11 @@ function DashboardContent() {
             icon={CheckCircle2}
           />
           <MetricCard
-            label="Bugs Detectados"
+            label="Bugs detectados"
             value={data.metrics.bugsDetected}
             change={data.metrics.bugsDetectedChange}
             trend="down"
             icon={AlertTriangle}
-          />
-          <MetricCard
-            label="Tiempo Promedio"
-            value={data.metrics.avgHealingTime}
-            change={data.metrics.avgHealingTimeChange}
-            trend="up"
-            icon={Clock}
           />
         </div>
 
@@ -886,6 +945,106 @@ function DashboardContent() {
           )}
           </div>
         </div>
+        </TabsContent>
+
+        <TabsContent value="analisis" className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="rounded-lg border border-white/[0.07] bg-[#111111] p-4">
+              <p className="text-[11px] uppercase tracking-widest text-[#6B6B6B]">Tests monitoreados</p>
+              <p className="text-2xl font-semibold text-[#EDEDED] mt-1">{formatNumber(monitoredTests)}</p>
+              <p className="text-xs text-[#9B9B9B] mt-1">Últimos 7 días</p>
+            </div>
+            <div className="rounded-lg border border-white/[0.07] bg-[#111111] p-4">
+              <p className="text-[11px] uppercase tracking-widest text-[#6B6B6B]">Curaciones recientes</p>
+              <p className="text-2xl font-semibold text-[#EDEDED] mt-1">{data.healingHistory.length}</p>
+              <p className="text-xs text-[#9B9B9B] mt-1">Eventos con IA y revisión</p>
+            </div>
+            <div className="rounded-lg border border-white/[0.07] bg-[#111111] p-4">
+              <p className="text-[11px] uppercase tracking-widest text-[#6B6B6B]">Tiempo promedio</p>
+              <p className="text-2xl font-semibold text-[#EDEDED] mt-1">{data.metrics.avgHealingTime}</p>
+              <p className="text-xs text-[#9B9B9B] mt-1">Cambio {data.metrics.avgHealingTimeChange}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 lg:gap-4">
+            <div className="lg:col-span-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-card)] p-4">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="text-sm font-medium text-[var(--text-primary)]">Tendencia de Curación</h2>
+                  <p className="text-xs text-[var(--text-secondary)] mt-0.5">Últimos 7 días</p>
+                </div>
+              </div>
+
+              {data.chartData.length === 0 ? (
+                <EmptyState title="Sin datos de análisis" description="Ejecutá tests para activar insights" />
+              ) : (
+                <div className="h-48">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={data.chartData}>
+                      <defs>
+                        <linearGradient id="healingGradAnalysis" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#5E6AD2" stopOpacity={0.15} />
+                          <stop offset="95%" stopColor="#5E6AD2" stopOpacity={0} />
+                        </linearGradient>
+                        <linearGradient id="brokenGradAnalysis" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#E85C4A" stopOpacity={0.15} />
+                          <stop offset="95%" stopColor="#E85C4A" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "#6b7280", fontSize: 11 }} />
+                      <YAxis hide />
+                      <Area type="monotone" dataKey="curados" stroke="#5E6AD2" strokeWidth={2} fillOpacity={1} fill="url(#healingGradAnalysis)" />
+                      <Area type="monotone" dataKey="testsRotos" stroke="#E85C4A" strokeWidth={2} fillOpacity={1} fill="url(#brokenGradAnalysis)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-lg border border-[var(--border-default)] bg-[var(--bg-card)] p-4">
+              <h2 className="text-sm font-medium text-[var(--text-primary)] mb-4">Selectores frágiles</h2>
+              {data.fragileSelectors.length === 0 ? (
+                <EmptyState title="Sin fragilidad detectada" description="Tus selectores están estables" />
+              ) : (
+                <div className="space-y-2">
+                  {data.fragileSelectors.slice(0, 6).map((selector) => (
+                    <div key={selector.selector} className="p-2 rounded-md bg-[var(--bg-hover)]">
+                      <code className="text-xs text-[var(--text-primary)] font-mono truncate block">{selector.selector}</code>
+                      <p className="text-[10px] text-[var(--text-tertiary)] mt-1">{selector.failures} fallos · {selector.successRate}% éxito</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="funciones" className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <Link href="/dashboard/projects" className="rounded-lg border border-white/[0.07] bg-[#111111] p-4 hover:bg-[#151515] transition-colors">
+              <p className="text-sm font-medium text-[#EDEDED]">Conectar repositorio</p>
+              <p className="text-xs text-[#9B9B9B] mt-1">Creá y configurá proyectos para activar monitoreo</p>
+            </Link>
+            <button onClick={handleSetupSandbox} className="text-left rounded-lg border border-white/[0.07] bg-[#111111] p-4 hover:bg-[#151515] transition-colors">
+              <p className="text-sm font-medium text-[#EDEDED]">Sandbox interactivo</p>
+              <p className="text-xs text-[#9B9B9B] mt-1">Carga automática de datos demo por usuario</p>
+            </button>
+            <Link href="/docs" className="rounded-lg border border-white/[0.07] bg-[#111111] p-4 hover:bg-[#151515] transition-colors">
+              <p className="text-sm font-medium text-[#EDEDED]">Implementar SDK</p>
+              <p className="text-xs text-[#9B9B9B] mt-1">Quickstart, API y webhook en producción</p>
+            </Link>
+          </div>
+
+          <div className="rounded-lg border border-white/[0.07] bg-[#111111] p-4">
+            <h3 className="text-sm font-medium text-[#EDEDED] mb-2">Checklist de activación</h3>
+            <ul className="space-y-2 text-xs text-[#9B9B9B]">
+              <li className="flex items-center gap-2"><span className={cn("w-2 h-2 rounded-full", ((data as DashboardResponse).projectCount || 0) > 0 ? "bg-emerald-400" : "bg-[#6B6B6B]")} />Proyecto conectado</li>
+              <li className="flex items-center gap-2"><span className={cn("w-2 h-2 rounded-full", data.metrics.testsExecutedToday > 0 ? "bg-emerald-400" : "bg-[#6B6B6B]")} />Primera ejecución detectada</li>
+              <li className="flex items-center gap-2"><span className={cn("w-2 h-2 rounded-full", data.healingHistory.length > 0 ? "bg-emerald-400" : "bg-[#6B6B6B]")} />Primera curación registrada</li>
+            </ul>
+          </div>
+        </TabsContent>
+      </Tabs>
       </div>
 
       {/* Test Detail Sheet */}

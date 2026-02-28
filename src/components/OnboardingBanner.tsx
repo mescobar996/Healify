@@ -118,14 +118,31 @@ function StepCard({
 interface OnboardingBannerProps {
   userName?: string
   onDismiss?: () => void
+  progress?: {
+    projectConnected: boolean
+    firstRunExecuted: boolean
+    firstHealingDone: boolean
+  }
+  onSetupSandbox?: () => Promise<void> | void
 }
 
 export function OnboardingBanner({
   userName,
   onDismiss,
+  progress,
+  onSetupSandbox,
 }: OnboardingBannerProps) {
   const router = useRouter()
   const [dismissed, setDismissed] = useState(false)
+  const [sandboxLoading, setSandboxLoading] = useState(false)
+
+  const completedByStep = {
+    1: progress?.projectConnected ?? false,
+    2: progress?.firstRunExecuted ?? false,
+    3: progress?.firstHealingDone ?? false,
+  }
+
+  const completedCount = Object.values(completedByStep).filter(Boolean).length
 
   const handleDismiss = () => {
     setDismissed(true)
@@ -134,6 +151,16 @@ export function OnboardingBanner({
     try {
       localStorage.setItem("healify_onboarding_dismissed", "true")
     } catch {}
+  }
+
+  const handleSetupSandbox = async () => {
+    if (!onSetupSandbox) return
+    try {
+      setSandboxLoading(true)
+      await onSetupSandbox()
+    } finally {
+      setSandboxLoading(false)
+    }
   }
 
   return (
@@ -174,6 +201,9 @@ export function OnboardingBanner({
                   Conectá tu primer repositorio para que Healify empiece a
                   autocurar tus tests.
                 </p>
+                <p className="text-[11px] text-[#00F5C8]/70 mt-1">
+                  Progreso: {completedCount}/3 pasos completados
+                </p>
               </div>
             </div>
 
@@ -184,7 +214,7 @@ export function OnboardingBanner({
                   key={step.step}
                   step={step}
                   index={i}
-                  isCompleted={false}
+                  isCompleted={completedByStep[step.step as 1 | 2 | 3]}
                 />
               ))}
             </div>
@@ -202,11 +232,12 @@ export function OnboardingBanner({
 
               <Button
                 variant="ghost"
-                onClick={() => router.push("/dashboard/projects")}
+                onClick={handleSetupSandbox}
                 className="text-[#E8F0FF]/50 hover:text-[#E8F0FF] text-sm h-9 px-4 w-full sm:w-auto"
+                disabled={sandboxLoading}
               >
                 <Github className="w-4 h-4 mr-2" />
-                Ver demo con datos de ejemplo
+                {sandboxLoading ? "Creando sandbox..." : "Activar sandbox demo"}
               </Button>
 
               <button

@@ -108,5 +108,25 @@ export interface NotificationItem {
   title: string
   message: string
   read: boolean
+  link?: string | null
   createdAt: string
+}
+
+export interface GlobalSearchResult {
+  projects: Array<{ id: string; name: string; repository: string | null }>
+  testRuns: Array<{
+    id: string
+    status: string
+    branch: string | null
+    commitMessage: string | null
+    project: { id: string; name: string }
+  }>
+  healingEvents: Array<{
+    id: string
+    testName: string
+    status: string
+    confidence: number | null
+    prUrl: string | null
+    testRun: { id: string; project: { id: string; name: string } }
+  }>
 }

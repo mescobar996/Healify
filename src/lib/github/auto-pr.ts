@@ -191,6 +191,18 @@ export async function tryOpenAutoPR(healingEventId: string): Promise<AutoPRResul
             }
         })
 
+        if (project.userId) {
+            await db.notification.create({
+                data: {
+                    userId: project.userId,
+                    type: 'success',
+                    title: 'PR automático creado',
+                    message: `Healify abrió un PR para "${event.testName}" (${Math.round(event.confidence * 100)}% confianza).`,
+                    link: pr.html_url,
+                },
+            }).catch(() => {})
+        }
+
         console.log(`[Auto-PR] ✅ PR abierto: ${pr.html_url}`)
         return { opened: true, prUrl: pr.html_url, prBranch: pr.head.ref }
 

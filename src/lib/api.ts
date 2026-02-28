@@ -3,7 +3,7 @@
 // Centralised fetch wrapper for all API calls
 // ============================================
 
-import type { DashboardData, Project, NotificationItem, TestRun } from '@/types'
+import type { DashboardData, Project, NotificationItem, TestRun, GlobalSearchResult } from '@/types'
 
 // Error especial para límites de plan — el cliente puede distinguirlo
 export class PlanLimitError extends Error {
@@ -143,9 +143,18 @@ export const api = {
       method: 'POST',
     }),
 
+  setupSandbox: () =>
+    fetcher<{ success: boolean; projectId: string; created: boolean; seeded: boolean }>('/api/demo/sandbox', {
+      method: 'POST',
+    }),
+
   // NOTIFICATIONS
   getNotifications: (): Promise<NotificationItem[]> =>
     fetcher<NotificationItem[]>('/api/notifications'),
+
+  // GLOBAL SEARCH
+  search: (q: string): Promise<GlobalSearchResult> =>
+    fetcher<GlobalSearchResult>(`/api/search?q=${encodeURIComponent(q)}`),
 
   // ANALYTICS
   getAnalytics: () =>
