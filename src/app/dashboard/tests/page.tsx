@@ -44,8 +44,8 @@ function StatusBadge({ status }: { status: TestRunStatus }) {
       icon: XCircle,
     },
     HEALED: {
-      bg: "bg-violet-500/10",
-      text: "text-violet-400",
+      bg: "bg-[rgba(94,106,210,0.15)]",
+      text: "text-[#5E6AD2]",
       icon: Zap,
     },
     RUNNING: {
@@ -534,8 +534,8 @@ function TestsContent() {
               className={cn(
                 "px-3 py-1.5 rounded-md text-[13px] font-medium transition-all duration-150 border",
                 statusFilter === f.value
-                  ? "bg-[var(--bg-elevated)] border-[var(--border-default)] text-[var(--text-primary)]"
-                  : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
+                  ? "bg-[#1A1A1A] text-[#EDEDED] border border-white/[0.12]"
+                  : "border-transparent text-[#6B6B6B] hover:text-[#EDEDED] hover:bg-[#151515]"
               )}
             >
               {f.label}

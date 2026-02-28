@@ -103,7 +103,7 @@ function AccountSection() {
       <div className="flex items-start gap-6">
         <Avatar className="w-16 h-16">
           <AvatarImage src={session?.user?.image || userData.avatar} />
-          <AvatarFallback className="text-[#0A0E1A] text-lg font-medium" style={{background:"linear-gradient(135deg,#00F5C8,#7B5EF8)"}}>
+          <AvatarFallback className="text-[#090909] text-lg font-medium" style={{background:"linear-gradient(135deg,#5E6AD2,#7A84DC)"}}>
             {session?.user?.name?.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0,2) || "HF"}
           </AvatarFallback>
         </Avatar>
@@ -121,7 +121,7 @@ function AccountSection() {
         </div>
       </div>
 
-      <div className="h-px bg-white/5" />
+      <div className="h-px bg-[var(--border-subtle)]" />
 
       {/* Form */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

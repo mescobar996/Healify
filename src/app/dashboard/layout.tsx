@@ -101,7 +101,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     : "HF";
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)]">
+    <div className="min-h-screen bg-[#090909] text-[#EDEDED]">
 
       {/* ── Mobile overlay ─────────────────────────────── */}
       <AnimatePresence>
@@ -117,7 +117,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* ── Sidebar ─────────────────────────────────────── */}
       <aside className={cn(
         "fixed inset-y-0 left-0 z-50 w-56 flex flex-col transition-transform duration-200 ease-in-out lg:translate-x-0",
-        "bg-[var(--bg-sidebar)] border-r border-[var(--border-default)]",
+        "bg-[#0C0C0C] border-r border-white/[0.07]",
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
 
@@ -148,17 +148,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 className={cn(
                   "flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium transition-all duration-150 group",
                   isActive
-                    ? "bg-[rgba(94,106,210,0.10)] text-[var(--text-primary)] border border-[rgba(94,106,210,0.25)]"
-                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
+                    ? "bg-[#1A1A1A] text-[#EDEDED] border-l-2 border-[#5E6AD2]"
+                    : "text-[#6B6B6B] hover:text-[#EDEDED] hover:bg-[#151515]"
                 )}
               >
                 <item.icon className={cn(
                   "w-4 h-4 transition-colors duration-150",
-                  isActive ? "text-[var(--accent-primary)]" : "text-[var(--text-tertiary)] group-hover:text-[var(--text-secondary)]"
+                  isActive ? "text-[#5E6AD2]" : "text-[#6B6B6B] group-hover:text-[#EDEDED]"
                 )} />
                 <span className="flex-1">{item.name}</span>
                 {isActive && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-primary)]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#5E6AD2]" />
                 )}
               </Link>
             );
@@ -189,7 +189,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <Avatar className="w-6 h-6">
                   <AvatarImage src={session?.user?.image || ""} />
                   <AvatarFallback className="text-[10px] font-medium"
-                    style={{ background: "linear-gradient(135deg,#00F5C8,#7B5EF8)", color: "#0A0E1A" }}>
+                    style={{ background: "linear-gradient(135deg,#5E6AD2,#7A84DC)", color: "#090909" }}>
                     {userInitials}
                   </AvatarFallback>
                 </Avatar>
@@ -201,7 +201,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <ChevronDown className="w-3.5 h-3.5 text-[var(--text-tertiary)]" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 bg-[var(--bg-card)] border-[var(--border-default)]">
+            <DropdownMenuContent align="end" className="w-48 bg-[#111111] border-white/[0.07]">
               <DropdownMenuLabel className="text-[var(--text-tertiary)] text-xs">Mi Cuenta</DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-[var(--border-subtle)]" />
               <DropdownMenuItem asChild className="text-[var(--text-secondary)] text-sm focus:bg-[var(--bg-hover)] focus:text-[var(--text-primary)] cursor-pointer">
@@ -227,7 +227,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="lg:pl-56">
 
         {/* Top header */}
-        <header className="sticky top-0 z-30 h-14 bg-[var(--bg-sidebar)] border-b border-[var(--border-default)]">
+        <header className="sticky top-0 z-30 h-14 bg-[#090909] border-b border-white/[0.07]">
           <div className="flex items-center justify-between h-full px-4 lg:px-6">
 
             {/* Left */}
@@ -246,7 +246,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <button className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-md bg-[var(--bg-elevated)] border border-[var(--border-default)] hover:bg-[var(--bg-hover)] transition-all duration-150 group">
                 <Search className="w-3.5 h-3.5 text-[var(--text-tertiary)] group-hover:text-[var(--text-secondary)]" />
                 <span className="text-[13px] text-[var(--text-secondary)]">Buscar...</span>
-                <kbd className="hidden lg:inline-flex items-center gap-0.5 ml-4 text-[10px] text-[var(--text-tertiary)] bg-[var(--bg-card)] px-1.5 py-0.5 rounded font-mono">
+                <kbd className="hidden lg:inline-flex items-center gap-0.5 ml-4 text-[10px] text-[var(--text-tertiary)] bg-[#111111] px-1.5 py-0.5 rounded font-mono">
                   ⌘K
                 </kbd>
               </button>
@@ -267,7 +267,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     {unreadCount === 0 && <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-[var(--text-tertiary)] rounded-full ring-2 ring-[var(--bg-sidebar)]" />}
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-[calc(100vw-1rem)] sm:w-80 bg-[var(--bg-card)] border-[var(--border-default)] p-0">
+                <DropdownMenuContent align="end" className="w-[calc(100vw-1rem)] sm:w-80 bg-[#111111] border-white/[0.07] p-0">
                   <div className="flex items-center justify-between px-3 py-2.5 border-b border-[var(--border-subtle)]">
                     <span className="text-[var(--text-tertiary)] text-xs uppercase tracking-wider font-medium">Notificaciones</span>
                     {unreadCount > 0 && (
@@ -315,13 +315,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <Avatar className="w-7 h-7">
                       <AvatarImage src={session?.user?.image || ""} />
                       <AvatarFallback className="text-[10px] font-medium"
-                        style={{ background: "linear-gradient(135deg,#00F5C8,#7B5EF8)", color: "#0A0E1A" }}>
+                        style={{ background: "linear-gradient(135deg,#5E6AD2,#7A84DC)", color: "#090909" }}>
                         {userInitials}
                       </AvatarFallback>
                     </Avatar>
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 bg-[var(--bg-card)] border-[var(--border-default)]">
+                <DropdownMenuContent align="end" className="w-48 bg-[#111111] border-white/[0.07]">
                   <DropdownMenuItem asChild className="text-[var(--text-secondary)] text-sm focus:bg-[var(--bg-hover)] focus:text-[var(--text-primary)] cursor-pointer">
                     <Link href="/dashboard/settings"><User className="w-4 h-4 mr-2 text-[var(--text-tertiary)]" />Perfil</Link>
                   </DropdownMenuItem>

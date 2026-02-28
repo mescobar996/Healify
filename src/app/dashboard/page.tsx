@@ -84,38 +84,29 @@ function MetricCard({
   icon: React.ElementType;
 }) {
   return (
-    <div className="group relative p-4 rounded-lg border border-[var(--border-default)] bg-[var(--bg-card)] hover:bg-[var(--bg-hover)] transition-all duration-150">
-      <div className="flex items-start justify-between">
-        <div className="space-y-2">
-          <p className="text-[11px] font-medium tracking-widest text-[var(--text-tertiary)] uppercase">
-            {label}
-          </p>
-          <p className="text-2xl font-semibold text-[var(--text-primary)] tracking-tight">
-            {value}
-          </p>
-        </div>
-        <div className="p-2 rounded-md bg-[var(--bg-elevated)] border border-[var(--border-subtle)]">
-          <Icon className="w-4 h-4 text-[var(--text-secondary)]" />
-        </div>
-      </div>
-      <div className="mt-3 flex items-center gap-1.5">
+    <div className="p-4 rounded-lg bg-[#111111] border border-white/[0.07] flex flex-col gap-2">
+      <span className="text-[11px] font-medium text-[#6B6B6B] uppercase tracking-widest inline-flex items-center gap-1.5">
+        <Icon className="w-3 h-3" />
+        {label}
+      </span>
+      <span className="text-[28px] font-bold text-[#EDEDED] leading-none tabular-nums">
+        {value}
+      </span>
+      <span
+        className={cn(
+          "text-[12px] font-medium flex items-center gap-1",
+          trend === "up" && "text-[#3DB779]",
+          trend === "down" && "text-[#E85C4A]",
+          trend === "neutral" && "text-[#6B6B6B]"
+        )}
+      >
         {trend === "up" ? (
-          <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
+          <TrendingUp className="w-3 h-3" />
         ) : trend === "down" ? (
-          <TrendingDown className="w-3.5 h-3.5 text-red-500" />
+          <TrendingDown className="w-3 h-3" />
         ) : null}
-        <span
-          className={cn(
-            "text-xs font-medium",
-            trend === "up" && "text-emerald-400",
-            trend === "down" && "text-red-400",
-            trend === "neutral" && "text-[var(--text-tertiary)]"
-          )}
-        >
-          {change}
-        </span>
-        <span className="text-xs text-[var(--text-tertiary)]">vs ayer</span>
-      </div>
+        {change}
+      </span>
     </div>
   );
 }
@@ -516,7 +507,7 @@ function DashboardContent() {
 
         {/* ROI Strip — Bloque 7 */}
         {roi && (
-          <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-card)] overflow-hidden">
+          <div className="rounded-lg border border-white/[0.07] bg-[#111111] overflow-hidden">
             <div className="px-4 py-2.5 border-b border-[var(--border-subtle)] flex items-center gap-2">
               <Sparkles className="w-3.5 h-3.5 text-[var(--accent-primary)]" />
               <span className="text-[11px] font-medium tracking-widest text-[var(--text-tertiary)] uppercase">
@@ -543,8 +534,8 @@ function DashboardContent() {
               {/* Horas ahorradas */}
               <div className="px-5 py-4 flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ background: 'rgba(0,245,200,0.1)' }}>
-                  <Timer className="w-4 h-4 text-[#00F5C8]" />
+                  style={{ background: '#1A1A1A' }}>
+                  <Timer className="w-4 h-4 text-[#5E6AD2]" />
                 </div>
                 <div>
                   <p className="text-lg font-bold text-[var(--text-primary)] leading-none">
@@ -556,8 +547,8 @@ function DashboardContent() {
               {/* Ahorro en $ */}
               <div className="px-5 py-4 flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ background: 'rgba(123,94,248,0.1)' }}>
-                  <DollarSign className="w-4 h-4 text-[#7B5EF8]" />
+                  style={{ background: '#1A1A1A' }}>
+                  <DollarSign className="w-4 h-4 text-[#5E6AD2]" />
                 </div>
                 <div>
                   <p className="text-lg font-bold text-[var(--text-primary)] leading-none">
@@ -569,7 +560,7 @@ function DashboardContent() {
               {/* Tests autocurados este mes */}
               <div className="px-5 py-4 flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ background: 'rgba(34,197,94,0.1)' }}>
+                  style={{ background: '#1A1A1A' }}>
                   <ShieldCheck className="w-4 h-4 text-emerald-400" />
                 </div>
                 <div>
@@ -582,7 +573,7 @@ function DashboardContent() {
               {/* Tasa de autocuración */}
               <div className="px-5 py-4 flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ background: 'rgba(234,179,8,0.1)' }}>
+                  style={{ background: '#1A1A1A' }}>
                   <TrendingUp className="w-4 h-4 text-yellow-400" />
                 </div>
                 <div>
@@ -688,13 +679,13 @@ function DashboardContent() {
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={data.chartData}>
                     <defs>
-                      <linearGradient id="colorCurados" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
-                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                      <linearGradient id="healingGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#5E6AD2" stopOpacity={0.15} />
+                        <stop offset="95%" stopColor="#5E6AD2" stopOpacity={0} />
                       </linearGradient>
-                      <linearGradient id="colorRotos" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.2} />
-                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                      <linearGradient id="brokenGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#E85C4A" stopOpacity={0.15} />
+                        <stop offset="95%" stopColor="#E85C4A" stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <XAxis
@@ -716,18 +707,18 @@ function DashboardContent() {
                     <Area
                       type="monotone"
                       dataKey="curados"
-                      stroke="#10b981"
+                      stroke="#5E6AD2"
                       strokeWidth={2}
                       fillOpacity={1}
-                      fill="url(#colorCurados)"
+                      fill="url(#healingGrad)"
                     />
                     <Area
                       type="monotone"
                       dataKey="testsRotos"
-                      stroke="#ef4444"
+                      stroke="#E85C4A"
                       strokeWidth={2}
                       fillOpacity={1}
-                      fill="url(#colorRotos)"
+                      fill="url(#brokenGrad)"
                     />
                   </AreaChart>
                 </ResponsiveContainer>
