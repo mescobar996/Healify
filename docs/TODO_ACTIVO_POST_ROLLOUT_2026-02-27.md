@@ -31,9 +31,18 @@ Orden recomendado de ejecución:
 - [x] `npm run test:e2e:api` passing (14/14).
 
 ### C) KPI y operación semanal
-- [ ] Ejecutar baseline de KPI con `/api/analytics/conversion?days=30` (pendiente de `DATABASE_URL` en entorno local/prod).
-- [ ] Revisar metas: `activation24hPct`, `timeToFirstHealingMinutes`, `autoPrRatePct` con datos reales del baseline.
+- [x] Ejecutar baseline de KPI con `/api/analytics/conversion?days=30`.
+- [x] Revisar metas: `activation24hPct`, `timeToFirstHealingMinutes`, `autoPrRatePct` con datos reales del baseline.
 - [x] Preparar reporte semanal para dirección con acciones correctivas.
+
+Resultado baseline (2026-02-28):
+- `activation24hPct`: 0% (objetivo > 60%)
+- `timeToFirstHealingMinutes`: 6559.1 (objetivo < 15)
+- `autoPrRatePct`: 100% (objetivo > 35%)
+
+Foco inmediato (no-pago):
+- Reducir tiempo a primer healing con flujo sandbox + primer run más guiado.
+- Reforzar activación <24h en onboarding y CTA de conexión inicial.
 
 ### D) Mejoras opcionales de producto (siguiente sprint)
 - [x] Persistir el último escenario elegido del demo interactivo en `localStorage`.

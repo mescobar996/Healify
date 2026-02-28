@@ -118,7 +118,7 @@ Referencia inicial:
 ## Checklist rápido de ejecución
 
 - [x] `npx tsc --noEmit` limpio
-- [ ] `npm run kpi:baseline` generado con datos reales
+- [x] `npm run kpi:baseline` generado con datos reales
 - [x] QA de búsqueda/demo/notificaciones en 3 navegadores
 - [x] E2E API OK
 - [ ] Solo al final: IA live + pagos + dominio
@@ -127,6 +127,11 @@ Referencia inicial:
 
 - QA manual UX cross-browser: OK ✅
 - `npm run test:e2e:api`: 14/14 passing ✅
-- Baseline KPI: ejecutado en modo pendiente por falta de `DATABASE_URL` en entorno local.
+- Baseline KPI: generado con datos reales ✅
+
+Lectura KPI actual:
+- `activation24hPct`: 0% ⚠️
+- `timeToFirstHealingMinutes`: 6559.1 ⚠️
+- `autoPrRatePct`: 100% ✅
 
 Última actualización: 2026-02-28
