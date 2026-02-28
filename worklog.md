@@ -2,6 +2,22 @@
 ## Project Work Log
 
 ---
+## Release Note - 2026-02-28 (API E2E stabilization + Phase 2 progress)
+
+### Summary
+- Se corrigieron los errores que rompían `npm run test:e2e:api` en entorno sin DB/NextAuth completo.
+- Se avanzó Fase 2 con ejecución de baseline KPI en modo resiliente (pending report cuando falta `DATABASE_URL`).
+
+### Fixes
+- `src/app/auth/error/page.tsx`: adaptación a Next.js async `searchParams` (`await searchParams`).
+- `src/lib/api-key-service.ts`: manejo seguro de `PrismaClientInitializationError` para que API key inválida responda 401 en lugar de 500 cuando falta DB.
+
+### Validation
+- `npx tsc --noEmit`: OK.
+- `npm run test:e2e:api`: 14/14 passing.
+- `npm run kpi:baseline`: genera `docs/KPI_BASELINE_LATEST.md` (modo pending por entorno sin `DATABASE_URL`).
+
+---
 ## Release Note - 2026-02-27 (Phases 2-8 UX/Product rollout)
 
 ### Summary

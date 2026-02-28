@@ -110,10 +110,16 @@ Referencia inicial:
 
 ## Checklist rápido de ejecución
 
-- [ ] `npx tsc --noEmit` limpio
+- [x] `npx tsc --noEmit` limpio
 - [ ] `npm run kpi:baseline` generado con datos reales
-- [ ] QA de búsqueda/demo/notificaciones en 3 navegadores
-- [ ] E2E API OK
+- [x] QA de búsqueda/demo/notificaciones en 3 navegadores
+- [x] E2E API OK
 - [ ] Solo al final: IA live + pagos + dominio
 
-Última actualización: 2026-02-27
+## Estado de avance (2026-02-28)
+
+- QA manual UX cross-browser: OK ✅
+- `npm run test:e2e:api`: 14/14 passing ✅
+- Baseline KPI: ejecutado en modo pendiente por falta de `DATABASE_URL` en entorno local.
+
+Última actualización: 2026-02-28

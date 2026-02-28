@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation'
 export default async function AuthErrorPage({
   searchParams,
 }: {
-  searchParams: { error?: string }
+  searchParams: Promise<{ error?: string }>
 }) {
   const session = await getServerSession(authOptions)
   
@@ -13,7 +13,8 @@ export default async function AuthErrorPage({
     redirect('/dashboard')
   }
 
-  const error = searchParams.error
+  const params = await searchParams
+  const error = params?.error
 
   const errorMessages: Record<string, string> = {
     Callback: 'OAuth callback error. Check if GitHub OAuth app callback URL is correctly configured.',

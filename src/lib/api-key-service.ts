@@ -31,6 +31,12 @@ const KEY_CACHE_TTL = 60000 // 1 minute cache
 // In-memory cache for API key validation
 const keyCache = new Map<string, { projectId: string; timestamp: number }>()
 
+function isDbUnavailableError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false
+  const message = error.message.toLowerCase()
+  return message.includes('database_url') || message.includes('prismaclientinitializationerror')
+}
+
 // ============================================
 // API KEY GENERATION
 // ============================================
@@ -72,10 +78,18 @@ export async function validateApiKey(
   }
 
   // Look up project by apiKey field
-  const project = await db.project.findUnique({
-    where: { apiKey },
-    select: { id: true, name: true },
-  })
+  let project: { id: string; name: string } | null = null
+  try {
+    project = await db.project.findUnique({
+      where: { apiKey },
+      select: { id: true, name: true },
+    })
+  } catch (error) {
+    if (isDbUnavailableError(error)) {
+      return { valid: false, error: 'Invalid API key' }
+    }
+    throw error
+  }
 
   if (!project) {
     return { valid: false, error: 'Invalid API key' }

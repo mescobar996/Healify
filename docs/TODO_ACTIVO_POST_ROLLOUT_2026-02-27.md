@@ -23,9 +23,12 @@ Orden recomendado de ejecución:
 - [ ] Configurar dominio productivo `healify.dev`.
 
 ### B) Validación funcional en producción (manual)
-- [ ] QA visual cross-browser de la barra de búsqueda ampliada (desktop tablet).
-- [ ] QA de demo interactivo en landing/docs (escenarios, animación, copy, responsive).
-- [ ] Confirmar que el flujo de notificaciones accionables abre links internos y PR externos correctamente.
+- [x] QA visual cross-browser de la barra de búsqueda ampliada (desktop tablet).
+- [x] QA de demo interactivo en landing/docs (escenarios, animación, copy, responsive).
+- [x] Confirmar que el flujo de notificaciones accionables abre links internos y PR externos correctamente.
+
+### B.1) Validación automatizada API
+- [x] `npm run test:e2e:api` passing (14/14).
 
 ### C) KPI y operación semanal
 - [ ] Ejecutar baseline de KPI con `/api/analytics/conversion?days=30` (pendiente de `DATABASE_URL` en entorno local/prod).
@@ -44,4 +47,4 @@ Orden recomendado de ejecución:
 
 ---
 
-Última actualización: 2026-02-27
+Última actualización: 2026-02-28

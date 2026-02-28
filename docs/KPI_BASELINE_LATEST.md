@@ -1,6 +1,6 @@
 # Healify — KPI Baseline Report
 
-Fecha de generación: 2026-02-28T02:43:57.484Z
+Fecha de generación: 2026-02-28T03:04:11.748Z
 Estado: pendiente por entorno
 
 ## Motivo
