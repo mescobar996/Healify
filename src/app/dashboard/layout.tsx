@@ -60,7 +60,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     : "HF";
 
   return (
-    <div className="min-h-screen bg-[#090909] text-[#EDEDED]">
+    <div className="min-h-screen bg-[#000000] text-[#EDEDED]">
 
       {/* ── Mobile overlay ─────────────────────────────── */}
       <AnimatePresence>
@@ -76,7 +76,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* ── Sidebar ─────────────────────────────────────── */}
       <aside className={cn(
         "fixed inset-y-0 left-0 z-50 w-56 flex flex-col transition-transform duration-200 ease-in-out lg:translate-x-0",
-        "bg-[#0C0C0C] border-r border-white/[0.07]",
+        "bg-[#000000] border-r border-white/[0.06]",
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
 
@@ -188,7 +188,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="lg:pl-56">
 
         {/* Top header */}
-        <header className="sticky top-0 z-30 h-14 bg-[#090909] border-b border-white/[0.07]">
+        <header className="sticky top-0 z-30 h-14 bg-[#000000]/95 backdrop-blur-md border-b border-white/[0.06]">
           <div className="flex items-center justify-between h-full px-4 lg:px-6">
 
             {/* Left */}

@@ -43,23 +43,23 @@
 :root {
   --radius: 0.5rem;
 
-  --background: #090909;
+  --background: #000000;
   --foreground: #EDEDED;
-  --card: #111111;
+  --card: #0A0A0A;
   --card-foreground: #EDEDED;
-  --popover: #111111;
+  --popover: #0A0A0A;
   --popover-foreground: #EDEDED;
-  --border: rgba(255, 255, 255, 0.07);
-  --input: #1A1A1A;
+  --border: rgba(255, 255, 255, 0.06);
+  --input: #141414;
   --ring: rgba(94, 106, 210, 0.5);
-  --muted: #1A1A1A;
+  --muted: #141414;
   --muted-foreground: #6B6B6B;
   --accent: #5E6AD2;
   --accent-foreground: #FFFFFF;
 
   --primary: #5E6AD2;
   --primary-foreground: #FFFFFF;
-  --secondary: #151515;
+  --secondary: #0F0F0F;
   --secondary-foreground: #EDEDED;
   --destructive: #E85C4A;
 
@@ -69,28 +69,28 @@
   --chart-4: #4E9FE8;
   --chart-5: #E8A642;
 
-  --sidebar: #0C0C0C;
+  --sidebar: #000000;
   --sidebar-foreground: #EDEDED;
   --sidebar-primary: #5E6AD2;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #151515;
+  --sidebar-accent: #0F0F0F;
   --sidebar-accent-foreground: #EDEDED;
-  --sidebar-border: rgba(255, 255, 255, 0.07);
+  --sidebar-border: rgba(255, 255, 255, 0.06);
   --sidebar-ring: rgba(94, 106, 210, 0.5);
 
-  --bg-primary: #090909;
-  --bg-sidebar: #0C0C0C;
-  --bg-card: #111111;
-  --bg-elevated: #151515;
-  --bg-hover: #1A1A1A;
+  --bg-primary: #000000;
+  --bg-sidebar: #000000;
+  --bg-card: #0A0A0A;
+  --bg-elevated: #111111;
+  --bg-hover: #151515;
 
   --text-primary: #EDEDED;
   --text-secondary: #9B9B9B;
   --text-tertiary: #6B6B6B;
 
-  --border-subtle: rgba(255, 255, 255, 0.07);
-  --border-default: rgba(255, 255, 255, 0.12);
-  --border-strong: rgba(255, 255, 255, 0.18);
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.10);
+  --border-strong: rgba(255, 255, 255, 0.16);
   --accent-primary: #5E6AD2;
 }
 
@@ -102,7 +102,7 @@
   body {
     @apply antialiased;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background: #090909;
+    background: #000000;
     min-height: 100vh;
     color: #EDEDED;
   }
@@ -125,8 +125,8 @@
 
 @layer components {
   .glass-elite {
-    background: #111111;
-    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: #0A0A0A;
+    border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 8px;
     padding: 16px;
     position: relative;
@@ -140,6 +140,26 @@
   .glass-elite-hover {
     transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease, opacity 150ms ease;
   }
+
+  .glass-elite-hover:hover {
+    border-color: rgba(94, 106, 210, 0.15);
+  }
+
+  .amoled-glow {
+    box-shadow: 0 0 40px rgba(94, 106, 210, 0.04), 0 0 80px rgba(94, 106, 210, 0.02);
+  }
+
+  .amoled-card {
+    background: #0A0A0A;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    transition: border-color 150ms ease, box-shadow 150ms ease;
+  }
+
+  .amoled-card:hover {
+    border-color: rgba(255, 255, 255, 0.10);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+  }
 }
 
 ::-webkit-scrollbar {
@@ -148,14 +168,14 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #090909;
+  background: #000000;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.10);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.16);
 }

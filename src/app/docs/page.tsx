@@ -86,10 +86,10 @@ const TOC = [
 // ══════════════════════════════════════════════════════════════════════
 export default function DocsPage() {
   return (
-    <div className="min-h-screen bg-[#090909] text-[#EDEDED]">
+    <div className="min-h-screen bg-[#000000] text-[#EDEDED]">
 
       {/* ── Top nav ── */}
-      <header className="sticky top-0 z-40 border-b border-white/[0.07] bg-[#090909]">
+      <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-[#000000]/95 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-6">
             <Link href="/" className="flex items-center gap-2 font-semibold text-[#EDEDED]">
@@ -127,18 +127,28 @@ export default function DocsPage() {
       <div className="max-w-7xl mx-auto px-4 py-10 flex gap-10">
 
         {/* ── Sidebar TOC ── */}
-        <aside className="hidden lg:block w-52 shrink-0">
-          <div className="sticky top-24 space-y-1">
-            <p className="text-[11px] font-medium tracking-widest text-[#6B6B6B] uppercase mb-3">En esta página</p>
-            {TOC.map(item => (
-              <a
-                key={item.id}
-                href={`#${item.id}`}
-                className={`block text-sm py-1 transition-colors hover:text-[#EDEDED] text-[#6B6B6B] ${item.indent ? 'pl-3 text-xs' : ''}`}
-              >
-                {item.label}
-              </a>
-            ))}
+        <aside className="hidden lg:block w-56 shrink-0">
+          <div className="sticky top-24">
+            <p className="text-[11px] font-semibold tracking-widest text-[#5E6AD2] uppercase mb-4 flex items-center gap-1.5">
+              <Book className="w-3 h-3" /> En esta página
+            </p>
+            <div className="space-y-0.5 border-l border-white/[0.06] ml-0.5">
+              {TOC.map(item => (
+                <a
+                  key={item.id}
+                  href={`#${item.id}`}
+                  className={`block text-sm py-1.5 pl-3 -ml-px border-l border-transparent transition-colors hover:text-[#EDEDED] hover:border-[#5E6AD2]/50 text-[#6B6B6B] ${item.indent ? 'pl-6 text-xs' : ''}`}
+                >
+                  {item.label}
+                </a>
+              ))}
+            </div>
+            <div className="mt-6 p-3 rounded-lg bg-[#5E6AD2]/5 border border-[#5E6AD2]/10">
+              <p className="text-xs text-[#9B9B9B] mb-1.5">¿Necesitás ayuda?</p>
+              <Link href="https://github.com/mescobar996/Healify/issues" target="_blank" rel="noopener noreferrer" className="text-xs text-[#5E6AD2] hover:text-[#6B79E0] font-medium transition-colors">
+                Abrir un issue →
+              </Link>
+            </div>
           </div>
         </aside>
 
@@ -146,24 +156,38 @@ export default function DocsPage() {
         <main className="flex-1 min-w-0 max-w-3xl">
 
           {/* Hero */}
-          <div className="mb-10">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-[#1A1A1A] text-[#5E6AD2] border border-white/[0.12]">
-                SDK v1.0
-              </span>
-              <span className="text-xs text-[#6B6B6B]">Última actualización: Feb 2026</span>
+          <div className="mb-10 relative">
+            <div className="absolute -top-4 -left-6 w-32 h-32 bg-[#5E6AD2]/5 blur-3xl rounded-full pointer-events-none" />
+            <div className="relative">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-[#5E6AD2]/10 text-[#5E6AD2] border border-[#5E6AD2]/20">
+                  SDK v1.0
+                </span>
+                <span className="text-xs text-[#6B6B6B]">Última actualización: Mar 2026</span>
+              </div>
+              <h1 className="text-3xl font-bold text-[#EDEDED] mb-3 tracking-tight">
+                Documentación del SDK
+              </h1>
+              <p className="text-[#9B9B9B] leading-relaxed max-w-xl">
+                Integrá Healify en tu pipeline de CI/CD en menos de 5 minutos.
+                Cuando un test falla, Healify detecta el selector roto, genera una corrección
+                y crea un Pull Request automáticamente.
+              </p>
+              <div className="flex flex-wrap gap-3 mt-4">
+                <span className="inline-flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full">
+                  <CheckCircle className="w-3 h-3" /> Playwright
+                </span>
+                <span className="inline-flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full">
+                  <CheckCircle className="w-3 h-3" /> Cypress
+                </span>
+                <span className="inline-flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full">
+                  <CheckCircle className="w-3 h-3" /> Jest / Vitest
+                </span>
+                <span className="inline-flex items-center gap-1.5 text-xs text-[#9B9B9B] bg-white/[0.05] px-2.5 py-1 rounded-full">
+                  <Code2 className="w-3 h-3" /> Selenium
+                </span>
+              </div>
             </div>
-            <h1 className="text-3xl font-bold text-[#EDEDED] mb-3 tracking-tight">
-              Documentación del SDK
-            </h1>
-            <p className="text-[#9B9B9B] leading-relaxed max-w-xl">
-              Integrá Healify en tu pipeline de CI/CD en menos de 5 minutos.
-              Cuando un test falla, Healify detecta el selector roto, genera una corrección
-              y crea un Pull Request automáticamente.
-            </p>
-            <p className="text-xs text-[#6B6B6B] mt-3">
-              Definiciones canónicas de métricas/KPI: <a href="/docs/METRICAS_Y_KPIS_2026.md" className="text-[#5E6AD2] hover:text-[#6B79E0]">METRICAS_Y_KPIS_2026.md</a>
-            </p>
           </div>
 
           {/* ── QUICKSTART ── */}
@@ -621,24 +645,27 @@ REDIS_URL=rediss://...`} />
           </div>
 
           {/* CTA bottom */}
-          <div className="mt-12 p-6 rounded-2xl bg-[#111111] border border-white/[0.07] text-center">
-            <p className="text-lg font-semibold text-[#EDEDED] mb-2">¿Listo para empezar?</p>
-            <p className="text-sm text-[#9B9B9B] mb-4">Conectá tu primer repositorio en menos de 5 minutos.</p>
-            <div className="flex items-center justify-center gap-3">
-              <Link
-                href="/dashboard/projects"
-                className="px-4 py-2 rounded-lg bg-[#5E6AD2] text-white text-sm font-semibold hover:bg-[#6B79E0] transition-colors"
-              >
-                Crear proyecto
-              </Link>
-              <Link
-                href="https://github.com/mescobar996/Healify"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-4 py-2 rounded-lg bg-[#151515] border border-white/[0.07] text-[#9B9B9B] text-sm font-medium hover:bg-[#1A1A1A] hover:text-[#EDEDED] transition-colors"
-              >
-                Ver en GitHub
-              </Link>
+          <div className="mt-12 p-6 rounded-2xl bg-[#111111] border border-[#5E6AD2]/20 text-center relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-[#5E6AD2]/5 via-transparent to-transparent pointer-events-none" />
+            <div className="relative">
+              <p className="text-lg font-semibold text-[#EDEDED] mb-2">¿Listo para empezar?</p>
+              <p className="text-sm text-[#9B9B9B] mb-4">Conectá tu primer repositorio en menos de 5 minutos.</p>
+              <div className="flex items-center justify-center gap-3">
+                <Link
+                  href="/dashboard/projects"
+                  className="px-5 py-2.5 rounded-lg bg-[#5E6AD2] text-white text-sm font-semibold hover:bg-[#6B79E0] transition-colors shadow-lg shadow-[#5E6AD2]/20"
+                >
+                  Crear proyecto →
+                </Link>
+                <Link
+                  href="https://github.com/mescobar996/Healify"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-5 py-2.5 rounded-lg bg-[#151515] border border-white/[0.07] text-[#9B9B9B] text-sm font-medium hover:bg-[#1A1A1A] hover:text-[#EDEDED] transition-colors"
+                >
+                  Ver en GitHub
+                </Link>
+              </div>
             </div>
           </div>
 

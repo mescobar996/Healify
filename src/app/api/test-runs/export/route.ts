@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
   rows.push([
     'Run ID', 'Branch', 'Commit SHA', 'Status', 'Triggered By',
     'Total Tests', 'Passed', 'Failed', 'Healed',
-    'Started At', 'Duration (s)',
+    'Started At', 'Finished At', 'Duration (s)',
     'Healing Event ID', 'Test Name', 'Failed Selector', 'New Selector',
     'Confidence (%)', 'Healing Status', 'Applied At',
   ].map(h => `"${h}"`).join(','))
@@ -92,7 +92,9 @@ export async function GET(request: NextRequest) {
         run.id, run.branch || '', run.commitSha || '',
         run.status, run.triggeredBy || '',
         run.totalTests, run.passedTests, run.failedTests, run.healedTests,
-        run.startedAt ? new Date(run.startedAt).toISOString() : '', duration,
+        run.startedAt ? new Date(run.startedAt).toISOString() : '',
+        run.finishedAt ? new Date(run.finishedAt).toISOString() : '',
+        duration,
         '', '', '', '', '', '', '',
       ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
     } else {
@@ -101,7 +103,9 @@ export async function GET(request: NextRequest) {
           run.id, run.branch || '', run.commitSha || '',
           run.status, run.triggeredBy || '',
           run.totalTests, run.passedTests, run.failedTests, run.healedTests,
-          run.startedAt ? new Date(run.startedAt).toISOString() : '', duration,
+          run.startedAt ? new Date(run.startedAt).toISOString() : '',
+          run.finishedAt ? new Date(run.finishedAt).toISOString() : '',
+          duration,
           he.id, he.testName, he.failedSelector, he.newSelector || '',
           he.confidence !== null ? Math.round((he.confidence as number) * 100) : '',
           he.status,
