@@ -27,7 +27,7 @@ const ROADMAP = [
   {
     id:"infra", label:"Infraestructura", emoji:"🏗", accent:C.red, accentLo:C.redLo,
     tasks:[
-      { id:"i1", label:"Fix build Vercel (finishedAt)",         pct:90,  status:"ready",  hasPrompt:false, note:"Fix listo en contenedor. Falta push a main desde tu máquina." },
+      { id:"i1", label:"Fix build Vercel (finishedAt)",         pct:100, status:"done",   hasPrompt:false, note:"Columna finishedAt agregada al CSV export. Pusheado y deployado en Vercel." },
       { id:"i2", label:"157/157 tests · 0 errores TypeScript",  pct:100, status:"done",   hasPrompt:false, note:"Verificado en local. Verde." },
       { id:"i3", label:"Redis cache analytics (5 min TTL)",     pct:100, status:"done",   hasPrompt:false, note:"Cache en /api/analytics y /api/analytics/files." },
       { id:"i4", label:"Structured logger JSON",                pct:100, status:"done",   hasPrompt:false, note:"Silent en tests, JSON estructurado en producción." },
@@ -69,10 +69,10 @@ const ROADMAP = [
       { id:"d3", label:"Flaky badge 🔥 en tests",              pct:100, status:"done",   hasPrompt:false, note:"Detecta alternancia PASS/FAIL en últimos 5 runs." },
       { id:"d4", label:"Selector History Timeline",             pct:100, status:"done",   hasPrompt:false, note:"/dashboard/selectors con trend badge, diff visual y filtros." },
       { id:"d5", label:"Stats por archivo de test",             pct:100, status:"done",   hasPrompt:false, note:"GET /api/analytics/files — top 5 archivos más inestables." },
-      { id:"d6", label:"Dashboard con TABS (3 vistas)",         pct:0,   status:"pending",hasPrompt:true,  note:"Overview (solo KPIs) / Análisis (gráficos profundos) / Funciones (acciones rápidas)." },
-      { id:"d7", label:"Empty state inteligente",               pct:0,   status:"pending",hasPrompt:true,  note:"Guía visual 3 pasos cuando no hay proyectos ni datos." },
-      { id:"d8", label:"Quick search global en header",         pct:0,   status:"pending",hasPrompt:true,  note:"Buscar tests, proyectos y healing events en tiempo real." },
-      { id:"d9", label:"Estado de salud por proyecto en sidebar",pct:0,  status:"pending",hasPrompt:true,  note:"Punto verde/amarillo/rojo al lado de cada proyecto en la nav." },
+      { id:"d6", label:"Dashboard con TABS (3 vistas)",         pct:100, status:"done",   hasPrompt:false, note:"3 tabs con iconos: Overview (BarChart3) / Análisis (TrendingUp) / Funciones (Wrench)." },
+      { id:"d7", label:"Empty state inteligente",               pct:100, status:"done",   hasPrompt:false, note:"Dual variant (inline/full). Full muestra guía 3 pasos: Crear proyecto → Instalar SDK → Ver curaciones." },
+      { id:"d8", label:"Quick search global en header",         pct:100, status:"done",   hasPrompt:false, note:"Ctrl+K con accesos rápidos, búsquedas recientes (localStorage), badges de status, hints de teclado." },
+      { id:"d9", label:"Estado de salud por proyecto en sidebar",pct:100, status:"done",   hasPrompt:false, note:"SidebarProjectHealth.tsx — top 5 proyectos con dot verde/amarillo/rojo. Ya existía funcional." },
     ],
   },
   {
@@ -80,19 +80,19 @@ const ROADMAP = [
     tasks:[
       { id:"u1", label:"Prompt v1 — Linear style entregado",   pct:100, status:"done",   hasPrompt:false, note:"Design tokens completos + instrucciones por componente." },
       { id:"u2", label:"Prompt v2 — AMOLED dark entregado",    pct:100, status:"done",   hasPrompt:false, note:"Fix glassmorphism, fuentes Orbitron/JetBrains Mono, fondo azul." },
-      { id:"u3", label:"Ejecutar Prompt v2 en Claude Code",    pct:0,   status:"ready",  hasPrompt:true,  note:"Abrir Claude Code → pegar PROMPT_AMOLED_REDESIGN.md → ejecutar." },
-      { id:"u4", label:"Dashboard tabs + widgets layout",      pct:0,   status:"pending",hasPrompt:true,  note:"Rediseño estructural del layout del dashboard (depende de d6)." },
-      { id:"u5", label:"Docs page rediseño",                   pct:0,   status:"pending",hasPrompt:true,  note:"Excluida del sprint anterior por pedido. Sprint próximo." },
+      { id:"u3", label:"Ejecutar Prompt v2 en Claude Code",    pct:100, status:"done",   hasPrompt:false, note:"AMOLED aplicado: #000000 backgrounds, glass-elite-hover, amoled-card/amoled-glow utilities, backdrop-blur headers." },
+      { id:"u4", label:"Dashboard tabs + widgets layout",      pct:100, status:"done",   hasPrompt:false, note:"Funciones tab rediseñado: progress bar activación, quick actions grid (3 cards), SDK Quick Start con code blocks." },
+      { id:"u5", label:"Docs page rediseño",                   pct:100, status:"done",   hasPrompt:false, note:"Hero con badges Playwright/Cypress/Jest/Selenium, TOC sidebar con borde accent + CTA ayuda, glow decorativo." },
     ],
   },
   {
     id:"demo", label:"Demo & Onboarding", emoji:"🚀", accent:C.amber, accentLo:C.amberLo,
     tasks:[
       { id:"o1", label:"Demo en vivo desde OnboardingBanner",  pct:100, status:"done",   hasPrompt:false, note:"Botón 'Ver demo en vivo' → POST /api/demo/run → resultado real." },
-      { id:"o2", label:"Demo pública animada en landing",       pct:0,   status:"pending",hasPrompt:true,  note:"Loop 15s sin registro: test falla → IA analiza → PR abierto." },
-      { id:"o3", label:"Sandbox con proyecto pre-cargado",      pct:0,   status:"pending",hasPrompt:true,  note:"Cuenta nueva recibe proyecto Demo con 5 tests + 3 healings." },
-      { id:"o4", label:"Onboarding 3 pasos con barra de progreso",pct:0, status:"pending",hasPrompt:true,  note:"Paso 1: Conectar repo → Paso 2: Instalar SDK → Paso 3: Primer healing." },
-      { id:"o5", label:"Video demo 90s embebido",               pct:0,   status:"manual", hasPrompt:false, note:"Grabar screencast con Loom o ScreenStudio. Embeber en / y /docs." },
+      { id:"o2", label:"Demo pública animada en landing",       pct:100, status:"done",   hasPrompt:false, note:"HealingDemo loop 7s con 3 escenarios ya público en landing. Callout 'Demo pública — sin registro requerido' agregado." },
+      { id:"o3", label:"Sandbox con proyecto pre-cargado",      pct:100, status:"done",   hasPrompt:false, note:"POST /api/demo/sandbox crea proyecto con 5 test runs (HEALED/PASSED/FAILED) + 5 healing events en 3 días." },
+      { id:"o4", label:"Onboarding 3 pasos con barra de progreso",pct:100, status:"done", hasPrompt:false, note:"Progress bar con % + 3 step indicators (verde/púrpura) integrado en pestaña Funciones del dashboard." },
+      { id:"o5", label:"Video demo 90s embebido",               pct:50,  status:"ready",  hasPrompt:false, note:"VideoDemoSection creado con placeholder 16:9 + botón play + stats bar. Falta grabar video real con Loom/ScreenStudio." },
     ],
   },
 ];
@@ -105,16 +105,16 @@ const STATUS_CFG = {
 };
 
 const URGENT = [
-  { icon:"🔴", tag:"URGENTE",    tagColor:C.red,    label:"Push fix finishedAt a GitHub",
-    detail:"cd ~/OneDrive/Documentos/100\\ -\\ Proyectos/Healify\ngit add src/app/api/test-runs/export/route.ts\ngit commit -m \"fix: finishedAt TS error en export route\"\ngit push origin main" },
-  { icon:"🔑", tag:"URGENTE",    tagColor:C.red,    label:"ANTHROPIC_API_KEY en Vercel",
+  { icon:"�", tag:"URGENTE",    tagColor:C.red,    label:"ANTHROPIC_API_KEY en Vercel",
     detail:"1. Ir a console.anthropic.com → API Keys\n2. Crear nueva key → copiar sk-ant-api03-...\n3. Vercel Dashboard → Settings → Environment Variables\n4. Agregar ANTHROPIC_API_KEY = sk-ant-api03-..." },
-  { icon:"🎨", tag:"ESTA SEMANA",tagColor:C.accent, label:"Ejecutar Prompt AMOLED en Claude Code",
-    detail:"1. Abrir Claude Code en la terminal\n2. Pegar el contenido completo de PROMPT_AMOLED_REDESIGN.md\n3. Dejar que ejecute los cambios en globals.css y dashboard pages" },
   { icon:"💳", tag:"ESTA SEMANA",tagColor:C.violet, label:"Activar MercadoPago en producción",
     detail:"1. mercadopago.com.ar/developers → Tus integraciones\n2. Crear plan recurrente Starter ($4900 ARS), Pro ($9900), Enterprise ($19900)\n3. Vercel → MP_ACCESS_TOKEN + MP_STARTER_PLAN_ID + MP_PRO_PLAN_ID + MP_ENTERPRISE_PLAN_ID" },
   { icon:"🌍", tag:"ESTA SEMANA",tagColor:C.violet, label:"Activar Lemon Squeezy en producción",
     detail:"1. app.lemonsqueezy.com → Products → crear variantes\n2. Starter ($29 USD), Pro ($59), Enterprise ($99)\n3. Vercel → LEMONSQUEEZY_API_KEY + LEMONSQUEEZY_STORE_ID + LS_STARTER/PRO/ENTERPRISE_VARIANT_ID" },
+  { icon:"🎬", tag:"ESTA SEMANA",tagColor:C.amber,  label:"Grabar video demo 90s",
+    detail:"1. Abrir Loom o ScreenStudio\n2. Grabar flujo: test falla → Healify detecta → PR abierto\n3. Pegar URL en VideoDemoSection de src/app/page.tsx (reemplazar placeholder)" },
+  { icon:"📊", tag:"PRÓXIMO",    tagColor:C.accent, label:"Límites por plan + Weekly report + Badge",
+    detail:"p6: Conectar rate limiting a tabla Subscription\np7: Cron job lunes 8am con resumen semanal\np8: SVG dinámico en /api/badge/[projectId]" },
 ];
 
 /* ── helpers ── */
@@ -467,7 +467,7 @@ export default function HealifyTracker() {
           alignItems:"center", flexWrap:"wrap", gap:8,
         }}>
           <span style={{ fontSize:11, color:C.text3 }}>
-            Healify v0.2.0 · 157/157 tests · 0 errores TypeScript
+            Healify v0.3.0 · 157/157 tests · 0 errores TypeScript · Deploy Vercel ✓
           </span>
           <span style={{ fontSize:11, color:C.text3 }}>Marzo 2026</span>
         </div>
