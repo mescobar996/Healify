@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -47,8 +47,14 @@ const navItems = [
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname   = usePathname();
   const router     = useRouter();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.replace("/auth/signin");
+    }
+  }, [status, router]);
 
   const handleSignOut = async () => {
     await signOut({ callbackUrl: "/" });
@@ -58,6 +64,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const userInitials = session?.user?.name
     ? session.user.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
     : "HF";
+
+  if (status === "loading" || status === "unauthenticated") {
+    return (
+      <div className="min-h-screen bg-[#000000] text-[#EDEDED] flex items-center justify-center">
+        <span className="text-sm text-[var(--text-secondary)]">Cargando dashboard...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#000000] text-[#EDEDED]">
