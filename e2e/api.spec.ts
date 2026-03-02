@@ -44,7 +44,7 @@ test.describe('API — Webhook GitHub', () => {
 
   test('GET /api/webhook/github → método no permitido', async ({ request }) => {
     const res = await request.get(`${BASE}/api/webhook/github`)
-    expect([405, 404]).toContain(res.status())
+    expect(res.status()).toBe(405)
   })
 })
 
@@ -116,7 +116,7 @@ test.describe('API — v1/report security', () => {
       },
       headers: { 'x-api-key': 'hf_live_fakeinvalidkey12345' },
     })
-    expect([400, 401]).toContain(res.status())
+    expect(res.status()).toBe(401)
   })
 })
 
@@ -124,8 +124,7 @@ test.describe('API — health y metadatos', () => {
 
   test('GET /api → responde con info de la API', async ({ request }) => {
     const res = await request.get(`${BASE}/api`)
-    // Puede ser 200 con info o 404 si no existe la ruta raíz
-    expect([200, 404]).toContain(res.status())
+    expect(res.status()).toBe(404)
   })
 
   test('rutas inexistentes → 404', async ({ request }) => {

@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { getSessionUser } from '@/lib/auth/session'
 
 // GET /api/debug/auth
 // Solo disponible en desarrollo — en producción devuelve 404
@@ -10,12 +9,12 @@ export async function GET() {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
-  const session = await getServerSession(authOptions)
-  if (!session?.user) {
+  const user = await getSessionUser()
+  if (!user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  if (session.user.role !== 'admin') {
+  if (user.role !== 'admin') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 

@@ -38,8 +38,8 @@ COPY package-lock.json* ./
 COPY tsconfig.json ./
 COPY prisma ./prisma/
 
-# Instalar TODAS las dependencias (incluyendo devDependencies para esbuild)
-RUN npm install
+# Instalar dependencias de forma determinística (incluye dev para build)
+RUN npm ci --include=dev
 
 # Instalar SOLO Chromium
 RUN npx playwright install chromium

@@ -1,29 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { addTestJob } from '@/lib/queue'
+import { extractApiKey, validateApiKey } from '@/lib/api-key-service'
+import { sanitizeCommitSha, sanitizeGitBranch } from '@/lib/repo-validation'
 
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json()
-        const { apiKey, testName, testFile, failedSelector, errorMessage, domSnapshot, branch, commitSha } = body
+        const { apiKey: apiKeyFromBody, testName, testFile, failedSelector, errorMessage, domSnapshot, branch, commitSha } = body
 
-        // 1. Validar Project existance & API Key
-        const project = await db.project.findUnique({
-            where: { apiKey },
-            include: { user: true }
-        })
+        const apiKey = extractApiKey(request) || (typeof apiKeyFromBody === 'string' ? apiKeyFromBody : null)
+        const validation = await validateApiKey(apiKey)
 
-        if (!project) {
+        if (!validation.valid || !validation.projectId) {
             return NextResponse.json({ error: 'Invalid API Key' }, { status: 401 })
         }
+
+        if (typeof testName !== 'string' || testName.trim().length === 0) {
+            return NextResponse.json({ error: 'Invalid testName' }, { status: 400 })
+        }
+
+        const safeBranch = branch ? sanitizeGitBranch(branch) : null
+        if (branch && !safeBranch) {
+            return NextResponse.json({ error: 'Invalid branch format' }, { status: 400 })
+        }
+
+        const safeCommitSha = commitSha ? sanitizeCommitSha(commitSha) : null
+        if (commitSha && !safeCommitSha) {
+            return NextResponse.json({ error: 'Invalid commitSha format' }, { status: 400 })
+        }
+
+        // 1. Project validado por API key
+        const projectId = validation.projectId
 
         // 2. Crear TestRun
         const testRun = await db.testRun.create({
             data: {
-                projectId: project.id,
+                projectId,
                 status: 'PENDING',
-                branch,
-                commitSha,
+                branch: safeBranch,
+                commitSha: safeCommitSha,
                 triggeredBy: 'cli',
                 totalTests: 1,
                 failedTests: 1,
@@ -45,7 +61,7 @@ export async function POST(request: NextRequest) {
         })
 
         // 4. Encolar Job en BullMQ (puede retornar null si Redis no está disponible)
-        const job = await addTestJob(project.id, commitSha)
+        const job = await addTestJob(projectId, safeCommitSha || undefined)
 
         // 5. Vincular JobId solo si el job fue creado exitosamente
         if (job?.id) {
@@ -55,10 +71,28 @@ export async function POST(request: NextRequest) {
             })
         }
 
+        if (!job?.id) {
+            await db.testRun.update({
+                where: { id: testRun.id },
+                data: {
+                    status: 'FAILED',
+                    error: 'Queue unavailable: REDIS_URL not configured',
+                    finishedAt: new Date(),
+                }
+            })
+
+            return NextResponse.json({
+                success: false,
+                testRunId: testRun.id,
+                jobId: null,
+                error: 'Queue unavailable'
+            }, { status: 503 })
+        }
+
         return NextResponse.json({
             success: true,
             testRunId: testRun.id,
-            jobId: job?.id ?? null,
+            jobId: job.id,
             message: 'Healing job queued successfully'
         })
 

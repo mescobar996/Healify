@@ -5,6 +5,7 @@ import { gitAnalyzer } from '@/lib/git-analyzer'
 import { createHmac, timingSafeEqual } from 'crypto'
 import { addTestJob } from '@/lib/queue'
 import { checkTestRunLimit } from '@/lib/rate-limit'
+import { extractBranchFromGitRef, sanitizeCommitSha, sanitizeGitHubRepositoryUrl } from '@/lib/repo-validation'
 
 // ✅ HEAL-001 FIX: Verificar firma HMAC de GitHub para evitar inyección de eventos falsos
 function verifyGitHubSignature(body: string, signature: string | null): boolean {
@@ -49,11 +50,15 @@ export async function POST(request: Request) {
         }
 
         if (event === 'push') {
-            const repository = payload.repository.html_url
-            const branch = payload.ref.replace('refs/heads/', '')
-            const commitSha = payload.after // SHA del commit
+            const repository = sanitizeGitHubRepositoryUrl(payload?.repository?.html_url)
+            const branch = extractBranchFromGitRef(payload?.ref)
+            const commitSha = sanitizeCommitSha(payload?.after)
             const commitMessage = payload.head_commit?.message || 'Push event'
             const commitAuthor = payload.head_commit?.author?.username || 'unknown'
+
+            if (!repository || !branch) {
+                return NextResponse.json({ error: 'Invalid repository or branch in webhook payload' }, { status: 400 })
+            }
 
             // Find project associated with this repository
             const project = await db.project.findFirst({
@@ -107,7 +112,7 @@ export async function POST(request: Request) {
                     projectId: project.id,
                     status: TestStatus.PENDING,
                     branch,
-                    commitSha,
+                    commitSha: commitSha || undefined,
                     commitMessage,
                     triggeredBy: 'github_webhook',
                     totalTests: 0,
@@ -143,16 +148,20 @@ export async function POST(request: Request) {
                     queueStatus: 'queued'
                 })
             } else {
-                // Fallback: Redis no disponible, marcar como pendiente manual
-                console.warn(`[Webhook] Redis not available. TestRun ${testRun.id} created but not enqueued.`)
+                await db.testRun.update({
+                    where: { id: testRun.id },
+                    data: {
+                        status: TestStatus.FAILED,
+                        error: 'Queue unavailable: REDIS_URL not configured',
+                        finishedAt: new Date(),
+                    },
+                })
 
                 return NextResponse.json({
-                    message: 'Webhook received, test run created (manual trigger required)',
+                    error: 'Queue unavailable',
                     testRunId: testRun.id,
-                    impactSummary: impact.summary,
                     queueStatus: 'unavailable',
-                    hint: 'Configure REDIS_URL to enable automatic test execution'
-                })
+                }, { status: 503 })
             }
         }
 

@@ -1,6 +1,12 @@
 import { db } from '@/lib/db'
 import { redis } from '@/lib/redis'
 
+interface ChartAggregateRow {
+  day: Date
+  testsRotos: number | bigint
+  curados: number | bigint
+}
+
 // ============================================
 // TIPOS DE RESPUESTA PARA EL FRONTEND
 // ============================================
@@ -293,40 +299,48 @@ export class DashboardService {
    * Datos para el gráfico de Recharts (últimos 7 días)
    */
   private async getChartData(userId: string): Promise<ChartDataPoint[]> {
-    const chartData: ChartDataPoint[] = []
     const now = new Date()
     const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
+    const startDate = new Date(now)
+    startDate.setDate(startDate.getDate() - 6)
+    startDate.setHours(0, 0, 0, 0)
+
+    const rows = await db.$queryRaw<ChartAggregateRow[]>`
+      SELECT
+        date_trunc('day', he."createdAt") AS day,
+        SUM(CASE WHEN he.status IN ('NEEDS_REVIEW', 'BUG_DETECTED') THEN 1 ELSE 0 END)::int AS "testsRotos",
+        SUM(CASE WHEN he.status IN ('HEALED_AUTO', 'HEALED_MANUAL') THEN 1 ELSE 0 END)::int AS "curados"
+      FROM "HealingEvent" he
+      JOIN "TestRun" tr ON tr.id = he."testRunId"
+      JOIN "Project" p ON p.id = tr."projectId"
+      WHERE p."userId" = ${userId}
+        AND he."createdAt" >= ${startDate}
+      GROUP BY day
+      ORDER BY day ASC
+    `
+
+    const aggregatesByDay = new Map<string, { testsRotos: number; curados: number }>()
+    for (const row of rows) {
+      const dayKey = new Date(row.day).toISOString().slice(0, 10)
+      aggregatesByDay.set(dayKey, {
+        testsRotos: Number(row.testsRotos ?? 0),
+        curados: Number(row.curados ?? 0),
+      })
+    }
+
+    const chartData: ChartDataPoint[] = []
 
     for (let i = 6; i >= 0; i--) {
       const date = new Date(now)
       date.setDate(date.getDate() - i)
       date.setHours(0, 0, 0, 0)
-      
-      const nextDate = new Date(date)
-      nextDate.setDate(nextDate.getDate() + 1)
-
-      // Tests rotos (healing events con status NEEDS_REVIEW o BUG_DETECTED)
-      const testsRotos = await db.healingEvent.count({
-        where: {
-          testRun: { project: { userId } },
-          createdAt: { gte: date, lt: nextDate },
-          status: { in: ['NEEDS_REVIEW', 'BUG_DETECTED'] }
-        }
-      })
-
-      // Curados (HEALED_AUTO o HEALED_MANUAL)
-      const curados = await db.healingEvent.count({
-        where: {
-          testRun: { project: { userId } },
-          createdAt: { gte: date, lt: nextDate },
-          status: { in: ['HEALED_AUTO', 'HEALED_MANUAL'] }
-        }
-      })
+      const dayKey = date.toISOString().slice(0, 10)
+      const aggregate = aggregatesByDay.get(dayKey)
 
       chartData.push({
         date: days[date.getDay()],
-        testsRotos,
-        curados,
+        testsRotos: aggregate?.testsRotos ?? 0,
+        curados: aggregate?.curados ?? 0,
       })
     }
 

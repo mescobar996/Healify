@@ -4,6 +4,14 @@ import GoogleProvider from 'next-auth/providers/google'
 import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import { db } from '@/lib/db'
 
+type OAuthProfileProjection = {
+  avatar_url?: string
+  picture?: string
+  name?: string
+  login?: string
+  email?: string | null
+}
+
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(db),
 
@@ -40,19 +48,20 @@ export const authOptions: NextAuthOptions = {
   },
 
   callbacks: {
-    async jwt({ token, user, profile }: any) {
+    async jwt({ token, user, profile }) {
+      const typedProfile = (profile ?? {}) as OAuthProfileProjection
       if (user) {
         token.id = user.id
-        token.role = (user as any).role || 'user'
+        token.role = ('role' in user ? user.role : undefined) || 'user'
       }
       if (profile) {
-        token.picture = (profile as any).avatar_url || (profile as any).picture || token.picture
-        token.name = (profile as any).name || (profile as any).login || token.name
-        token.email = (profile as any).email || token.email
+        token.picture = typedProfile.avatar_url || typedProfile.picture || token.picture
+        token.name = typedProfile.name || typedProfile.login || token.name
+        token.email = typedProfile.email || token.email
       }
       return token
     },
-    async session({ session, token }: any) {
+    async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string
         session.user.role = token.role as string

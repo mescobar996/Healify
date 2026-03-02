@@ -1,19 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { checkProjectLimit, limitExceededResponse } from '@/lib/rate-limit'
+import { getSessionUser } from '@/lib/auth/session'
 
 // GET /api/projects - Get all projects
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const user = await getSessionUser()
+    if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const projects = await db.project.findMany({
-      where: { userId: session.user.id },
+      where: { userId: user.id },
       include: {
         testRuns: {
           orderBy: { startedAt: 'desc' },
@@ -61,8 +60,8 @@ export async function GET() {
 // POST /api/projects - Create a new project
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const user = await getSessionUser()
+    if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -77,7 +76,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Bloque 9: Rate limiting por plan ──────────────────────────────
-    const limitCheck = await checkProjectLimit(session.user.id)
+    const limitCheck = await checkProjectLimit(user.id)
     if (!limitCheck.allowed) {
       return limitExceededResponse('projects', limitCheck)
     }
@@ -87,7 +86,7 @@ export async function POST(request: NextRequest) {
         name: name.trim(),
         description: description?.trim() || null,
         repository: repository?.trim() || null,
-        userId: session.user.id,
+        userId: user.id,
       },
     })
 

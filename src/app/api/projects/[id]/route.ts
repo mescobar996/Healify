@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { auditLogService } from '@/lib/audit-log-service';
+import { getSessionUser } from '@/lib/auth/session';
 
 // GET /api/projects/:id - Get project details with test runs
 export async function GET(
@@ -10,15 +9,15 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const user = await getSessionUser()
+    if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const { id } = await params;
 
     const project = await db.project.findUnique({
-      where: { id, userId: session.user.id },
+      where: { id, userId: user.id },
       include: {
         testRuns: {
           take: 20,
@@ -57,15 +56,15 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const user = await getSessionUser()
+    if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const { id } = await params;
 
     const project = await db.project.findUnique({
-      where: { id, userId: session.user.id },
+      where: { id, userId: user.id },
     });
 
     if (!project) {
@@ -73,10 +72,10 @@ export async function DELETE(
     }
 
     await db.project.delete({
-      where: { id, userId: session.user.id },
+      where: { id, userId: user.id },
     });
 
-    await auditLogService.log(session.user.id, 'PROJECT_DELETE', id, {
+    await auditLogService.log(user.id, 'PROJECT_DELETE', id, {
       name: project.name
     })
 
@@ -96,15 +95,15 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const user = await getSessionUser()
+    if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const { id } = await params
 
     const project = await db.project.findUnique({
-      where: { id, userId: session.user.id },
+      where: { id, userId: user.id },
     })
 
     if (!project) {
@@ -120,7 +119,7 @@ export async function PATCH(
     }
 
     const updated = await db.project.update({
-      where: { id, userId: session.user.id },
+      where: { id, userId: user.id },
       data: {
         ...(name        && { name: String(name).trim() }),
         ...(description !== undefined && { description: description ? String(description).trim() : null }),
@@ -129,7 +128,7 @@ export async function PATCH(
       },
     })
 
-    await auditLogService.log(session.user.id, 'PROJECT_UPDATE', id, {
+    await auditLogService.log(user.id, 'PROJECT_UPDATE', id, {
       name: updated.name,
       fields: Object.keys(body).filter(k => ['name','description','repository','framework'].includes(k)),
     })

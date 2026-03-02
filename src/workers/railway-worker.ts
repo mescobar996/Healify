@@ -17,7 +17,7 @@
 
 import { createServer } from 'http'
 import { Worker, Job } from 'bullmq'
-import { execSync, exec } from 'child_process'
+import { execSync, exec, execFileSync } from 'child_process'
 import { promisify } from 'util'
 import fs from 'fs/promises'
 import path from 'path'
@@ -27,6 +27,7 @@ import { TestStatus, HealingStatus, SelectorType } from '../lib/enums'
 import { TEST_QUEUE_NAME, TestJobData } from '../lib/queue'
 import { analyzeBrokenSelector } from '../lib/ai/healing-service'
 import { createPullRequest } from '../lib/github/repos'
+import { sanitizeCommitSha, sanitizeGitBranch, sanitizeGitHubRepositoryUrl } from '../lib/repo-validation'
 
 const execAsync = promisify(exec)
 
@@ -78,36 +79,50 @@ async function cloneRepository(
     commitSha?: string
 ): Promise<string> {
     const workDir = path.join(os.tmpdir(), `healify-${jobId}-${Date.now()}`)
+    const safeRepositoryUrl = sanitizeGitHubRepositoryUrl(repositoryUrl)
+    const safeBranch = sanitizeGitBranch(branch) || 'main'
+    const safeCommitSha = commitSha ? sanitizeCommitSha(commitSha) : null
+
+    if (!safeRepositoryUrl) {
+        throw new Error('Invalid repository URL. Only GitHub HTTPS URLs are allowed')
+    }
     
     log(jobId, `Creating work directory: ${workDir}`)
     await fs.mkdir(workDir, { recursive: true })
     
     const githubToken = process.env.GITHUB_TOKEN || process.env.GH_PAT || ''
-    let cloneUrl = repositoryUrl
+    let cloneUrl = safeRepositoryUrl
 
-    if (githubToken && repositoryUrl.startsWith('https://github.com/')) {
-        cloneUrl = repositoryUrl.replace('https://github.com/', `https://x-access-token:${githubToken}@github.com/`)
+    if (githubToken && safeRepositoryUrl.startsWith('https://github.com/')) {
+        const parsed = new URL(safeRepositoryUrl)
+        parsed.username = 'x-access-token'
+        parsed.password = githubToken
+        cloneUrl = parsed.toString()
         log(jobId, 'Using authenticated GitHub clone URL (token provided)')
     }
     
-    log(jobId, `Cloning repository: ${repositoryUrl} (branch: ${branch})`)
+    log(jobId, `Cloning repository: ${safeRepositoryUrl} (branch: ${safeBranch})`)
     
     try {
-        execSync(`git clone --depth 1 --branch ${branch} ${cloneUrl} .`, {
+        execFileSync('git', ['clone', '--depth', '1', '--branch', safeBranch, cloneUrl, '.'], {
             cwd: workDir,
             stdio: 'pipe',
             timeout: 60000
         })
         
-        if (commitSha) {
-            log(jobId, `Checking out commit: ${commitSha}`)
+        if (safeCommitSha) {
+            log(jobId, `Checking out commit: ${safeCommitSha}`)
             try {
-                execSync(`git fetch --depth 1 origin ${commitSha} && git checkout ${commitSha}`, {
+                execFileSync('git', ['fetch', '--depth', '1', 'origin', safeCommitSha], {
+                    cwd: workDir,
+                    stdio: 'pipe'
+                })
+                execFileSync('git', ['checkout', safeCommitSha], {
                     cwd: workDir,
                     stdio: 'pipe'
                 })
             } catch {
-                log(jobId, `Could not checkout specific commit, using HEAD of ${branch}`)
+                log(jobId, `Could not checkout specific commit, using HEAD of ${safeBranch}`)
             }
         }
         
