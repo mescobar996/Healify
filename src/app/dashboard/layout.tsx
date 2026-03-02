@@ -193,7 +193,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             {/* Left */}
             <div className="flex items-center gap-3 min-w-0 flex-1">
-              <button className="lg:hidden p-1.5 rounded-md text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors"
+              <button
+                aria-label="Abrir menú"
+                className="lg:hidden h-10 w-10 inline-flex items-center justify-center rounded-md text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors"
                 onClick={() => setSidebarOpen(true)}>
                 <Menu className="w-5 h-5" />
               </button>
@@ -217,7 +219,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               {/* User avatar */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-2 p-1 rounded-md hover:bg-[var(--bg-hover)] transition-colors">
+                  <button
+                    aria-label="Abrir menú de usuario"
+                    className="h-10 min-w-10 inline-flex items-center justify-center gap-2 p-1.5 rounded-md hover:bg-[var(--bg-hover)] transition-colors"
+                  >
                     <Avatar className="w-7 h-7">
                       <AvatarImage src={session?.user?.image || ""} />
                       <AvatarFallback className="text-[10px] font-medium"

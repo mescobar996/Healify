@@ -24,15 +24,24 @@ test.describe('Mobile — responsive layout', () => {
     await page.goto('/dashboard')
     await page.waitForLoadState('networkidle')
 
-    // Buscar botón de menú mobile
-    const menuBtn = page.getByRole('button', { name: /menu|hamburger|open/i })
-      .or(page.locator('button svg').first())
+    const menuBtn = page.getByRole('button', { name: /abrir menú/i })
+    await expect(menuBtn).toBeVisible()
+    await menuBtn.click()
 
-    if (await menuBtn.isVisible()) {
-      await menuBtn.click()
-      // El sidebar debe aparecer
-      await expect(page.getByText('Dashboard')).toBeVisible({ timeout: 3_000 })
-    }
+    // El sidebar mobile debe abrirse (link Dashboard visible en drawer)
+    await expect(page.getByRole('link', { name: /^Dashboard$/i }).first()).toBeVisible({ timeout: 5_000 })
+  })
+
+  test('búsqueda global es accesible en mobile', async ({ page }) => {
+    await page.goto('/dashboard')
+    await page.waitForLoadState('networkidle')
+
+    const searchBtn = page.getByRole('button', { name: /abrir búsqueda global/i })
+    await expect(searchBtn).toBeVisible()
+    await searchBtn.click()
+
+    await expect(page.getByRole('dialog')).toBeVisible()
+    await expect(page.getByPlaceholder(/buscar por proyecto, commit, test, selector/i)).toBeVisible()
   })
 
   test('cards de métricas son legibles en mobile', async ({ page }) => {
@@ -48,5 +57,28 @@ test.describe('Mobile — responsive layout', () => {
     await page.goto('/dashboard/projects')
     await page.waitForLoadState('networkidle')
     await expect(page.getByText(/Proyectos/i)).toBeVisible()
+  })
+
+  test('dashboard no genera overflow horizontal en mobile', async ({ page }) => {
+    await page.goto('/dashboard')
+    await page.waitForLoadState('networkidle')
+
+    const hasOverflow = await page.evaluate(() => {
+      const doc = document.documentElement
+      return doc.scrollWidth > doc.clientWidth
+    })
+
+    expect(hasOverflow).toBeFalsy()
+  })
+
+  test('docs permite leer tabla API en mobile (scroll horizontal interno)', async ({ page }) => {
+    await page.goto('/docs#api-params')
+    await page.waitForLoadState('networkidle')
+
+    const tableWrapper = page.locator('text=Parámetros').locator('..').locator('..').locator('div.overflow-x-auto').first()
+    await expect(tableWrapper).toBeVisible()
+
+    const canScroll = await tableWrapper.evaluate((el) => el.scrollWidth > el.clientWidth)
+    expect(canScroll).toBeTruthy()
   })
 })

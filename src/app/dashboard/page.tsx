@@ -885,7 +885,7 @@ function DashboardContent() {
                         </span>
                       </div>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-[var(--text-tertiary)] opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <ChevronRight className="w-4 h-4 text-[var(--text-tertiary)] opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity" />
                   </motion.div>
                 ))}
               </div>
@@ -910,7 +910,7 @@ function DashboardContent() {
                 {data.healingHistory.length}
               </span>
             </div>
-            <button className="flex items-center gap-1 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
+            <button className="h-9 px-2 inline-flex items-center gap-1 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
               <ArrowUpDown className="w-3 h-3" />
               Ordenar
             </button>

@@ -92,7 +92,8 @@ export function NotificationCenter() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="relative p-2 rounded-md text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors"
+        aria-label="Abrir centro de notificaciones"
+        className="relative h-10 w-10 inline-flex items-center justify-center rounded-md text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors"
       >
         <Bell className="w-4 h-4" />
         {unreadCount > 0 && (
@@ -111,7 +112,7 @@ export function NotificationCenter() {
                 <SheetDescription className="text-xs text-[#9B9B9B]">Alertas accionables y contexto de PRs/tests</SheetDescription>
               </div>
               {unreadCount > 0 && (
-                <button onClick={markAllRead} className="inline-flex items-center gap-1 text-xs text-[#5E6AD2] hover:text-[#6B79E0]">
+                <button onClick={markAllRead} className="h-9 px-2 inline-flex items-center gap-1 text-xs text-[#5E6AD2] hover:text-[#6B79E0]">
                   <CheckCheck className="w-3.5 h-3.5" />
                   Marcar todo
                 </button>
@@ -138,7 +139,7 @@ export function NotificationCenter() {
                       {n.link && (
                         <button
                           onClick={() => openTarget(n)}
-                          className="inline-flex items-center gap-1 text-xs text-[#5E6AD2] hover:text-[#6B79E0]"
+                          className="h-8 px-2 inline-flex items-center gap-1 text-xs text-[#5E6AD2] hover:text-[#6B79E0]"
                         >
                           Abrir
                           <ExternalLink className="w-3 h-3" />
