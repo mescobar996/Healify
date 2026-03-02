@@ -130,7 +130,12 @@ function ProjectCard({
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="p-1 rounded-md text-gray-500 hover:text-gray-300 hover:bg-white/5 transition-colors">
+            <button
+              type="button"
+              aria-label={`Abrir acciones del proyecto ${project.name}`}
+              title="Acciones del proyecto"
+              className="p-1 rounded-md text-gray-500 hover:text-gray-300 hover:bg-white/5 transition-colors"
+            >
               <MoreVertical className="w-4 h-4" />
             </button>
           </DropdownMenuTrigger>

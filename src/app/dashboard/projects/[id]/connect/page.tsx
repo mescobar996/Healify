@@ -166,19 +166,28 @@ function CodeBlock({
 }) {
   const [copied, setCopied] = useState(false)
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(code)
-    setCopied(true)
-    onCopy()
-    setTimeout(() => setCopied(false), 2000)
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(code)
+      setCopied(true)
+      onCopy()
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+    }
   }
+
+  const escapeHtml = (value: string) =>
+    value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
 
   // Simple syntax highlighting
   const highlightCode = (code: string) => {
-    return code
+    return escapeHtml(code)
       .replace(/(\/\/.*)/g, '<span class="text-gray-500">$1</span>')
-      .replace(/('.*?')/g, '<span class="text-emerald-400">$1</span>')
-      .replace(/(".*?")/g, '<span class="text-emerald-400">$1</span>')
       .replace(/\b(import|from|const|let|var|function|async|await|return|if|else|test|describe|it|def|class|yield)\b/g, '<span class="text-purple-400">$1</span>')
       .replace(/\b(true|false|null|undefined|None)\b/g, '<span class="text-amber-400">$1</span>')
       .replace(/\b(process\.env\.\w+)/g, '<span class="text-cyan-400">$1</span>')
@@ -187,6 +196,7 @@ function CodeBlock({
   return (
     <div className="relative">
       <button
+        type="button"
         onClick={handleCopy}
         className={cn(
           'absolute top-3 right-3 p-2 rounded-lg transition-all duration-300',
@@ -194,6 +204,8 @@ function CodeBlock({
             ? 'bg-emerald-500/20 text-emerald-400 neon-cyan' 
             : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
         )}
+        aria-label={copied ? 'Código copiado' : `Copiar bloque de código ${language}`}
+        title={copied ? 'Código copiado' : 'Copiar código'}
       >
         {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
       </button>
@@ -237,6 +249,10 @@ function FrameworkTab({
 
   return (
     <button
+      type="button"
+      role="tab"
+      aria-selected={isActive}
+      aria-label={`Seleccionar framework ${config.name}`}
       onClick={onClick}
       className={cn(
         'flex items-center gap-2 px-4 py-3 rounded-xl transition-all duration-300',
@@ -264,6 +280,7 @@ export default function ConnectPage() {
   const [activeFramework, setActiveFramework] = useState<keyof typeof snippets>('playwright')
   const [detectedFramework, setDetectedFramework] = useState<keyof typeof snippets | null>(null)
   const [projectRepository, setProjectRepository] = useState<string | null>(null)
+  const [projectRepositoryStatus, setProjectRepositoryStatus] = useState<'idle' | 'loaded' | 'error'>('idle')
   const [trackedSdkStep, setTrackedSdkStep] = useState(false)
 
   const appUrl =
@@ -305,12 +322,18 @@ export default function ConnectPage() {
     const loadProjectAndDetectFramework = async () => {
       try {
         const res = await fetch(`/api/projects/${projectId}`)
-        if (!res.ok) return
+        if (!res.ok) {
+          if (mounted) setProjectRepositoryStatus('error')
+          return
+        }
 
         const project = await res.json()
         const repositoryUrl = project?.repository as string | null
 
-        if (mounted) setProjectRepository(repositoryUrl || null)
+        if (mounted) {
+          setProjectRepository(repositoryUrl || null)
+          setProjectRepositoryStatus('loaded')
+        }
 
         if (!repositoryUrl) return
 
@@ -332,6 +355,7 @@ export default function ConnectPage() {
           setActiveFramework(framework)
         }
       } catch {
+        if (mounted) setProjectRepositoryStatus('error')
       }
     }
 
@@ -367,11 +391,11 @@ export default function ConnectPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <main className="space-y-6" aria-labelledby="connect-page-title">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Connect Your Tests</h1>
+          <h1 id="connect-page-title" className="text-2xl font-bold text-white">Connect Your Tests</h1>
           <p className="text-gray-400 mt-1">Integrate Healify with your test framework</p>
         </div>
         <HealifyLogo size="sm" />
@@ -384,9 +408,12 @@ export default function ConnectPage() {
             <span className="text-xs text-gray-500 uppercase tracking-wider">Project ID</span>
             <p className="font-mono text-cyan-400">{projectId}</p>
           </div>
-          <button 
+          <button
+            type="button"
             onClick={() => navigator.clipboard.writeText(projectId)}
             className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+            aria-label="Copiar Project ID"
+            title="Copiar Project ID"
           >
             <Copy className="w-4 h-4 text-gray-400" />
           </button>
@@ -409,10 +436,15 @@ export default function ConnectPage() {
             Repo conectado: {projectRepository}
           </p>
         )}
+        {projectRepositoryStatus === 'error' && (
+          <p className="text-[11px] text-amber-300/80 mt-3">
+            No pudimos validar el repositorio automáticamente. Podés continuar la configuración manualmente.
+          </p>
+        )}
       </div>
 
       {/* Step 2: SDK setup */}
-      <div className="flex gap-2 flex-wrap sm:flex-nowrap overflow-x-auto pb-1 scrollbar-hide">
+      <div className="flex gap-2 flex-wrap sm:flex-nowrap overflow-x-auto pb-1 scrollbar-hide" role="tablist" aria-label="Framework selector">
         {(Object.keys(snippets) as Array<keyof typeof snippets>).map((framework) => (
           <FrameworkTab
             key={framework}
@@ -499,6 +531,6 @@ export default function ConnectPage() {
           />
         </div>
       </div>
-    </div>
+    </main>
   )
 }
