@@ -415,6 +415,8 @@ export default function PricingPage() {
           <Link href="/privacy" className="hover:text-[#E8F0FF]/50 transition-colors">Privacidad</Link>
           {' · '}
           <Link href="/terms" className="hover:text-[#E8F0FF]/50 transition-colors">Términos</Link>
+          {' · '}
+          <Link href="/refund" className="hover:text-[#E8F0FF]/50 transition-colors">Reembolsos</Link>
         </p>
       </div>
     </div>

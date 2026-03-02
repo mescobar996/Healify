@@ -1,6 +1,27 @@
 import crypto from 'crypto'
 
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'v-7y$B&E)H@McQfTjWnZr4u7x!A%C*F-' // 32 chars
+const ENCRYPTION_KEY = (() => {
+    const key = process.env.ENCRYPTION_KEY
+    if (!key) {
+        if (process.env.NODE_ENV === 'production') {
+            throw new Error(
+                '[SECURITY] ENCRYPTION_KEY no configurada. ' +
+                'Ejecutá: openssl rand -hex 32 ' +
+                'y agregá el resultado como variable de entorno ENCRYPTION_KEY en Vercel.'
+            )
+        }
+        console.warn(
+            '[SECURITY WARNING] ENCRYPTION_KEY no configurada. ' +
+            'Generá una con: openssl rand -hex 32 ' +
+            'y agregala a tu .env.local'
+        )
+        return 'dev-only-not-for-production-use-set-encryption-key-env'
+    }
+    if (key.length < 32) {
+        throw new Error('[SECURITY] ENCRYPTION_KEY debe tener al menos 32 caracteres.')
+    }
+    return key
+})()
 const IV_LENGTH = 16
 
 export function encrypt(text: string): string {

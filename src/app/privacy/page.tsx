@@ -19,6 +19,19 @@ export default function PrivacyPage() {
         <section><h2 className="text-xl font-semibold text-[#00F5C8] mb-2">3. Almacenamiento</h2><p>Los datos se almacenan en servidores seguros de PostgreSQL. Nunca vendemos ni compartimos tus datos con terceros.</p></section>
         <section><h2 className="text-xl font-semibold text-[#00F5C8] mb-2">4. Cookies</h2><p>Usamos cookies de sesión para mantenerte autenticado. No usamos cookies de tracking o publicidad.</p></section>
         <section><h2 className="text-xl font-semibold text-[#00F5C8] mb-2">5. Eliminación de Datos</h2><p>Podés solicitar la eliminación de todos tus datos escribiendo a <a href="mailto:support@healify.dev" className="text-[#00F5C8]">support@healify.dev</a></p></section>
+        <section>
+          <h2 className="text-xl font-semibold text-[#00F5C8] mb-2">6. Servicios de Terceros</h2>
+          <p>Healify utiliza servicios de terceros que pueden procesar datos para operar la plataforma:</p>
+          <ul className="list-disc pl-6 mt-2 space-y-1 text-[#E8F0FF]/75">
+            <li>GitHub / Google: autenticación OAuth (aplican sus políticas de privacidad).</li>
+            <li>Neon PostgreSQL: almacenamiento de datos (infraestructura en EE.UU.).</li>
+            <li>Resend: envío de emails transaccionales.</li>
+            <li>Stripe / MercadoPago / Lemon Squeezy: procesamiento de pagos (no almacenamos datos de tarjetas).</li>
+            <li>Anthropic: análisis de selectores con IA (solo selector fallido y contexto técnico mínimo).</li>
+          </ul>
+        </section>
+        <section><h2 className="text-xl font-semibold text-[#00F5C8] mb-2">7. Período de Retención</h2><p>Los datos se conservan mientras la cuenta permanezca activa. Si solicitás eliminación de cuenta, los datos se eliminan dentro de los 30 días hábiles siguientes.</p></section>
+        <section><h2 className="text-xl font-semibold text-[#00F5C8] mb-2">8. Derechos del Usuario</h2><p>Podés solicitar acceso, corrección, eliminación o portabilidad de tus datos escribiendo a <a href="mailto:support@healify.dev" className="text-[#00F5C8]">support@healify.dev</a>.</p></section>
       </div>
       <Link href="/" className="mt-12 inline-block text-sm text-[#E8F0FF]/40 hover:text-[#00F5C8]">← Volver al inicio</Link>
     </div>

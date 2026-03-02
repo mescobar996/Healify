@@ -4,7 +4,6 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "sonner";
 import { Providers } from "@/components/Providers";
-import { BackgroundSpace } from "@/components/BackgroundSpace";
 
 const montserrat = Montserrat({
   variable: "--font-montserrat",
@@ -86,7 +85,6 @@ export default function RootLayout({
       <body
         className={`${montserrat.variable} ${jetbrainsMono.variable} font-sans antialiased bg-[#0A0E1A] text-[#E8F0FF]`}
       >
-        <BackgroundSpace />
         <Providers>
           {children}
           <Toaster />

@@ -1,4 +1,23 @@
 {
+  "version": 2,
+  "regions": ["iad1"],
+  "functions": {
+    "src/app/api/heal/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/v1/report/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/test-runs/[id]/heal/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/demo/run/route.ts": {
+      "maxDuration": 30
+    },
+    "src/app/api/cron/weekly-report/route.ts": {
+      "maxDuration": 300
+    }
+  },
   "crons": [
     {
       "path": "/api/cron/weekly-report",

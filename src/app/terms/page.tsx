@@ -19,6 +19,11 @@ export default function TermsPage() {
         <section><h2 className="text-xl font-semibold text-[#00F5C8] mb-2">3. Propiedad Intelectual</h2><p>El código de tu proyecto sigue siendo tuyo. Healify no reclama propiedad sobre tu código ni resultados de tests.</p></section>
         <section><h2 className="text-xl font-semibold text-[#00F5C8] mb-2">4. Limitación de Responsabilidad</h2><p>El servicio se provee "tal como está". No garantizamos disponibilidad 24/7 durante el período beta.</p></section>
         <section><h2 className="text-xl font-semibold text-[#00F5C8] mb-2">5. Contacto</h2><p>Para consultas: <a href="mailto:support@healify.dev" className="text-[#00F5C8]">support@healify.dev</a></p></section>
+        <section><h2 className="text-xl font-semibold text-[#00F5C8] mb-2">6. Política de Cancelación</h2><p>Podés cancelar tu suscripción en cualquier momento desde Dashboard → Settings → Plan. El acceso continúa hasta el fin del período pago vigente y no se aplican penalidades por cancelación.</p></section>
+        <section><h2 className="text-xl font-semibold text-[#00F5C8] mb-2">7. Nivel de Servicio (SLA) Beta</h2><p>Durante el período beta, Healify no garantiza un uptime específico contractual. Se realizará el mejor esfuerzo para mantener una disponibilidad objetivo del 99% y comunicar incidentes relevantes por email.</p></section>
+        <section><h2 className="text-xl font-semibold text-[#00F5C8] mb-2">8. Datos Generados por IA</h2><p>Los selectores sugeridos y Pull Requests generados automáticamente son sugerencias de automatización. El usuario es responsable de revisar, validar y aprobar cualquier cambio antes de mergearlo en su repositorio.</p></section>
+        <section><h2 className="text-xl font-semibold text-[#00F5C8] mb-2">9. Modificaciones al Servicio</h2><p>Healify podrá modificar funcionalidades y precios notificando con al menos 30 días de anticipación por email. Las modificaciones de precio no afectan suscripciones activas hasta su siguiente renovación.</p></section>
+        <section><h2 className="text-xl font-semibold text-[#00F5C8] mb-2">10. Ley Aplicable</h2><p>Estos términos se rigen por las leyes de la República Argentina.</p></section>
       </div>
       <Link href="/" className="mt-12 inline-block text-sm text-[#E8F0FF]/40 hover:text-[#00F5C8]">← Volver al inicio</Link>
     </div>

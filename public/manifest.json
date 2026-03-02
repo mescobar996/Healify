@@ -29,14 +29,6 @@
       "purpose": "any maskable"
     }
   ],
-  "screenshots": [
-    {
-      "src": "/screenshots/dashboard.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "label": "Healify Dashboard"
-    }
-  ],
   "shortcuts": [
     {
       "name": "Dashboard",

@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils'
 import { TypewriterText } from '@/components/TypewriterText'
 import { HealingDemo } from '@/components/HealingDemo'
 import { HealifyLogo } from '@/components/HealifyLogo'
+import { BackgroundSpace } from '@/components/BackgroundSpace'
 import { useEffect, useState } from 'react'
 
 // Feature Card Component con Glassmorphism
@@ -435,6 +436,9 @@ function Footer() {
             <a href="/docs" className="hover:text-[#00F5C8] transition-colors">Documentation</a>
             <a href="https://github.com/mescobar996/Healify" target="_blank" rel="noopener noreferrer" className="hover:text-[#00F5C8] transition-colors">GitHub</a>
             <a href="mailto:support@healify.dev" className="hover:text-[#00F5C8] transition-colors">Support</a>
+            <a href="/refund" className="hover:text-[#00F5C8] transition-colors">Reembolsos</a>
+            <a href="/privacy" className="hover:text-[#00F5C8] transition-colors">Privacidad</a>
+            <a href="/terms" className="hover:text-[#00F5C8] transition-colors">Términos</a>
           </div>
         </div>
       </div>
@@ -457,6 +461,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#0A0E1A] text-[#E8F0FF] relative">
+      <BackgroundSpace />
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-[60] px-3 py-2 rounded-md bg-[#00F5C8] text-[#0A0E1A] text-sm font-semibold"
