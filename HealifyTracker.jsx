@@ -56,9 +56,9 @@ const ROADMAP = [
       { id:"p3", label:"Lemon Squeezy — código integrado (USD)",pct:100, status:"done",   hasPrompt:false, note:"Merchant of record — maneja IVA internacional automáticamente." },
       { id:"p4", label:"Activar MercadoPago en producción",     pct:0,   status:"manual", hasPrompt:false, note:"1. mercadopago.com.ar/developers → crear planes recurrentes\n2. Vercel → MP_ACCESS_TOKEN + MP_PRO_PLAN_ID + MP_STARTER_PLAN_ID" },
       { id:"p5", label:"Activar Lemon Squeezy en producción",   pct:0,   status:"manual", hasPrompt:false, note:"1. app.lemonsqueezy.com → crear variantes de producto\n2. Vercel → LEMONSQUEEZY_API_KEY + LEMONSQUEEZY_STORE_ID + LS_PRO_VARIANT_ID" },
-      { id:"p6", label:"Límites reales por plan en base de datos",pct:0, status:"pending",hasPrompt:true,  note:"Conectar rate limiting a tabla Subscription. Hoy están hardcodeados." },
-      { id:"p7", label:"Weekly email report automático",         pct:0,   status:"pending",hasPrompt:true,  note:"Cron job lunes 8am — resumen de tests curados + ROI + tendencia." },
-      { id:"p8", label:"GitHub badge 'Healed by Healify'",      pct:0,   status:"pending",hasPrompt:true,  note:"SVG dinámico en /api/badge/[projectId] para pegar en README." },
+      { id:"p6", label:"Límites reales por plan en base de datos",pct:0, status:"manual", hasPrompt:false, note:"Asignado a tu lado. Conectar rate limiting a tabla Subscription (hoy hardcodeado)." },
+      { id:"p7", label:"Weekly email report automático",         pct:0,   status:"manual", hasPrompt:false, note:"Asignado a tu lado. Cron job lunes 8am con resumen de tests curados + ROI + tendencia." },
+      { id:"p8", label:"GitHub badge 'Healed by Healify'",      pct:0,   status:"manual", hasPrompt:false, note:"Asignado a tu lado. Endpoint SVG dinámico en /api/badge/[projectId] para README." },
     ],
   },
   {
