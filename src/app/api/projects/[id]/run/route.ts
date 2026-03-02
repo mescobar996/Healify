@@ -4,6 +4,7 @@ import { TestStatus } from '@/lib/enums'
 import { checkTestRunLimit, limitExceededResponse } from '@/lib/rate-limit'
 import { addTestJob } from '@/lib/queue'
 import { getSessionUser } from '@/lib/auth/session'
+import { apiError } from '@/lib/api-response'
 
 export async function POST(
     request: Request,
@@ -12,7 +13,7 @@ export async function POST(
     try {
         const user = await getSessionUser()
         if (!user?.id) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+            return apiError(request, 401, 'Unauthorized', { code: 'AUTH_REQUIRED' })
         }
 
         const { id: projectId } = await params
@@ -22,7 +23,7 @@ export async function POST(
         })
 
         if (!project) {
-            return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+            return apiError(request, 404, 'Project not found', { code: 'PROJECT_NOT_FOUND' })
         }
 
         const limitCheck = await checkTestRunLimit(user.id)
@@ -81,9 +82,6 @@ export async function POST(
         }, { status: 503 })
     } catch (error) {
         console.error('Error initiating test run:', error)
-        return NextResponse.json(
-            { error: 'Failed to initiate test run' },
-            { status: 500 }
-        )
+        return apiError(request, 500, 'Failed to initiate test run', { code: 'PROJECT_RUN_FAILED' })
     }
 }

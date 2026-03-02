@@ -27,6 +27,11 @@ test.describe('API — Webhook GitHub', () => {
       headers: { 'Content-Type': 'application/json' },
     })
     expect(res.status()).toBe(401)
+    const body = await res.json()
+    expect(body.error).toBeTruthy()
+    expect(body.requestId).toBeTruthy()
+    expect(body.code).toBe('WEBHOOK_UNAUTHORIZED')
+    expect(res.headers()['x-request-id']).toBeTruthy()
   })
 
   test('POST /api/webhook/github con firma inválida → 401', async ({ request }) => {
@@ -58,6 +63,11 @@ test.describe('API — Dashboard', () => {
   test('GET /api/projects sin auth → 401', async ({ request }) => {
     const res = await request.get(`${BASE}/api/projects`)
     expect(res.status()).toBe(401)
+    const body = await res.json()
+    expect(body.error).toBeTruthy()
+    expect(body.requestId).toBeTruthy()
+    expect(body.code).toBe('AUTH_REQUIRED')
+    expect(res.headers()['x-request-id']).toBeTruthy()
   })
 
   test('POST /api/projects sin auth → 401', async ({ request }) => {
@@ -65,6 +75,9 @@ test.describe('API — Dashboard', () => {
       data: { name: 'Hack attempt' },
     })
     expect(res.status()).toBe(401)
+    const body = await res.json()
+    expect(body.code).toBe('AUTH_REQUIRED')
+    expect(body.requestId).toBeTruthy()
   })
 
   test('DELETE /api/projects/:id sin auth → 401', async ({ request }) => {
@@ -124,7 +137,9 @@ test.describe('API — health y metadatos', () => {
 
   test('GET /api → responde con info de la API', async ({ request }) => {
     const res = await request.get(`${BASE}/api`)
-    expect(res.status()).toBe(404)
+    expect(res.status()).toBe(200)
+    const body = await res.json()
+    expect(body).toBeTruthy()
   })
 
   test('rutas inexistentes → 404', async ({ request }) => {

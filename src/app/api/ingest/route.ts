@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { addTestJob } from '@/lib/queue'
 import { extractApiKey, validateApiKey } from '@/lib/api-key-service'
 import { sanitizeCommitSha, sanitizeGitBranch } from '@/lib/repo-validation'
+import { apiError } from '@/lib/api-response'
 
 export async function POST(request: NextRequest) {
     try {
@@ -13,21 +14,21 @@ export async function POST(request: NextRequest) {
         const validation = await validateApiKey(apiKey)
 
         if (!validation.valid || !validation.projectId) {
-            return NextResponse.json({ error: 'Invalid API Key' }, { status: 401 })
+            return apiError(request, 401, 'Invalid API Key', { code: 'INVALID_API_KEY' })
         }
 
         if (typeof testName !== 'string' || testName.trim().length === 0) {
-            return NextResponse.json({ error: 'Invalid testName' }, { status: 400 })
+            return apiError(request, 400, 'Invalid testName', { code: 'INVALID_TEST_NAME' })
         }
 
         const safeBranch = branch ? sanitizeGitBranch(branch) : null
         if (branch && !safeBranch) {
-            return NextResponse.json({ error: 'Invalid branch format' }, { status: 400 })
+            return apiError(request, 400, 'Invalid branch format', { code: 'INVALID_BRANCH' })
         }
 
         const safeCommitSha = commitSha ? sanitizeCommitSha(commitSha) : null
         if (commitSha && !safeCommitSha) {
-            return NextResponse.json({ error: 'Invalid commitSha format' }, { status: 400 })
+            return apiError(request, 400, 'Invalid commitSha format', { code: 'INVALID_COMMIT_SHA' })
         }
 
         // 1. Project validado por API key
@@ -98,6 +99,6 @@ export async function POST(request: NextRequest) {
 
     } catch (error) {
         console.error('Ingest API Error:', error)
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+        return apiError(request, 500, 'Internal Server Error', { code: 'INGEST_FAILED' })
     }
 }

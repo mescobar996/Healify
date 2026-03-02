@@ -14,6 +14,9 @@ Validar consistencia de errores HTTP, robustez de input sanitization y comportam
 | B2-TC-006 | Webhook GitHub JSON inválido | Body no parseable | `400`, `code=INVALID_JSON` | Robustez/Negativa |
 | B2-TC-007 | Webhook GitHub payload incompleto | Sin `repository` o sin `ref` | `400`, `code=INVALID_WEBHOOK_PAYLOAD` | Validación/Negativa |
 | B2-TC-008 | Contrato de error homogéneo | Cualquier error API crítico | Siempre incluye `error`, `code`, `requestId` | Integración/Contrato |
+| B2-TC-009 | POST `/api/ingest` API key inválida | Header/body con key inválida | `401`, `code=INVALID_API_KEY`, `requestId` | Seguridad/Negativa |
+| B2-TC-010 | POST `/api/ingest` branch inválido | `branch` malformado | `400`, `code=INVALID_BRANCH` | Validación/Negativa |
+| B2-TC-011 | POST `/api/projects/:id/run` sin sesión | Request anónimo | `401`, `code=AUTH_REQUIRED`, `requestId` | Funcional/Negativa |
 
 ## Checklist de Evidencia
 - Captura de request/response (status, body, headers)
