@@ -116,7 +116,7 @@ export function GlobalSearch() {
           void trackEvent("search_open", { source: "mobile_button" })
         }}
         aria-label="Abrir búsqueda global"
-        className="inline-flex md:hidden items-center justify-center h-9 w-9 rounded-lg bg-[#0A0A0A] border border-white/[0.06] text-[var(--text-secondary)] hover:text-[#5E6AD2] hover:border-white/[0.12] transition-colors"
+        className="inline-flex md:hidden items-center justify-center h-11 w-11 rounded-lg bg-[#0A0A0A] border border-white/[0.06] text-[var(--text-secondary)] hover:text-[#5E6AD2] hover:border-white/[0.12] transition-colors"
       >
         <Search className="w-4 h-4" />
       </button>

@@ -910,7 +910,7 @@ function DashboardContent() {
                 {data.healingHistory.length}
               </span>
             </div>
-            <button className="h-9 px-2 inline-flex items-center gap-1 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
+            <button className="min-h-[44px] px-2 inline-flex items-center gap-1 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
               <ArrowUpDown className="w-3 h-3" />
               Ordenar
             </button>
