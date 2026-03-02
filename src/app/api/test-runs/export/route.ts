@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSessionUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
+import { apiError } from '@/lib/api-response'
 
 export async function GET(request: NextRequest) {
   const user = await getSessionUser()
   if (!user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return apiError(request, 401, 'Unauthorized', { code: 'AUTH_REQUIRED' })
   }
 
   const { searchParams } = new URL(request.url)
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
   const limit     = Math.min(parseInt(searchParams.get('limit') || '500'), 1000)
 
   if (!projectId) {
-    return NextResponse.json({ error: 'projectId is required' }, { status: 400 })
+    return apiError(request, 400, 'projectId is required', { code: 'PROJECT_ID_REQUIRED' })
   }
 
   const project = await db.project.findUnique({
@@ -23,7 +24,7 @@ export async function GET(request: NextRequest) {
   })
 
   if (!project) {
-    return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+    return apiError(request, 404, 'Project not found', { code: 'PROJECT_NOT_FOUND' })
   }
 
   const runs = await db.testRun.findMany({

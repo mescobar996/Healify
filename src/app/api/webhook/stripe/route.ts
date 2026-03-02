@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { db } from '@/lib/db'
 import { Plan } from '@/lib/enums'
+import { apiError } from '@/lib/api-response'
 
 // ═══════════════════════════════════════════════════════════════════════
 // CRÍTICO: NO instanciar Stripe a nivel de módulo.
@@ -25,13 +26,13 @@ export async function POST(request: Request) {
     const sig = request.headers.get('stripe-signature')
 
     if (!sig) {
-        return NextResponse.json({ error: 'No stripe-signature header' }, { status: 400 })
+        return apiError(request, 400, 'No stripe-signature header', { code: 'STRIPE_SIGNATURE_MISSING' })
     }
 
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
     if (!webhookSecret) {
         console.error('[Webhook] STRIPE_WEBHOOK_SECRET no configurada')
-        return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 })
+        return apiError(request, 500, 'Webhook secret not configured', { code: 'STRIPE_WEBHOOK_SECRET_MISSING' })
     }
 
     let event: Stripe.Event
@@ -40,7 +41,7 @@ export async function POST(request: Request) {
         event = stripe.webhooks.constructEvent(body, sig, webhookSecret)
     } catch (err) {
         console.error('[Webhook] Signature verification failed:', err)
-        return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
+        return apiError(request, 400, 'Invalid signature', { code: 'STRIPE_SIGNATURE_INVALID' })
     }
 
     try {
@@ -133,6 +134,6 @@ export async function POST(request: Request) {
         return NextResponse.json({ received: true })
     } catch (error) {
         console.error('[Webhook] Error procesando evento:', error)
-        return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 })
+        return apiError(request, 500, 'Webhook processing failed', { code: 'STRIPE_WEBHOOK_PROCESS_FAILED' })
     }
 }

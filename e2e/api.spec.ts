@@ -91,6 +91,30 @@ test.describe('API — Dashboard', () => {
     })
     expect(res.status()).toBe(401)
   })
+
+  test('GET /api/search sin auth → 401 con contrato de error', async ({ request }) => {
+    const res = await request.get(`${BASE}/api/search?q=abc`)
+    expect(res.status()).toBe(401)
+    const body = await res.json()
+    expect(body.code).toBe('AUTH_REQUIRED')
+    expect(body.requestId).toBeTruthy()
+  })
+
+  test('GET /api/user/subscription sin auth → 401 con contrato de error', async ({ request }) => {
+    const res = await request.get(`${BASE}/api/user/subscription`)
+    expect(res.status()).toBe(401)
+    const body = await res.json()
+    expect(body.code).toBe('AUTH_REQUIRED')
+    expect(body.requestId).toBeTruthy()
+  })
+
+  test('GET /api/user/profile/slack sin auth → 401 con contrato de error', async ({ request }) => {
+    const res = await request.get(`${BASE}/api/user/profile/slack`)
+    expect(res.status()).toBe(401)
+    const body = await res.json()
+    expect(body.code).toBe('AUTH_REQUIRED')
+    expect(body.requestId).toBeTruthy()
+  })
 })
 
 test.describe('API — v1/report security', () => {

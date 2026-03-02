@@ -2,14 +2,15 @@ import { NextResponse } from 'next/server'
 import { getSessionUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { Plan } from '@/lib/enums'
+import { apiError } from '@/lib/api-response'
 
 // GET /api/user/subscription
 // Retorna el plan actual del usuario — usado por /upgrade-success para polling
-export async function GET() {
+export async function GET(request: Request) {
     try {
         const user = await getSessionUser()
         if (!user?.id) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+            return apiError(request, 401, 'Unauthorized', { code: 'AUTH_REQUIRED' })
         }
 
         const subscription = await db.subscription.findUnique({
@@ -31,9 +32,6 @@ export async function GET() {
         })
     } catch (error) {
         console.error('Error fetching subscription:', error)
-        return NextResponse.json(
-            { error: 'Failed to fetch subscription' },
-            { status: 500 }
-        )
+        return apiError(request, 500, 'Failed to fetch subscription', { code: 'SUBSCRIPTION_FETCH_FAILED' })
     }
 }

@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server'
 import { getSessionUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
+import { apiError } from '@/lib/api-response'
 
 export async function GET(request: Request) {
   try {
     const user = await getSessionUser()
     if (!user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiError(request, 401, 'Unauthorized', { code: 'AUTH_REQUIRED' })
     }
 
     const { searchParams } = new URL(request.url)
@@ -78,6 +79,6 @@ export async function GET(request: Request) {
     return NextResponse.json({ query: q, projects, testRuns, healingEvents })
   } catch (error) {
     console.error('Search API error:', error)
-    return NextResponse.json({ error: 'Failed to search' }, { status: 500 })
+    return apiError(request, 500, 'Failed to search', { code: 'SEARCH_FAILED' })
   }
 }
