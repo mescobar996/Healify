@@ -7,32 +7,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { validateApiKeyFromRequest } from '@/lib/api-key-service'
 import { db } from '@/lib/db'
 import { analyzeAndHeal } from '@/lib/engine/healing-engine'
+import { checkApiReportRateLimit } from '@/lib/rate-limit'
 import { z } from 'zod'
-
-// ============================================
-// IN-MEMORY RATE LIMIT — 60 reports/min per project
-// Protects against runaway CI loops
-// ============================================
-const reportCounts = new Map<string, { count: number; resetAt: number }>()
-const REPORT_LIMIT   = 60   // max per window
-const REPORT_WINDOW  = 60_000 // 1 minute in ms
-
-function checkReportRateLimit(projectId: string): { allowed: boolean; remaining: number; resetIn: number } {
-  const now  = Date.now()
-  const entry = reportCounts.get(projectId)
-
-  if (!entry || now > entry.resetAt) {
-    reportCounts.set(projectId, { count: 1, resetAt: now + REPORT_WINDOW })
-    return { allowed: true, remaining: REPORT_LIMIT - 1, resetIn: REPORT_WINDOW }
-  }
-
-  if (entry.count >= REPORT_LIMIT) {
-    return { allowed: false, remaining: 0, resetIn: entry.resetAt - now }
-  }
-
-  entry.count++
-  return { allowed: true, remaining: REPORT_LIMIT - entry.count, resetIn: entry.resetAt - now }
-}
 
 // ============================================
 // REQUEST SCHEMA
@@ -76,17 +52,23 @@ export async function POST(request: NextRequest) {
   }
 
   // 2. Rate limit check
-  const rateCheck = checkReportRateLimit(projectId!)
+  const rateCheck = await checkApiReportRateLimit(projectId!)
   if (!rateCheck.allowed) {
     return NextResponse.json(
-      { error: 'Rate limit exceeded. Max 60 reports/minute per project.', resetIn: rateCheck.resetIn },
+      {
+        error: `Rate limit exceeded for plan ${rateCheck.plan}. Max ${rateCheck.limit} reports/minute per project.`,
+        plan: rateCheck.plan,
+        limit: rateCheck.limit,
+        resetIn: rateCheck.resetInMs,
+      },
       {
         status: 429,
         headers: {
-          'X-RateLimit-Limit':     String(REPORT_LIMIT),
+          'X-RateLimit-Limit':     String(rateCheck.limit),
           'X-RateLimit-Remaining': '0',
-          'X-RateLimit-Reset':     String(Math.ceil(rateCheck.resetIn / 1000)),
-          'Retry-After':           String(Math.ceil(rateCheck.resetIn / 1000)),
+          'X-RateLimit-Reset':     String(Math.ceil(rateCheck.resetInMs / 1000)),
+          'X-RateLimit-Plan':      rateCheck.plan,
+          'Retry-After':           String(Math.ceil(rateCheck.resetInMs / 1000)),
         },
       }
     )
@@ -188,21 +170,31 @@ export async function POST(request: NextRequest) {
     // 10. Return response
     const processingTime = Date.now() - startTime
 
-    return NextResponse.json({
-      success: true,
-      testRunId: testRun.id,
-      healingEventId: updatedEvent.id,
-      project: projectName,
-      result: {
-        fixedSelector: healResult.fixedSelector,
-        confidence: healResult.confidence,
-        selectorType: healResult.selectorType,
-        explanation: healResult.explanation,
-        needsReview: healResult.needsReview,
-        alternatives: healResult.alternatives,
+    return NextResponse.json(
+      {
+        success: true,
+        testRunId: testRun.id,
+        healingEventId: updatedEvent.id,
+        project: projectName,
+        result: {
+          fixedSelector: healResult.fixedSelector,
+          confidence: healResult.confidence,
+          selectorType: healResult.selectorType,
+          explanation: healResult.explanation,
+          needsReview: healResult.needsReview,
+          alternatives: healResult.alternatives,
+        },
+        processingTimeMs: processingTime,
       },
-      processingTimeMs: processingTime,
-    })
+      {
+        headers: {
+          'X-RateLimit-Limit': String(rateCheck.limit),
+          'X-RateLimit-Remaining': String(rateCheck.remaining),
+          'X-RateLimit-Reset': String(Math.ceil(rateCheck.resetInMs / 1000)),
+          'X-RateLimit-Plan': rateCheck.plan,
+        },
+      }
+    )
 
   } catch (error) {
     console.error('Report API error:', error)

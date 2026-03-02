@@ -56,9 +56,9 @@ const ROADMAP = [
       { id:"p3", label:"Lemon Squeezy — código integrado (USD)",pct:100, status:"done",   hasPrompt:false, note:"Merchant of record — maneja IVA internacional automáticamente." },
       { id:"p4", label:"Activar MercadoPago en producción",     pct:0,   status:"manual", hasPrompt:false, note:"1. mercadopago.com.ar/developers → crear planes recurrentes\n2. Vercel → MP_ACCESS_TOKEN + MP_PRO_PLAN_ID + MP_STARTER_PLAN_ID" },
       { id:"p5", label:"Activar Lemon Squeezy en producción",   pct:0,   status:"manual", hasPrompt:false, note:"1. app.lemonsqueezy.com → crear variantes de producto\n2. Vercel → LEMONSQUEEZY_API_KEY + LEMONSQUEEZY_STORE_ID + LS_PRO_VARIANT_ID" },
-      { id:"p6", label:"Límites reales por plan en base de datos",pct:0, status:"manual", hasPrompt:false, note:"Asignado a tu lado. Conectar rate limiting a tabla Subscription (hoy hardcodeado)." },
-      { id:"p7", label:"Weekly email report automático",         pct:0,   status:"manual", hasPrompt:false, note:"Asignado a tu lado. Cron job lunes 8am con resumen de tests curados + ROI + tendencia." },
-      { id:"p8", label:"GitHub badge 'Healed by Healify'",      pct:0,   status:"manual", hasPrompt:false, note:"Asignado a tu lado. Endpoint SVG dinámico en /api/badge/[projectId] para README." },
+      { id:"p6", label:"Límites reales por plan en base de datos",pct:100, status:"done",   hasPrompt:false, note:"Implementado: /api/v1/report usa límites por plan (FREE/STARTER/PRO/ENTERPRISE) leyendo Subscription del owner." },
+      { id:"p7", label:"Weekly email report automático",         pct:100, status:"done",   hasPrompt:false, note:"Implementado y operativo: cron Vercel 0 8 * * 1 + endpoint /api/cron/weekly-report + status dashboard." },
+      { id:"p8", label:"GitHub badge 'Healed by Healify'",      pct:100, status:"done",   hasPrompt:false, note:"Implementado endpoint SVG dinámico en /api/badge/[projectId] (styles: healed, prs, events)." },
     ],
   },
   {
@@ -113,8 +113,8 @@ const URGENT = [
     detail:"1. app.lemonsqueezy.com → Products → crear variantes\n2. Starter ($29 USD), Pro ($59), Enterprise ($99)\n3. Vercel → LEMONSQUEEZY_API_KEY + LEMONSQUEEZY_STORE_ID + LS_STARTER/PRO/ENTERPRISE_VARIANT_ID" },
   { icon:"🎬", tag:"ESTA SEMANA",tagColor:C.amber,  label:"Grabar video demo 90s",
     detail:"1. Abrir Loom o ScreenStudio\n2. Grabar flujo: test falla → Healify detecta → PR abierto\n3. Pegar URL en VideoDemoSection de src/app/page.tsx (reemplazar placeholder)" },
-  { icon:"📊", tag:"PRÓXIMO",    tagColor:C.accent, label:"Límites por plan + Weekly report + Badge",
-    detail:"p6: Conectar rate limiting a tabla Subscription\np7: Cron job lunes 8am con resumen semanal\np8: SVG dinámico en /api/badge/[projectId]" },
+  { icon:"✅", tag:"COMPLETADO", tagColor:C.green,   label:"Core monetización técnica cerrada",
+    detail:"p6/p7/p8 completados: límites por plan, weekly report automático y badge SVG público listos en main." },
 ];
 
 /* ── helpers ── */

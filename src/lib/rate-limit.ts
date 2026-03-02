@@ -10,7 +10,25 @@ export const PLAN_LIMITS = {
     ENTERPRISE: { projects: -1, testRunsPerMonth: -1  },
 } as const
 
+export const PLAN_REPORT_LIMITS = {
+    FREE: 30,
+    STARTER: 60,
+    PRO: 120,
+    ENTERPRISE: 300,
+} as const
+
 type PlanKey = keyof typeof PLAN_LIMITS
+
+type ReportRateCheck = {
+    allowed: boolean
+    plan: PlanKey
+    limit: number
+    remaining: number
+    resetInMs: number
+}
+
+const REPORT_WINDOW_MS = 60_000
+const reportWindowByProject = new Map<string, { count: number; resetAt: number }>()
 
 // ─── Obtener el plan activo del usuario desde DB ───────────────────────
 async function getUserPlan(userId: string): Promise<PlanKey> {
@@ -19,6 +37,26 @@ async function getUserPlan(userId: string): Promise<PlanKey> {
         select: { plan: true, status: true },
     })
     if (!sub || sub.status === 'canceled') return 'FREE'
+    return (sub.plan as PlanKey) || 'FREE'
+}
+
+async function getProjectPlan(projectId: string): Promise<PlanKey> {
+    const project = await db.project.findUnique({
+        where: { id: projectId },
+        select: {
+            userId: true,
+            user: {
+                select: {
+                    subscription: {
+                        select: { plan: true, status: true },
+                    },
+                },
+            },
+        },
+    })
+
+    const sub = project?.user?.subscription
+    if (!project?.userId || !sub || sub.status === 'canceled') return 'FREE'
     return (sub.plan as PlanKey) || 'FREE'
 }
 
@@ -75,6 +113,47 @@ export async function checkTestRunLimit(userId: string): Promise<{
         plan,
         current,
         limit: limits.testRunsPerMonth,
+    }
+}
+
+export async function checkApiReportRateLimit(projectId: string): Promise<ReportRateCheck> {
+    const now = Date.now()
+    const plan = await getProjectPlan(projectId)
+    const limit = PLAN_REPORT_LIMITS[plan]
+
+    const windowState = reportWindowByProject.get(projectId)
+    if (!windowState || now > windowState.resetAt) {
+        reportWindowByProject.set(projectId, {
+            count: 1,
+            resetAt: now + REPORT_WINDOW_MS,
+        })
+
+        return {
+            allowed: true,
+            plan,
+            limit,
+            remaining: Math.max(0, limit - 1),
+            resetInMs: REPORT_WINDOW_MS,
+        }
+    }
+
+    if (windowState.count >= limit) {
+        return {
+            allowed: false,
+            plan,
+            limit,
+            remaining: 0,
+            resetInMs: Math.max(0, windowState.resetAt - now),
+        }
+    }
+
+    windowState.count += 1
+    return {
+        allowed: true,
+        plan,
+        limit,
+        remaining: Math.max(0, limit - windowState.count),
+        resetInMs: Math.max(0, windowState.resetAt - now),
     }
 }
 
