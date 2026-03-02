@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { auditLogService } from '@/lib/audit-log-service';
 import { getSessionUser } from '@/lib/auth/session';
+import { apiError } from '@/lib/api-response';
 
 // GET /api/projects/:id - Get project details with test runs
 export async function GET(
@@ -11,7 +12,7 @@ export async function GET(
   try {
     const user = await getSessionUser()
     if (!user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiError(request, 401, 'Unauthorized', { code: 'AUTH_REQUIRED' })
     }
 
     const { id } = await params;
@@ -37,16 +38,13 @@ export async function GET(
     });
 
     if (!project) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+      return apiError(request, 404, 'Project not found', { code: 'PROJECT_NOT_FOUND' });
     }
 
     return NextResponse.json(project);
   } catch (error) {
     console.error('Error fetching project:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch project' },
-      { status: 500 }
-    );
+    return apiError(request, 500, 'Failed to fetch project', { code: 'PROJECT_FETCH_FAILED' });
   }
 }
 
@@ -58,7 +56,7 @@ export async function DELETE(
   try {
     const user = await getSessionUser()
     if (!user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiError(request, 401, 'Unauthorized', { code: 'AUTH_REQUIRED' })
     }
 
     const { id } = await params;
@@ -68,7 +66,7 @@ export async function DELETE(
     });
 
     if (!project) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+      return apiError(request, 404, 'Project not found', { code: 'PROJECT_NOT_FOUND' });
     }
 
     await db.project.delete({
@@ -82,10 +80,7 @@ export async function DELETE(
     return NextResponse.json({ message: 'Project deleted successfully' });
   } catch (error) {
     console.error('Error deleting project:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete project' },
-      { status: 500 }
-    );
+    return apiError(request, 500, 'Failed to delete project', { code: 'PROJECT_DELETE_FAILED' });
   }
 }
 
@@ -97,7 +92,7 @@ export async function PATCH(
   try {
     const user = await getSessionUser()
     if (!user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiError(request, 401, 'Unauthorized', { code: 'AUTH_REQUIRED' })
     }
 
     const { id } = await params
@@ -107,7 +102,7 @@ export async function PATCH(
     })
 
     if (!project) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+      return apiError(request, 404, 'Project not found', { code: 'PROJECT_NOT_FOUND' })
     }
 
     const body = await request.json()
@@ -115,7 +110,7 @@ export async function PATCH(
 
     // Validate at least one field is being updated
     if (!name && !description && !repository && !framework) {
-      return NextResponse.json({ error: 'No fields to update' }, { status: 400 })
+      return apiError(request, 400, 'No fields to update', { code: 'NO_UPDATE_FIELDS' })
     }
 
     const updated = await db.project.update({
@@ -136,9 +131,6 @@ export async function PATCH(
     return NextResponse.json(updated)
   } catch (error) {
     console.error('Error updating project:', error)
-    return NextResponse.json(
-      { error: 'Failed to update project' },
-      { status: 500 }
-    )
+    return apiError(request, 500, 'Failed to update project', { code: 'PROJECT_UPDATE_FAILED' })
   }
 }

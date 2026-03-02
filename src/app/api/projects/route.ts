@@ -3,13 +3,14 @@ import { db } from '@/lib/db'
 import { checkProjectLimit, limitExceededResponse } from '@/lib/rate-limit'
 import { getSessionUser } from '@/lib/auth/session'
 import { initProjectApiKey } from '@/lib/api-key-service'
+import { apiError } from '@/lib/api-response'
 
 // GET /api/projects - Get all projects
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const user = await getSessionUser()
     if (!user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiError(request, 401, 'Unauthorized', { code: 'AUTH_REQUIRED' })
     }
 
     let projects: Array<Record<string, unknown>> = []
@@ -81,10 +82,7 @@ export async function GET() {
     return NextResponse.json(projectsWithStats)
   } catch (error) {
     console.error('Error fetching projects:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch projects' },
-      { status: 500 }
-    )
+    return apiError(request, 500, 'Failed to fetch projects', { code: 'PROJECTS_FETCH_FAILED' })
   }
 }
 
@@ -93,17 +91,14 @@ export async function POST(request: NextRequest) {
   try {
     const user = await getSessionUser()
     if (!user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return apiError(request, 401, 'Unauthorized', { code: 'AUTH_REQUIRED' })
     }
 
     const body = await request.json()
     const { name, description, repository } = body
 
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
-      return NextResponse.json(
-        { error: 'Project name is required' },
-        { status: 400 }
-      )
+      return apiError(request, 400, 'Project name is required', { code: 'INVALID_NAME' })
     }
 
     // ── Bloque 9: Rate limiting por plan ──────────────────────────────
@@ -127,9 +122,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ...project, apiKey }, { status: 201 })
   } catch (error) {
     console.error('Error creating project:', error)
-    return NextResponse.json(
-      { error: 'Failed to create project' },
-      { status: 500 }
-    )
+    return apiError(request, 500, 'Failed to create project', { code: 'PROJECT_CREATE_FAILED' })
   }
 }

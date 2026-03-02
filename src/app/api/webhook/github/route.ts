@@ -6,6 +6,25 @@ import { createHmac, timingSafeEqual } from 'crypto'
 import { addTestJob } from '@/lib/queue'
 import { checkTestRunLimit } from '@/lib/rate-limit'
 import { extractBranchFromGitRef, sanitizeCommitSha, sanitizeGitHubRepositoryUrl } from '@/lib/repo-validation'
+import { apiError } from '@/lib/api-response'
+
+type GitHubWebhookPayload = {
+    repository?: { html_url?: string }
+    ref?: string
+    after?: string
+    head_commit?: {
+        message?: string
+        author?: { username?: string }
+        added?: string[]
+        modified?: string[]
+        removed?: string[]
+    }
+    commits?: Array<{
+        added?: string[]
+        modified?: string[]
+        removed?: string[]
+    }>
+}
 
 // ✅ HEAL-001 FIX: Verificar firma HMAC de GitHub para evitar inyección de eventos falsos
 function verifyGitHubSignature(body: string, signature: string | null): boolean {
@@ -40,10 +59,15 @@ export async function POST(request: Request) {
         // ✅ Verificar firma antes de procesar cualquier dato
         if (!verifyGitHubSignature(body, signature)) {
             console.warn('GitHub webhook: invalid or missing HMAC signature')
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+            return apiError(request, 401, 'Unauthorized', { code: 'WEBHOOK_UNAUTHORIZED' })
         }
 
-        const payload = JSON.parse(body)
+        let payload: GitHubWebhookPayload
+        try {
+            payload = JSON.parse(body)
+        } catch {
+            return apiError(request, 400, 'Invalid JSON payload', { code: 'INVALID_JSON' })
+        }
 
         if (event === 'ping') {
             return NextResponse.json({ message: 'pong' })
@@ -57,7 +81,9 @@ export async function POST(request: Request) {
             const commitAuthor = payload.head_commit?.author?.username || 'unknown'
 
             if (!repository || !branch) {
-                return NextResponse.json({ error: 'Invalid repository or branch in webhook payload' }, { status: 400 })
+                return apiError(request, 400, 'Invalid repository or branch in webhook payload', {
+                    code: 'INVALID_WEBHOOK_PAYLOAD',
+                })
             }
 
             // Find project associated with this repository
@@ -70,7 +96,7 @@ export async function POST(request: Request) {
             }
 
             if (!project.userId) {
-                return NextResponse.json({ message: 'Project owner not found' }, { status: 400 })
+                return apiError(request, 400, 'Project owner not found', { code: 'PROJECT_OWNER_NOT_FOUND' })
             }
 
             const limitCheck = await checkTestRunLimit(project.userId)
@@ -168,9 +194,6 @@ export async function POST(request: Request) {
         return NextResponse.json({ message: 'Event not handled' })
     } catch (error) {
         console.error('Error handling GitHub webhook:', error)
-        return NextResponse.json(
-            { error: 'Failed to process webhook' },
-            { status: 500 }
-        )
+        return apiError(request, 500, 'Failed to process webhook', { code: 'WEBHOOK_PROCESS_FAILED' })
     }
 }
