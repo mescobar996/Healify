@@ -113,6 +113,17 @@ export function GlobalSearch() {
       <button
         onClick={() => {
           setOpen(true)
+          void trackEvent("search_open", { source: "mobile_button" })
+        }}
+        aria-label="Abrir búsqueda global"
+        className="inline-flex md:hidden items-center justify-center h-9 w-9 rounded-lg bg-[#0A0A0A] border border-white/[0.06] text-[var(--text-secondary)] hover:text-[#5E6AD2] hover:border-white/[0.12] transition-colors"
+      >
+        <Search className="w-4 h-4" />
+      </button>
+
+      <button
+        onClick={() => {
+          setOpen(true)
           void trackEvent("search_open", { source: "button" })
         }}
         className="hidden md:flex items-center justify-between gap-3 px-3.5 py-2 rounded-lg bg-[#0A0A0A] border border-white/[0.06] hover:bg-[#111111] hover:border-white/[0.12] transition-all duration-150 group w-[380px] lg:w-[460px] xl:w-[560px]"

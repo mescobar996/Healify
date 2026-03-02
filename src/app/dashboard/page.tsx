@@ -502,7 +502,7 @@ function DashboardContent() {
     <>
       <div className="space-y-4">
         {/* Page Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-xl font-semibold text-[var(--text-primary)] tracking-tight">
               Dashboard
@@ -511,7 +511,7 @@ function DashboardContent() {
               Vista general de tu actividad de tests
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
             {session?.user && (
               <Button
                 variant="outline"
@@ -566,7 +566,7 @@ function DashboardContent() {
         )}
 
         <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList className="bg-[#111111] border border-white/[0.08] h-10">
+          <TabsList className="bg-[#111111] border border-white/[0.08] h-10 w-full sm:w-fit justify-start overflow-x-auto">
             <TabsTrigger value="overview" className="data-[state=active]:bg-[#1A1A1A] data-[state=active]:text-[#EDEDED] gap-1.5 text-[13px]">
               <BarChart3 className="w-3.5 h-3.5" />
               Overview
@@ -935,56 +935,66 @@ function DashboardContent() {
                 >
                   <button
                     onClick={() => handleOpenDetail(item)}
-                    className="group w-full flex items-center gap-4 px-4 py-3 hover:bg-[var(--bg-hover)] transition-colors duration-150 text-left"
+                    className="group w-full px-4 py-3 hover:bg-[var(--bg-hover)] transition-colors duration-150 text-left"
                   >
-                    {/* Status Icon */}
-                    <div className="flex-shrink-0">
-                      {item.status === "curado" ? (
-                        <div className="w-5 h-5 rounded-full bg-emerald-500/10 flex items-center justify-center">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                        </div>
-                      ) : item.status === "fallido" ? (
-                        <div className="w-5 h-5 rounded-full bg-red-500/10 flex items-center justify-center">
-                          <XCircle className="w-3 h-3 text-red-400" />
-                        </div>
-                      ) : (
-                        <div className="w-5 h-5 rounded-full bg-amber-500/10 flex items-center justify-center">
-                          <Clock className="w-3 h-3 text-amber-400" />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Test Name */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-[var(--text-primary)] truncate transition-colors">
-                        {item.testName}
-                      </p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <code className="text-[11px] text-[var(--text-tertiary)] font-mono truncate max-w-[120px] sm:max-w-[200px]">
-                          {item.oldSelector}
-                        </code>
-                        {item.newSelector && (
-                          <>
-                            <ChevronRight className="w-3 h-3 text-[var(--text-tertiary)] flex-shrink-0" />
-                            <code className="text-[11px] text-emerald-400 font-mono truncate max-w-[120px] sm:max-w-[200px]">
-                              {item.newSelector}
-                            </code>
-                          </>
+                    <div className="flex items-start gap-3">
+                      {/* Status Icon */}
+                      <div className="flex-shrink-0 mt-0.5">
+                        {item.status === "curado" ? (
+                          <div className="w-5 h-5 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                          </div>
+                        ) : item.status === "fallido" ? (
+                          <div className="w-5 h-5 rounded-full bg-red-500/10 flex items-center justify-center">
+                            <XCircle className="w-3 h-3 text-red-400" />
+                          </div>
+                        ) : (
+                          <div className="w-5 h-5 rounded-full bg-amber-500/10 flex items-center justify-center">
+                            <Clock className="w-3 h-3 text-amber-400" />
+                          </div>
                         )}
                       </div>
-                    </div>
 
-                    {/* Metadata */}
-                    <div className="flex items-center gap-4 flex-shrink-0">
-                      <ConfidenceBar confidence={item.confidence} />
-                      <StatusBadge status={item.status} />
-                      <span className="text-[11px] text-[var(--text-tertiary)] w-20 text-right">
-                        {item.timestamp}
-                      </span>
-                    </div>
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-[var(--text-primary)] truncate transition-colors">
+                          {item.testName}
+                        </p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <code className="text-[11px] text-[var(--text-tertiary)] font-mono truncate max-w-[100px] sm:max-w-[200px]">
+                            {item.oldSelector}
+                          </code>
+                          {item.newSelector && (
+                            <>
+                              <ChevronRight className="w-3 h-3 text-[var(--text-tertiary)] flex-shrink-0" />
+                              <code className="text-[11px] text-emerald-400 font-mono truncate max-w-[100px] sm:max-w-[200px]">
+                                {item.newSelector}
+                              </code>
+                            </>
+                          )}
+                        </div>
 
-                    {/* Arrow */}
-                    <ChevronRight className="w-4 h-4 text-[var(--text-tertiary)] opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                        <div className="flex md:hidden items-center gap-2 mt-1.5">
+                          <StatusBadge status={item.status} />
+                          <span className="text-[10px] text-[var(--text-secondary)] font-mono">
+                            {item.confidence}%
+                          </span>
+                          <span className="text-[10px] text-[var(--text-tertiary)]">{item.timestamp}</span>
+                        </div>
+                      </div>
+
+                      {/* Desktop Metadata */}
+                      <div className="hidden md:flex items-center gap-4 flex-shrink-0">
+                        <ConfidenceBar confidence={item.confidence} />
+                        <StatusBadge status={item.status} />
+                        <span className="text-[11px] text-[var(--text-tertiary)] w-20 text-right">
+                          {item.timestamp}
+                        </span>
+                      </div>
+
+                      {/* Arrow */}
+                      <ChevronRight className="hidden md:block w-4 h-4 text-[var(--text-tertiary)] opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                    </div>
                   </button>
                 </motion.div>
               ))}

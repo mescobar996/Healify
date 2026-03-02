@@ -387,7 +387,8 @@ def report_to_healify(test_name, selector, error, html):
           <SubHeading id="api-params">Parámetros</SubHeading>
 
           <div className="rounded-xl border border-white/[0.07] overflow-hidden mb-6 bg-[#111111]">
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[640px] text-sm">
               <thead>
                 <tr className="bg-[#151515] border-b border-white/[0.07]">
                   <th className="text-left px-4 py-3 text-[#6B6B6B] font-medium text-xs tracking-wide">Campo</th>
@@ -416,6 +417,7 @@ def report_to_healify(test_name, selector, error, html):
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
 
           <SubHeading id="api-response">Respuesta exitosa</SubHeading>
