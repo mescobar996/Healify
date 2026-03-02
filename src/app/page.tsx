@@ -457,11 +457,18 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#0A0E1A] text-[#E8F0FF] relative">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-[60] px-3 py-2 rounded-md bg-[#00F5C8] text-[#0A0E1A] text-sm font-semibold"
+      >
+        Saltar al contenido principal
+      </a>
+
       {/* Navbar Glassmorphism */}
       <header className="sticky top-0 z-50 glass-elite border-b border-white/10 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-2 flex items-center justify-between gap-3">
           <HealifyLogo size="md" showText={true} />
-          <div className="flex items-center gap-4">
+          <nav aria-label="Principal" className="flex items-center gap-3 sm:gap-4">
             <a href="/pricing" className="text-sm text-[#E8F0FF]/60 hover:text-[#00F5C8] transition-colors">
               Pricing
             </a>
@@ -474,16 +481,18 @@ export default function HomePage() {
               <Github className="w-4 h-4 mr-2" />
               Sign In
             </Button>
-          </div>
+          </nav>
         </div>
       </header>
 
       {/* Landing Content */}
-      <LandingHero />
-      <VideoDemoSection />
-      <FeaturesSection />
-      <HowItWorksSection />
-      <CTASection />
+      <main id="main-content">
+        <LandingHero />
+        <VideoDemoSection />
+        <FeaturesSection />
+        <HowItWorksSection />
+        <CTASection />
+      </main>
       <Footer />
     </div>
   )

@@ -139,6 +139,41 @@ export function HealingDemo({
     [selectedDemo]
   )
 
+  const selectScenario = (id: DemoScenario['id']) => {
+    setSelectedDemo(id)
+  }
+
+  const handleScenarioKeyDown = (
+    event: React.KeyboardEvent<HTMLButtonElement>,
+    currentId: DemoScenario['id']
+  ) => {
+    const ids = DEMO_SCENARIOS.map((item) => item.id)
+    const currentIndex = ids.indexOf(currentId)
+    if (currentIndex < 0) return
+
+    let targetIndex = currentIndex
+
+    if (event.key === 'ArrowRight') {
+      targetIndex = (currentIndex + 1) % ids.length
+    } else if (event.key === 'ArrowLeft') {
+      targetIndex = (currentIndex - 1 + ids.length) % ids.length
+    } else if (event.key === 'Home') {
+      targetIndex = 0
+    } else if (event.key === 'End') {
+      targetIndex = ids.length - 1
+    } else {
+      return
+    }
+
+    event.preventDefault()
+    const nextId = ids[targetIndex]
+    selectScenario(nextId)
+    const nextButton = document.getElementById(`demo-tab-${nextId}`)
+    if (nextButton instanceof HTMLButtonElement) {
+      nextButton.focus()
+    }
+  }
+
   const timeline = useMemo(() => {
     const seconds = elapsedMs / 1000
     const hasFailure = seconds >= 1.5 && seconds < 5.5
@@ -167,11 +202,18 @@ export function HealingDemo({
           <div className="px-5 sm:px-8 pt-5 sm:pt-6 pb-3 border-b border-white/10">
             <h3 className="text-lg sm:text-xl font-semibold text-[#E8F0FF]">{title}</h3>
             <p className="text-xs sm:text-sm text-[#E8F0FF]/60 mt-1">{subtitle}</p>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
+            <div className="mt-3 flex flex-wrap items-center gap-2" role="tablist" aria-label="Flujos de demo interactiva">
               {DEMO_SCENARIOS.map((item) => (
                 <button
+                  id={`demo-tab-${item.id}`}
                   key={item.id}
-                  onClick={() => setSelectedDemo(item.id)}
+                  type="button"
+                  role="tab"
+                  aria-selected={item.id === selectedDemo}
+                  aria-controls="demo-panel"
+                  tabIndex={item.id === selectedDemo ? 0 : -1}
+                  onClick={() => selectScenario(item.id)}
+                  onKeyDown={(event) => handleScenarioKeyDown(event, item.id)}
                   className={
                     item.id === selectedDemo
                       ? 'px-2.5 py-1 rounded-md text-xs bg-[#1A1A1A] border border-[#00F5C8]/40 text-[#00F5C8]'
@@ -192,7 +234,7 @@ export function HealingDemo({
           </div>
 
           <div className="relative px-5 sm:px-8 py-5 sm:py-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+            <div id="demo-panel" role="tabpanel" aria-labelledby={`demo-tab-${selectedDemo}`} className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
               <div className="rounded-xl border border-white/10 bg-[#0F1528] p-4 sm:p-5 font-mono text-xs sm:text-sm min-h-[220px]">
                 <div className="flex items-center gap-2 text-[#E8F0FF]/80 mb-3">
                   <Terminal className="w-4 h-4" />
@@ -305,6 +347,10 @@ export function HealingDemo({
                   : 'Detectando cambios de UI en tiempo real...'}
               </span>
             </div>
+          </div>
+
+          <div className="sr-only" aria-live="polite">
+            {`Escenario actual: ${scenario.label}. ${timeline.showDiff ? scenario.footerReadyText : 'Detectando cambios de UI en tiempo real.'}`}
           </div>
         </motion.div>
   )
