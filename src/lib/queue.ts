@@ -48,14 +48,14 @@ export interface TestJobData {
  * @returns Job creado o null si Redis no está disponible
  */
 export async function addTestJob(
-  projectId: string, 
-  commitSha?: string, 
-  testRunId?: string,
+  projectId: string,
+  commitSha?: string | null,
+  testRunId?: string | null,
   metadata?: {
-    branch?: string
-    commitMessage?: string
-    commitAuthor?: string
-    repository?: string
+    branch?: string | null
+    commitMessage?: string | null
+    commitAuthor?: string | null
+    repository?: string | null
   }
 ): Promise<Job | null> {
   if (!testQueue) {
@@ -65,12 +65,12 @@ export async function addTestJob(
 
   const jobData: TestJobData = {
     projectId,
-    commitSha,
+    commitSha: commitSha || undefined,
     testRunId: testRunId || '',
-    branch: metadata?.branch,
-    commitMessage: metadata?.commitMessage,
-    commitAuthor: metadata?.commitAuthor,
-    repository: metadata?.repository,
+    branch: metadata?.branch || undefined,
+    commitMessage: metadata?.commitMessage || undefined,
+    commitAuthor: metadata?.commitAuthor || undefined,
+    repository: metadata?.repository || undefined,
   }
 
   const job = await testQueue.add('execute_tests', jobData, {

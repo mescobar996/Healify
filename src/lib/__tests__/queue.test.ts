@@ -63,6 +63,25 @@ describe('addTestJob', () => {
     const job = await addTestJob('proj-1', 'sha', 'run-1')
     expect(job?.id).toBe('job-returned')
   })
+
+  it('normaliza null opcionales a undefined/string vacío sin romper', async () => {
+    mockJobAdd.mockResolvedValue({ id: 'job-null-safe' })
+    await addTestJob('proj-1', null, null, {
+      branch: null,
+      commitMessage: null,
+      commitAuthor: null,
+      repository: null,
+    })
+
+    const [, jobData, opts] = mockJobAdd.mock.calls[0]
+    expect(jobData.commitSha).toBeUndefined()
+    expect(jobData.testRunId).toBe('')
+    expect(jobData.branch).toBeUndefined()
+    expect(jobData.commitMessage).toBeUndefined()
+    expect(jobData.commitAuthor).toBeUndefined()
+    expect(jobData.repository).toBeUndefined()
+    expect(opts?.jobId).toBeUndefined()
+  })
 })
 
 describe('getJobStatus', () => {
