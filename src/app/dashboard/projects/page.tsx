@@ -471,20 +471,39 @@ export default function ProjectsPage() {
   const [editRepository, setEditRepository] = useState('');
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [isSeedingDemo, setIsSeedingDemo] = useState(false)
+  const [isRetryingFetch, setIsRetryingFetch] = useState(false)
 
   const fetchProjects = async () => {
     setLoading(true);
     setError(null);
+    setIsRetryingFetch(false);
 
-    try {
-      const data = await api.getProjects();
-      setProjects(data);
-    } catch (err) {
-      console.error("Error fetching projects:", err);
-      setError(err instanceof Error ? err.message : "Error al cargar los proyectos");
-    } finally {
-      setLoading(false);
+    let lastError: unknown = null;
+
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        if (attempt > 0) {
+          setIsRetryingFetch(true);
+        }
+
+        const data = await api.getProjects();
+        setProjects(Array.isArray(data) ? data : []);
+        setIsRetryingFetch(false);
+        setLoading(false);
+        return;
+      } catch (err) {
+        lastError = err;
+        console.error(`Error fetching projects (attempt ${attempt + 1}):`, err);
+
+        if (attempt === 0) {
+          await new Promise((resolve) => setTimeout(resolve, 700));
+        }
+      }
     }
+
+    setError(lastError instanceof Error ? lastError.message : "Error al cargar los proyectos");
+    setIsRetryingFetch(false);
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -639,7 +658,7 @@ export default function ProjectsPage() {
   }
 
   if (error) {
-    return <ErrorState message={error} onRetry={fetchProjects} />;
+    return <ErrorState message={isRetryingFetch ? 'Reintentando...' : error} onRetry={fetchProjects} />;
   }
 
   return (

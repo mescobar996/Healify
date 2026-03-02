@@ -174,6 +174,10 @@ function LandingHero() {
             <Stat value="98%" label="Accuracy" delay={0.9} />
             <Stat value="90%" label="Time Saved" delay={1.0} />
           </motion.div>
+
+          <div className="pt-10 sm:pt-14" id="demo-section">
+            <HealingDemo embedded />
+          </div>
         </div>
       </div>
     </div>
@@ -476,7 +480,6 @@ export default function HomePage() {
 
       {/* Landing Content */}
       <LandingHero />
-      <HealingDemo />
       <VideoDemoSection />
       <FeaturesSection />
       <HowItWorksSection />

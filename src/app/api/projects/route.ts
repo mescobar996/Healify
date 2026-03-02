@@ -12,28 +12,58 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const projects = await db.project.findMany({
-      where: { userId: user.id },
-      include: {
-        testRuns: {
-          orderBy: { startedAt: 'desc' },
-          take: 1,
+    let projects: Array<Record<string, unknown>> = []
+
+    try {
+      projects = await db.project.findMany({
+        where: { userId: user.id },
+        include: {
+          testRuns: {
+            orderBy: { startedAt: 'desc' },
+            take: 1,
+          },
+          _count: {
+            select: { testRuns: true },
+          },
         },
-        _count: {
-          select: { testRuns: true },
+        orderBy: { updatedAt: 'desc' },
+      }) as unknown as Array<Record<string, unknown>>
+    } catch (queryError) {
+      console.error('Error fetching projects with stats include, falling back to basic query:', queryError)
+      projects = await db.project.findMany({
+        where: { userId: user.id },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          repository: true,
+          createdAt: true,
+          updatedAt: true,
         },
-      },
-      orderBy: { updatedAt: 'desc' },
-    })
+        orderBy: { updatedAt: 'desc' },
+      }) as unknown as Array<Record<string, unknown>>
+    }
 
     const projectsWithStats = projects.map((project) => {
-      const lastRun = project.testRuns[0]
+      const testRuns = Array.isArray(project.testRuns) ? project.testRuns : []
+      const lastRun = testRuns[0] as {
+        status?: string
+        startedAt?: Date | string
+        passedTests?: number
+        totalTests?: number
+        healedTests?: number
+      } | undefined
+      const testRunCount =
+        typeof (project._count as { testRuns?: number } | undefined)?.testRuns === 'number'
+          ? ((project._count as { testRuns: number }).testRuns)
+          : 0
+
       return {
         id: project.id,
         name: project.name,
         description: project.description,
         repository: project.repository,
-        testRunCount: project._count.testRuns,
+        testRunCount,
         lastTestRun: lastRun
           ? {
             status: lastRun.status,
