@@ -81,9 +81,9 @@ export async function GET(request: NextRequest) {
       })
     })
 
-    // Sort by date
-    activities.sort((a, b) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    // Sort by date (nulls sort last)
+    activities.sort((a, b) =>
+      new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime()
     )
 
     return NextResponse.json({
