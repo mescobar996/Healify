@@ -15,22 +15,22 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const reset = searchParams.get('reset') === 'true'
 
+    if (reset) {
+      return NextResponse.json(
+        { error: 'Reset operation requires POST /api/seed with { "reset": true }' },
+        { status: 405 }
+      )
+    }
+
     // Check if user already has data
     const existingProjectsCount = await db.project.count({
       where: { userId: session.user.id }
     })
 
     if (existingProjectsCount > 0) {
-      if (reset) {
-        // Delete existing data for a clean reset
-        await db.project.deleteMany({
-          where: { userId: session.user.id }
-        })
-      } else {
-        return NextResponse.json({
-          message: 'Database already seeded. Use /api/seed?reset=true to re-seed.'
-        })
-      }
+      return NextResponse.json({
+        message: 'Database already seeded. Use POST /api/seed with {"reset": true} to re-seed.'
+      })
     }
 
     // Create sample projects
@@ -124,6 +124,34 @@ export async function GET(request: Request) {
     console.error('Error seeding database:', error)
     return NextResponse.json(
       { error: 'Failed to seed database' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const body = await request.json().catch(() => ({}))
+    const reset = body?.reset === true
+
+    if (!reset) {
+      return NextResponse.json({ error: 'Invalid request. Expected {"reset": true}' }, { status: 400 })
+    }
+
+    await db.project.deleteMany({
+      where: { userId: session.user.id }
+    })
+
+    return GET(request)
+  } catch (error) {
+    console.error('Error resetting seed data:', error)
+    return NextResponse.json(
+      { error: 'Failed to reset database seed' },
       { status: 500 }
     )
   }

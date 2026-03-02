@@ -5,13 +5,18 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 // GET /api/debug/auth
 // Solo disponible en desarrollo — en producción devuelve 404
 export async function GET() {
-  if (process.env.NODE_ENV === 'production') {
+  const isLocalDebug = process.env.NODE_ENV !== 'production' && process.env.DEBUG_AUTH === 'true'
+  if (!isLocalDebug) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
   const session = await getServerSession(authOptions)
   if (!session?.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  if (session.user.role !== 'admin') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
   const githubId = process.env.GITHUB_CLIENT_ID || process.env.GITHUB_ID
