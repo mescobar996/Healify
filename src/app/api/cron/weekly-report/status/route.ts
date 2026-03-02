@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { getSessionUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 
 function getIsoWeekKey(date: Date): string {
@@ -23,8 +22,8 @@ function getNextMondayAtEightUTC(now: Date): string {
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const user = await getSessionUser()
+    if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -33,7 +32,7 @@ export async function GET() {
     const [lastReport, recentReports] = await Promise.all([
       db.notification.findFirst({
         where: {
-          userId: session.user.id,
+          userId: user.id,
           title: { startsWith: 'Weekly report ' },
         },
         orderBy: { createdAt: 'desc' },
@@ -46,7 +45,7 @@ export async function GET() {
       }),
       db.notification.count({
         where: {
-          userId: session.user.id,
+          userId: user.id,
           title: { startsWith: 'Weekly report ' },
         },
       }),

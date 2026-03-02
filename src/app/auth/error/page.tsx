@@ -1,5 +1,4 @@
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { getSessionUser } from '@/lib/auth/session'
 import { redirect } from 'next/navigation'
 
 export default async function AuthErrorPage({
@@ -7,9 +6,9 @@ export default async function AuthErrorPage({
 }: {
   searchParams: Promise<{ error?: string }>
 }) {
-  const session = await getServerSession(authOptions)
+  const user = await getSessionUser()
   
-  if (session) {
+  if (user) {
     redirect('/dashboard')
   }
 

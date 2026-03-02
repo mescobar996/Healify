@@ -10,7 +10,7 @@ export type AuditAction =
     | 'SETTING_UPDATE'
 
 export class AuditLogService {
-    async log(userId: string, action: AuditAction, resourceId: string, metadata: any = {}) {
+    async log(userId: string, action: AuditAction, resourceId: string, metadata: Record<string, unknown> = {}) {
         console.log(`[AUDIT] User ${userId} performed ${action} on ${resourceId}`)
 
         // In a real app, this would be a high-performance write to a separate table

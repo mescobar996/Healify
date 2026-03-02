@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { HealingStatus } from '@/lib/enums';
+import { getSessionUser } from '@/lib/auth/session';
 
 // PATCH /api/healing-events/:id - Update healing event (accept/reject suggestion)
 export async function PATCH(
@@ -8,6 +9,11 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getSessionUser()
+    if (!user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { id } = await params;
     const body = await request.json();
     const { action, appliedBy } = body;
@@ -21,15 +27,22 @@ export async function PATCH(
       );
     }
 
-    // Find the healing event
+    // Find the healing event with project ownership check
     const healingEvent = await db.healingEvent.findUnique({
       where: { id },
       include: {
-        testRun: true,
+        testRun: {
+          include: { project: { select: { userId: true } } },
+        },
       },
     });
 
     if (!healingEvent) {
+      return NextResponse.json({ error: 'Healing event not found' }, { status: 404 });
+    }
+
+    // Verify ownership
+    if (healingEvent.testRun.project.userId !== user.id) {
       return NextResponse.json({ error: 'Healing event not found' }, { status: 404 });
     }
 

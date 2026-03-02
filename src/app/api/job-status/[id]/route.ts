@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { getSessionUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { getJobStatus } from '@/lib/queue'
 
@@ -11,8 +10,8 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await getServerSession(authOptions)
-        if (!session?.user?.id) {
+        const user = await getSessionUser()
+        if (!user?.id) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
@@ -25,7 +24,7 @@ export async function GET(
                     { id },
                     { jobId: id }
                 ],
-                project: { userId: session.user.id }
+                project: { userId: user.id }
             },
             select: {
                 id: true,

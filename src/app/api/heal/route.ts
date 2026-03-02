@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { analyzeAndHeal, HealRequestSchema } from '@/lib/engine/healing-engine'
+import { getSessionUser } from '@/lib/auth/session'
 
 /**
  * POST /api/heal
  * 
  * Endpoint principal para analizar y curar selectores fallidos.
+ * Requires authentication to prevent AI credit abuse.
  * 
  * Request Body:
  * - selector: string (required) - El selector que falló
@@ -22,6 +24,11 @@ import { analyzeAndHeal, HealRequestSchema } from '@/lib/engine/healing-engine'
  */
 export async function POST(request: NextRequest) {
   try {
+    const user = await getSessionUser()
+    if (!user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const body = await request.json()
 
     // Validar entrada con Zod

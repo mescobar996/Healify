@@ -657,9 +657,9 @@ if (!redisUrl) {
     console.error('(Shared Variables need to be referenced or copied to the service)')
     // En vez de crash inmediato, arrancar el health server igual para que Railway
     // no marque el container como crashlooping — así se pueden ver los logs
-    const http = require('http')
+    const http = require('http') as typeof import('http')
     const port = parseInt(process.env.PORT || '8080', 10)
-    http.createServer((req: any, res: any) => {
+    http.createServer((req: import('http').IncomingMessage, res: import('http').ServerResponse) => {
         res.writeHead(503, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify({ status: 'error', error: 'REDIS_URL not configured' }))
     }).listen(port, '0.0.0.0', () => {

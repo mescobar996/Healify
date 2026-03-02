@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { getSessionUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 
 export async function GET(request: Request) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const user = await getSessionUser()
+    if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -20,7 +19,7 @@ export async function GET(request: Request) {
     const [projects, testRuns, healingEvents] = await Promise.all([
       db.project.findMany({
         where: {
-          userId: session.user.id,
+          userId: user.id,
           OR: [
             { name: { contains: q, mode: 'insensitive' } },
             { description: { contains: q, mode: 'insensitive' } },
@@ -33,7 +32,7 @@ export async function GET(request: Request) {
       }),
       db.testRun.findMany({
         where: {
-          project: { userId: session.user.id },
+          project: { userId: user.id },
           OR: [
             { commitMessage: { contains: q, mode: 'insensitive' } },
             { branch: { contains: q, mode: 'insensitive' } },
@@ -54,7 +53,7 @@ export async function GET(request: Request) {
       }),
       db.healingEvent.findMany({
         where: {
-          testRun: { project: { userId: session.user.id } },
+          testRun: { project: { userId: user.id } },
           OR: [
             { testName: { contains: q, mode: 'insensitive' } },
             { failedSelector: { contains: q, mode: 'insensitive' } },

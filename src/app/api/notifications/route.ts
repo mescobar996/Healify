@@ -1,16 +1,15 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { getSessionUser } from '@/lib/auth/session'
 
 export async function GET(request: Request) {
     try {
-        const session = await getServerSession(authOptions)
-        if (!session?.user) {
+        const user = await getSessionUser()
+        if (!user?.id) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
         const notifications = await db.notification.findMany({
-            where: { userId: session.user.id },
+            where: { userId: user.id },
             orderBy: { createdAt: 'desc' },
             take: 20
         })
@@ -27,15 +26,15 @@ export async function GET(request: Request) {
 
 export async function PATCH(request: Request) {
     try {
-        const session = await getServerSession(authOptions)
-        if (!session?.user) {
+        const user = await getSessionUser()
+        if (!user?.id) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
         const { id, read } = await request.json()
 
         const notification = await db.notification.update({
-            where: { id, userId: session.user.id },
+            where: { id, userId: user.id },
             data: { read }
         })
 

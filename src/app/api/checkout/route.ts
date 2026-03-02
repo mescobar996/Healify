@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createCheckoutSession } from '@/lib/stripe'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { getSessionUser } from '@/lib/auth/session'
 
 // Whitelist de priceIds válidos leída en RUNTIME (no en build time)
 // CRÍTICO: no importar PLANS desde lib/stripe — cachea process.env en build time
@@ -16,8 +15,8 @@ function getValidPriceIds(): Set<string> {
 
 export async function POST(request: Request) {
     try {
-        const session = await getServerSession(authOptions)
-        if (!session?.user?.id || !session?.user?.email) {
+        const user = await getSessionUser()
+        if (!user?.id || !user?.email) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
@@ -36,8 +35,8 @@ export async function POST(request: Request) {
         }
 
         const stripeSession = await createCheckoutSession(
-            session.user.id,
-            session.user.email,
+            user.id,
+            user.email,
             priceId
         )
 

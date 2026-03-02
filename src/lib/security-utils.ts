@@ -1,6 +1,7 @@
 import crypto from 'crypto'
 import { db } from '@/lib/db'
 import { auditLogService } from './audit-log-service'
+import { generateApiKey as generateKey } from './api-key-service'
 
 const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'v-7y$B&E)H@McQfTjWnZr4u7x!A%C*F-' // 32 chars
 const IV_LENGTH = 16
@@ -23,12 +24,11 @@ export function decrypt(text: string): string {
     return decrypted.toString()
 }
 
-export function generateApiKey(): string {
-    return `hf_${crypto.randomBytes(24).toString('hex')}`
-}
+/** @deprecated Use generateApiKey from '@/lib/api-key-service' instead */
+export const generateApiKey = generateKey
 
 export async function rotateApiKey(projectId: string, userId: string): Promise<string> {
-    const newKey = generateApiKey()
+    const newKey = generateKey()
 
     await db.project.update({
         where: { id: projectId },

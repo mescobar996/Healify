@@ -1,13 +1,12 @@
 import { NextResponse } from 'next/server'
 import { analyticsService } from '@/lib/analytics-service'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { getSessionUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 
 export async function GET(request: Request) {
     try {
-        const session = await getServerSession(authOptions)
-        if (!session?.user) {
+        const user = await getSessionUser()
+        if (!user?.id) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
@@ -16,13 +15,13 @@ export async function GET(request: Request) {
 
         if (!projectId) {
             // Return global stats for THIS user
-            const stats = await analyticsService.getGlobalStats(session.user.id)
+            const stats = await analyticsService.getGlobalStats(user.id)
             return NextResponse.json(stats)
         }
 
         // Verify project belongs to user
         const project = await db.project.findUnique({
-            where: { id: projectId, userId: session.user.id }
+            where: { id: projectId, userId: user.id }
         })
 
         if (!project) {

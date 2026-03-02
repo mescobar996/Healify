@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { getSessionUser } from '@/lib/auth/session'
 import { analyticsService } from '@/lib/analytics-service'
 
 function escapePdfText(value: string): string {
@@ -50,15 +49,15 @@ function buildSimplePdf(lines: string[]): string {
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const user = await getSessionUser()
+    if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const { searchParams } = new URL(request.url)
     const format = (searchParams.get('format') || 'csv').toLowerCase()
 
-    const roi = await analyticsService.getGlobalStats(session.user.id)
+    const roi = await analyticsService.getGlobalStats(user.id)
     const generatedAt = new Date().toISOString()
 
     if (format === 'pdf') {

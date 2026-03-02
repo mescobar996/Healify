@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { getSessionUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 
 const ALLOWED_EVENTS = new Set([
@@ -15,8 +14,8 @@ const ALLOWED_EVENTS = new Set([
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const user = await getSessionUser()
+    if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -31,14 +30,14 @@ export async function POST(request: NextRequest) {
     await db.analyticsEvent.create({
       data: {
         eventType: event,
-        metadata: JSON.stringify({ userId: session.user.id, ...metadata }).slice(0, 2000),
+        metadata: JSON.stringify({ userId: user.id, ...metadata }).slice(0, 2000),
       },
     })
 
     if (event.startsWith('onboarding_step_')) {
       await db.notification.create({
         data: {
-          userId: session.user.id,
+          userId: user.id,
           type: 'info',
           title: `analytics_event:${event}`,
           message: JSON.stringify(metadata).slice(0, 1000),

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { getSessionUser } from '@/lib/auth/session';
 
 // GET /api/test-runs/:id - Get test run details with healing events
 export async function GET(
@@ -7,6 +8,11 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getSessionUser()
+    if (!user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { id } = await params;
 
     const testRun = await db.testRun.findUnique({
@@ -18,6 +24,7 @@ export async function GET(
             name: true,
             description: true,
             repository: true,
+            userId: true,
           },
         },
         healingEvents: {
@@ -30,6 +37,11 @@ export async function GET(
     });
 
     if (!testRun) {
+      return NextResponse.json({ error: 'Test run not found' }, { status: 404 });
+    }
+
+    // Verify ownership
+    if (testRun.project.userId !== user.id) {
       return NextResponse.json({ error: 'Test run not found' }, { status: 404 });
     }
 

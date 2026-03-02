@@ -48,12 +48,12 @@ export class TestRunner {
                     await page.goto(test.url, { waitUntil: 'networkidle' })
                     await page.waitForSelector(test.selector, { timeout: 5000 })
                     results.push({ name: test.name, status: 'passed' })
-                } catch (error: any) {
+                } catch (error: unknown) {
                     const snapshot = await this.captureFailure(page, test.name, testRunId)
                     results.push({
                         name: test.name,
                         status: 'failed',
-                        error: error.message,
+                        error: error instanceof Error ? error.message : String(error),
                         ...snapshot
                     })
                 }

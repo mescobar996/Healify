@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { TestStatus } from '@/lib/enums';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { getSessionUser } from '@/lib/auth/session';
 import { checkTestRunLimit, limitExceededResponse } from '@/lib/rate-limit';
 
 // GET /api/test-runs - List test runs with filters
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const user = await getSessionUser()
+    if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -34,7 +33,7 @@ export async function GET(request: NextRequest) {
         healingEvents?: { some: { testName: { contains: string; mode: 'insensitive' } } }
       }>;
     } = {
-      project: { userId: session.user.id }
+      project: { userId: user.id }
     };
 
     if (projectId) {
@@ -101,8 +100,8 @@ export async function GET(request: NextRequest) {
 // POST /api/test-runs - Create a new test run
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const user = await getSessionUser()
+    if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -124,7 +123,7 @@ export async function POST(request: NextRequest) {
     }
 
     const project = await db.project.findUnique({
-      where: { id: projectId, userId: session.user.id },
+      where: { id: projectId, userId: user.id },
     });
 
     if (!project) {
@@ -132,7 +131,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Bloque 9: Rate limiting por plan ──────────────────────────────
-    const limitCheck = await checkTestRunLimit(session.user.id)
+    const limitCheck = await checkTestRunLimit(user.id)
     if (!limitCheck.allowed) {
       return limitExceededResponse('testRuns', limitCheck)
     }

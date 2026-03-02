@@ -1,7 +1,6 @@
 'use server'
 
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { getSessionUser } from '@/lib/auth/session'
 import { redirect } from 'next/navigation'
 import { createCheckoutSession, PLANS } from '@/lib/stripe'
 
@@ -11,9 +10,9 @@ import { createCheckoutSession, PLANS } from '@/lib/stripe'
 
 export async function createCheckout(planId: keyof typeof PLANS) {
   // 1. Check authentication
-  const session = await getServerSession(authOptions)
+  const user = await getSessionUser()
   
-  if (!session?.user?.email) {
+  if (!user?.email) {
     redirect('/auth/signin')
   }
 
@@ -26,8 +25,8 @@ export async function createCheckout(planId: keyof typeof PLANS) {
   try {
     // 2. Create Stripe checkout session
     const stripeSession = await createCheckoutSession(
-      session.user.id,
-      session.user.email,
+      user.id!,
+      user.email,
       plan.priceId
     )
 
@@ -50,9 +49,9 @@ export async function createCheckout(planId: keyof typeof PLANS) {
 // ============================================
 
 export async function getUserPlan() {
-  const session = await getServerSession(authOptions)
+  const user = await getSessionUser()
   
-  if (!session?.user?.id) {
+  if (!user?.id) {
     return { plan: 'free', isActive: false }
   }
 

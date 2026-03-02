@@ -1,14 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { getSessionUser } from '@/lib/auth/session'
 
 /**
  * GET /api/activity
- * Returns recent activity events
+ * Returns recent activity events for the authenticated user
  */
 export async function GET(request: NextRequest) {
   try {
-    // Get recent test runs with healing events
+    const user = await getSessionUser()
+    if (!user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Get recent test runs with healing events (scoped to user)
     const testRuns = await db.testRun.findMany({
+      where: { project: { userId: user.id } },
       take: 10,
       orderBy: { startedAt: 'desc' },
       include: {
@@ -17,14 +24,24 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    // Get recent projects
+    // Get recent projects (scoped to user)
     const projects = await db.project.findMany({
+      where: { userId: user.id },
       take: 5,
       orderBy: { createdAt: 'desc' },
     })
 
     // Build activity feed
-    const activities: any[] = []
+    interface ActivityItem {
+      id: string
+      type: string
+      title: string
+      description: string
+      projectName: string
+      projectId: string
+      createdAt: Date | null
+    }
+    const activities: ActivityItem[] = []
 
     // Add project created events
     projects.forEach((project) => {

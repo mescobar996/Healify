@@ -1,19 +1,18 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { getSessionUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { HealingStatus, SelectorType, TestStatus } from '@/lib/enums'
 
 export async function POST() {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const user = await getSessionUser()
+    if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     let project = await db.project.findFirst({
       where: {
-        userId: session.user.id,
+        userId: user.id,
         name: 'Sandbox Demo',
       },
     })
@@ -22,7 +21,7 @@ export async function POST() {
     if (!project) {
       project = await db.project.create({
         data: {
-          userId: session.user.id,
+          userId: user.id,
           name: 'Sandbox Demo',
           description: 'Proyecto demo interactivo para explorar Healify sin configuración',
           repository: 'https://github.com/healify/demo-project',
@@ -224,7 +223,7 @@ export async function POST() {
 
       await db.notification.create({
         data: {
-          userId: session.user.id,
+          userId: user.id,
           type: 'success',
           title: 'Sandbox listo',
           message: 'Tu proyecto Sandbox Demo está listo con 5 test runs y 5 healing events para que explores.',

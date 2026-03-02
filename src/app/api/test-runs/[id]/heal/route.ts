@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import ZAI from 'z-ai-web-dev-sdk';
 import { SelectorType, HealingStatus } from '@/lib/enums';
 import { notificationService } from '@/lib/notification-service';
+import { getSessionUser } from '@/lib/auth/session';
 
 interface HealRequestBody {
   testName: string;
@@ -24,6 +25,11 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getSessionUser()
+    if (!user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { id } = await params;
     const body: HealRequestBody = await request.json();
 
@@ -55,6 +61,11 @@ export async function POST(
     });
 
     if (!testRun) {
+      return NextResponse.json({ error: 'Test run not found' }, { status: 404 });
+    }
+
+    // Verify ownership
+    if (testRun.project.userId !== user.id) {
       return NextResponse.json({ error: 'Test run not found' }, { status: 404 });
     }
 

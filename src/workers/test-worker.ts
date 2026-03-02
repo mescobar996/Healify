@@ -68,8 +68,8 @@ const worker = new Worker(
                         `Healify identified a broken selector and automatically fixed it.\n\n**Original:** \`${failedSelector}\`\n**New:** \`${suggestion.newSelector}\`\n**Confidence:** ${(suggestion.confidence * 100).toFixed(1)}%\n\n**Reasoning:** ${suggestion.reasoning}`
                     )
                     console.log(`[Job ${job.id}] PR created successfully!`)
-                } catch (prError: any) {
-                    console.error(`[Job ${job.id}] Failed to create PR:`, prError.message)
+                } catch (prError: unknown) {
+                    console.error(`[Job ${job.id}] Failed to create PR:`, prError instanceof Error ? prError.message : prError)
                 }
             } else {
                 console.log(`[Job ${job.id}] No GitHub access token found for user. Skipping PR.`)

@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { getSessionUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { Plan } from '@/lib/enums'
 
@@ -8,13 +7,13 @@ import { Plan } from '@/lib/enums'
 // Retorna el plan actual del usuario — usado por /upgrade-success para polling
 export async function GET() {
     try {
-        const session = await getServerSession(authOptions)
-        if (!session?.user?.id) {
+        const user = await getSessionUser()
+        if (!user?.id) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
         const subscription = await db.subscription.findUnique({
-            where: { userId: session.user.id },
+            where: { userId: user.id },
         })
 
         if (!subscription) {

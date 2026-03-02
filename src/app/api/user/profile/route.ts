@@ -1,14 +1,13 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { getSessionUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 
 // PATCH /api/user/profile — Actualizar nombre del usuario
 // HEAL-008 FIX: Crear endpoint de perfil para que Settings pueda guardar cambios reales
 export async function PATCH(request: Request) {
     try {
-        const session = await getServerSession(authOptions)
-        if (!session?.user?.id) {
+        const user = await getSessionUser()
+        if (!user?.id) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
@@ -27,7 +26,7 @@ export async function PATCH(request: Request) {
         if (name !== undefined)             updateData.name = name.trim().slice(0, 100)
         if (slackWebhookUrl !== undefined)  updateData.slackWebhookUrl = slackWebhookUrl || null
 
-        await db.user.update({ where: { id: session.user.id }, data: updateData })
+        await db.user.update({ where: { id: user.id }, data: updateData })
 
         return NextResponse.json({ success: true, ...updateData })
     } catch (error) {

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { getSessionUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 
 interface BranchSummary {
@@ -34,8 +33,8 @@ function summarizeBranch(runs: Array<{ status: string; totalTests: number; faile
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const user = await getSessionUser()
+    if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -48,7 +47,7 @@ export async function GET(request: NextRequest) {
 
     const allRuns = await db.testRun.findMany({
       where: {
-        project: { userId: session.user.id },
+        project: { userId: user.id },
         branch: { not: null },
         startedAt: { gte: since },
       },

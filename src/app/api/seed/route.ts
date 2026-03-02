@@ -1,14 +1,13 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { TestStatus, HealingStatus, SelectorType } from '@/lib/enums'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { getSessionUser } from '@/lib/auth/session'
 
 // GET /api/seed - Seed the database with sample data
 export async function GET(request: Request) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const user = await getSessionUser()
+    if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -24,7 +23,7 @@ export async function GET(request: Request) {
 
     // Check if user already has data
     const existingProjectsCount = await db.project.count({
-      where: { userId: session.user.id }
+      where: { userId: user.id }
     })
 
     if (existingProjectsCount > 0) {
@@ -39,7 +38,7 @@ export async function GET(request: Request) {
         name: 'E-Commerce Platform',
         description: 'Main e-commerce web application with checkout, cart, and product catalog',
         repository: 'https://github.com/healify/ecommerce-platform',
-        userId: session.user.id,
+        userId: user.id,
       },
     })
 
@@ -48,7 +47,7 @@ export async function GET(request: Request) {
         name: 'Admin Dashboard',
         description: 'Internal admin panel for managing users, orders, and analytics',
         repository: 'https://github.com/healify/admin-dashboard',
-        userId: session.user.id,
+        userId: user.id,
       },
     })
 
@@ -57,13 +56,13 @@ export async function GET(request: Request) {
         name: 'Mobile API',
         description: 'REST API backend for mobile applications',
         repository: 'https://github.com/healify/mobile-api',
-        userId: session.user.id,
+        userId: user.id,
       },
     })
 
     // Create test runs with distributed dates across 7 days
     const now = new Date()
-    const testRunsData: any[] = []
+    const testRunsData: Array<{ id: string; status: string }> = []
 
     for (let i = 0; i < 15; i++) {
       const daysAgo = Math.floor(Math.random() * 7)
@@ -131,8 +130,8 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const user = await getSessionUser()
+    if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -144,7 +143,7 @@ export async function POST(request: Request) {
     }
 
     await db.project.deleteMany({
-      where: { userId: session.user.id }
+      where: { userId: user.id }
     })
 
     return GET(request)

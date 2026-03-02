@@ -1,9 +1,43 @@
 # HEALIFY RAILWAY WORKER - OPTIMIZED
-# Imagen más pequeña con solo Chromium
+# Multi-stage build: build in full image, run in slim image with non-root user
 
+# ── Stage 1: Build ─────────────────────────────────────────────────
+FROM node:20-slim AS builder
+
+RUN apt-get update && apt-get install -y \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+
+COPY package.json package-lock.json* ./
+COPY tsconfig.json ./
+COPY prisma ./prisma/
+
+# Dev deps needed for esbuild/typescript compilation
+RUN npm ci --include=dev
+
+RUN npx prisma generate
+
+COPY src ./src
+
+# Compile worker to single CJS bundle
+RUN npx esbuild src/workers/railway-worker.ts \
+    --bundle \
+    --platform=node \
+    --outfile=dist/worker.js \
+    --format=cjs \
+    --external:playwright \
+    --external:@playwright/test \
+    --external:bullmq \
+    --external:ioredis \
+    --external:@prisma/client \
+    --external:tsx
+
+# ── Stage 2: Production ───────────────────────────────────────────
 FROM node:20-slim
 
-# Instalar solo las dependencias necesarias para Chromium
+# Instalar solo las dependencias de runtime para Chromium + git
 RUN apt-get update && apt-get install -y \
     wget \
     ca-certificates \
@@ -29,46 +63,34 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Crear directorio de trabajo
+# Non-root user for security
+RUN groupadd --gid 1001 healify && \
+    useradd --uid 1001 --gid healify --shell /bin/bash --create-home healify
+
 WORKDIR /app
 
-# Copiar archivos de dependencias
-COPY package.json ./
-COPY package-lock.json* ./
-COPY tsconfig.json ./
+# Copy only production deps + generated Prisma client
+COPY package.json package-lock.json* ./
 COPY prisma ./prisma/
+RUN npm ci --omit=dev && npx prisma generate
 
-# Instalar dependencias de forma determinística (incluye dev para build)
-RUN npm ci --include=dev
-
-# Instalar SOLO Chromium
+# Install ONLY Chromium
 RUN npx playwright install chromium
 
-# Generar Prisma Client
-RUN npx prisma generate
+# Copy compiled worker from builder
+COPY --from=builder /build/dist ./dist
 
-# Copiar el código fuente
-COPY src ./src
-
-# Compilar el worker con esbuild (bundle a un solo archivo CJS)
-RUN npx esbuild src/workers/railway-worker.ts \
-    --bundle \
-    --platform=node \
-    --outfile=dist/worker.js \
-    --format=cjs \
-    --external:playwright \
-    --external:@playwright/test \
-    --external:bullmq \
-    --external:ioredis \
-    --external:@prisma/client \
-    --external:tsx
-
-# Crear directorio para snapshots
-RUN mkdir -p storage/snapshots
+# Create snapshot directory
+RUN mkdir -p storage/snapshots && chown -R healify:healify /app
 
 # Variables de entorno
 ENV NODE_ENV=production
-ENV PLAYWRIGHT_BROWSERS_PATH=/root/.cache/ms-playwright
+ENV PLAYWRIGHT_BROWSERS_PATH=/home/healify/.cache/ms-playwright
 
-# Ejecutar el worker compilado
+# Move Playwright browsers to non-root user cache
+RUN cp -r /root/.cache/ms-playwright /home/healify/.cache/ms-playwright 2>/dev/null || true && \
+    chown -R healify:healify /home/healify/.cache
+
+USER healify
+
 CMD ["node", "dist/worker.js"]

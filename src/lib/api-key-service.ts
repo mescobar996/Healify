@@ -1,10 +1,11 @@
 /**
  * HEALIFY - API Key Service
- * Secure API Key validation using the apiKey field on Project model
+ * Secure API Key validation with SHA-256 hash-at-rest support.
+ * Backward-compatible: tries hash lookup first, falls back to plaintext legacy lookup.
  */
 
 import { db } from '@/lib/db'
-import { randomBytes, createHash } from 'crypto'
+import { randomBytes, createHash, timingSafeEqual } from 'crypto'
 
 // ============================================
 // TYPES
@@ -28,7 +29,7 @@ export interface ApiKeyCreate {
 
 const KEY_CACHE_TTL = 60000 // 1 minute cache
 
-// In-memory cache for API key validation
+// In-memory cache for API key validation (keyed by hash)
 const keyCache = new Map<string, { projectId: string; timestamp: number }>()
 
 function isDbUnavailableError(error: unknown): boolean {
@@ -42,7 +43,7 @@ function isDbUnavailableError(error: unknown): boolean {
 // ============================================
 
 export function generateApiKey(): string {
-  return randomBytes(32).toString('hex')
+  return `hf_${randomBytes(32).toString('hex')}`
 }
 
 export function hashApiKey(key: string): string {
@@ -51,7 +52,7 @@ export function hashApiKey(key: string): string {
 
 export function getKeyPrefix(key: string): string {
   if (key.length < 12) return key
-  return `${key.slice(0, 6)}...${key.slice(-4)}`
+  return `${key.slice(0, 8)}...${key.slice(-4)}`
 }
 
 // ============================================
@@ -59,17 +60,23 @@ export function getKeyPrefix(key: string): string {
 // ============================================
 
 /**
- * Validate an API key — looks up the apiKey field on Project directly
+ * Validate an API key.
+ * Strategy:
+ *   1. Hash the incoming key and look up by apiKeyHash (new path)
+ *   2. If not found, fall back to plaintext apiKey lookup (legacy path)
+ *   3. On legacy hit, backfill the hash/prefix columns for future lookups
  */
 export async function validateApiKey(
   apiKey: string | null | undefined
 ): Promise<ApiKeyValidation> {
-  if (!apiKey) {
+  if (!apiKey || typeof apiKey !== 'string' || apiKey.length < 8) {
     return { valid: false, error: 'API key is required' }
   }
 
-  // Check cache first
-  const cached = keyCache.get(apiKey)
+  const hash = hashApiKey(apiKey)
+
+  // Check cache first (keyed by hash for safety)
+  const cached = keyCache.get(hash)
   if (cached && Date.now() - cached.timestamp < KEY_CACHE_TTL) {
     return {
       valid: true,
@@ -77,13 +84,33 @@ export async function validateApiKey(
     }
   }
 
-  // Look up project by apiKey field
   let project: { id: string; name: string } | null = null
+
   try {
+    // ── Path 1: Hash-based lookup (preferred) ──────────────────────
     project = await db.project.findUnique({
-      where: { apiKey },
+      where: { apiKeyHash: hash },
       select: { id: true, name: true },
     })
+
+    // ── Path 2: Legacy plaintext lookup + backfill ─────────────────
+    if (!project) {
+      project = await db.project.findUnique({
+        where: { apiKey },
+        select: { id: true, name: true },
+      })
+
+      // Backfill hash/prefix on legacy hit so next lookup uses hash path
+      if (project) {
+        await db.project.update({
+          where: { id: project.id },
+          data: {
+            apiKeyHash: hash,
+            apiKeyPrefix: getKeyPrefix(apiKey),
+          },
+        }).catch(() => {}) // Non-critical: don't fail the request
+      }
+    }
   } catch (error) {
     if (isDbUnavailableError(error)) {
       return { valid: false, error: 'Invalid API key' }
@@ -95,8 +122,8 @@ export async function validateApiKey(
     return { valid: false, error: 'Invalid API key' }
   }
 
-  // Update cache
-  keyCache.set(apiKey, { projectId: project.id, timestamp: Date.now() })
+  // Update cache (keyed by hash)
+  keyCache.set(hash, { projectId: project.id, timestamp: Date.now() })
 
   return {
     valid: true,
@@ -110,14 +137,21 @@ export async function validateApiKey(
 // ============================================
 
 /**
- * Rotate the API key for a project (generates a new cuid via Prisma default)
+ * Rotate the API key for a project.
+ * Stores hash + prefix only. Returns plaintext key ONCE for display to the user.
  */
 export async function rotateApiKey(projectId: string): Promise<ApiKeyCreate> {
   const newKey = generateApiKey()
+  const hash = hashApiKey(newKey)
+  const prefix = getKeyPrefix(newKey)
 
   await db.project.update({
     where: { id: projectId },
-    data: { apiKey: newKey },
+    data: {
+      apiKey: newKey,          // Keep legacy column in sync during transition
+      apiKeyHash: hash,
+      apiKeyPrefix: prefix,
+    },
   })
 
   // Invalidate cache for this project
@@ -129,18 +163,19 @@ export async function rotateApiKey(projectId: string): Promise<ApiKeyCreate> {
 }
 
 /**
- * List projects accessible via API key (for display — never expose the key itself)
+ * Get project API key display info (never expose the key itself).
+ * Uses stored prefix when available, falls back to computing from plaintext.
  */
 export async function getProjectApiKeyInfo(projectId: string) {
   const project = await db.project.findUnique({
     where: { id: projectId },
-    select: { id: true, name: true, apiKey: true, createdAt: true },
+    select: { id: true, name: true, apiKey: true, apiKeyPrefix: true, createdAt: true },
   })
   if (!project) return null
   return {
     id: project.id,
     name: project.name,
-    keyPrefix: getKeyPrefix(project.apiKey),
+    keyPrefix: project.apiKeyPrefix || getKeyPrefix(project.apiKey),
     createdAt: project.createdAt,
   }
 }

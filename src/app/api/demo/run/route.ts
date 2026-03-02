@@ -2,22 +2,31 @@ import { NextResponse } from 'next/server'
 import { tryOpenAutoPR } from '@/lib/github/auto-pr'
 import { db } from '@/lib/db'
 import { TestStatus, HealingStatus, SelectorType } from '@/lib/enums'
+import { getSessionUser } from '@/lib/auth/session'
 
 export async function POST() {
     try {
-        // Get or create a demo project
+        const user = await getSessionUser()
+        if (!user?.id) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
+        // Get or create a demo project for this user
         let project = await db.project.findFirst({
-            where: { name: 'Demo Project' }
+            where: { name: 'Demo Project', userId: user.id }
         })
 
         if (!project) {
-            project = await db.project.findFirst()
+            project = await db.project.findFirst({
+                where: { userId: user.id },
+            })
             if (!project) {
                 project = await db.project.create({
                     data: {
                         name: 'Demo Project',
                         description: 'Project used for interactive simulations',
                         repository: 'https://github.com/healify/demo-project',
+                        userId: user.id,
                     },
                 })
             }

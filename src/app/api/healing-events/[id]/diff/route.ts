@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { getSessionUser } from '@/lib/auth/session'
 import { dashboardService } from '@/lib/dashboard-service'
 
 /**
@@ -37,9 +36,9 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const user = await getSessionUser()
     
-    if (!session?.user?.id) {
+    if (!user?.id) {
       return NextResponse.json(
         { error: 'Unauthorized', message: 'Debes iniciar sesión para ver este evento' },
         { status: 401 }
@@ -55,7 +54,7 @@ export async function GET(
       )
     }
 
-    const diffData = await dashboardService.getHealingDiff(id, session.user.id)
+    const diffData = await dashboardService.getHealingDiff(id, user.id)
     
     if (!diffData) {
       return NextResponse.json(

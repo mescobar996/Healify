@@ -5,15 +5,14 @@ export const metadata: Metadata = {
   description: 'Iniciá sesión en Healify con tu cuenta de GitHub para empezar a autocurar tus tests.',
 }
 
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { getSessionUser } from '@/lib/auth/session'
 import { redirect } from 'next/navigation'
 import { SignInButton } from '@/components/SignInButton'
 import { HealifyLogo } from '@/components/HealifyLogo'
 
 export default async function SignInPage() {
-  const session = await getServerSession(authOptions)
-  if (session) redirect('/dashboard')
+  const user = await getSessionUser()
+  if (user) redirect('/dashboard')
 
   return (
     <div className="min-h-screen bg-[#0A0E1A] flex flex-col items-center justify-center px-4">

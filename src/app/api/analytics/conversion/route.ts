@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { getSessionUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 
 const KPI_TARGETS = {
@@ -16,8 +15,8 @@ function pct(numerator: number, denominator: number): number {
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const user = await getSessionUser()
+    if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -34,8 +33,8 @@ export async function GET(request: NextRequest) {
     })
 
     const cohortIds = cohortUsers.map((user) => user.id)
-    const isAdmin = session.user.role === 'admin'
-    const scopedUserIds = isAdmin ? cohortIds : cohortIds.filter((id) => id === session.user.id)
+    const isAdmin = user.role === 'admin'
+    const scopedUserIds = isAdmin ? cohortIds : cohortIds.filter((id) => id === user.id)
 
     if (scopedUserIds.length === 0) {
       return NextResponse.json({

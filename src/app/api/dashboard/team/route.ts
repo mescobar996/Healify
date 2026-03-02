@@ -1,21 +1,20 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { getSessionUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const user = await getSessionUser()
+    if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const isAdmin = session.user.role === 'admin'
+    const isAdmin = user.role === 'admin'
 
     const users = await db.user.findMany({
       where: isAdmin
         ? { projects: { some: {} } }
-        : { id: session.user.id },
+        : { id: user.id },
       select: {
         id: true,
         name: true,

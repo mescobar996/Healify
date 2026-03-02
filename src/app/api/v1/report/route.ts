@@ -8,6 +8,7 @@ import { validateApiKeyFromRequest } from '@/lib/api-key-service'
 import { db } from '@/lib/db'
 import { analyzeAndHeal } from '@/lib/engine/healing-engine'
 import { checkApiReportRateLimit } from '@/lib/rate-limit'
+import type { SelectorType } from '@/lib/enums'
 import { z } from 'zod'
 
 // ============================================
@@ -127,7 +128,7 @@ export async function POST(request: NextRequest) {
       where: { id: healingEvent.id },
       data: {
         newSelector: healResult.fixedSelector,
-        newSelectorType: healResult.selectorType as any,
+        newSelectorType: healResult.selectorType as SelectorType,
         confidence: healResult.confidence,
         status: healResult.confidence >= 0.95 ? 'HEALED_AUTO' : 'NEEDS_REVIEW',
         reasoning: healResult.explanation,

@@ -135,7 +135,8 @@ export default function TestRunDetailPage() {
         const eventsResponse = await fetch(`/api/healing-events?testRunId=${id}`);
         if (eventsResponse.ok) {
           const eventsData = await eventsResponse.json();
-          const mappedEvents: TeardownEvent[] = (eventsData.healingEvents || eventsData || []).map((event: any) => ({
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const mappedEvents: TeardownEvent[] = (eventsData.healingEvents || eventsData || []).map((event: Record<string, any>) => ({
             id: event.id,
             testName: event.testName,
             testFile: event.testFile || undefined,

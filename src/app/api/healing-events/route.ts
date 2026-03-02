@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { HealingStatus } from '@/lib/enums';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { getSessionUser } from '@/lib/auth/session';
 
 // GET /api/healing-events - List healing events
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const user = await getSessionUser()
+    if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -25,7 +24,7 @@ export async function GET(request: NextRequest) {
       status?: HealingStatus;
       testRun?: { projectId?: string; project?: { userId: string } };
     } = {
-      testRun: { project: { userId: session.user.id } }
+      testRun: { project: { userId: user.id } }
     };
 
     if (testRunId) {

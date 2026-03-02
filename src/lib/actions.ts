@@ -4,8 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { db } from '@/lib/db'
 import { checkProjectLimit } from '@/lib/rate-limit'
 import { analyzeAndHeal } from '@/lib/engine/healing-engine'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { getSessionUser } from '@/lib/auth/session'
+import type { TestStatus, SelectorType } from '@/lib/enums'
 
 // ============================================
 // PROJECTS ACTIONS
@@ -55,8 +55,8 @@ export async function createProject(data: {
 }) {
   try {
     // Get session to link project to the logged-in user
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const user = await getSessionUser()
+    if (!user?.id) {
       return { success: false, error: 'Debés iniciar sesión para crear un proyecto' }
     }
 
@@ -68,7 +68,7 @@ export async function createProject(data: {
     }
 
     // ── Bloque 9: Rate limiting por plan ──────────────────────────────
-    const limitCheck = await checkProjectLimit(session.user.id)
+    const limitCheck = await checkProjectLimit(user.id)
     if (!limitCheck.allowed) {
       return {
         success: false,
@@ -83,13 +83,13 @@ export async function createProject(data: {
         name: data.name.trim(),
         description: data.description?.trim() || null,
         repository: data.repository?.trim() || null,
-        userId: session.user.id,
+        userId: user.id,
       },
     })
 
     await db.notification.create({
       data: {
-        userId: session.user.id,
+        userId: user.id,
         type: 'info',
         title: 'analytics_event:onboarding_step_1_repo_connected',
         message: JSON.stringify({ projectId: project.id, source: 'create_project_action' }),
@@ -118,7 +118,7 @@ export async function getTestRuns(params?: {
     const runs = await db.testRun.findMany({
       where: {
         ...(params?.projectId && { projectId: params.projectId }),
-        ...(params?.status && { status: params.status as any }),
+        ...(params?.status && { status: params.status as TestStatus }),
       },
       include: {
         project: {
@@ -467,7 +467,7 @@ async function simulateTestExecution(testRunId: string, projectId: string) {
           selectorType: 'CSS',
           errorMessage,
           newSelector: healingResult.fixedSelector,
-          newSelectorType: healingResult.selectorType as any,
+          newSelectorType: healingResult.selectorType as SelectorType,
           confidence: healingResult.confidence,
           status: healingResult.needsReview ? 'NEEDS_REVIEW' : 'HEALED_AUTO',
           reasoning: healingResult.explanation,

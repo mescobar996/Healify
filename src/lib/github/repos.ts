@@ -45,8 +45,8 @@ export async function setupWebhook(accessToken: string, owner: string, repo: str
             events: ['push', 'pull_request'],
         })
         return data
-    } catch (error: any) {
-        if (error.status === 422) {
+    } catch (error: unknown) {
+        if (error && typeof error === 'object' && 'status' in error && error.status === 422) {
             // Hook already exists
             return { message: 'Webhook already exists' }
         }
