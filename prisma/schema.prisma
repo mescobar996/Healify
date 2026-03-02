@@ -114,7 +114,7 @@ model Project {
   name          String
   description   String?
   repository    String?        // GitHub repo URL
-  apiKey        String         @unique @default(cuid()) // Legacy: plaintext key - will be removed after hash migration
+  apiKey        String?        @unique                  // Legacy: plaintext key (nullable - new projects use hash only)
   apiKeyHash    String?        @unique                  // SHA-256 hash of the API key
   apiKeyPrefix  String?                                 // First 8 chars for display (e.g. "hf_a1b2...")
   userId        String?

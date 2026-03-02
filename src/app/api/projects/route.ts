@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { checkProjectLimit, limitExceededResponse } from '@/lib/rate-limit'
 import { getSessionUser } from '@/lib/auth/session'
+import { initProjectApiKey } from '@/lib/api-key-service'
 
 // GET /api/projects - Get all projects
 export async function GET() {
@@ -90,7 +91,10 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    return NextResponse.json(project, { status: 201 })
+    // Provision hash-only API key (plaintext returned once for display)
+    const apiKey = await initProjectApiKey(project.id)
+
+    return NextResponse.json({ ...project, apiKey }, { status: 201 })
   } catch (error) {
     console.error('Error creating project:', error)
     return NextResponse.json(

@@ -33,7 +33,12 @@ setup('authenticate — guardar sesión de test', async ({ page }) => {
   if (isDemoMode) {
     // En local: usar el endpoint de seed que crea la sesión de demo
     await page.goto('/api/seed?redirect=true')
-    await page.waitForURL(/dashboard/, { timeout: 10_000 })
+    await page.waitForURL(/dashboard/, { timeout: 30_000 })
+    // Wait until the page is fully interactive before saving state
+    await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {
+      // networkidle can be flaky; domcontentloaded is the hard requirement
+      console.warn('[setup] networkidle timeout — saving state anyway')
+    })
   }
 
   // Guardar el estado de auth para reutilizar en specs

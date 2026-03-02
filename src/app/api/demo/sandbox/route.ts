@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getSessionUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { HealingStatus, SelectorType, TestStatus } from '@/lib/enums'
+import { initProjectApiKey } from '@/lib/api-key-service'
 
 export async function POST() {
   try {
@@ -27,6 +28,7 @@ export async function POST() {
           repository: 'https://github.com/healify/demo-project',
         },
       })
+      await initProjectApiKey(project.id).catch(() => {})
       created = true
     }
 

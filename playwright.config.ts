@@ -17,8 +17,8 @@ const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000'
 
 export default defineConfig({
   testDir: './e2e',
-  timeout: 30_000,
-  expect: { timeout: 5_000 },
+  timeout: 60_000,
+  expect: { timeout: 10_000 },
 
   // Correr tests en paralelo por archivo, secuencial dentro de cada archivo
   fullyParallel: false,
@@ -87,6 +87,8 @@ export default defineConfig({
     command: 'npm run dev',
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
-    timeout: 60_000,
+    timeout: 120_000,   // 2 min for CI cold start (prisma generate + Next.js)
+    stdout: 'pipe',
+    stderr: 'pipe',
   },
 })

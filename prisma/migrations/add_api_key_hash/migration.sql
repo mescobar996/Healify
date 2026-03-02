@@ -21,3 +21,8 @@ CREATE UNIQUE INDEX "projects_apiKeyHash_key" ON "projects"("apiKeyHash");
 --
 -- Step 4 (future): Once all rows are backfilled and verified:
 --   ALTER TABLE "projects" DROP COLUMN "apiKey";
+
+-- Step 5: Make apiKey nullable and drop its default (new projects use hash-only)
+-- New code no longer writes to apiKey; run this after all existing code is deployed:
+ALTER TABLE "projects" ALTER COLUMN "apiKey" DROP NOT NULL;
+ALTER TABLE "projects" ALTER COLUMN "apiKey" DROP DEFAULT;

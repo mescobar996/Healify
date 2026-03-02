@@ -3,6 +3,7 @@ import { tryOpenAutoPR } from '@/lib/github/auto-pr'
 import { db } from '@/lib/db'
 import { TestStatus, HealingStatus, SelectorType } from '@/lib/enums'
 import { getSessionUser } from '@/lib/auth/session'
+import { initProjectApiKey } from '@/lib/api-key-service'
 
 export async function POST() {
     try {
@@ -29,6 +30,7 @@ export async function POST() {
                         userId: user.id,
                     },
                 })
+                await initProjectApiKey(project.id).catch(() => {})
             }
         }
 

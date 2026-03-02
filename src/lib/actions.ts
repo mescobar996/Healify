@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { initProjectApiKey } from '@/lib/api-key-service'
 import { db } from '@/lib/db'
 import { checkProjectLimit } from '@/lib/rate-limit'
 import { analyzeAndHeal } from '@/lib/engine/healing-engine'
@@ -85,6 +86,11 @@ export async function createProject(data: {
         repository: data.repository?.trim() || null,
         userId: user.id,
       },
+    })
+
+    // Provision hash-only API key (non-blocking — action callers discover key via /api/projects)
+    initProjectApiKey(project.id).catch((err) => {
+      console.error('[createProject] Failed to init API key for', project.id, err)
     })
 
     await db.notification.create({

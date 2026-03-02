@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { TestStatus, HealingStatus, SelectorType } from '@/lib/enums'
 import { getSessionUser } from '@/lib/auth/session'
+import { initProjectApiKey } from '@/lib/api-key-service'
 
 // GET /api/seed - Seed the database with sample data
 export async function GET(request: Request) {
@@ -41,6 +42,7 @@ export async function GET(request: Request) {
         userId: user.id,
       },
     })
+    await initProjectApiKey(project1.id).catch(() => {})
 
     const project2 = await db.project.create({
       data: {
@@ -50,6 +52,7 @@ export async function GET(request: Request) {
         userId: user.id,
       },
     })
+    await initProjectApiKey(project2.id).catch(() => {})
 
     const project3 = await db.project.create({
       data: {
@@ -59,6 +62,7 @@ export async function GET(request: Request) {
         userId: user.id,
       },
     })
+    await initProjectApiKey(project3.id).catch(() => {})
 
     // Create test runs with distributed dates across 7 days
     const now = new Date()

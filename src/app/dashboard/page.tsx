@@ -10,13 +10,11 @@ import {
   Clock,
   Zap,
   TrendingUp,
-  TrendingDown,
   AlertTriangle,
   ChevronRight,
   ArrowUpDown,
   RefreshCw,
   Play,
-  Pause,
   DollarSign,
   Sparkles,
   ShieldCheck,
@@ -46,6 +44,11 @@ import { DashboardSkeleton } from "@/components/ui/skeletons";
 import { TestDetailSheet } from "@/components/TestDetailSheet";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { OnboardingBanner } from "@/components/OnboardingBanner";
+import { MetricCard } from "@/components/dashboard/MetricCard";
+import { StatusBadge } from "@/components/dashboard/StatusBadge";
+import { ConfidenceBar } from "@/components/dashboard/ConfidenceBar";
+import { EmptyState } from "@/components/dashboard/EmptyState";
+import { ErrorState } from "@/components/dashboard/ErrorState";
 import { toast } from "sonner";
 import type {
   DashboardData,
@@ -71,189 +74,6 @@ interface WeeklyReportStatus {
     sentAt: string
     message: string
   } | null
-}
-
-// ============================================
-// LINEAR STYLE COMPONENTS
-// ============================================
-
-function MetricCard({
-  label,
-  value,
-  change,
-  trend,
-  icon: Icon,
-}: {
-  label: string;
-  value: string | number;
-  change: string;
-  trend: "up" | "down" | "neutral";
-  icon: React.ElementType;
-}) {
-  return (
-    <div className="p-4 rounded-lg bg-[#111111] border border-white/[0.07] flex flex-col gap-2">
-      <span className="text-[11px] font-medium text-[#6B6B6B] uppercase tracking-widest inline-flex items-center gap-1.5">
-        <Icon className="w-3 h-3" />
-        {label}
-      </span>
-      <span className="text-[28px] font-bold text-[#EDEDED] leading-none tabular-nums">
-        {value}
-      </span>
-      <span
-        className={cn(
-          "text-[12px] font-medium flex items-center gap-1",
-          trend === "up" && "text-[#3DB779]",
-          trend === "down" && "text-[#E85C4A]",
-          trend === "neutral" && "text-[#6B6B6B]"
-        )}
-      >
-        {trend === "up" ? (
-          <TrendingUp className="w-3 h-3" />
-        ) : trend === "down" ? (
-          <TrendingDown className="w-3 h-3" />
-        ) : null}
-        {change}
-      </span>
-    </div>
-  );
-}
-
-function StatusBadge({ status }: { status: HealingStatus }) {
-  const config: Record<HealingStatus, { bg: string; text: string; icon: React.ElementType; label: string }> = {
-    curado: {
-      bg: "bg-emerald-500/10",
-      text: "text-emerald-400",
-      icon: CheckCircle2,
-      label: "Curado",
-    },
-    fallido: {
-      bg: "bg-red-500/10",
-      text: "text-red-400",
-      icon: XCircle,
-      label: "Fallido",
-    },
-    pendiente: {
-      bg: "bg-amber-500/10",
-      text: "text-amber-400",
-      icon: Clock,
-      label: "Pendiente",
-    },
-  };
-
-  const { bg, text, icon: Icon, label } = config[status];
-
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium",
-        bg,
-        text
-      )}
-    >
-      <Icon className="w-3 h-3" />
-      {label}
-    </span>
-  );
-}
-
-function ConfidenceBar({ confidence }: { confidence: number }) {
-  return (
-    <div className="flex items-center gap-2">
-      <div className="w-16 h-1.5 rounded-full bg-[var(--bg-elevated)] overflow-hidden">
-        <div
-          className={cn(
-            "h-full rounded-full transition-all duration-300",
-            confidence >= 80
-              ? "bg-emerald-500"
-              : confidence >= 50
-              ? "bg-amber-500"
-              : "bg-red-500"
-          )}
-          style={{ width: `${confidence}%` }}
-        />
-      </div>
-      <span className="text-[11px] text-[var(--text-tertiary)] font-mono">
-        {confidence}%
-      </span>
-    </div>
-  );
-}
-
-// Empty State Component — Smart 3-step guide when no data
-function EmptyState({ title, description, variant = 'inline' }: { title: string; description: string; variant?: 'inline' | 'full' }) {
-  if (variant === 'full') {
-    return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <div className="relative mb-6">
-          <div className="absolute inset-0 bg-[#5E6AD2]/10 blur-2xl rounded-full" />
-          <div className="relative w-16 h-16 rounded-2xl bg-[var(--bg-elevated)] border border-white/[0.08] flex items-center justify-center">
-            <Sparkles className="w-7 h-7 text-[#5E6AD2]" />
-          </div>
-        </div>
-        <h3 className="text-base font-semibold text-[var(--text-primary)] mb-1">{title}</h3>
-        <p className="text-sm text-[var(--text-secondary)] max-w-sm mb-6">{description}</p>
-        <div className="flex flex-col sm:flex-row gap-3">
-          <Button size="sm" asChild className="bg-[#5E6AD2] hover:bg-[#5E6AD2]/90">
-            <Link href="/dashboard/projects">
-              <FolderKanban className="w-3.5 h-3.5 mr-1.5" />
-              Conectar repositorio
-            </Link>
-          </Button>
-          <Button size="sm" variant="outline" asChild>
-            <Link href="/docs">
-              <BookOpen className="w-3.5 h-3.5 mr-1.5" />
-              Ver documentación
-            </Link>
-          </Button>
-        </div>
-        <div className="mt-8 grid grid-cols-3 gap-4 max-w-md w-full">
-          {[
-            { step: '1', label: 'Crear proyecto', icon: FolderKanban, desc: 'Conectá tu repo' },
-            { step: '2', label: 'Instalar SDK', icon: Code2, desc: '3 líneas de config' },
-            { step: '3', label: 'Ver curaciones', icon: Sparkles, desc: 'IA autocura tests' },
-          ].map((s) => (
-            <div key={s.step} className="flex flex-col items-center gap-2 p-3 rounded-lg bg-[var(--bg-card)] border border-white/[0.05]">
-              <div className="w-6 h-6 rounded-full bg-[#5E6AD2]/15 flex items-center justify-center text-[10px] font-bold text-[#5E6AD2]">
-                {s.step}
-              </div>
-              <p className="text-[11px] font-medium text-[var(--text-primary)]">{s.label}</p>
-              <p className="text-[10px] text-[var(--text-tertiary)]">{s.desc}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-  return (
-    <div className="flex flex-col items-center justify-center py-8 text-center">
-      <div className="p-3 rounded-full bg-[var(--bg-elevated)] mb-3">
-        <AlertTriangle className="w-5 h-5 text-[var(--text-tertiary)]" />
-      </div>
-      <p className="text-sm text-[var(--text-secondary)]">{title}</p>
-      <p className="text-xs text-[var(--text-tertiary)] mt-1">{description}</p>
-    </div>
-  );
-}
-
-// Error State Component
-function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
-      <div className="p-3 rounded-full bg-red-500/10">
-        <XCircle className="w-6 h-6 text-red-400" />
-      </div>
-      <p className="text-[var(--text-secondary)] text-sm">{message}</p>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={onRetry}
-        className=""
-      >
-        <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
-        Reintentar
-      </Button>
-    </div>
-  );
 }
 
 // ============================================

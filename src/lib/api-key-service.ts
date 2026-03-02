@@ -56,6 +56,28 @@ export function getKeyPrefix(key: string): string {
 }
 
 // ============================================
+// API KEY PROVISIONING
+// ============================================
+
+/**
+ * Provision a fresh API key for a newly created project.
+ * Stores only the hash + prefix (never the plaintext key).
+ * Returns the plaintext key ONCE for display to the user.
+ * Call immediately after db.project.create().
+ */
+export async function initProjectApiKey(projectId: string): Promise<string> {
+  const key = generateApiKey()
+  await db.project.update({
+    where: { id: projectId },
+    data: {
+      apiKeyHash: hashApiKey(key),
+      apiKeyPrefix: getKeyPrefix(key),
+    },
+  })
+  return key
+}
+
+// ============================================
 // API KEY VALIDATION
 // ============================================
 
@@ -148,9 +170,9 @@ export async function rotateApiKey(projectId: string): Promise<ApiKeyCreate> {
   await db.project.update({
     where: { id: projectId },
     data: {
-      apiKey: newKey,          // Keep legacy column in sync during transition
       apiKeyHash: hash,
       apiKeyPrefix: prefix,
+      // apiKey intentionally NOT updated — new keys are hash-only
     },
   })
 
@@ -169,13 +191,14 @@ export async function rotateApiKey(projectId: string): Promise<ApiKeyCreate> {
 export async function getProjectApiKeyInfo(projectId: string) {
   const project = await db.project.findUnique({
     where: { id: projectId },
-    select: { id: true, name: true, apiKey: true, apiKeyPrefix: true, createdAt: true },
+    select: { id: true, name: true, apiKeyPrefix: true, createdAt: true },
   })
   if (!project) return null
   return {
     id: project.id,
     name: project.name,
-    keyPrefix: project.apiKeyPrefix || getKeyPrefix(project.apiKey),
+    // apiKeyPrefix is null for projects created before hash migration
+    keyPrefix: project.apiKeyPrefix ?? '••••••••...••••',
     createdAt: project.createdAt,
   }
 }
