@@ -124,7 +124,7 @@ export async function POST(request: Request) {
 
             // 🚀 AUTO-ENQUEUE: Agregar job a la cola de BullMQ
             // El worker en Railway procesará este job y ejecutará Playwright
-            const job = await addTestJob(project.id, commitSha, testRun.id, {
+            const job = await addTestJob(project.id, commitSha || undefined, testRun.id, {
                 branch,
                 commitMessage,
                 commitAuthor,
