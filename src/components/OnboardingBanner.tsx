@@ -382,7 +382,7 @@ export function OnboardingBanner({
                 <p className="text-[10px] text-[#E8F0FF]/30">
                   ¿Querés ver cómo funciona sin configurar nada?{" "}
                   <button
-                    onClick={() => router.push("/api/seed")}
+                    onClick={onSetupSandbox}
                     className="text-[#00F5C8]/50 hover:text-[#00F5C8] transition-colors underline underline-offset-2"
                   >
                     Cargar datos de demo

@@ -801,8 +801,8 @@ export default function ProjectsPage() {
     try {
       setIsSeedingDemo(true)
       toast.info('Preparando demo repo...')
-      const response = await fetch('/api/seed', {
-        method: 'GET',
+      const response = await fetch('/api/demo/sandbox', {
+        method: 'POST',
         credentials: 'include',
       })
 
@@ -812,7 +812,7 @@ export default function ProjectsPage() {
       }
 
       const body = await response.json()
-      if (body?.message?.includes('already seeded')) {
+      if (!body?.created) {
         toast.success('Demo ya disponible', {
           description: 'Ya tenés datos de demo cargados en tu cuenta.',
         })
