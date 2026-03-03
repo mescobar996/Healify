@@ -512,6 +512,23 @@ export default function ConnectPage() {
         </div>
       </motion.div>
 
+      {/* GitHub Actions */}
+      <div className="glass-elite p-4">
+        <h2 className="text-sm font-medium text-gray-400 mb-1">GitHub Actions</h2>
+        <p className="text-xs text-gray-500 mb-3">
+          Descargá el workflow de GitHub Actions y colocalo en <span className="font-mono text-gray-300">.github/workflows/healify.yml</span>.
+          Healify ejecutará los tests automáticamente en cada push a <span className="font-mono text-gray-300">main</span> o <span className="font-mono text-gray-300">staging</span>.
+        </p>
+        <a
+          href={`/api/projects/${projectId}/github-actions-workflow`}
+          download="healify.yml"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-gray-200 hover:bg-white/10 transition-colors"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Descargar healify.yml
+        </a>
+      </div>
+
       {/* GitHub Badge */}
       <div className="glass-elite p-4">
         <h2 className="text-sm font-medium text-gray-400 mb-3">Badge “Healed by Healify”</h2>

@@ -130,6 +130,12 @@ model Project {
   notifyOnHeal       Boolean  @default(true)  // Send notification when healing succeeds
   notifyOnFail       Boolean  @default(true)  // Send notification when tests fail
 
+  // ── Scheduled runs ──────────────────────────────────
+  scheduleEnabled  Boolean  @default(false) // Enable cron-based test scheduling
+  scheduleCron     String?                  // Cron expression e.g. "0 */6 * * *"
+  scheduleBranch   String?                  // Branch to test on schedule (null = default)
+  lastScheduledAt  DateTime?               // Last time a scheduled run was triggered
+
   @@map("projects")
 }
 

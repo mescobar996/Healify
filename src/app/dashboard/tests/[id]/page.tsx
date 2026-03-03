@@ -31,6 +31,7 @@ import { api, formatRelativeTime } from "@/lib/api";
 import { TestRunsSkeleton } from "@/components/ui/skeletons";
 import { TestDetailSheet } from "@/components/TestDetailSheet";
 import { JobProgressCard } from "@/components/JobProgressCard";
+import { LiveConsole } from "@/components/LiveConsole";
 import type { TestRun, TestRunStatus, HealingStatus, HealingHistoryItem } from "@/types";
 
 type TeardownEvent = HealingHistoryItem & {
@@ -335,6 +336,11 @@ export default function TestRunDetailPage() {
               setTimeout(() => window.location.reload(), 1500)
             }}
           />
+        )}
+
+        {/* Live Console — SSE-driven real-time output */}
+        {(testRun.status === "PENDING" || testRun.status === "RUNNING") && (
+          <LiveConsole testRunId={testRun.id} maxHeight="280px" />
         )}
 
         {/* Visual Test Teardown */}

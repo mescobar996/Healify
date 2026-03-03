@@ -21,6 +21,7 @@ import {
   Webhook,
   ArrowRight,
   BookOpen,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -175,6 +176,15 @@ function ProjectCard({
               onClick={() => onEdit?.(project.id)}
             >
               Editar
+            </DropdownMenuItem>
+            <DropdownMenuItem className="text-gray-300 text-sm focus:bg-white/5 focus:text-white">
+              <Link
+                href={`/dashboard/projects/${project.id}/settings`}
+                className="w-full flex items-center"
+              >
+                <Settings className="w-4 h-4 mr-2" />
+                Configuración
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuItem 
               className="text-red-400 text-sm focus:bg-white/5 focus:text-red-300 cursor-pointer"

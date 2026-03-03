@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Settings, ArrowLeft, Sliders, GitPullRequest, Bell, BellOff, Loader2, Check } from 'lucide-react'
+import { Settings, ArrowLeft, Sliders, GitPullRequest, Bell, BellOff, Loader2, Check, CalendarClock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
@@ -16,7 +16,19 @@ interface ProjectConfig {
   autoPrEnabled: boolean
   notifyOnHeal: boolean
   notifyOnFail: boolean
+  scheduleEnabled: boolean
+  scheduleCron: string | null
+  scheduleBranch: string | null
 }
+
+const CRON_PRESETS = [
+  { label: 'Cada hora', value: '0 * * * *' },
+  { label: 'Cada 6 horas', value: '0 */6 * * *' },
+  { label: 'Cada 12 horas', value: '0 */12 * * *' },
+  { label: 'Una vez al día (medianoche)', value: '0 0 * * *' },
+  { label: 'Lunes a viernes a las 9:00', value: '0 9 * * 1-5' },
+  { label: 'Personalizado', value: 'custom' },
+]
 
 // ── Threshold slider labels ────────────────
 const thresholdLabel = (t: number) => {
@@ -61,12 +73,18 @@ export default function ProjectSettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [cronPreset, setCronPreset] = useState<string>('custom')
 
   const fetchConfig = useCallback(async () => {
     setLoading(true)
     try {
       const res = await fetch(`/api/projects/${projectId}/settings`, { credentials: 'include' })
-      if (res.ok) setConfig(await res.json())
+      if (res.ok) {
+        const data = await res.json()
+        setConfig(data)
+        const matchedPreset = CRON_PRESETS.find(p => p.value !== 'custom' && p.value === data.scheduleCron)
+        setCronPreset(matchedPreset ? matchedPreset.value : 'custom')
+      }
     } catch {
       toast.error('Error cargando configuración')
     } finally {
@@ -89,6 +107,9 @@ export default function ProjectSettingsPage() {
           autoPrEnabled: config.autoPrEnabled,
           notifyOnHeal: config.notifyOnHeal,
           notifyOnFail: config.notifyOnFail,
+          scheduleEnabled: config.scheduleEnabled,
+          scheduleCron: config.scheduleCron,
+          scheduleBranch: config.scheduleBranch,
         }),
       })
       if (res.ok) {
@@ -213,6 +234,66 @@ export default function ProjectSettingsPage() {
             onCheckedChange={v => update({ notifyOnFail: v })}
           />
         </SettingRow>
+      </div>
+
+      {/* Schedule card */}
+      <div className="rounded-xl bg-[#111318] border border-white/5 p-5 space-y-1">
+        <SettingRow
+          icon={CalendarClock}
+          title="Ejecución programada"
+          description="Ejecutar tests automáticamente según un cron schedule."
+        >
+          <Switch
+            checked={config.scheduleEnabled}
+            onCheckedChange={v => update({ scheduleEnabled: v })}
+          />
+        </SettingRow>
+
+        {config.scheduleEnabled && (
+          <div className="pt-3 space-y-3">
+            <div className="space-y-1">
+              <Label className="text-xs text-gray-400">Frecuencia</Label>
+              <select
+                value={cronPreset}
+                onChange={e => {
+                  const val = e.target.value
+                  setCronPreset(val)
+                  if (val !== 'custom') update({ scheduleCron: val })
+                }}
+                className="w-full rounded-md bg-[#0D1117] border border-white/10 text-sm text-gray-200 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-violet-500"
+              >
+                {CRON_PRESETS.map(p => (
+                  <option key={p.value} value={p.value}>{p.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {cronPreset === 'custom' && (
+              <div className="space-y-1">
+                <Label className="text-xs text-gray-400">Expresión cron personalizada</Label>
+                <input
+                  type="text"
+                  placeholder="0 */6 * * *"
+                  value={config.scheduleCron ?? ''}
+                  onChange={e => update({ scheduleCron: e.target.value || null })}
+                  className="w-full rounded-md bg-[#0D1117] border border-white/10 text-sm font-mono text-gray-200 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                />
+                <p className="text-[10px] text-gray-600">Formato: minuto hora día-mes mes día-semana</p>
+              </div>
+            )}
+
+            <div className="space-y-1">
+              <Label className="text-xs text-gray-400">Rama (dejar en blanco para rama principal)</Label>
+              <input
+                type="text"
+                placeholder="main"
+                value={config.scheduleBranch ?? ''}
+                onChange={e => update({ scheduleBranch: e.target.value || null })}
+                className="w-full rounded-md bg-[#0D1117] border border-white/10 text-sm font-mono text-gray-200 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-violet-500"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Save button */}

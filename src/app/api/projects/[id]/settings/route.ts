@@ -19,6 +19,9 @@ async function getProject(projectId: string, userId: string) {
       autoPrEnabled: true,
       notifyOnHeal: true,
       notifyOnFail: true,
+      scheduleEnabled: true,
+      scheduleCron: true,
+      scheduleBranch: true,
     },
   })
 }
@@ -62,6 +65,9 @@ export async function PUT(req: NextRequest, { params }: Params) {
     autoPrEnabled,
     notifyOnHeal,
     notifyOnFail,
+    scheduleEnabled,
+    scheduleCron,
+    scheduleBranch,
   } = body as Record<string, unknown>
 
   // Validate
@@ -82,6 +88,9 @@ export async function PUT(req: NextRequest, { params }: Params) {
       ...(autoPrEnabled !== undefined && { autoPrEnabled: Boolean(autoPrEnabled) }),
       ...(notifyOnHeal !== undefined && { notifyOnHeal: Boolean(notifyOnHeal) }),
       ...(notifyOnFail !== undefined && { notifyOnFail: Boolean(notifyOnFail) }),
+      ...(scheduleEnabled !== undefined && { scheduleEnabled: Boolean(scheduleEnabled) }),
+      ...(scheduleCron !== undefined && { scheduleCron: scheduleCron as string | null }),
+      ...(scheduleBranch !== undefined && { scheduleBranch: scheduleBranch as string | null }),
     },
     select: {
       id: true,
@@ -90,6 +99,9 @@ export async function PUT(req: NextRequest, { params }: Params) {
       autoPrEnabled: true,
       notifyOnHeal: true,
       notifyOnFail: true,
+      scheduleEnabled: true,
+      scheduleCron: true,
+      scheduleBranch: true,
     },
   })
 
