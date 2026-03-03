@@ -88,18 +88,29 @@ model Notification {
 }
 
 model Subscription {
-  id               String   @id @default(cuid())
-  userId           String   @unique
-  user             User     @relation(fields: [userId], references: [id])
-  stripeCustomerId String?  @unique
-  stripePriceId    String?
-  plan             Plan     @default(FREE)
-  status           String   @default("active") // active, canceled, past_due
-  currentPeriodEnd DateTime?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id                String    @id @default(cuid())
+  userId            String    @unique
+  user              User      @relation(fields: [userId], references: [id])
+  plan              Plan      @default(FREE)
+  status            String    @default("active") // active, canceled, past_due, pending
+  gateway           Gateway?  // which payment processor handled this subscription
+  gatewaySubId      String?   // LS order/sub ID | MP preapproval ID | Stripe sub ID
+  gatewayCustomerId String?   // LS customer ID  | MP payer email    | Stripe customer ID
+  currency          String?   // "USD" or "ARS"
+  currentPeriodEnd  DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  // Legacy Stripe fields — kept for existing subscribers migrated from Stripe
+  stripeCustomerId  String?   @unique
+  stripePriceId     String?
 
   @@map("subscriptions")
+}
+
+enum Gateway {
+  LEMONSQUEEZY
+  MERCADOPAGO
+  STRIPE
 }
 
 enum Plan {

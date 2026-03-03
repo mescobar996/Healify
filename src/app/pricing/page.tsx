@@ -1,20 +1,32 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useSearchParams } from 'next/navigation'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState, useEffect, useCallback } from 'react'
+import { motion } from 'framer-motion'
 import {
   Check, Loader2, Sparkles, ArrowRight,
-  Bell, Clock, Users, Zap, Shield, Infinity,
-  Star, ChevronDown
+  Users, Zap, Shield, Infinity,
+  Star
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { HealifyLogo } from '@/components/HealifyLogo'
 import Link from 'next/link'
 import { toast } from 'sonner'
+import { useSession } from 'next-auth/react'
+
+type Currency = 'USD' | 'ARS'
+type PlanId = 'starter' | 'pro' | 'enterprise'
 
 // ─── Plan data ──────────────────────────────────────────────────────
-const PLANS = [
+const PLANS: Array<{
+  id: PlanId
+  name: string
+  price: number
+  description: string
+  color: string
+  badge: string | null
+  features: Array<{ text: string; icon: React.ElementType }>
+  notIncluded: string[]
+}> = [
   {
     id: 'starter',
     name: 'Starter',
@@ -76,95 +88,70 @@ const FREE_FEATURES = [
   'Dashboard completo',
 ]
 
-// ─── Waitlist form ──────────────────────────────────────────────────
-function WaitlistForm({ plan }: { plan: string }) {
-  const [email, setEmail]     = useState('')
-  const [name, setName]       = useState('')
-  const [loading, setLoading] = useState(false)
-  const [done, setDone]       = useState(false)
+// ─── Currency toggle ────────────────────────────────────────────────
+function CurrencyToggle({ currency, onChange }: { currency: Currency; onChange: (c: Currency) => void }) {
+  return (
+    <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-white/5 border border-white/10">
+      {(['USD', 'ARS'] as Currency[]).map(c => (
+        <button
+          key={c}
+          onClick={() => onChange(c)}
+          className={cn(
+            'px-4 py-1.5 rounded-lg text-sm font-medium transition-all',
+            currency === c
+              ? 'bg-white text-[#0A0A0A] shadow'
+              : 'text-[#EDEDED]/50 hover:text-white'
+          )}
+        >
+          {c === 'USD' ? '🌎 USD' : '🇦🇷 ARS'}
+        </button>
+      ))}
+    </div>
+  )
+}
 
-  const handleSubmit = async () => {
-    if (!email.trim() || !email.includes('@')) {
-      toast.error('Ingresá un email válido')
+// ─── Plan card ──────────────────────────────────────────────────────
+function PlanCard({
+  plan,
+  index,
+  currency,
+  arsRate,
+}: {
+  plan: typeof PLANS[0]
+  index: number
+  currency: Currency
+  arsRate: number | null
+}) {
+  const { data: session } = useSession()
+  const [loading, setLoading] = useState(false)
+  const isPopular = plan.badge === 'Más popular'
+
+  const arsPrice = arsRate ? Math.round((plan.price * arsRate) / 100) * 100 : null
+
+  const handleCheckout = useCallback(async () => {
+    if (!session) {
+      window.location.href = `/auth/signin?callbackUrl=/pricing`
       return
     }
     setLoading(true)
     try {
-      const res = await fetch('/api/waitlist', {
+      const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), name: name.trim() || undefined, plan, source: 'pricing' }),
+        body: JSON.stringify({ planId: plan.id, currency }),
       })
       const data = await res.json()
-      if (res.ok && data.success) {
-        setDone(true)
-        toast.success('¡Anotado! Te avisamos cuando los pagos estén listos.')
+      if (res.ok && data.url) {
+        window.location.href = data.url
       } else {
-        toast.error(data.error || 'Error al registrar. Intentá de nuevo.')
+        toast.error(data.error ?? 'Error al iniciar el pago. Intentá de nuevo.')
       }
     } catch {
       toast.error('Error de conexión. Intentá de nuevo.')
     } finally {
       setLoading(false)
     }
-  }
-
-  if (done) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="text-center py-4"
-      >
-        <div className="w-12 h-12 rounded-full bg-white/10 border border-white/25 flex items-center justify-center mx-auto mb-3">
-          <Check className="w-5 h-5 text-white" />
-        </div>
-        <p className="text-sm font-medium text-white">¡Estás en la lista!</p>
-        <p className="text-xs text-[#EDEDED]/50 mt-1">Te mandamos un email de confirmación.</p>
-      </motion.div>
-    )
-  }
-
-  return (
-    <div className="space-y-2">
-      <input
-        type="text"
-        placeholder="Tu nombre (opcional)"
-        value={name}
-        onChange={e => setName(e.target.value)}
-        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-white/40 transition-colors"
-      />
-      <input
-        type="email"
-        placeholder="tu@email.com"
-        value={email}
-        onChange={e => setEmail(e.target.value)}
-        onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-white/40 transition-colors"
-      />
-      <button
-        onClick={handleSubmit}
-        disabled={loading}
-        className="w-full py-2.5 rounded-lg text-sm font-semibold text-white transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-        style={{ background: 'linear-gradient(135deg, #FFFFFF, #CFCFCF)' }}
-      >
-        {loading ? (
-          <Loader2 className="w-4 h-4 animate-spin" />
-        ) : (
-          <>
-            <Bell className="w-4 h-4" />
-            Avisarme cuando esté disponible
-          </>
-        )}
-      </button>
-    </div>
-  )
-}
-
-// ─── Plan card ──────────────────────────────────────────────────────
-function PlanCard({ plan, index }: { plan: typeof PLANS[0]; index: number }) {
-  const [showWaitlist, setShowWaitlist] = useState(false)
-  const isPopular = plan.badge === 'Más popular'
+  }, [session, plan.id, currency])
 
   return (
     <motion.div
@@ -192,21 +179,29 @@ function PlanCard({ plan, index }: { plan: typeof PLANS[0]; index: number }) {
         <p className="text-xs font-medium tracking-widest uppercase mb-1" style={{ color: plan.color }}>
           {plan.name}
         </p>
-        <div className="flex items-baseline gap-1 mb-2">
-          <span className="text-3xl font-bold text-white">${plan.price}</span>
-          <span className="text-sm text-[#EDEDED]/40">USD / mes</span>
+        <div className="flex items-baseline gap-1 mb-1">
+          {currency === 'USD' ? (
+            <>
+              <span className="text-3xl font-bold text-white">${plan.price}</span>
+              <span className="text-sm text-[#EDEDED]/40">USD / mes</span>
+            </>
+          ) : arsPrice ? (
+            <>
+              <span className="text-3xl font-bold text-white">${arsPrice.toLocaleString('es-AR')}</span>
+              <span className="text-sm text-[#EDEDED]/40">ARS / mes</span>
+            </>
+          ) : (
+            <span className="text-xl font-bold text-[#EDEDED]/50">Calculando…</span>
+          )}
         </div>
-        <p className="text-xs text-[#EDEDED]/50 leading-relaxed">{plan.description}</p>
-      </div>
-
-      {/* Coming soon banner */}
-      <div className="mb-4 px-3 py-2 rounded-xl bg-white/5 border border-white/15 flex items-center gap-2">
-        <Clock className="w-3.5 h-3.5 text-white/80 shrink-0" />
-        <span className="text-xs text-white/80 font-medium">Pagos disponibles próximamente</span>
+        {currency === 'ARS' && arsPrice && (
+          <p className="text-xs text-[#EDEDED]/35">≈ ${plan.price} USD · tasa oficial</p>
+        )}
+        <p className="text-xs text-[#EDEDED]/50 leading-relaxed mt-1">{plan.description}</p>
       </div>
 
       {/* Features */}
-      <ul className="space-y-2 mb-4 flex-1">
+      <ul className="space-y-2 mb-6 flex-1">
         {plan.features.map(f => (
           <li key={f.text} className="flex items-center gap-2 text-sm text-[#EDEDED]/70">
             <Check className="w-3.5 h-3.5 shrink-0" style={{ color: plan.color }} />
@@ -221,58 +216,40 @@ function PlanCard({ plan, index }: { plan: typeof PLANS[0]; index: number }) {
         ))}
       </ul>
 
-      {/* Waitlist toggle */}
-      <div>
-        <button
-          onClick={() => setShowWaitlist(!showWaitlist)}
-          className={cn(
-            'w-full py-2.5 rounded-xl text-sm font-semibold border transition-all flex items-center justify-center gap-2',
-            showWaitlist
-              ? 'border-white/35 text-white bg-white/10'
-              : 'border-white/10 text-[#EDEDED]/70 bg-white/5 hover:bg-white/10 hover:text-white'
-          )}
-        >
-          {showWaitlist ? (
-            <>
-              <ChevronDown className="w-4 h-4" />
-              Ocultar
-            </>
-          ) : (
-            <>
-              <Bell className="w-4 h-4" />
-              Unirme a la lista de espera
-            </>
-          )}
-        </button>
-
-        <AnimatePresence>
-          {showWaitlist && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="overflow-hidden"
-            >
-              <div className="pt-3">
-                <WaitlistForm plan={plan.id} />
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+      {/* CTA */}
+      <button
+        onClick={handleCheckout}
+        disabled={loading || (currency === 'ARS' && !arsPrice)}
+        className={cn(
+          'w-full py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2',
+          isPopular
+            ? 'bg-white text-[#0A0A0A] hover:bg-[#E3E3E3] disabled:opacity-50'
+            : 'border border-white/20 text-white hover:bg-white/10 disabled:opacity-30'
+        )}
+      >
+        {loading ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : (
+          <>
+            Elegir {plan.name}
+            <ArrowRight className="w-4 h-4" />
+          </>
+        )}
+      </button>
     </motion.div>
   )
 }
 
 // ═══════════════════════════════════════════════════════════════════
 export default function PricingPage() {
-  const [waitlistCount, setWaitlistCount] = useState<number | null>(null)
+  const [currency, setCurrency] = useState<Currency>('USD')
+  const [arsRate, setArsRate]   = useState<number | null>(null)
 
   useEffect(() => {
-    fetch('/api/waitlist')
+    fetch('/api/billing/exchange-rate')
       .then(r => r.json())
-      .then(d => setWaitlistCount(d.count ?? null))
-      .catch(() => {})
+      .then(d => { if (d.rate) setArsRate(d.rate) })
+      .catch(() => setArsRate(1050))
   }, [])
 
   return (
@@ -303,28 +280,15 @@ export default function PricingPage() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-6"
         >
-          <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border border-white/20 text-white/80 bg-white/5 mb-5">
-            <Clock className="w-3 h-3" /> Pagos disponibles próximamente
-          </span>
           <h1 className="text-4xl sm:text-5xl font-bold tracking-tight mb-4"
             style={{ background: 'linear-gradient(135deg, #FFFFFF 0%, #DADADA 60%, #9D9D9D 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
             Precios simples y transparentes
           </h1>
-          <p className="text-[#EDEDED]/60 max-w-xl mx-auto leading-relaxed">
-            Mientras activamos los pagos, podés usar el plan gratuito sin límite de tiempo.
-            Anotate en la lista de espera para ser el primero en acceder.
+          <p className="text-[#EDEDED]/60 max-w-xl mx-auto leading-relaxed mb-6">
+            Pagá en USD con tarjeta internacional o en pesos argentinos con MercadoPago.
+            Sin sorpresas: cancelá cuando quieras.
           </p>
-
-          {/* Social proof counter */}
-          {waitlistCount !== null && waitlistCount > 0 && (
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="mt-3 text-sm text-[#EDEDED]/40"
-            >
-              <span className="text-white font-semibold">{waitlistCount}</span> personas ya se anotaron
-            </motion.p>
-          )}
+          <CurrencyToggle currency={currency} onChange={setCurrency} />
         </motion.div>
 
         {/* Free plan highlight */}
@@ -355,26 +319,23 @@ export default function PricingPage() {
           </Link>
         </motion.div>
 
+        {/* Currency note */}
+        {currency === 'ARS' && (
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center text-xs text-[#EDEDED]/40 -mt-2 mb-6"
+          >
+            Precios en ARS calculados con el dólar oficial · Cobro mensual vía MercadoPago
+          </motion.p>
+        )}
+
         {/* Plan cards */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-14">
           {PLANS.map((plan, i) => (
-            <PlanCard key={plan.id} plan={plan} index={i} />
+            <PlanCard key={plan.id} plan={plan} index={i} currency={currency} arsRate={arsRate} />
           ))}
         </div>
-
-        {/* Global waitlist */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="max-w-md mx-auto text-center"
-        >
-          <h2 className="text-lg font-semibold text-white mb-1">¿No sabés qué plan elegir?</h2>
-          <p className="text-sm text-[#EDEDED]/50 mb-5">
-            Anotate sin comprometerte a ningún plan. Te contactamos cuando los pagos estén disponibles.
-          </p>
-          <WaitlistForm plan="pro" />
-        </motion.div>
 
         {/* FAQ */}
         <div className="mt-16 max-w-2xl mx-auto">
@@ -386,8 +347,8 @@ export default function PricingPage() {
                 a: 'No. El plan gratuito es permanente. Podés usarlo mientras quieras sin tarjeta de crédito.',
               },
               {
-                q: '¿Qué métodos de pago van a aceptar?',
-                a: 'Estamos evaluando opciones para Argentina: MercadoPago, Lemon Squeezy y transferencia bancaria. Te avisamos por email cuando esté listo.',
+                q: '¿Qué métodos de pago aceptan?',
+                a: 'USD con tarjeta internacional via Lemon Squeezy (Visa, Mastercard, etc.). Pesos argentinos via MercadoPago (tarjeta de crédito, débito, transferencia). El tipo de cambio se actualiza cada 15 minutos con el dólar oficial.',
               },
               {
                 q: '¿Puedo cambiar de plan después?',
