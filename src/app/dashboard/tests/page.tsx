@@ -34,8 +34,8 @@ import type { TestRun, TestRunStatus } from "@/types";
 function StatusBadge({ status }: { status: TestRunStatus }) {
   const variants: Record<TestRunStatus, { bg: string; text: string; icon: React.ElementType }> = {
     PASSED: {
-      bg: "bg-emerald-500/10",
-      text: "text-emerald-400",
+      bg: "bg-white/10",
+      text: "text-white",
       icon: CheckCircle2,
     },
     FAILED: {
@@ -44,18 +44,18 @@ function StatusBadge({ status }: { status: TestRunStatus }) {
       icon: XCircle,
     },
     HEALED: {
-      bg: "bg-[rgba(94,106,210,0.15)]",
-      text: "text-[#5E6AD2]",
+      bg: "bg-white/10",
+      text: "text-white",
       icon: Zap,
     },
     RUNNING: {
-      bg: "bg-blue-500/10",
-      text: "text-blue-400",
+      bg: "bg-white/10",
+      text: "text-white",
       icon: RefreshCw,
     },
     PENDING: {
-      bg: "bg-amber-500/10",
-      text: "text-amber-400",
+      bg: "bg-white/10",
+      text: "text-white",
       icon: Clock,
     },
     CANCELLED: {
@@ -64,8 +64,8 @@ function StatusBadge({ status }: { status: TestRunStatus }) {
       icon: XCircle,
     },
     PARTIAL: {
-      bg: "bg-orange-500/10",
-      text: "text-orange-400",
+      bg: "bg-white/10",
+      text: "text-white",
       icon: AlertTriangle,
     },
   };
@@ -142,8 +142,8 @@ function EmptyState({ title, description }: { title: string; description: string
 function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
-      <div className="p-3 rounded-full bg-red-500/10">
-        <AlertTriangle className="w-6 h-6 text-red-400" />
+      <div className="p-3 rounded-full bg-white/10">
+        <AlertTriangle className="w-6 h-6 text-white" />
       </div>
       <p className="text-[var(--text-secondary)] text-sm">{message}</p>
       <Button
@@ -382,7 +382,7 @@ function TestsContent() {
             }}
             className={cn(
               "",
-              isPaused && "bg-amber-500/10 border-amber-500/20 text-amber-300"
+              isPaused && "bg-white/10 border-white/20 text-white"
             )}
           >
             {isPaused ? (
@@ -424,7 +424,7 @@ function TestsContent() {
           label="Pasados"
           value={stats.passed}
           icon={CheckCircle2}
-          iconColor="text-emerald-400"
+          iconColor="text-white"
         />
         <StatCard
           label="Fallidos"
@@ -436,13 +436,13 @@ function TestsContent() {
           label="Curados"
           value={stats.healed}
           icon={Zap}
-          iconColor="text-violet-400"
+          iconColor="text-white"
         />
         <StatCard
           label="En Progreso"
           value={stats.running}
           icon={RefreshCw}
-          iconColor="text-blue-400"
+          iconColor="text-white"
         />
       </div>
 
@@ -486,7 +486,7 @@ function TestsContent() {
                 <p className="text-sm text-[var(--text-primary)]">
                   {branchComparison.compare.branch}: <span className="text-[var(--text-secondary)]">{branchComparison.compare.failedTests}</span>
                 </p>
-                <p className={cn('text-xs mt-1', (branchComparison.delta?.failedTests || 0) <= 0 ? 'text-emerald-400' : 'text-red-400')}>
+                <p className={cn('text-xs mt-1', (branchComparison.delta?.failedTests || 0) <= 0 ? 'text-white' : 'text-red-400')}>
                   Δ {branchComparison.delta?.failedTests || 0}
                 </p>
               </div>
@@ -495,7 +495,7 @@ function TestsContent() {
                 <p className="text-[11px] text-[var(--text-tertiary)] uppercase tracking-wide">Failure rate</p>
                 <p className="text-sm text-[var(--text-primary)] mt-1">{branchComparison.base.branch}: {branchComparison.base.failureRate}%</p>
                 <p className="text-sm text-[var(--text-primary)]">{branchComparison.compare.branch}: {branchComparison.compare.failureRate}%</p>
-                <p className={cn('text-xs mt-1', (branchComparison.delta?.failureRate || 0) <= 0 ? 'text-emerald-400' : 'text-red-400')}>
+                <p className={cn('text-xs mt-1', (branchComparison.delta?.failureRate || 0) <= 0 ? 'text-white' : 'text-red-400')}>
                   Δ {branchComparison.delta?.failureRate || 0}%
                 </p>
               </div>
@@ -504,7 +504,7 @@ function TestsContent() {
                 <p className="text-[11px] text-[var(--text-tertiary)] uppercase tracking-wide">Runs curados</p>
                 <p className="text-sm text-[var(--text-primary)] mt-1">{branchComparison.base.branch}: {branchComparison.base.healedRuns}</p>
                 <p className="text-sm text-[var(--text-primary)]">{branchComparison.compare.branch}: {branchComparison.compare.healedRuns}</p>
-                <p className={cn('text-xs mt-1', (branchComparison.delta?.healedRuns || 0) >= 0 ? 'text-emerald-400' : 'text-red-400')}>
+                <p className={cn('text-xs mt-1', (branchComparison.delta?.healedRuns || 0) >= 0 ? 'text-white' : 'text-red-400')}>
                   Δ {branchComparison.delta?.healedRuns || 0}
                 </p>
               </div>
@@ -679,7 +679,7 @@ function TestsContent() {
 
                 {/* Passed */}
                 <div className="col-span-1 flex items-center justify-center">
-                  <span className="text-sm font-medium text-emerald-400">
+                  <span className="text-sm font-medium text-white">
                     {run.passedTests}
                   </span>
                 </div>
@@ -752,9 +752,9 @@ function TestsContent() {
                     <StatusBadge status={run.status} />
                   </div>
                   <div className="flex items-center gap-3 text-[11px] text-[var(--text-tertiary)] pl-6">
-                    <span className="text-emerald-400 font-medium">{run.passedTests}✓</span>
+                    <span className="text-white font-medium">{run.passedTests}✓</span>
                     {run.failedTests > 0 && <span className="text-red-400 font-medium">{run.failedTests}✗</span>}
-                    {run.healedTests > 0 && <span className="text-violet-400 font-medium">{run.healedTests}⚡</span>}
+                    {run.healedTests > 0 && <span className="text-white font-medium">{run.healedTests}⚡</span>}
                     <span className="ml-auto">{formatRelativeTime(run.startedAt)}</span>
                   </div>
                   <div className="pl-6 flex items-center gap-1 flex-wrap mt-1">

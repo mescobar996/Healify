@@ -9,6 +9,7 @@ import {
   TestTube2,
   Settings,
   BookOpen,
+  LifeBuoy,
   Menu,
   ChevronDown,
   LogOut,
@@ -42,6 +43,7 @@ const navItems = [
   { name: "Tests",          href: "/dashboard/tests",    icon: TestTube2       },
   { name: "Configuración",  href: "/dashboard/settings", icon: Settings        },
   { name: "Docs",           href: "/docs",               icon: BookOpen        },
+  { name: "Support",        href: "/support",            icon: LifeBuoy        },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -121,17 +123,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 className={cn(
                   "min-h-[44px] flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium transition-all duration-150 group",
                   isActive
-                    ? "bg-[#1A1A1A] text-[#EDEDED] border-l-2 border-[#5E6AD2]"
+                    ? "bg-[#1A1A1A] text-[#EDEDED] border-l-2 border-white"
                     : "text-[#6B6B6B] hover:text-[#EDEDED] hover:bg-[#151515]"
                 )}
               >
                 <item.icon className={cn(
                   "w-4 h-4 transition-colors duration-150",
-                  isActive ? "text-[#5E6AD2]" : "text-[#6B6B6B] group-hover:text-[#EDEDED]"
+                  isActive ? "text-white" : "text-[#6B6B6B] group-hover:text-[#EDEDED]"
                 )} />
                 <span className="flex-1">{item.name}</span>
                 {isActive && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#5E6AD2]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-white" />
                 )}
               </Link>
             );
@@ -164,7 +166,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <Avatar className="w-6 h-6">
                   <AvatarImage src={session?.user?.image || ""} />
                   <AvatarFallback className="text-[10px] font-medium"
-                    style={{ background: "linear-gradient(135deg,#5E6AD2,#7A84DC)", color: "#090909" }}>
+                    style={{ background: "linear-gradient(135deg,#FFFFFF,#D2D2D2)", color: "#090909" }}>
                     {userInitials}
                   </AvatarFallback>
                 </Avatar>
@@ -240,7 +242,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <Avatar className="w-7 h-7">
                       <AvatarImage src={session?.user?.image || ""} />
                       <AvatarFallback className="text-[10px] font-medium"
-                        style={{ background: "linear-gradient(135deg,#5E6AD2,#7A84DC)", color: "#090909" }}>
+                        style={{ background: "linear-gradient(135deg,#FFFFFF,#D2D2D2)", color: "#090909" }}>
                         {userInitials}
                       </AvatarFallback>
                     </Avatar>

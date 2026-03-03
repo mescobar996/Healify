@@ -437,7 +437,7 @@ function DashboardContent() {
               <div className="px-5 py-4 flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                   style={{ background: '#1A1A1A' }}>
-                  <Timer className="w-4 h-4 text-[#5E6AD2]" />
+                  <Timer className="w-4 h-4 text-white" />
                 </div>
                 <div>
                   <p className="text-lg font-bold text-[var(--text-primary)] leading-none">
@@ -450,7 +450,7 @@ function DashboardContent() {
               <div className="px-5 py-4 flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                   style={{ background: '#1A1A1A' }}>
-                  <DollarSign className="w-4 h-4 text-[#5E6AD2]" />
+                  <DollarSign className="w-4 h-4 text-white" />
                 </div>
                 <div>
                   <p className="text-lg font-bold text-[var(--text-primary)] leading-none">
@@ -463,7 +463,7 @@ function DashboardContent() {
               <div className="px-5 py-4 flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                   style={{ background: '#1A1A1A' }}>
-                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                  <ShieldCheck className="w-4 h-4 text-white" />
                 </div>
                 <div>
                   <p className="text-lg font-bold text-[var(--text-primary)] leading-none">
@@ -561,7 +561,7 @@ function DashboardContent() {
               </div>
               <div className="flex items-center gap-4 text-xs">
                 <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                  <div className="w-2 h-2 rounded-full bg-white" />
                   <span className="text-[var(--text-secondary)]">Curados</span>
                 </div>
                 <div className="flex items-center gap-1.5">
@@ -582,8 +582,8 @@ function DashboardContent() {
                   <AreaChart data={data.chartData}>
                     <defs>
                       <linearGradient id="healingGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#5E6AD2" stopOpacity={0.15} />
-                        <stop offset="95%" stopColor="#5E6AD2" stopOpacity={0} />
+                        <stop offset="5%" stopColor="#FFFFFF" stopOpacity={0.15} />
+                        <stop offset="95%" stopColor="#FFFFFF" stopOpacity={0} />
                       </linearGradient>
                       <linearGradient id="brokenGrad" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#E85C4A" stopOpacity={0.15} />
@@ -609,7 +609,7 @@ function DashboardContent() {
                     <Area
                       type="monotone"
                       dataKey="curados"
-                      stroke="#5E6AD2"
+                      stroke="#FFFFFF"
                       strokeWidth={2}
                       fillOpacity={1}
                       fill="url(#healingGrad)"
@@ -724,16 +724,16 @@ function DashboardContent() {
                       {/* Status Icon */}
                       <div className="flex-shrink-0 mt-0.5">
                         {item.status === "curado" ? (
-                          <div className="w-5 h-5 rounded-full bg-emerald-500/10 flex items-center justify-center">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                          <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center">
+                            <CheckCircle2 className="w-3 h-3 text-white" />
                           </div>
                         ) : item.status === "fallido" ? (
                           <div className="w-5 h-5 rounded-full bg-red-500/10 flex items-center justify-center">
                             <XCircle className="w-3 h-3 text-red-400" />
                           </div>
                         ) : (
-                          <div className="w-5 h-5 rounded-full bg-amber-500/10 flex items-center justify-center">
-                            <Clock className="w-3 h-3 text-amber-400" />
+                          <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center">
+                            <Clock className="w-3 h-3 text-white" />
                           </div>
                         )}
                       </div>
@@ -750,7 +750,7 @@ function DashboardContent() {
                           {item.newSelector && (
                             <>
                               <ChevronRight className="w-3 h-3 text-[var(--text-tertiary)] flex-shrink-0" />
-                              <code className="text-[11px] text-emerald-400 font-mono truncate max-w-[100px] sm:max-w-[200px]">
+                              <code className="text-[11px] text-white font-mono truncate max-w-[100px] sm:max-w-[200px]">
                                 {item.newSelector}
                               </code>
                             </>
@@ -836,8 +836,8 @@ function DashboardContent() {
                     <AreaChart data={data.chartData}>
                       <defs>
                         <linearGradient id="healingGradAnalysis" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#5E6AD2" stopOpacity={0.15} />
-                          <stop offset="95%" stopColor="#5E6AD2" stopOpacity={0} />
+                          <stop offset="5%" stopColor="#FFFFFF" stopOpacity={0.15} />
+                          <stop offset="95%" stopColor="#FFFFFF" stopOpacity={0} />
                         </linearGradient>
                         <linearGradient id="brokenGradAnalysis" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor="#E85C4A" stopOpacity={0.15} />
@@ -846,7 +846,7 @@ function DashboardContent() {
                       </defs>
                       <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "#6b7280", fontSize: 11 }} />
                       <YAxis hide />
-                      <Area type="monotone" dataKey="curados" stroke="#5E6AD2" strokeWidth={2} fillOpacity={1} fill="url(#healingGradAnalysis)" />
+                      <Area type="monotone" dataKey="curados" stroke="#FFFFFF" strokeWidth={2} fillOpacity={1} fill="url(#healingGradAnalysis)" />
                       <Area type="monotone" dataKey="testsRotos" stroke="#E85C4A" strokeWidth={2} fillOpacity={1} fill="url(#brokenGradAnalysis)" />
                     </AreaChart>
                   </ResponsiveContainer>
@@ -889,11 +889,11 @@ function DashboardContent() {
                     <h3 className="text-sm font-semibold text-[var(--text-primary)]">Progreso de activación</h3>
                     <p className="text-xs text-[var(--text-secondary)] mt-0.5">{doneCount}/3 pasos completados</p>
                   </div>
-                  <span className="text-lg font-bold text-[#5E6AD2]">{pct}%</span>
+                  <span className="text-lg font-bold text-white">{pct}%</span>
                 </div>
                 <div className="h-2 rounded-full bg-[var(--bg-elevated)] overflow-hidden mb-4">
                   <div 
-                    className="h-full rounded-full bg-gradient-to-r from-[#5E6AD2] to-[#818CF8] transition-all duration-700"
+                    className="h-full rounded-full bg-gradient-to-r from-white to-[#BEBEBE] transition-all duration-700"
                     style={{ width: `${pct}%` }}
                   />
                 </div>
@@ -902,16 +902,16 @@ function DashboardContent() {
                     <div key={i} className={cn(
                       "flex items-center gap-2 p-2.5 rounded-lg border transition-colors",
                       step.done 
-                        ? "bg-emerald-500/5 border-emerald-500/20" 
+                        ? "bg-white/5 border-white/20" 
                         : "bg-[var(--bg-elevated)] border-white/[0.05]"
                     )}>
                       <div className={cn(
                         "w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0",
-                        step.done ? "bg-emerald-500/20 text-emerald-400" : "bg-[#5E6AD2]/15 text-[#5E6AD2]"
+                        step.done ? "bg-white/20 text-white" : "bg-white/15 text-white"
                       )}>
                         {step.done ? <CheckCircle2 className="w-3 h-3" /> : i + 1}
                       </div>
-                      <span className={cn("text-[12px]", step.done ? "text-emerald-400" : "text-[var(--text-secondary)]")}>{step.label}</span>
+                      <span className={cn("text-[12px]", step.done ? "text-white" : "text-[var(--text-secondary)]")}>{step.label}</span>
                     </div>
                   ))}
                 </div>
@@ -921,33 +921,33 @@ function DashboardContent() {
 
           {/* Quick Actions Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <Link href="/dashboard/projects" className="group rounded-lg border border-white/[0.07] bg-[#111111] p-5 hover:bg-[#151515] hover:border-[#5E6AD2]/30 transition-all">
-              <div className="w-9 h-9 rounded-lg bg-[#5E6AD2]/10 flex items-center justify-center mb-3 group-hover:bg-[#5E6AD2]/20 transition-colors">
-                <FolderKanban className="w-4 h-4 text-[#5E6AD2]" />
+            <Link href="/dashboard/projects" className="group rounded-lg border border-white/[0.07] bg-[#111111] p-5 hover:bg-[#151515] hover:border-white/30 transition-all">
+              <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center mb-3 group-hover:bg-white/20 transition-colors">
+                <FolderKanban className="w-4 h-4 text-white" />
               </div>
               <p className="text-sm font-medium text-[#EDEDED]">Conectar repositorio</p>
               <p className="text-xs text-[#9B9B9B] mt-1">Creá y configurá proyectos para activar monitoreo</p>
-              <span className="inline-flex items-center gap-1 text-[11px] text-[#5E6AD2] mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
+              <span className="inline-flex items-center gap-1 text-[11px] text-white mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
                 Ir a proyectos <ChevronRight className="w-3 h-3" />
               </span>
             </Link>
-            <button onClick={handleSetupSandbox} className="group text-left rounded-lg border border-white/[0.07] bg-[#111111] p-5 hover:bg-[#151515] hover:border-emerald-500/30 transition-all">
-              <div className="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center mb-3 group-hover:bg-emerald-500/20 transition-colors">
-                <Play className="w-4 h-4 text-emerald-400" />
+            <button onClick={handleSetupSandbox} className="group text-left rounded-lg border border-white/[0.07] bg-[#111111] p-5 hover:bg-[#151515] hover:border-white/30 transition-all">
+              <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center mb-3 group-hover:bg-white/20 transition-colors">
+                <Play className="w-4 h-4 text-white" />
               </div>
               <p className="text-sm font-medium text-[#EDEDED]">Sandbox interactivo</p>
               <p className="text-xs text-[#9B9B9B] mt-1">Carga automática de datos demo — 5 test runs y 5 curaciones</p>
-              <span className="inline-flex items-center gap-1 text-[11px] text-emerald-400 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
+              <span className="inline-flex items-center gap-1 text-[11px] text-white mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
                 Activar sandbox <ChevronRight className="w-3 h-3" />
               </span>
             </button>
-            <Link href="/docs" className="group rounded-lg border border-white/[0.07] bg-[#111111] p-5 hover:bg-[#151515] hover:border-amber-500/30 transition-all">
-              <div className="w-9 h-9 rounded-lg bg-amber-500/10 flex items-center justify-center mb-3 group-hover:bg-amber-500/20 transition-colors">
-                <BookOpen className="w-4 h-4 text-amber-400" />
+            <Link href="/docs" className="group rounded-lg border border-white/[0.07] bg-[#111111] p-5 hover:bg-[#151515] hover:border-white/30 transition-all">
+              <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center mb-3 group-hover:bg-white/20 transition-colors">
+                <BookOpen className="w-4 h-4 text-white" />
               </div>
               <p className="text-sm font-medium text-[#EDEDED]">Implementar SDK</p>
               <p className="text-xs text-[#9B9B9B] mt-1">Quickstart, API Reference y webhook en producción</p>
-              <span className="inline-flex items-center gap-1 text-[11px] text-amber-400 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
+              <span className="inline-flex items-center gap-1 text-[11px] text-white mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
                 Ver documentación <ChevronRight className="w-3 h-3" />
               </span>
             </Link>
@@ -956,24 +956,24 @@ function DashboardContent() {
           {/* SDK Quick Start */}
           <div className="rounded-lg border border-white/[0.07] bg-[#111111] p-5">
             <div className="flex items-center gap-2 mb-3">
-              <Code2 className="w-4 h-4 text-[#5E6AD2]" />
+              <Code2 className="w-4 h-4 text-white" />
               <h3 className="text-sm font-medium text-[#EDEDED]">SDK Quick Start</h3>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="rounded-md bg-black/40 border border-white/[0.05] p-3">
                 <p className="text-[10px] text-[var(--text-tertiary)] uppercase tracking-widest mb-2">1. Instalar</p>
-                <code className="text-xs text-emerald-400 font-mono">npm i @healify/playwright-sdk</code>
+                <code className="text-xs text-white font-mono">npm i @healify/playwright-sdk</code>
               </div>
               <div className="rounded-md bg-black/40 border border-white/[0.05] p-3">
                 <p className="text-[10px] text-[var(--text-tertiary)] uppercase tracking-widest mb-2">2. Configurar</p>
-                <code className="text-[11px] text-amber-400 font-mono block leading-relaxed">
+                <code className="text-[11px] text-white font-mono block leading-relaxed">
                   {"HEALIFY_API_KEY=hk_live_..."}
                 </code>
               </div>
             </div>
             <p className="text-[11px] text-[var(--text-tertiary)] mt-3">
               Configuración completa en{' '}
-              <Link href="/docs" className="text-[#5E6AD2] hover:text-[#5E6AD2]/80 underline underline-offset-2">
+              <Link href="/docs" className="text-white hover:text-[#EDEDED]/80 underline underline-offset-2">
                 docs →
               </Link>
             </p>

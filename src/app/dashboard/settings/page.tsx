@@ -103,7 +103,7 @@ function AccountSection() {
       <div className="flex items-start gap-6">
         <Avatar className="w-16 h-16">
           <AvatarImage src={session?.user?.image || userData.avatar} />
-          <AvatarFallback className="text-[#090909] text-lg font-medium" style={{background:"linear-gradient(135deg,#5E6AD2,#7A84DC)"}}>
+          <AvatarFallback className="text-[#090909] text-lg font-medium" style={{background:"linear-gradient(135deg,#FFFFFF,#D2D2D2)"}}>
             {session?.user?.name?.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0,2) || "HF"}
           </AvatarFallback>
         </Avatar>
@@ -232,7 +232,7 @@ function ApiKeysSection() {
                 className="p-1.5 rounded-md text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] transition-colors"
               >
                 {copied === apiKey.id ? (
-                  <CheckCheck className="w-4 h-4 text-emerald-400" />
+                  <CheckCheck className="w-4 h-4 text-white" />
                 ) : (
                   <Copy className="w-4 h-4" />
                 )}
@@ -280,9 +280,9 @@ function BillingSection() {
 
   const planMeta: Record<string, { label: string; price: string; color: string; projects: string; runs: string }> = {
     FREE:       { label: 'Free',       price: '$0/mes',   color: 'text-gray-400',    projects: '1',       runs: '50/mes' },
-    STARTER:    { label: 'Starter',    price: '$49/mes',  color: 'text-cyan-400',    projects: '5',       runs: '100/mes' },
-    PRO:        { label: 'Pro',        price: '$99/mes',  color: 'text-violet-400',  projects: '∞',       runs: '1.000/mes' },
-    ENTERPRISE: { label: 'Enterprise', price: '$499/mes', color: 'text-amber-400',   projects: '∞',       runs: '∞' },
+    STARTER:    { label: 'Starter',    price: '$49/mes',  color: 'text-white',    projects: '5',       runs: '100/mes' },
+    PRO:        { label: 'Pro',        price: '$99/mes',  color: 'text-white',  projects: '∞',       runs: '1.000/mes' },
+    ENTERPRISE: { label: 'Enterprise', price: '$499/mes', color: 'text-white',   projects: '∞',       runs: '∞' },
   }
 
   const planKey = sub?.plan || 'FREE'
@@ -297,8 +297,8 @@ function BillingSection() {
       {/* Current Plan */}
       <div className="flex items-center justify-between p-4 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)]">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-md bg-violet-500/10">
-            <Shield className="w-5 h-5 text-violet-400" />
+          <div className="p-2 rounded-md bg-white/10">
+            <Shield className="w-5 h-5 text-white" />
           </div>
           <div>
             {subLoading ? (
@@ -310,7 +310,7 @@ function BillingSection() {
                     Plan {meta.label}
                   </p>
                   <span className={`px-2 py-0.5 rounded-md text-[10px] font-medium ${
-                    isActive ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
+                    isActive ? 'bg-white/10 text-white' : 'bg-red-500/10 text-red-400'
                   }`}>
                     {isActive ? 'Activo' : sub?.status || 'Inactivo'}
                   </span>
@@ -487,13 +487,13 @@ function NotificationsSection() {
 }
 
 function AppearanceSection() {
-  const [accent, setAccent] = useState("violet");
+  const [accent, setAccent] = useState("white");
 
   const accents = [
-    { id: "violet", color: "bg-violet-500" },
-    { id: "blue", color: "bg-blue-500" },
-    { id: "emerald", color: "bg-emerald-500" },
-    { id: "amber", color: "bg-amber-500" },
+    { id: "white", color: "bg-white" },
+    { id: "gray", color: "bg-gray-300" },
+    { id: "slate", color: "bg-slate-400" },
+    { id: "zinc", color: "bg-zinc-500" },
   ];
 
   return (
@@ -543,7 +543,7 @@ function IntegrationsSection() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-400">
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-white/10 text-white">
             Sincronizado
           </span>
           <Button

@@ -50,7 +50,7 @@ function FeatureCard({
       )}
     >
       <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-white/10 to-white/5 flex items-center justify-center mb-4 border border-white/15 group-hover:border-white/30 transition-colors">
-        <Icon className="w-6 h-6 text-[#5E6AD2]" />
+        <Icon className="w-6 h-6 text-white" />
       </div>
       <h3 className="text-lg font-bold text-[#EDEDED] mb-2 font-heading">{title}</h3>
       <p className="text-sm text-[#EDEDED]/60 leading-relaxed">{description}</p>
@@ -159,7 +159,7 @@ function LandingHero() {
           >
             Mirá el flujo completo en 15s: test falla → Healify analiza → selector curado → PR abierto.
             <br />
-            <span className="text-[#5E6AD2]/70 text-xs">⚡ Demo pública — sin registro requerido</span>
+            <span className="text-white/70 text-xs">⚡ Demo pública — sin registro requerido</span>
           </motion.p>
 
           {/* Stats */}
@@ -301,11 +301,11 @@ function HowItWorksSection() {
               transition={{ delay: i * 0.2 }}
               className="relative"
             >
-              <div className="absolute -top-4 -left-4 w-12 h-12 rounded-full glass-elite border border-white/25 flex items-center justify-center text-[#5E6AD2] font-bold text-lg glow-pulse">
+              <div className="absolute -top-4 -left-4 w-12 h-12 rounded-full glass-elite border border-white/25 flex items-center justify-center text-white font-bold text-lg glow-pulse">
                 {item.step}
               </div>
               <div className="glass-elite glass-elite-hover p-8 rounded-2xl h-full">
-                <item.icon className="w-10 h-10 text-[#5E6AD2] mb-4" />
+                <item.icon className="w-10 h-10 text-white mb-4" />
                 <h3 className="text-xl font-bold text-[#EDEDED] mb-2 font-heading">{item.title}</h3>
                 <p className="text-sm text-[#EDEDED]/60">{item.description}</p>
               </div>
@@ -328,7 +328,7 @@ function VideoDemoSection() {
           viewport={{ once: true }}
           className="text-center mb-12"
         >
-          <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium glass-elite border border-white/20 text-[#5E6AD2] mb-4">
+          <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium glass-elite border border-white/20 text-white mb-4">
             <Code className="w-3 h-3" />
             90-Second Demo
           </span>
@@ -433,12 +433,12 @@ function Footer() {
             <HealifyLogo size="sm" showText={true} />
           </div>
           <div className="flex items-center gap-6">
-            <a href="/docs" className="hover:text-[#5E6AD2] transition-colors">Documentation</a>
-            <a href="https://github.com/mescobar996/Healify" target="_blank" rel="noopener noreferrer" className="hover:text-[#5E6AD2] transition-colors">GitHub</a>
-            <a href="mailto:support@healify.dev" className="hover:text-[#5E6AD2] transition-colors">Support</a>
-            <a href="/refund" className="hover:text-[#5E6AD2] transition-colors">Reembolsos</a>
-            <a href="/privacy" className="hover:text-[#5E6AD2] transition-colors">Privacidad</a>
-            <a href="/terms" className="hover:text-[#5E6AD2] transition-colors">Términos</a>
+            <a href="/docs" className="hover:text-white transition-colors">Documentation</a>
+            <a href="https://github.com/mescobar996/Healify" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">GitHub</a>
+            <a href="/support" className="hover:text-white transition-colors">Support</a>
+            <a href="/refund" className="hover:text-white transition-colors">Reembolsos</a>
+            <a href="/privacy" className="hover:text-white transition-colors">Privacidad</a>
+            <a href="/terms" className="hover:text-white transition-colors">Términos</a>
           </div>
         </div>
       </div>
@@ -454,7 +454,7 @@ export default function HomePage() {
   if (status === 'loading') {
     return (
       <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#5E6AD2]" />
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white" />
       </div>
     )
   }
@@ -474,7 +474,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-2 flex items-center justify-between gap-3">
           <HealifyLogo size="md" showText={true} />
           <nav aria-label="Principal" className="flex items-center gap-3 sm:gap-4">
-            <a href="/pricing" className="text-sm text-[#EDEDED]/60 hover:text-[#5E6AD2] transition-colors">
+            <a href="/pricing" className="text-sm text-[#EDEDED]/60 hover:text-white transition-colors">
               Pricing
             </a>
             <Button

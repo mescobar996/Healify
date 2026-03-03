@@ -35,7 +35,7 @@ function CodeBlock({ code, lang = 'bash' }: { code: string; lang?: string }) {
 function SectionHeading({ id, children }: { id: string; children: React.ReactNode }) {
   return (
     <h2 id={id} className="text-xl font-semibold text-[#EDEDED] mt-12 mb-4 scroll-mt-24 flex items-center gap-2 group">
-      <a href={`#${id}`} className="text-[#5E6AD2]/0 group-hover:text-[#5E6AD2]/70 transition-colors text-lg">#</a>
+      <a href={`#${id}`} className="text-white/0 group-hover:text-white/70 transition-colors text-lg">#</a>
       {children}
     </h2>
   )
@@ -52,9 +52,9 @@ function SubHeading({ id, children }: { id: string; children: React.ReactNode })
 // ─── Callout ────────────────────────────────────────────────────────
 function Callout({ type = 'info', children }: { type?: 'info' | 'warning' | 'tip'; children: React.ReactNode }) {
   const styles = {
-    info:    { bg: 'bg-[#151515]', border: 'border-white/[0.07]', icon: <Zap className="w-4 h-4 text-[#4E9FE8] shrink-0 mt-0.5" /> },
+    info:    { bg: 'bg-[#151515]', border: 'border-white/[0.07]', icon: <Zap className="w-4 h-4 text-white shrink-0 mt-0.5" /> },
     warning: { bg: 'bg-[#151515]', border: 'border-white/[0.07]', icon: <AlertTriangle className="w-4 h-4 text-[#E8A642] shrink-0 mt-0.5" /> },
-    tip:     { bg: 'bg-[#151515]', border: 'border-white/[0.07]', icon: <CheckCircle className="w-4 h-4 text-[#5E6AD2] shrink-0 mt-0.5" /> },
+    tip:     { bg: 'bg-[#151515]', border: 'border-white/[0.07]', icon: <CheckCircle className="w-4 h-4 text-white shrink-0 mt-0.5" /> },
   }
   const s = styles[type]
   return (
@@ -93,7 +93,7 @@ export default function DocsPage() {
         <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-6">
             <Link href="/" className="flex items-center gap-2 font-semibold text-[#EDEDED]">
-              <Book className="w-4 h-4 text-[#5E6AD2]" />
+              <Book className="w-4 h-4 text-white" />
               <span>Healify</span>
               <span className="text-[#6B6B6B]">/</span>
               <span className="text-[#9B9B9B] font-normal">Docs</span>
@@ -115,8 +115,14 @@ export default function DocsPage() {
               GitHub
             </Link>
             <Link
+              href="/support"
+              className="text-sm text-[#9B9B9B] hover:text-[#EDEDED] transition-colors"
+            >
+              Support
+            </Link>
+            <Link
               href="/dashboard"
-              className="text-sm px-3 py-1.5 rounded-lg bg-[#5E6AD2] text-white font-medium hover:bg-[#6B79E0] transition-colors"
+              className="text-sm px-3 py-1.5 rounded-lg bg-white text-[#0A0A0A] font-medium hover:bg-[#E3E3E3] transition-colors"
             >
               Dashboard →
             </Link>
@@ -129,7 +135,7 @@ export default function DocsPage() {
         {/* ── Sidebar TOC ── */}
         <aside className="hidden lg:block w-56 shrink-0">
           <div className="sticky top-24">
-            <p className="text-[11px] font-semibold tracking-widest text-[#5E6AD2] uppercase mb-4 flex items-center gap-1.5">
+            <p className="text-[11px] font-semibold tracking-widest text-white uppercase mb-4 flex items-center gap-1.5">
               <Book className="w-3 h-3" /> En esta página
             </p>
             <div className="space-y-0.5 border-l border-white/[0.06] ml-0.5">
@@ -137,15 +143,15 @@ export default function DocsPage() {
                 <a
                   key={item.id}
                   href={`#${item.id}`}
-                  className={`block text-sm py-1.5 pl-3 -ml-px border-l border-transparent transition-colors hover:text-[#EDEDED] hover:border-[#5E6AD2]/50 text-[#6B6B6B] ${item.indent ? 'pl-6 text-xs' : ''}`}
+                  className={`block text-sm py-1.5 pl-3 -ml-px border-l border-transparent transition-colors hover:text-[#EDEDED] hover:border-white/50 text-[#6B6B6B] ${item.indent ? 'pl-6 text-xs' : ''}`}
                 >
                   {item.label}
                 </a>
               ))}
             </div>
-            <div className="mt-6 p-3 rounded-lg bg-[#5E6AD2]/5 border border-[#5E6AD2]/10">
+            <div className="mt-6 p-3 rounded-lg bg-white/5 border border-white/10">
               <p className="text-xs text-[#9B9B9B] mb-1.5">¿Necesitás ayuda?</p>
-              <Link href="https://github.com/mescobar996/Healify/issues" target="_blank" rel="noopener noreferrer" className="text-xs text-[#5E6AD2] hover:text-[#6B79E0] font-medium transition-colors">
+              <Link href="https://github.com/mescobar996/Healify/issues" target="_blank" rel="noopener noreferrer" className="text-xs text-white hover:text-[#EDEDED] font-medium transition-colors">
                 Abrir un issue →
               </Link>
             </div>
@@ -157,10 +163,10 @@ export default function DocsPage() {
 
           {/* Hero */}
           <div className="mb-10 relative">
-            <div className="absolute -top-4 -left-6 w-32 h-32 bg-[#5E6AD2]/5 blur-3xl rounded-full pointer-events-none" />
+            <div className="absolute -top-4 -left-6 w-32 h-32 bg-white/5 blur-3xl rounded-full pointer-events-none" />
             <div className="relative">
               <div className="flex items-center gap-2 mb-3">
-                <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-[#5E6AD2]/10 text-[#5E6AD2] border border-[#5E6AD2]/20">
+                <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-white/10 text-white border border-white/20">
                   SDK v1.0
                 </span>
                 <span className="text-xs text-[#6B6B6B]">Última actualización: Mar 2026</span>
@@ -174,13 +180,13 @@ export default function DocsPage() {
                 y crea un Pull Request automáticamente.
               </p>
               <div className="flex flex-wrap gap-3 mt-4">
-                <span className="inline-flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full">
+                <span className="inline-flex items-center gap-1.5 text-xs text-white bg-white/10 px-2.5 py-1 rounded-full">
                   <CheckCircle className="w-3 h-3" /> Playwright
                 </span>
-                <span className="inline-flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full">
+                <span className="inline-flex items-center gap-1.5 text-xs text-white bg-white/10 px-2.5 py-1 rounded-full">
                   <CheckCircle className="w-3 h-3" /> Cypress
                 </span>
-                <span className="inline-flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full">
+                <span className="inline-flex items-center gap-1.5 text-xs text-white bg-white/10 px-2.5 py-1 rounded-full">
                   <CheckCircle className="w-3 h-3" /> Jest / Vitest
                 </span>
                 <span className="inline-flex items-center gap-1.5 text-xs text-[#9B9B9B] bg-white/[0.05] px-2.5 py-1 rounded-full">
@@ -192,7 +198,7 @@ export default function DocsPage() {
 
           {/* ── QUICKSTART ── */}
           <SectionHeading id="quickstart">
-            <Zap className="w-5 h-5 text-[#5E6AD2]" /> Quickstart
+            <Zap className="w-5 h-5 text-white" /> Quickstart
           </SectionHeading>
 
           <p className="text-sm text-[#9B9B9B] mb-4 leading-relaxed">
@@ -206,7 +212,7 @@ export default function DocsPage() {
               { step: '3', title: 'Conectá el webhook de GitHub', desc: 'Desde Proyectos → Conectar repo' },
             ].map(item => (
               <div key={item.step} className="flex items-start gap-3 p-3 rounded-xl bg-[#111111] border border-white/[0.07]">
-                <span className="w-6 h-6 rounded-full bg-[#1A1A1A] border border-white/[0.12] text-[#5E6AD2] text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
+                <span className="w-6 h-6 rounded-full bg-[#1A1A1A] border border-white/[0.12] text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
                   {item.step}
                 </span>
                 <div>
@@ -218,7 +224,7 @@ export default function DocsPage() {
           </div>
 
           <SectionHeading id="demo-interactivo">
-            <Workflow className="w-5 h-5 text-[#5E6AD2]" /> Demo interactivo
+            <Workflow className="w-5 h-5 text-white" /> Demo interactivo
           </SectionHeading>
 
           <p className="text-sm text-[#9B9B9B] mb-4">
@@ -235,7 +241,7 @@ export default function DocsPage() {
 
           {/* ── INSTALLATION ── */}
           <SectionHeading id="installation">
-            <Package className="w-5 h-5 text-[#5E6AD2]" /> Instalación
+            <Package className="w-5 h-5 text-white" /> Instalación
           </SectionHeading>
 
           <p className="text-sm text-[#9B9B9B] mb-4">
@@ -248,13 +254,13 @@ export default function DocsPage() {
 
           <Callout type="info">
             El reporter solo se activa cuando detecta la variable de entorno{' '}
-            <code className="text-[#5E6AD2] bg-[#1A1A1A] px-1 rounded">HEALIFY_API_KEY</code>.
+            <code className="text-white bg-[#1A1A1A] px-1 rounded">HEALIFY_API_KEY</code>.
             En entornos sin la key, los tests corren normalmente sin overhead.
           </Callout>
 
           {/* ── CONFIGURATION ── */}
           <SectionHeading id="configuration">
-            <Code2 className="w-5 h-5 text-[#5E6AD2]" /> Configuración
+            <Code2 className="w-5 h-5 text-white" /> Configuración
           </SectionHeading>
 
           <p className="text-sm text-[#9B9B9B] mb-4">
@@ -272,7 +278,7 @@ HEALIFY_COMMIT_SHA=\${GITHUB_SHA}`} />
           <SubHeading id="playwright">Playwright</SubHeading>
 
           <p className="text-sm text-[#9B9B9B] mb-4">
-            Importá el reporter en tu <code className="text-[#5E6AD2] bg-[#1A1A1A] px-1 rounded">playwright.config.ts</code>:
+            Importá el reporter en tu <code className="text-white bg-[#1A1A1A] px-1 rounded">playwright.config.ts</code>:
           </p>
 
           <CodeBlock lang="playwright.config.ts" code={`import { defineConfig } from '@playwright/test'
@@ -292,7 +298,7 @@ export default defineConfig({
 })`} />
 
           <Callout type="tip">
-            Activá <code className="text-[#5E6AD2] bg-[#1A1A1A] px-1 rounded">captureDOM: true</code> para
+            Activá <code className="text-white bg-[#1A1A1A] px-1 rounded">captureDOM: true</code> para
             que Healify tenga más contexto sobre la estructura del DOM al momento del fallo.
             Mejora la precisión de autocuración en un ~30%.
           </Callout>
@@ -358,7 +364,7 @@ def report_to_healify(test_name, selector, error, html):
 
           {/* ── API REFERENCE ── */}
           <SectionHeading id="api">
-            <Terminal className="w-5 h-5 text-[#5E6AD2]" /> API Reference
+            <Terminal className="w-5 h-5 text-white" /> API Reference
           </SectionHeading>
 
           <p className="text-sm text-[#9B9B9B] mb-4">
@@ -366,7 +372,7 @@ def report_to_healify(test_name, selector, error, html):
           </p>
 
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-xs font-bold px-2 py-0.5 rounded bg-[#1A1A1A] text-[#5E6AD2] border border-white/[0.12] font-mono">POST</span>
+            <span className="text-xs font-bold px-2 py-0.5 rounded bg-[#1A1A1A] text-white border border-white/[0.12] font-mono">POST</span>
             <code className="text-sm text-[#9B9B9B] font-mono">/api/v1/report</code>
           </div>
 
@@ -409,9 +415,9 @@ def report_to_healify(test_name, selector, error, html):
                   ['commitSha',    'string',  '–', 'SHA del commit que disparó el fallo'],
                 ].map(([field, type, req, desc]) => (
                   <tr key={field} className="hover:bg-[#151515]">
-                    <td className="px-4 py-3 font-mono text-[#5E6AD2] text-xs">{field}</td>
+                    <td className="px-4 py-3 font-mono text-white text-xs">{field}</td>
                     <td className="px-4 py-3 text-[#6B6B6B] text-xs">{type}</td>
-                    <td className="px-4 py-3 text-center text-xs">{req === '✓' ? <span className="text-[#3DB779]">✓</span> : <span className="text-[#6B6B6B]">—</span>}</td>
+                    <td className="px-4 py-3 text-center text-xs">{req === '✓' ? <span className="text-white">✓</span> : <span className="text-[#6B6B6B]">—</span>}</td>
                     <td className="px-4 py-3 text-[#9B9B9B] text-xs">{desc}</td>
                   </tr>
                 ))}
@@ -446,7 +452,7 @@ def report_to_healify(test_name, selector, error, html):
 
           {/* ── CI INTEGRATIONS ── */}
           <SectionHeading id="ci">
-            <Workflow className="w-5 h-5 text-[#5E6AD2]" /> CI Integrations
+            <Workflow className="w-5 h-5 text-white" /> CI Integrations
           </SectionHeading>
 
           <SubHeading id="ci-github">GitHub Actions</SubHeading>
@@ -487,17 +493,17 @@ healify_tests:
     HEALIFY_COMMIT_SHA: $CI_COMMIT_SHA`} />
 
           <Callout type="tip">
-            Guardá <code className="text-[#5E6AD2] bg-[#1A1A1A] px-1 rounded">HEALIFY_API_KEY</code> como secret en tu CI.
+            Guardá <code className="text-white bg-[#1A1A1A] px-1 rounded">HEALIFY_API_KEY</code> como secret en tu CI.
             El reporter detecta automáticamente branch y commit cuando definís esas variables.
           </Callout>
 
           {/* ── JIRA ── */}
           <SectionHeading id="jira">
-            <GitBranch className="w-5 h-5 text-[#5E6AD2]" /> Jira Integration
+            <GitBranch className="w-5 h-5 text-white" /> Jira Integration
           </SectionHeading>
 
           <p className="text-sm text-[#9B9B9B] mb-4 leading-relaxed">
-            Cuando Healify clasifica un evento como <code className="text-[#5E6AD2] bg-[#1A1A1A] px-1 rounded">BUG_DETECTED</code>,
+            Cuando Healify clasifica un evento como <code className="text-white bg-[#1A1A1A] px-1 rounded">BUG_DETECTED</code>,
             puede abrir un ticket en Jira automáticamente (si configurás las variables).
           </p>
 
@@ -510,10 +516,10 @@ JIRA_PROJECT_KEY=QA`} />
 
           <div className="space-y-2 mb-6">
             {[
-              ['401', '#EF4444', 'API Key inválida o ausente'],
-              ['400', '#F59E0B', 'Payload inválido (falta testName, selector o error)'],
-              ['429', '#FF6B9D', 'Rate limit: máx. 60 reportes/minuto por proyecto'],
-              ['500', '#E8F0FF', 'Error interno — contactar soporte'],
+              ['401', '#BDBDBD', 'API Key inválida o ausente'],
+              ['400', '#E0E0E0', 'Payload inválido (falta testName, selector o error)'],
+              ['429', '#A1A1A1', 'Rate limit: máx. 60 reportes/minuto por proyecto'],
+              ['500', '#F2F2F2', 'Error interno — contactar soporte'],
             ].map(([code, color, msg]) => (
               <div key={code} className="flex items-center gap-3 p-3 rounded-lg bg-[#111111] border border-white/[0.07]">
                 <code className="text-xs font-bold font-mono px-2 py-0.5 rounded" style={{ color, background: `${color}18` }}>{code}</code>
@@ -524,7 +530,7 @@ JIRA_PROJECT_KEY=QA`} />
 
           {/* ── WEBHOOK ── */}
           <SectionHeading id="webhook">
-            <GitBranch className="w-5 h-5 text-[#5E6AD2]" /> GitHub Webhook
+            <GitBranch className="w-5 h-5 text-white" /> GitHub Webhook
           </SectionHeading>
 
           <p className="text-sm text-[#9B9B9B] mb-4 leading-relaxed">
@@ -535,7 +541,7 @@ JIRA_PROJECT_KEY=QA`} />
           <div className="space-y-4 mb-6">
             <div className="p-4 rounded-xl bg-[#111111] border border-white/[0.07]">
               <p className="text-sm font-medium text-[#EDEDED] mb-1">URL del webhook</p>
-              <code className="text-xs font-mono text-[#5E6AD2] bg-[#1A1A1A] px-2 py-1 rounded block">
+              <code className="text-xs font-mono text-white bg-[#1A1A1A] px-2 py-1 rounded block">
                 https://healify-sigma.vercel.app/api/webhook/github
               </code>
             </div>
@@ -568,7 +574,7 @@ REDIS_URL=rediss://...`} />
 
           {/* ── DASHBOARD ── */}
           <SectionHeading id="dashboard">
-            <Workflow className="w-5 h-5 text-[#5E6AD2]" /> Dashboard
+            <Workflow className="w-5 h-5 text-white" /> Dashboard
           </SectionHeading>
 
           <div className="grid sm:grid-cols-2 gap-4 mb-6">
@@ -576,22 +582,22 @@ REDIS_URL=rediss://...`} />
               {
                 title: 'Tests Hoy',
                 desc: 'Total de tests ejecutados en las últimas 24h, con variación respecto al día anterior.',
-                icon: <Zap className="w-4 h-4 text-[#5E6AD2]" />,
+                icon: <Zap className="w-4 h-4 text-white" />,
               },
               {
                 title: 'Autocuración',
                 desc: 'Porcentaje de tests fallidos que fueron curados automáticamente con confidence ≥ 95%.',
-                icon: <CheckCircle className="w-4 h-4 text-[#3DB779]" />,
+                icon: <CheckCircle className="w-4 h-4 text-white" />,
               },
               {
                 title: 'Bugs Detectados',
                 desc: 'Fallos que requieren revisión manual (confidence < 95%). Aparecen en la cola de revisión.',
-                icon: <AlertTriangle className="w-4 h-4 text-[#E8A642]" />,
+                icon: <AlertTriangle className="w-4 h-4 text-white" />,
               },
               {
                 title: 'Tiempo Promedio',
                 desc: 'Tiempo promedio de procesamiento por evento de healing, incluyendo análisis de IA.',
-                icon: <Terminal className="w-4 h-4 text-[#4E9FE8]" />,
+                icon: <Terminal className="w-4 h-4 text-white" />,
               },
             ].map(card => (
               <div key={card.title} className="p-4 rounded-xl bg-[#111111] border border-white/[0.07]">
@@ -606,7 +612,7 @@ REDIS_URL=rediss://...`} />
 
           {/* ── FAQ ── */}
           <SectionHeading id="faq">
-            <Shield className="w-5 h-5 text-[#5E6AD2]" /> FAQ
+            <Shield className="w-5 h-5 text-white" /> FAQ
           </SectionHeading>
 
           <div className="space-y-4">
@@ -647,15 +653,15 @@ REDIS_URL=rediss://...`} />
           </div>
 
           {/* CTA bottom */}
-          <div className="mt-12 p-6 rounded-2xl bg-[#111111] border border-[#5E6AD2]/20 text-center relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-[#5E6AD2]/5 via-transparent to-transparent pointer-events-none" />
+          <div className="mt-12 p-6 rounded-2xl bg-[#111111] border border-white/20 text-center relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent pointer-events-none" />
             <div className="relative">
               <p className="text-lg font-semibold text-[#EDEDED] mb-2">¿Listo para empezar?</p>
               <p className="text-sm text-[#9B9B9B] mb-4">Conectá tu primer repositorio en menos de 5 minutos.</p>
               <div className="flex items-center justify-center gap-3">
                 <Link
                   href="/dashboard/projects"
-                  className="px-5 py-2.5 rounded-lg bg-[#5E6AD2] text-white text-sm font-semibold hover:bg-[#6B79E0] transition-colors shadow-lg shadow-[#5E6AD2]/20"
+                  className="px-5 py-2.5 rounded-lg bg-white text-[#0A0A0A] text-sm font-semibold hover:bg-[#E3E3E3] transition-colors shadow-lg shadow-black/30"
                 >
                   Crear proyecto →
                 </Link>

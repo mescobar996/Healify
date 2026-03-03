@@ -20,7 +20,7 @@ const PLANS = [
     name: 'Starter',
     price: 49,
     description: 'Para equipos pequeños que quieren automatizar sus primeros tests.',
-    color: '#5E6AD2',
+    color: '#F2F2F2',
     badge: null,
     features: [
       { text: '5 proyectos', icon: Zap },
@@ -36,7 +36,7 @@ const PLANS = [
     name: 'Pro',
     price: 99,
     description: 'Para equipos que necesitan velocidad y escala en su pipeline de CI.',
-    color: '#5E6AD2',
+    color: '#F2F2F2',
     badge: 'Más popular',
     features: [
       { text: 'Proyectos ilimitados', icon: Infinity },
@@ -117,7 +117,7 @@ function WaitlistForm({ plan }: { plan: string }) {
         className="text-center py-4"
       >
         <div className="w-12 h-12 rounded-full bg-white/10 border border-white/25 flex items-center justify-center mx-auto mb-3">
-          <Check className="w-5 h-5 text-[#5E6AD2]" />
+          <Check className="w-5 h-5 text-white" />
         </div>
         <p className="text-sm font-medium text-white">¡Estás en la lista!</p>
         <p className="text-xs text-[#EDEDED]/50 mt-1">Te mandamos un email de confirmación.</p>
@@ -146,7 +146,7 @@ function WaitlistForm({ plan }: { plan: string }) {
         onClick={handleSubmit}
         disabled={loading}
         className="w-full py-2.5 rounded-lg text-sm font-semibold text-white transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-        style={{ background: 'linear-gradient(135deg, #5E6AD2, #9BA3F5)' }}
+        style={{ background: 'linear-gradient(135deg, #FFFFFF, #CFCFCF)' }}
       >
         {loading ? (
           <Loader2 className="w-4 h-4 animate-spin" />
@@ -200,9 +200,9 @@ function PlanCard({ plan, index }: { plan: typeof PLANS[0]; index: number }) {
       </div>
 
       {/* Coming soon banner */}
-      <div className="mb-4 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-2">
-        <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-        <span className="text-xs text-amber-400 font-medium">Pagos disponibles próximamente</span>
+      <div className="mb-4 px-3 py-2 rounded-xl bg-white/5 border border-white/15 flex items-center gap-2">
+        <Clock className="w-3.5 h-3.5 text-white/80 shrink-0" />
+        <span className="text-xs text-white/80 font-medium">Pagos disponibles próximamente</span>
       </div>
 
       {/* Features */}
@@ -278,7 +278,7 @@ export default function PricingPage() {
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-[#EDEDED] relative overflow-hidden">
       {/* Ambient */}
-      <div className="fixed top-[20%] left-[10%] w-[500px] h-[500px] rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(94,106,210,0.08) 0%, transparent 70%)', filter: 'blur(100px)' }} />
+      <div className="fixed top-[20%] left-[10%] w-[500px] h-[500px] rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%)', filter: 'blur(100px)' }} />
       <div className="fixed bottom-[10%] right-[10%] w-[400px] h-[400px] rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 70%)', filter: 'blur(80px)' }} />
 
       {/* Nav */}
@@ -287,7 +287,8 @@ export default function PricingPage() {
           <Link href="/"><HealifyLogo size="md" showText /></Link>
           <div className="flex items-center gap-4">
             <Link href="/docs" className="text-sm text-[#EDEDED]/50 hover:text-white transition-colors">Docs</Link>
-            <Link href="/dashboard" className="text-sm px-3 py-1.5 rounded-lg bg-[#5E6AD2] text-white font-medium hover:bg-[#5E6AD2]/90 transition-colors">
+            <Link href="/support" className="text-sm text-[#EDEDED]/50 hover:text-white transition-colors">Support</Link>
+            <Link href="/dashboard" className="text-sm px-3 py-1.5 rounded-lg bg-white text-[#0A0A0A] font-medium hover:bg-[#E3E3E3] transition-colors">
               Dashboard →
             </Link>
           </div>
@@ -302,11 +303,11 @@ export default function PricingPage() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-6"
         >
-          <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border border-amber-500/30 text-amber-400 bg-amber-500/10 mb-5">
+          <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border border-white/20 text-white/80 bg-white/5 mb-5">
             <Clock className="w-3 h-3" /> Pagos disponibles próximamente
           </span>
           <h1 className="text-4xl sm:text-5xl font-bold tracking-tight mb-4"
-            style={{ background: 'linear-gradient(135deg, #E8F0FF 0%, #00F5C8 50%, #7B5EF8 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+            style={{ background: 'linear-gradient(135deg, #FFFFFF 0%, #DADADA 60%, #9D9D9D 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
             Precios simples y transparentes
           </h1>
           <p className="text-[#EDEDED]/60 max-w-xl mx-auto leading-relaxed">
@@ -319,9 +320,9 @@ export default function PricingPage() {
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="mt-3 text-sm text-[#E8F0FF]/40"
+              className="mt-3 text-sm text-[#EDEDED]/40"
             >
-              <span className="text-[#00F5C8] font-semibold">{waitlistCount}</span> personas ya se anotaron
+              <span className="text-white font-semibold">{waitlistCount}</span> personas ya se anotaron
             </motion.p>
           )}
         </motion.div>
@@ -331,24 +332,24 @@ export default function PricingPage() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          className="mb-10 p-4 rounded-2xl border border-[#7B5EF8]/25 bg-[#7B5EF8]/5 flex flex-col sm:flex-row items-start sm:items-center gap-4"
+          className="mb-10 p-4 rounded-2xl border border-white/15 bg-white/5 flex flex-col sm:flex-row items-start sm:items-center gap-4"
         >
           <div className="flex-1">
             <p className="text-sm font-semibold text-white flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-[#7B5EF8]" />
+              <Sparkles className="w-4 h-4 text-white" />
               Plan Gratuito — disponible ahora, sin tarjeta
             </p>
             <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
               {FREE_FEATURES.map(f => (
-                <span key={f} className="text-xs text-[#E8F0FF]/50 flex items-center gap-1">
-                  <Check className="w-3 h-3 text-[#7B5EF8]" /> {f}
+                <span key={f} className="text-xs text-[#EDEDED]/50 flex items-center gap-1">
+                  <Check className="w-3 h-3 text-white" /> {f}
                 </span>
               ))}
             </div>
           </div>
           <Link
             href="/dashboard"
-            className="shrink-0 text-sm px-4 py-2 rounded-xl bg-[#7B5EF8] text-white font-semibold hover:bg-[#7B5EF8]/90 transition-colors flex items-center gap-2"
+            className="shrink-0 text-sm px-4 py-2 rounded-xl bg-white text-[#0A0A0A] font-semibold hover:bg-[#E3E3E3] transition-colors flex items-center gap-2"
           >
             Empezar gratis <ArrowRight className="w-4 h-4" />
           </Link>
@@ -369,7 +370,7 @@ export default function PricingPage() {
           className="max-w-md mx-auto text-center"
         >
           <h2 className="text-lg font-semibold text-white mb-1">¿No sabés qué plan elegir?</h2>
-          <p className="text-sm text-[#E8F0FF]/50 mb-5">
+          <p className="text-sm text-[#EDEDED]/50 mb-5">
             Anotate sin comprometerte a ningún plan. Te contactamos cuando los pagos estén disponibles.
           </p>
           <WaitlistForm plan="pro" />
@@ -400,23 +401,23 @@ export default function PricingPage() {
               <details key={q} className="group p-4 rounded-xl bg-white/[0.02] border border-white/8 cursor-pointer">
                 <summary className="text-sm font-medium text-white list-none flex items-center justify-between">
                   {q}
-                  <ArrowRight className="w-4 h-4 text-[#E8F0FF]/30 group-open:rotate-90 transition-transform" />
+                  <ArrowRight className="w-4 h-4 text-[#EDEDED]/30 group-open:rotate-90 transition-transform" />
                 </summary>
-                <p className="text-sm text-[#E8F0FF]/55 mt-3 leading-relaxed">{a}</p>
+                <p className="text-sm text-[#EDEDED]/55 mt-3 leading-relaxed">{a}</p>
               </details>
             ))}
           </div>
         </div>
 
         {/* Footer */}
-        <p className="text-center text-xs text-[#E8F0FF]/25 mt-12">
-          ¿Preguntas? <a href="mailto:support@healify.dev" className="text-[#7B5EF8] hover:underline">support@healify.dev</a>
+        <p className="text-center text-xs text-[#EDEDED]/25 mt-12">
+          ¿Preguntas? <a href="mailto:support@healify.dev" className="text-white hover:underline">support@healify.dev</a>
           {' · '}
-          <Link href="/privacy" className="hover:text-[#E8F0FF]/50 transition-colors">Privacidad</Link>
+          <Link href="/privacy" className="hover:text-[#EDEDED]/50 transition-colors">Privacidad</Link>
           {' · '}
-          <Link href="/terms" className="hover:text-[#E8F0FF]/50 transition-colors">Términos</Link>
+          <Link href="/terms" className="hover:text-[#EDEDED]/50 transition-colors">Términos</Link>
           {' · '}
-          <Link href="/refund" className="hover:text-[#E8F0FF]/50 transition-colors">Reembolsos</Link>
+          <Link href="/refund" className="hover:text-[#EDEDED]/50 transition-colors">Reembolsos</Link>
         </p>
       </div>
     </div>

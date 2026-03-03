@@ -75,11 +75,11 @@ export default function UpgradeSuccessPage() {
   const displayPlan = PLAN_LABELS[detectedPlan] || PLAN_LABELS[planParam] || 'Pro'
 
   return (
-    <div className="min-h-screen bg-[#0A0E1A] flex flex-col items-center justify-center px-4 relative overflow-hidden">
+    <div className="min-h-screen bg-[#0A0A0A] flex flex-col items-center justify-center px-4 relative overflow-hidden">
       {/* Ambient orbs */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-1/3 left-1/4 w-96 h-96 bg-[#00F5C8]/8 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/3 right-1/4 w-96 h-96 bg-[#7B5EF8]/8 rounded-full blur-3xl" />
+        <div className="absolute top-1/3 left-1/4 w-96 h-96 bg-white/8 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/3 right-1/4 w-96 h-96 bg-white/8 rounded-full blur-3xl" />
       </div>
 
       <div className="relative z-10 w-full max-w-md text-center">
@@ -94,18 +94,18 @@ export default function UpgradeSuccessPage() {
             {/* Spinner animado con gradiente */}
             <div className="relative flex items-center justify-center">
               <div className="w-20 h-20 rounded-full"
-                style={{ background: 'conic-gradient(from 0deg, #00F5C8, #7B5EF8, #00F5C8)', animation: 'spin 1.5s linear infinite' }}
+                style={{ background: 'conic-gradient(from 0deg, #FFFFFF, #AFAFAF, #FFFFFF)', animation: 'spin 1.5s linear infinite' }}
               />
               <div className="absolute w-14 h-14 rounded-full bg-[#0D1117] flex items-center justify-center">
-                <Loader2 className="w-6 h-6 text-[#00F5C8] animate-spin" />
+                <Loader2 className="w-6 h-6 text-white animate-spin" />
               </div>
             </div>
 
             <div className="space-y-2">
-              <h1 className="text-xl font-bold text-[#E8F0FF] font-orbitron">
+              <h1 className="text-xl font-bold text-[#EDEDED] font-orbitron">
                 Activando tu plan{dots}
               </h1>
-              <p className="text-sm text-[#E8F0FF]/50">
+              <p className="text-sm text-[#EDEDED]/50">
                 Estamos confirmando tu pago con Stripe.<br />
                 Esto toma unos segundos.
               </p>
@@ -116,14 +116,14 @@ export default function UpgradeSuccessPage() {
               <div
                 className="h-full rounded-full"
                 style={{
-                  background: 'linear-gradient(90deg, #00F5C8, #7B5EF8)',
+                  background: 'linear-gradient(90deg, #FFFFFF, #BFBFBF)',
                   animation: 'progress-slide 1.8s ease-in-out infinite',
                   width: '40%',
                 }}
               />
             </div>
 
-            <p className="text-xs text-[#E8F0FF]/25 font-mono">
+            <p className="text-xs text-[#EDEDED]/25 font-mono">
               Verificando webhook de Stripe{dots}
             </p>
           </div>
@@ -136,17 +136,17 @@ export default function UpgradeSuccessPage() {
             <div className="flex justify-center">
               <div className="relative">
                 <div className="absolute inset-0 rounded-full blur-xl opacity-60"
-                  style={{ background: 'radial-gradient(circle, #00F5C8, transparent)' }} />
-                <CheckCircle2 className="relative w-20 h-20 text-[#00F5C8]" />
+                  style={{ background: 'radial-gradient(circle, #FFFFFF, transparent)' }} />
+                <CheckCircle2 className="relative w-20 h-20 text-white" />
               </div>
             </div>
 
             <div className="space-y-2">
               <h1 className="text-2xl font-bold font-orbitron"
-                style={{ background: 'linear-gradient(135deg, #00F5C8, #7B5EF8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                style={{ background: 'linear-gradient(135deg, #FFFFFF, #BFBFBF)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
                 ¡Plan {displayPlan} activado!
               </h1>
-              <p className="text-sm text-[#E8F0FF]/60">
+              <p className="text-sm text-[#EDEDED]/60">
                 Tu suscripción está activa. Redirigiendo al dashboard{dots}
               </p>
             </div>
@@ -156,8 +156,8 @@ export default function UpgradeSuccessPage() {
               {(detectedPlan === 'PRO' || planParam === 'PRO') && (
                 <>
                   {['Proyectos ilimitados', '2,000 test runs/mes', 'Healing con IA real', 'Soporte prioritario'].map(f => (
-                    <div key={f} className="flex items-center gap-2 text-sm text-[#E8F0FF]/70">
-                      <span className="text-[#00F5C8]">✓</span> {f}
+                    <div key={f} className="flex items-center gap-2 text-sm text-[#EDEDED]/70">
+                      <span className="text-white">✓</span> {f}
                     </div>
                   ))}
                 </>
@@ -165,8 +165,8 @@ export default function UpgradeSuccessPage() {
               {(detectedPlan === 'STARTER' || planParam === 'STARTER') && (
                 <>
                   {['5 proyectos', '2,000 tests/mes', 'Healing con IA', 'Email support'].map(f => (
-                    <div key={f} className="flex items-center gap-2 text-sm text-[#E8F0FF]/70">
-                      <span className="text-[#00F5C8]">✓</span> {f}
+                    <div key={f} className="flex items-center gap-2 text-sm text-[#EDEDED]/70">
+                      <span className="text-white">✓</span> {f}
                     </div>
                   ))}
                 </>
@@ -180,15 +180,15 @@ export default function UpgradeSuccessPage() {
           <div className="glass-elite rounded-2xl p-10 space-y-6">
             <div className="flex justify-center">
               <div className="w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center">
-                <Mail className="w-8 h-8 text-amber-400" />
+                <Mail className="w-8 h-8 text-white" />
               </div>
             </div>
 
             <div className="space-y-2">
-              <h1 className="text-xl font-bold text-[#E8F0FF]">
+              <h1 className="text-xl font-bold text-[#EDEDED]">
                 Tomando más de lo esperado
               </h1>
-              <p className="text-sm text-[#E8F0FF]/50">
+              <p className="text-sm text-[#EDEDED]/50">
                 Tu pago fue procesado por Stripe. La activación del plan puede demorar
                 un par de minutos más.
               </p>
@@ -197,21 +197,21 @@ export default function UpgradeSuccessPage() {
             <div className="space-y-3">
               <button
                 onClick={() => router.push('/dashboard')}
-                className="w-full py-3 px-6 rounded-xl text-sm font-semibold text-[#0A0E1A] transition-all"
-                style={{ background: 'linear-gradient(135deg, #00F5C8, #7B5EF8)' }}
+                className="w-full py-3 px-6 rounded-xl text-sm font-semibold text-[#0A0A0A] transition-all"
+                style={{ background: 'linear-gradient(135deg, #FFFFFF, #CFCFCF)' }}
               >
                 Ir al dashboard de todos modos
               </button>
               <a
                 href="mailto:support@healify.dev"
-                className="w-full py-3 px-6 rounded-xl text-sm font-medium text-[#E8F0FF]/60 border border-white/10 hover:border-white/20 hover:text-[#E8F0FF] transition-all flex items-center justify-center gap-2"
+                className="w-full py-3 px-6 rounded-xl text-sm font-medium text-[#EDEDED]/60 border border-white/10 hover:border-white/20 hover:text-[#EDEDED] transition-all flex items-center justify-center gap-2"
               >
                 <Mail className="w-4 h-4" />
                 Contactar soporte
               </a>
             </div>
 
-            <p className="text-xs text-[#E8F0FF]/25">
+            <p className="text-xs text-[#EDEDED]/25">
               Si ya fuiste cobrado, el plan se activará automáticamente.
               Revisá el dashboard en unos minutos.
             </p>

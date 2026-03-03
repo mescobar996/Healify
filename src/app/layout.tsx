@@ -65,7 +65,7 @@ export const metadata: Metadata = {
 
 // Viewport configuration - DARK ONLY
 export const viewport: Viewport = {
-  themeColor: "#0A0E1A",
+  themeColor: "#0A0A0A",
   width: "device-width",
   initialScale: 1,
   colorScheme: "dark",
@@ -83,7 +83,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body
-        className={`${montserrat.variable} ${jetbrainsMono.variable} font-sans antialiased bg-[#0A0E1A] text-[#E8F0FF]`}
+        className={`${montserrat.variable} ${jetbrainsMono.variable} font-sans antialiased bg-[#0A0A0A] text-[#EDEDED]`}
       >
         <Providers>
           {children}
