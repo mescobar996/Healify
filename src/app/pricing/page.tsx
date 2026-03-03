@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import {
   Check, Loader2, Sparkles, ArrowRight,
-  Users, Zap, Shield, Infinity,
+  Bell, Users, Zap, Shield, Infinity,
   Star
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -13,7 +13,6 @@ import Link from 'next/link'
 import { toast } from 'sonner'
 import { useSession } from 'next-auth/react'
 
-type Currency = 'USD' | 'ARS'
 type PlanId = 'starter' | 'pro' | 'enterprise'
 
 // ─── Plan data ──────────────────────────────────────────────────────
@@ -88,38 +87,14 @@ const FREE_FEATURES = [
   'Dashboard completo',
 ]
 
-// ─── Currency toggle ────────────────────────────────────────────────
-function CurrencyToggle({ currency, onChange }: { currency: Currency; onChange: (c: Currency) => void }) {
-  return (
-    <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-white/5 border border-white/10">
-      {(['USD', 'ARS'] as Currency[]).map(c => (
-        <button
-          key={c}
-          onClick={() => onChange(c)}
-          className={cn(
-            'px-4 py-1.5 rounded-lg text-sm font-medium transition-all',
-            currency === c
-              ? 'bg-white text-[#0A0A0A] shadow'
-              : 'text-[#EDEDED]/50 hover:text-white'
-          )}
-        >
-          {c === 'USD' ? '🌎 USD' : '🇦🇷 ARS'}
-        </button>
-      ))}
-    </div>
-  )
-}
-
 // ─── Plan card ──────────────────────────────────────────────────────
 function PlanCard({
   plan,
   index,
-  currency,
   arsRate,
 }: {
   plan: typeof PLANS[0]
   index: number
-  currency: Currency
   arsRate: number | null
 }) {
   const { data: session } = useSession()
@@ -138,7 +113,7 @@ function PlanCard({
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planId: plan.id, currency }),
+        body: JSON.stringify({ planId: plan.id }),
       })
       const data = await res.json()
       if (res.ok && data.url) {
@@ -151,7 +126,7 @@ function PlanCard({
     } finally {
       setLoading(false)
     }
-  }, [session, plan.id, currency])
+  }, [session, plan.id])
 
   return (
     <motion.div
@@ -180,12 +155,7 @@ function PlanCard({
           {plan.name}
         </p>
         <div className="flex items-baseline gap-1 mb-1">
-          {currency === 'USD' ? (
-            <>
-              <span className="text-3xl font-bold text-white">${plan.price}</span>
-              <span className="text-sm text-[#EDEDED]/40">USD / mes</span>
-            </>
-          ) : arsPrice ? (
+          {arsPrice ? (
             <>
               <span className="text-3xl font-bold text-white">${arsPrice.toLocaleString('es-AR')}</span>
               <span className="text-sm text-[#EDEDED]/40">ARS / mes</span>
@@ -194,7 +164,7 @@ function PlanCard({
             <span className="text-xl font-bold text-[#EDEDED]/50">Calculando…</span>
           )}
         </div>
-        {currency === 'ARS' && arsPrice && (
+        {arsPrice && (
           <p className="text-xs text-[#EDEDED]/35">≈ ${plan.price} USD · tasa oficial</p>
         )}
         <p className="text-xs text-[#EDEDED]/50 leading-relaxed mt-1">{plan.description}</p>
@@ -219,7 +189,7 @@ function PlanCard({
       {/* CTA */}
       <button
         onClick={handleCheckout}
-        disabled={loading || (currency === 'ARS' && !arsPrice)}
+        disabled={loading || !arsPrice}
         className={cn(
           'w-full py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2',
           isPopular
@@ -242,8 +212,7 @@ function PlanCard({
 
 // ═══════════════════════════════════════════════════════════════════
 export default function PricingPage() {
-  const [currency, setCurrency] = useState<Currency>('USD')
-  const [arsRate, setArsRate]   = useState<number | null>(null)
+  const [arsRate, setArsRate] = useState<number | null>(null)
 
   useEffect(() => {
     fetch('/api/billing/exchange-rate')
@@ -284,11 +253,10 @@ export default function PricingPage() {
             style={{ background: 'linear-gradient(135deg, #FFFFFF 0%, #DADADA 60%, #9D9D9D 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
             Precios simples y transparentes
           </h1>
-          <p className="text-[#EDEDED]/60 max-w-xl mx-auto leading-relaxed mb-6">
-            Pagá en USD con tarjeta internacional o en pesos argentinos con MercadoPago.
+          <p className="text-[#EDEDED]/60 max-w-xl mx-auto leading-relaxed">
+            Cobá en pesos argentinos vía MercadoPago. Tarjeta de crédito, débito o transferencia.
             Sin sorpresas: cancelá cuando quieras.
           </p>
-          <CurrencyToggle currency={currency} onChange={setCurrency} />
         </motion.div>
 
         {/* Free plan highlight */}
@@ -319,21 +287,19 @@ export default function PricingPage() {
           </Link>
         </motion.div>
 
-        {/* Currency note */}
-        {currency === 'ARS' && (
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-center text-xs text-[#EDEDED]/40 -mt-2 mb-6"
-          >
-            Precios en ARS calculados con el dólar oficial · Cobro mensual vía MercadoPago
-          </motion.p>
-        )}
+        {/* MP rate note */}
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-center text-xs text-[#EDEDED]/40 -mt-2 mb-6"
+        >
+          Precios en ARS calculados con el dólar oficial · Cobro mensual vía MercadoPago
+        </motion.p>
 
         {/* Plan cards */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-14">
           {PLANS.map((plan, i) => (
-            <PlanCard key={plan.id} plan={plan} index={i} currency={currency} arsRate={arsRate} />
+            <PlanCard key={plan.id} plan={plan} index={i} arsRate={arsRate} />
           ))}
         </div>
 
@@ -348,7 +314,7 @@ export default function PricingPage() {
               },
               {
                 q: '¿Qué métodos de pago aceptan?',
-                a: 'USD con tarjeta internacional via Lemon Squeezy (Visa, Mastercard, etc.). Pesos argentinos via MercadoPago (tarjeta de crédito, débito, transferencia). El tipo de cambio se actualiza cada 15 minutos con el dólar oficial.',
+                a: 'Pesos argentinos vía MercadoPago: tarjeta de crédito, débito o transferencia bancaria. El precio en ARS se actualiza automáticamente cada 15 minutos según el dólar oficial.',
               },
               {
                 q: '¿Puedo cambiar de plan después?',

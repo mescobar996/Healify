@@ -9,7 +9,6 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { db } from '@/lib/db'
-import { getPortalUrl as lsPortal } from '@/lib/payment/lemonsqueezy'
 import { getPortalUrl as mpPortal } from '@/lib/payment/mercadopago'
 import Stripe from 'stripe'
 
@@ -29,12 +28,6 @@ export async function GET() {
     }
 
     const gateway = subscription.gateway
-
-    // ── Lemon Squeezy ─────────────────────────────────────────────────────
-    if (gateway === 'LEMONSQUEEZY') {
-      const url = await lsPortal(subscription.gatewayCustomerId ?? subscription.gatewaySubId ?? '')
-      return NextResponse.json({ url })
-    }
 
     // ── MercadoPago ────────────────────────────────────────────────────────
     if (gateway === 'MERCADOPAGO') {
