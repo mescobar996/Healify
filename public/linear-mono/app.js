@@ -17,6 +17,24 @@
     }
   });
 
+  const quickNav = {
+    h: '/linear-mono/index.html',
+    f: '/linear-mono/features.html',
+    p: '/linear-mono/pricing.html',
+    d: '/linear-mono/docs.html',
+  };
+
+  window.addEventListener('keydown', (event) => {
+    const tag = document.activeElement?.tagName?.toLowerCase();
+    if (tag === 'input' || tag === 'textarea') return;
+    if (event.metaKey || event.ctrlKey || event.altKey) return;
+
+    const destination = quickNav[event.key.toLowerCase()];
+    if (destination) {
+      window.location.href = destination;
+    }
+  });
+
   rows.forEach((row) => {
     row.addEventListener('click', () => {
       rows.forEach((r) => {

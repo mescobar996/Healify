@@ -67,6 +67,7 @@ input {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: var(--space-3);
   border: 1px solid var(--line-soft);
   background: var(--bg-1);
@@ -590,7 +591,16 @@ input {
   }
 
   .nav {
-    display: none;
+    width: 100%;
+    order: 3;
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 2px;
+  }
+
+  .topbar > .btn,
+  .topbar > a.btn {
+    margin-left: auto;
   }
 
   .cta-strip {
