@@ -179,7 +179,7 @@ export default function UpgradeSuccessPage() {
         {phase === 'timeout' && (
           <div className="glass-elite rounded-2xl p-10 space-y-6">
             <div className="flex justify-center">
-              <div className="w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center">
+              <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center">
                 <Mail className="w-8 h-8 text-white" />
               </div>
             </div>

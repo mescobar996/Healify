@@ -47,15 +47,15 @@ type TeardownEvent = HealingHistoryItem & {
 
 function StatusBadge({ status }: { status: TestRunStatus }) {
   const config: Record<TestRunStatus, { bg: string; text: string; icon: React.ElementType; label: string }> = {
-    PASSED: { bg: "bg-emerald-500/10", text: "text-emerald-400", icon: CheckCircle2, label: "Pasado" },
+    PASSED: { bg: "bg-white/10", text: "text-white", icon: CheckCircle2, label: "Pasado" },
     FAILED: { bg: "bg-red-500/10", text: "text-red-400", icon: XCircle, label: "Fallido" },
-    HEALED: { bg: "bg-violet-500/10", text: "text-violet-400", icon: Zap, label: "Curado" },
-    RUNNING: { bg: "bg-blue-500/10", text: "text-blue-400", icon: RefreshCw, label: "Ejecutando" },
-    PENDING: { bg: "bg-amber-500/10", text: "text-amber-400", icon: Clock, label: "Pendiente" },
+    HEALED: { bg: "bg-white/10", text: "text-white", icon: Zap, label: "Curado" },
+    RUNNING: { bg: "bg-white/10", text: "text-white", icon: RefreshCw, label: "Ejecutando" },
+    PENDING: { bg: "bg-white/10", text: "text-white", icon: Clock, label: "Pendiente" },
     CANCELLED: { bg: "bg-gray-500/10", text: "text-gray-400", icon: XCircle, label: "Cancelado" },
       PARTIAL: {
-      bg: "bg-orange-500/10",
-      text: "text-orange-400",
+      bg: "bg-white/10",
+      text: "text-white",
       icon: AlertTriangle,
       label: "Parcial",
     },
@@ -71,9 +71,9 @@ function StatusBadge({ status }: { status: TestRunStatus }) {
 
 function HealingStatusBadge({ status }: { status: HealingStatus }) {
   const config: Record<HealingStatus, { bg: string; text: string; icon: React.ElementType; label: string }> = {
-    curado: { bg: "bg-emerald-500/10", text: "text-emerald-400", icon: CheckCircle2, label: "Curado" },
+    curado: { bg: "bg-white/10", text: "text-white", icon: CheckCircle2, label: "Curado" },
     fallido: { bg: "bg-red-500/10", text: "text-red-400", icon: XCircle, label: "Fallido" },
-    pendiente: { bg: "bg-amber-500/10", text: "text-amber-400", icon: Clock, label: "Pendiente" },
+    pendiente: { bg: "bg-white/10", text: "text-white", icon: Clock, label: "Pendiente" },
   };
   const { bg, text, icon: Icon, label } = config[status] || config.pendiente;
   return (
@@ -88,7 +88,7 @@ function ConfidenceBar({ confidence }: { confidence: number }) {
   return (
     <div className="flex items-center gap-2">
       <div className="w-16 h-1.5 rounded-full bg-gray-800 overflow-hidden">
-        <div className={cn("h-full rounded-full transition-all duration-300", confidence >= 80 ? "bg-emerald-500" : confidence >= 50 ? "bg-amber-500" : "bg-red-500")} style={{ width: `${confidence}%` }} />
+        <div className={cn("h-full rounded-full transition-all duration-300", confidence >= 80 ? "bg-white" : confidence >= 50 ? "bg-[#BEBEBE]" : "bg-red-500")} style={{ width: `${confidence}%` }} />
       </div>
       <span className="text-[11px] text-gray-500 font-mono">{confidence}%</span>
     </div>
@@ -214,7 +214,7 @@ export default function TestRunDetailPage() {
           <Link href="/dashboard/tests"><ArrowLeft className="w-4 h-4 mr-2" />Volver</Link>
         </Button>
         <div className="flex flex-col items-center justify-center min-h-[300px] gap-4">
-          <AlertTriangle className="w-12 h-12 text-amber-500" />
+          <AlertTriangle className="w-12 h-12 text-white" />
           <p className="text-gray-400">{error}</p>
           <Button onClick={() => window.location.reload()}><RefreshCw className="w-4 h-4 mr-2" />Reintentar</Button>
         </div>
@@ -251,7 +251,7 @@ export default function TestRunDetailPage() {
           ? `${event.oldSelector} → ${event.newSelector} (${event.confidence}%)`
           : 'No se pudo encontrar selector alternativo confiable.',
         time: baseTime,
-        tone: event.newSelector ? 'text-violet-400' : 'text-gray-400',
+        tone: event.newSelector ? 'text-white' : 'text-gray-400',
         icon: Zap,
       },
     ]
@@ -262,7 +262,7 @@ export default function TestRunDetailPage() {
         label: 'PR automático abierto',
         detail: event.prUrl,
         time: baseTime,
-        tone: 'text-[#00F5C8]',
+        tone: 'text-white',
         icon: GitPullRequest,
       })
     }
@@ -280,8 +280,8 @@ export default function TestRunDetailPage() {
           </Button>
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-violet-500/10">
-                <FileCode className="w-5 h-5 text-violet-400" />
+              <div className="p-2 rounded-lg bg-white/10">
+                <FileCode className="w-5 h-5 text-white" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
@@ -294,7 +294,7 @@ export default function TestRunDetailPage() {
                 </p>
               </div>
             </div>
-            <Button size="sm" onClick={handleRerun} className="bg-violet-600 hover:bg-violet-700 text-white">
+            <Button size="sm" onClick={handleRerun} className="bg-white hover:bg-[#E3E3E3] text-[#0A0A0A]">
               <Play className="w-3.5 h-3.5 mr-1.5" />
               Re-ejecutar
             </Button>
@@ -307,17 +307,17 @@ export default function TestRunDetailPage() {
             <p className="text-[11px] text-gray-500 uppercase tracking-wide">Total Tests</p>
             <p className="text-xl sm:text-2xl font-semibold text-white mt-1">{testRun.totalTests}</p>
           </div>
-          <div className="p-4 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
-            <p className="text-[11px] text-emerald-400 uppercase tracking-wide">Pasados</p>
-            <p className="text-2xl font-semibold text-emerald-400 mt-1">{testRun.passedTests}</p>
+          <div className="p-4 rounded-lg bg-white/5 border border-white/10">
+            <p className="text-[11px] text-white uppercase tracking-wide">Pasados</p>
+            <p className="text-2xl font-semibold text-white mt-1">{testRun.passedTests}</p>
           </div>
           <div className="p-4 rounded-lg bg-red-500/5 border border-red-500/10">
             <p className="text-[11px] text-red-400 uppercase tracking-wide">Fallidos</p>
             <p className="text-2xl font-semibold text-red-400 mt-1">{testRun.failedTests}</p>
           </div>
-          <div className="p-4 rounded-lg bg-violet-500/5 border border-violet-500/10">
-            <p className="text-[11px] text-violet-400 uppercase tracking-wide">Curados</p>
-            <p className="text-2xl font-semibold text-violet-400 mt-1">{testRun.healedTests}</p>
+          <div className="p-4 rounded-lg bg-white/5 border border-white/10">
+            <p className="text-[11px] text-white uppercase tracking-wide">Curados</p>
+            <p className="text-2xl font-semibold text-white mt-1">{testRun.healedTests}</p>
           </div>
           <div className="p-4 rounded-lg glass-elite">
             <p className="text-[11px] text-gray-500 uppercase tracking-wide">Duración</p>
@@ -427,7 +427,7 @@ export default function TestRunDetailPage() {
             </div>
             <div>
               <p className="text-[11px] text-gray-500 uppercase tracking-wide mb-1">Commit</p>
-              <code className="text-sm text-violet-400">{testRun.commitSha?.slice(0, 7) || "—"}</code>
+              <code className="text-sm text-white">{testRun.commitSha?.slice(0, 7) || "—"}</code>
             </div>
           </div>
           {testRun.commitMessage && (
@@ -461,16 +461,16 @@ export default function TestRunDetailPage() {
                 >
                   <div className="flex-shrink-0">
                     {event.status === "curado" ? (
-                      <div className="w-5 h-5 rounded-full bg-emerald-500/10 flex items-center justify-center">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                      <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center">
+                        <CheckCircle2 className="w-3 h-3 text-white" />
                       </div>
                     ) : event.status === "fallido" ? (
                       <div className="w-5 h-5 rounded-full bg-red-500/10 flex items-center justify-center">
                         <XCircle className="w-3 h-3 text-red-400" />
                       </div>
                     ) : (
-                      <div className="w-5 h-5 rounded-full bg-amber-500/10 flex items-center justify-center">
-                        <Clock className="w-3 h-3 text-amber-400" />
+                      <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center">
+                        <Clock className="w-3 h-3 text-white" />
                       </div>
                     )}
                   </div>
@@ -481,7 +481,7 @@ export default function TestRunDetailPage() {
                       {event.newSelector && (
                         <>
                           <ChevronRight className="w-3 h-3 text-gray-600" />
-                          <code className="text-[11px] text-emerald-400 font-mono truncate max-w-[200px]">{event.newSelector}</code>
+                          <code className="text-[11px] text-white font-mono truncate max-w-[200px]">{event.newSelector}</code>
                         </>
                       )}
                     </div>
