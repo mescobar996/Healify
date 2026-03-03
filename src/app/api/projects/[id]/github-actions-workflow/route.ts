@@ -13,38 +13,40 @@ import { db } from '@/lib/db'
 type Params = { params: Promise<{ id: string }> }
 
 function buildWorkflow(projectId: string, appUrl: string): string {
-  return `# Healify — auto-generated workflow
-# Place this file at .github/workflows/healify.yml in your repository.
-name: Healify Test Run
-
-on:
-  push:
-    branches: [main, staging]
-  pull_request:
-    branches: [main]
-
-jobs:
-  healify:
-    name: Run Healify Tests
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Trigger Healify test run
-        run: |
-          curl -X POST \\
-            -H "Authorization: Bearer \${{ secrets.HEALIFY_API_KEY }}" \\
-            -H "Content-Type: application/json" \\
-            -d '{"branch":"${{ github.ref_name }}","commitSha":"${{ github.sha }}","commitMessage":"${{ github.event.head_commit.message }}","commitAuthor":"${{ github.actor }}"}' \\
-            ${appUrl}/api/projects/${projectId}/run
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Setup instructions:
-# 1. In your GitHub repo → Settings → Secrets and variables → Actions
-#    create a secret called HEALIFY_API_KEY with your Healify API key.
-# 2. Commit this file to .github/workflows/healify.yml
-# 3. Each push to main/staging will trigger a Healify test run automatically.
-# ──────────────────────────────────────────────────────────────────────────────
-`
+  const GH = (expr: string) => '${{ ' + expr + ' }}'
+  return [
+    '# Healify — auto-generated workflow',
+    '# Place this file at .github/workflows/healify.yml in your repository.',
+    'name: Healify Test Run',
+    '',
+    'on:',
+    '  push:',
+    '    branches: [main, staging]',
+    '  pull_request:',
+    '    branches: [main]',
+    '',
+    'jobs:',
+    '  healify:',
+    '    name: Run Healify Tests',
+    '    runs-on: ubuntu-latest',
+    '',
+    '    steps:',
+    '      - name: Trigger Healify test run',
+    '        run: |',
+    '          curl -X POST \\',
+    `            -H "Authorization: Bearer ${GH('secrets.HEALIFY_API_KEY')}" \\`,
+    '            -H "Content-Type: application/json" \\',
+    `            -d \'{"branch":"${GH('github.ref_name')}","commitSha":"${GH('github.sha')}","commitMessage":"${GH('github.event.head_commit.message')}","commitAuthor":"${GH('github.actor')}"}\' \\`,
+    `            ${appUrl}/api/projects/${projectId}/run`,
+    '',
+    '# ──────────────────────────────────────────────────────────────────────────────',
+    '# Setup instructions:',
+    '# 1. In your GitHub repo → Settings → Secrets and variables → Actions',
+    '#    create a secret called HEALIFY_API_KEY with your Healify API key.',
+    '# 2. Commit this file to .github/workflows/healify.yml',
+    '# 3. Each push to main/staging will trigger a Healify test run automatically.',
+    '# ──────────────────────────────────────────────────────────────────────────────',
+  ].join('\n') + '\n'
 }
 
 export async function GET(req: NextRequest, { params }: Params) {
