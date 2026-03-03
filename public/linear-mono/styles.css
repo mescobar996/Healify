@@ -129,6 +129,12 @@ input {
   outline: none;
 }
 
+.nav a.is-active {
+  color: var(--text-0);
+  border-color: var(--line-soft);
+  background: rgba(255, 255, 255, 0.04);
+}
+
 .btn {
   border: 1px solid var(--line-soft);
   border-radius: var(--radius-sm);
@@ -480,10 +486,92 @@ input {
   flex-wrap: wrap;
 }
 
+.page-hero {
+  margin-top: var(--space-5);
+}
+
+.page-title {
+  margin: 10px 0 12px;
+  font-family: "Anton", Impact, sans-serif;
+  font-size: clamp(2rem, 6vw, 4.4rem);
+  line-height: 0.96;
+  text-transform: uppercase;
+}
+
+.page-subtitle {
+  margin: 0;
+  color: var(--text-1);
+  max-width: 68ch;
+  line-height: 1.6;
+}
+
+.feature-grid,
+.docs-grid,
+.pricing-grid {
+  margin-top: var(--space-6);
+  display: grid;
+  gap: var(--space-4);
+}
+
+.feature-grid,
+.docs-grid {
+  grid-template-columns: 1fr 1fr;
+}
+
+.pricing-grid {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.feature-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.feature-list li {
+  color: var(--text-1);
+  padding: 9px 10px;
+  border: 1px solid var(--line-soft);
+  background: var(--bg-2);
+  border-radius: var(--radius-sm);
+}
+
+.price-card .panel-body {
+  display: grid;
+  gap: 12px;
+}
+
+.price {
+  margin: 2px 0 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.price strong {
+  font-size: 36px;
+  line-height: 1;
+}
+
+.price span {
+  color: var(--text-2);
+  font-size: 12px;
+}
+
+.price-card.featured {
+  border-color: var(--line-strong);
+  background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+}
+
 @media (max-width: 980px) {
   .hero,
   .grid-main,
-  .asym-grid {
+  .asym-grid,
+  .feature-grid,
+  .docs-grid,
+  .pricing-grid {
     grid-template-columns: 1fr;
   }
 
