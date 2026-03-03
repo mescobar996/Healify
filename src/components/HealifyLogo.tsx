@@ -25,28 +25,22 @@ export function HealifyLogo({
 
   return (
     <div className={cn('flex items-center gap-2.5', className)}>
-      {/* Logo real — PNG con el ícono V+</> */}
+      {/* Logo — nuevo ícono H+ con bug/code */}
       <div className="relative shrink-0 group">
         <Image
-          src="/icon.png"
+          src="/healify-logo.png"
           alt="Healify"
           width={icon}
           height={icon}
-          className="object-contain drop-shadow-[0_0_8px_rgba(0,245,200,0.4)] group-hover:drop-shadow-[0_0_14px_rgba(123,94,248,0.6)] transition-all duration-300"
+          className="object-contain drop-shadow-[0_0_6px_rgba(255,255,255,0.15)] group-hover:drop-shadow-[0_0_12px_rgba(255,255,255,0.25)] transition-all duration-300"
           priority
         />
       </div>
 
-      {/* Texto con gradiente cyan → violeta → lila */}
+      {/* Texto monocromático */}
       {showText && (
         <span
-          className={cn('font-bold tracking-tight select-none', text)}
-          style={{
-            background: 'linear-gradient(135deg, #00F5C8 0%, #7B5EF8 60%, #C084FC 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-          }}
+          className={cn('font-bold tracking-tight select-none text-[#EDEDED]', text)}
         >
           Healify
         </span>
@@ -62,7 +56,7 @@ export function HealifyLogoAnimated({ className }: { className?: string }) {
       <div
         className="absolute inset-0 blur-2xl animate-pulse"
         style={{
-          background: 'linear-gradient(135deg, rgba(0,245,200,0.2), rgba(123,94,248,0.2), rgba(192,132,252,0.15))',
+          background: 'radial-gradient(circle, rgba(255,255,255,0.08), transparent 70%)',
           borderRadius: '16px',
         }}
       />

@@ -16,7 +16,7 @@ export default function Icon() {
           height: 32,
           display: 'grid',
           placeItems: 'center',
-          background: '#0A0E1A',
+          background: '#000000',
         }}
       >
         <img
