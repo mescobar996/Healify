@@ -43,7 +43,7 @@ import { api, formatNumber } from "@/lib/api";
 import { DashboardSkeleton } from "@/components/ui/skeletons";
 import { TestDetailSheet } from "@/components/TestDetailSheet";
 import { ActivityFeed } from "@/components/ActivityFeed";
-import { OnboardingBanner } from "@/components/OnboardingBanner";
+// OnboardingBanner moved to /dashboard/projects empty state
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { StatusBadge } from "@/components/dashboard/StatusBadge";
 import { ConfidenceBar } from "@/components/dashboard/ConfidenceBar";
@@ -104,7 +104,7 @@ function DashboardContent() {
   const [roi, setRoi] = useState<ROIData | null>(null);
   const [weeklyStatus, setWeeklyStatus] = useState<WeeklyReportStatus | null>(null)
   const [sendingWeeklyReport, setSendingWeeklyReport] = useState(false)
-  const [autoSandboxDone, setAutoSandboxDone] = useState(false)
+
 
   const fetchWeeklyStatus = async () => {
     try {
@@ -198,22 +198,7 @@ function DashboardContent() {
     fetchDashboard();
   }, []);
 
-  useEffect(() => {
-    const payload = data as DashboardResponse | null
-    if (!payload?.isNewUser || autoSandboxDone) return
 
-    api.setupSandbox()
-      .then(() => {
-        setAutoSandboxDone(true)
-        toast.success('Sandbox demo preparado', {
-          description: 'Creamos un proyecto inicial para que explores Healify en segundos.',
-        })
-        fetchDashboard()
-      })
-      .catch(() => {
-        setAutoSandboxDone(true)
-      })
-  }, [data, autoSandboxDone])
 
   // Handler: Run Tests
   const handleRunTests = async () => {
@@ -372,19 +357,6 @@ function DashboardContent() {
           </div>
         </div>
 
-        {/* Onboarding Banner — visible solo si es usuario nuevo sin proyectos */}
-        {(data as DashboardResponse).isNewUser && (
-          <OnboardingBanner
-            userName={session?.user?.name || undefined}
-            progress={{
-              projectConnected: ((data as DashboardResponse).projectCount || 0) > 0,
-              firstRunExecuted: data.metrics.testsExecutedToday > 0 || data.chartData.length > 0,
-              firstHealingDone: data.healingHistory.length > 0,
-            }}
-            onSetupSandbox={handleSetupSandbox}
-          />
-        )}
-
         <Tabs defaultValue="overview" className="space-y-4">
           <TabsList className="bg-[#111111] border border-white/[0.08] h-10 w-full sm:w-fit justify-start overflow-x-auto">
             <TabsTrigger value="overview" className="data-[state=active]:bg-[#1A1A1A] data-[state=active]:text-[#EDEDED] gap-1.5 text-[13px]">
@@ -403,15 +375,6 @@ function DashboardContent() {
 
           <TabsContent value="overview" className="space-y-4">
 
-        {/* Full Empty State — when user has zero data */}
-        {data.chartData.length === 0 && data.healingHistory.length === 0 && monitoredTests === 0 ? (
-          <EmptyState
-            title="Tu dashboard está listo"
-            description="Conectá un repositorio e instalá el SDK para que Healify comience a autocurar tus tests con IA."
-            variant="full"
-          />
-        ) : (
-          <>
         {/* Metrics Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <MetricCard
@@ -835,8 +798,6 @@ function DashboardContent() {
           )}
           </div>
         </div>
-        </>
-        )}
         </TabsContent>
 
         <TabsContent value="analisis" className="space-y-4">
