@@ -39,7 +39,7 @@ Push to GitHub → Webhook → Railway Worker → Run Tests → AI Healing → A
 | Database | PostgreSQL via Neon + Prisma ORM |
 | Queue | BullMQ + Redis |
 | Worker | Railway (Node.js, clones repo, runs Playwright) |
-| Payments | Stripe (Checkout + Webhooks) |
+| Payments | MercadoPago (Subscriptions + Webhooks) |
 | Email | Resend |
 | Deploy | Vercel (app) + Railway (worker) |
 

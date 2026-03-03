@@ -14,7 +14,12 @@ import type { TestStatus } from '@/lib/enums'
 
 export async function getProjects() {
   try {
+    // Always scope to the authenticated user — never return other users' projects
+    const user = await getSessionUser()
+    if (!user?.id) return []
+
     const projects = await db.project.findMany({
+      where: { userId: user.id },
       include: {
         testRuns: {
           orderBy: { startedAt: 'desc' },

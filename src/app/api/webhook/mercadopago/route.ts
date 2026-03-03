@@ -56,13 +56,23 @@ export async function POST(req: NextRequest) {
   const rawBody = await req.text()
 
   // ── Signature verification ─────────────────────────────────────────────
-  if (xSignature) {
+  // If MERCADOPAGO_WEBHOOK_SECRET is configured, the header is REQUIRED.
+  // Skipping verification when the secret is set would allow anyone to
+  // forge a subscription-upgrade by omitting the x-signature header.
+  const webhookSecret = process.env.MERCADOPAGO_WEBHOOK_SECRET
+  if (webhookSecret) {
+    if (!xSignature) {
+      console.warn('[MP Webhook] Missing x-signature header (MERCADOPAGO_WEBHOOK_SECRET is configured)')
+      return NextResponse.json({ error: 'Missing signature' }, { status: 401 })
+    }
     const tsMatch = xSignature.match(/ts=([^,]+)/)
     const ts = tsMatch?.[1] ?? ''
     if (!verifyWebhookSignature(rawBody, xSignature, xRequestId, dataId, ts)) {
       console.warn('[MP Webhook] Invalid signature')
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
     }
+  } else {
+    console.warn('[MP Webhook] MERCADOPAGO_WEBHOOK_SECRET not configured — signature verification skipped')
   }
 
   try {

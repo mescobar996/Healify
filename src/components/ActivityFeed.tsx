@@ -13,45 +13,6 @@ interface ActivityEvent {
   timestamp: string
 }
 
-// Mock activity — replaced by real API when DB is connected
-const MOCK_ACTIVITY: ActivityEvent[] = [
-  {
-    id: '1',
-    type: 'healed',
-    message: 'Auto-healed selector',
-    detail: '#login-button → button[type="submit"]',
-    timestamp: 'hace 5 min',
-  },
-  {
-    id: '2',
-    type: 'running',
-    message: 'Test suite ejecutado',
-    detail: 'checkout.spec.ts — 14/14 passed',
-    timestamp: 'hace 12 min',
-  },
-  {
-    id: '3',
-    type: 'pending',
-    message: 'Requiere revisión manual',
-    detail: '.payment-form > input[name=card]',
-    timestamp: 'hace 1 hora',
-  },
-  {
-    id: '4',
-    type: 'healed',
-    message: 'Auto-healed selector',
-    detail: '.add-to-cart-btn → [data-testid="add-cart"]',
-    timestamp: 'hace 2 horas',
-  },
-  {
-    id: '5',
-    type: 'detected',
-    message: 'Bug detectado (no selector)',
-    detail: 'search-results.spec.ts:45',
-    timestamp: 'hace 3 horas',
-  },
-]
-
 const typeConfig = {
   healed: { icon: CheckCircle2, color: 'text-violet-400', bg: 'bg-violet-500/10', dot: 'bg-violet-500' },
   failed: { icon: XCircle, color: 'text-red-400', bg: 'bg-red-500/10', dot: 'bg-red-500' },
@@ -109,9 +70,9 @@ export function ActivityFeed({ limit = 5 }: ActivityFeedProps) {
           }
         }
       } catch {
-        // Silently fall back to mock
+        // API error — show empty state, not fake data
       }
-      setEvents(MOCK_ACTIVITY.slice(0, limit))
+      setEvents([])
       setLoading(false)
     }
 
@@ -140,6 +101,11 @@ export function ActivityFeed({ limit = 5 }: ActivityFeedProps) {
               </div>
             </div>
           ))}
+        </div>
+      ) : events.length === 0 ? (
+        <div className="px-4 py-8 text-center">
+          <p className="text-xs text-gray-500">Sin actividad reciente.</p>
+          <p className="text-[11px] text-gray-600 mt-1">Los eventos aparecerán aquí cuando corras tests.</p>
         </div>
       ) : (
         <div className="divide-y divide-white/5">
