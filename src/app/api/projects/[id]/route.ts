@@ -70,18 +70,47 @@ export async function DELETE(
     }
 
     await db.$transaction(async (tx) => {
+      const testRuns = await tx.testRun.findMany({
+        where: { projectId: id },
+        select: { id: true },
+      })
+
+      const testRunIds = testRuns.map((run) => run.id)
+
+      if (testRunIds.length > 0) {
+        await tx.healingEvent.deleteMany({
+          where: { testRunId: { in: testRunIds } },
+        })
+
+        await tx.screenshot.deleteMany({
+          where: { testRunId: { in: testRunIds } },
+        })
+      }
+
+      await tx.testRun.deleteMany({
+        where: { projectId: id },
+      })
+
+      await tx.trackedSelector.deleteMany({
+        where: { projectId: id },
+      })
+
       await tx.analyticsEvent.deleteMany({
         where: { projectId: id },
       })
 
       await tx.project.delete({
         where: { id },
-      });
+      })
     })
 
-    await auditLogService.log(user.id, 'PROJECT_DELETE', id, {
-      name: project.name
-    })
+    try {
+      await auditLogService.log(user.id, 'PROJECT_DELETE', id, {
+        name: project.name,
+      })
+    } catch (auditError) {
+      console.error('Audit log failed after project delete:', auditError)
+    }
 
     return NextResponse.json({ message: 'Project deleted successfully' });
   } catch (error) {

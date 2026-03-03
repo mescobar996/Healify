@@ -777,8 +777,11 @@ export default function ProjectsPage() {
       await api.deleteProject(idToDelete);
       toast.success("Proyecto eliminado");
       setProjects(prev => prev.filter(p => p.id !== idToDelete));
-    } catch {
-      toast.error("Error al eliminar el proyecto");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Ocurrió un error inesperado";
+      toast.error("Error al eliminar el proyecto", {
+        description: message,
+      });
     } finally {
       setIsDeleting(false);
     }
