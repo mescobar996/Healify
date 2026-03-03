@@ -92,12 +92,14 @@ model Subscription {
   userId            String    @unique
   user              User      @relation(fields: [userId], references: [id])
   plan              Plan      @default(FREE)
-  status            String    @default("active") // active, canceled, past_due, pending
+  status            String    @default("active") // active | trial | canceled | past_due | pending
+  billingCycle      String    @default("monthly")  // "monthly" | "annual"
   gateway           Gateway?  // which payment processor handled this subscription
   gatewaySubId      String?   // LS order/sub ID | MP preapproval ID | Stripe sub ID
   gatewayCustomerId String?   // LS customer ID  | MP payer email    | Stripe customer ID
   currency          String?   // "USD" or "ARS"
   currentPeriodEnd  DateTime?
+  trialEndsAt       DateTime? // set to now+14d on free trial; null for paid subscriptions
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   // Legacy Stripe fields — kept for existing subscribers migrated from Stripe

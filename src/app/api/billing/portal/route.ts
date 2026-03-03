@@ -5,14 +5,18 @@
  * current user's active gateway: LemonSqueezy, MercadoPago, or Stripe.
  */
 
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { db } from '@/lib/db'
 import { getPortalUrl as mpPortal } from '@/lib/payment/mercadopago'
 import Stripe from 'stripe'
+import { billingRateLimit } from '@/lib/http-rate-limiter'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  // 10 req / min per IP
+  const rl = await billingRateLimit(req)
+  if (!rl.ok) return rl.response!
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {

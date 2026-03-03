@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
   output: "standalone",
@@ -75,4 +76,23 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  // Sentry project info — set SENTRY_ORG, SENTRY_PROJECT, SENTRY_AUTH_TOKEN in CI/CD
+  silent: !process.env.CI,
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+
+  // Automatically instrument Node.js runtime without extra code
+  autoInstrumentServerFunctions: true,
+
+  // Upload source maps to Sentry on every build (requires SENTRY_AUTH_TOKEN)
+  widenClientFileUpload: true,
+
+  // Disable automatic prefetch instrumentation (reduces bundle size impact)
+  disableLogger: true,
+
+  // Source maps: delete local files after upload so they don't ship to users
+  sourcemaps: {
+    deleteSourcemapsAfterUpload: true,
+  },
+})

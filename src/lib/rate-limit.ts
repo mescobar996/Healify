@@ -46,9 +46,16 @@ setInterval(() => {
 async function getUserPlan(userId: string): Promise<PlanKey> {
     const sub = await db.subscription.findUnique({
         where: { userId },
-        select: { plan: true, status: true },
+        select: { plan: true, status: true, trialEndsAt: true },
     })
     if (!sub || sub.status === 'canceled') return 'FREE'
+
+    // Free trial: grant STARTER features while trial is active
+    if (sub.status === 'trial') {
+        if (sub.trialEndsAt && sub.trialEndsAt > new Date()) return 'STARTER'
+        return 'FREE' // Trial expired
+    }
+
     return (sub.plan as PlanKey) || 'FREE'
 }
 
@@ -69,6 +76,16 @@ async function getProjectPlan(projectId: string): Promise<PlanKey> {
 
     const sub = project?.user?.subscription
     if (!project?.userId || !sub || sub.status === 'canceled') return 'FREE'
+
+    if (sub.status === 'trial') {
+        const trialSub = await db.subscription.findUnique({
+            where: { userId: project.userId },
+            select: { trialEndsAt: true },
+        })
+        if (trialSub?.trialEndsAt && trialSub.trialEndsAt > new Date()) return 'STARTER'
+        return 'FREE'
+    }
+
     return (sub.plan as PlanKey) || 'FREE'
 }
 

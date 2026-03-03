@@ -23,6 +23,7 @@ import { db } from '@/lib/db'
 import { Plan } from '@/lib/enums'
 import { verifyWebhookSignature, fetchAndNormalizePreapproval } from '@/lib/payment/mercadopago'
 import type { NormalizedSubscription } from '@/lib/payment/types'
+import { webhookRateLimit } from '@/lib/http-rate-limiter'
 
 function planIdToEnum(planId: NormalizedSubscription['planId']): Plan {
   if (planId === 'enterprise') return Plan.ENTERPRISE
@@ -31,6 +32,10 @@ function planIdToEnum(planId: NormalizedSubscription['planId']): Plan {
 }
 
 export async function POST(req: NextRequest) {
+  // 200 req / min — allows MP burst but blocks abuse
+  const rl = await webhookRateLimit(req)
+  if (!rl.ok) return rl.response!
+
   // ── Extract query params and headers ───────────────────────────────────
   const url         = new URL(req.url)
   const dataId      = url.searchParams.get('data.id') ?? ''
@@ -90,6 +95,7 @@ export async function POST(req: NextRequest) {
       update: {
         plan,
         status:            normalized.status ?? 'active',
+        billingCycle:      normalized.billingCycle ?? 'monthly',
         gateway:           'MERCADOPAGO',
         gatewaySubId:      normalized.gatewaySubId       ?? null,
         gatewayCustomerId: normalized.gatewayCustomerId  ?? null,
@@ -100,6 +106,7 @@ export async function POST(req: NextRequest) {
         userId:            normalized.userId,
         plan,
         status:            normalized.status ?? 'active',
+        billingCycle:      normalized.billingCycle ?? 'monthly',
         gateway:           'MERCADOPAGO',
         gatewaySubId:      normalized.gatewaySubId       ?? null,
         gatewayCustomerId: normalized.gatewayCustomerId  ?? null,

@@ -29,6 +29,8 @@ export async function GET(request: Request) {
             plan: subscription.plan,
             status: subscription.status,
             currentPeriodEnd: subscription.currentPeriodEnd,
+            trialEndsAt: subscription.trialEndsAt,
+            billingCycle: subscription.billingCycle ?? 'monthly',
         })
     } catch (error) {
         console.error('Error fetching subscription:', error)

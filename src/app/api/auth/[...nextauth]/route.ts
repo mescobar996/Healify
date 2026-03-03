@@ -79,31 +79,49 @@ export const authOptions: NextAuthOptions = {
       try {
         const { Resend } = await import('resend')
         const apiKey = process.env.RESEND_API_KEY
-        if (!apiKey || !user.email) return
-        const resend = new Resend(apiKey)
-        await resend.emails.send({
-          from: 'Healify <noreply@healify.dev>',
-          to: user.email,
-          subject: '¡Bienvenido a Healify! 🎉',
-          html: `
-            <div style="font-family:Inter,sans-serif;max-width:520px;margin:0 auto;background:#0A0E1A;color:#E8F0FF;padding:32px;border-radius:12px">
-              <h1 style="font-size:22px;font-weight:700;margin:0 0 8px">Hola${user.name ? ', ' + user.name.split(' ')[0] : ''} 👋</h1>
-              <p style="color:#9CA3AF;margin:0 0 24px;line-height:1.6">
-                Tu cuenta en Healify está lista. Conectá tu primer repositorio y dejá que la IA autocure tus tests rotos automáticamente.
-              </p>
-              <a href="https://healify-sigma.vercel.app/dashboard/projects"
-                 style="display:inline-block;background:#7B5EF8;color:#fff;font-weight:600;padding:12px 24px;border-radius:8px;text-decoration:none">
-                Crear mi primer proyecto →
-              </a>
-              <p style="color:#4A5568;font-size:12px;margin:32px 0 0">
-                Si no creaste esta cuenta, ignorá este email.
-              </p>
-            </div>
-          `,
-        })
-        console.log(`[Auth] Welcome email sent to ${user.email}`)
+        if (apiKey && user.email) {
+          const resend = new Resend(apiKey)
+          await resend.emails.send({
+            from: 'Healify <noreply@healify.dev>',
+            to: user.email,
+            subject: '¡Bienvenido a Healify! 🎉',
+            html: `
+              <div style="font-family:Inter,sans-serif;max-width:520px;margin:0 auto;background:#0A0E1A;color:#E8F0FF;padding:32px;border-radius:12px">
+                <h1 style="font-size:22px;font-weight:700;margin:0 0 8px">Hola${user.name ? ', ' + user.name.split(' ')[0] : ''} 👋</h1>
+                <p style="color:#9CA3AF;margin:0 0 24px;line-height:1.6">
+                  Tu cuenta en Healify está lista. Conectá tu primer repositorio y dejá que la IA autocure tus tests rotos automáticamente.
+                </p>
+                <a href="https://healify-sigma.vercel.app/dashboard/projects"
+                   style="display:inline-block;background:#7B5EF8;color:#fff;font-weight:600;padding:12px 24px;border-radius:8px;text-decoration:none">
+                  Crear mi primer proyecto →
+                </a>
+                <p style="color:#4A5568;font-size:12px;margin:32px 0 0">
+                  Si no creaste esta cuenta, ignorá este email.
+                </p>
+              </div>
+            `,
+          })
+          console.log(`[Auth] Welcome email sent to ${user.email}`)
+        }
       } catch (err) {
         console.warn('[Auth] Welcome email failed:', err)
+      }
+
+      // ── Create 14-day free trial (STARTER plan) ───────────────────────────
+      try {
+        const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
+        await db.subscription.create({
+          data: {
+            userId: user.id!,
+            plan:   'STARTER',
+            status: 'trial',
+            trialEndsAt,
+          },
+        })
+        console.log(`[Auth] 14-day trial created for user ${user.id} (ends ${trialEndsAt.toISOString()})`)
+      } catch (err) {
+        // May already exist if called twice — not fatal
+        console.warn('[Auth] Trial subscription creation failed (may already exist):', err)
       }
     },
   },

@@ -111,6 +111,24 @@ export const redis = {
       return 0
     }
   },
+  incr: async (key: string): Promise<number> => {
+    const instance = getRedis()
+    if (!instance) return 0
+    try {
+      return await instance.incr(key)
+    } catch {
+      return 0
+    }
+  },
+  expire: async (key: string, seconds: number): Promise<void> => {
+    const instance = getRedis()
+    if (!instance) return
+    try {
+      await instance.expire(key, seconds)
+    } catch {
+      // ignore
+    }
+  },
 } as unknown as Redis
 
 // Exportar función para obtener la instancia real de Redis (para BullMQ y otros casos especiales)

@@ -8,10 +8,14 @@
  * Cache-Control: 15 minutes (matches Redis TTL).
  */
 
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getUsdToArsRate } from '@/lib/payment/exchange-rate'
+import { publicRateLimit } from '@/lib/http-rate-limiter'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  // 60 req / min per IP
+  const rl = await publicRateLimit(req)
+  if (!rl.ok) return rl.response!
   try {
     const rate = await getUsdToArsRate()
     return NextResponse.json(

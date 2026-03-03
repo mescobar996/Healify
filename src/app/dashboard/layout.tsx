@@ -36,6 +36,7 @@ import { HealifyLogo } from "@/components/HealifyLogo";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { NotificationCenter } from "@/components/NotificationCenter";
 import { SidebarProjectHealth } from "@/components/SidebarProjectHealth";
+import { TrialBanner } from "@/components/TrialBanner";
 
 const navItems = [
   { name: "Dashboard",      href: "/dashboard",          icon: LayoutDashboard },
@@ -265,6 +266,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* Page content */}
         <main className="p-4 lg:p-6 min-h-[calc(100vh-3.5rem)] pb-safe">
+          <TrialBanner />
           {children}
         </main>
       </div>

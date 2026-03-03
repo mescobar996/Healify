@@ -14,12 +14,15 @@ import { toast } from 'sonner'
 import { useSession } from 'next-auth/react'
 
 type PlanId = 'starter' | 'pro' | 'enterprise'
+type BillingCycle = 'monthly' | 'annual'
 
 // ─── Plan data ──────────────────────────────────────────────────────
 const PLANS: Array<{
   id: PlanId
   name: string
   price: number
+  annualMonthly: number  // per-month cost when billed annually (10 months)
+  annualTotal: number    // total billed once a year
   description: string
   color: string
   badge: string | null
@@ -30,6 +33,8 @@ const PLANS: Array<{
     id: 'starter',
     name: 'Starter',
     price: 49,
+    annualMonthly: 40.83,
+    annualTotal: 490,
     description: 'Para equipos pequeños que quieren automatizar sus primeros tests.',
     color: '#F2F2F2',
     badge: null,
@@ -46,6 +51,8 @@ const PLANS: Array<{
     id: 'pro',
     name: 'Pro',
     price: 99,
+    annualMonthly: 82.50,
+    annualTotal: 990,
     description: 'Para equipos que necesitan velocidad y escala en su pipeline de CI.',
     color: '#F2F2F2',
     badge: 'Más popular',
@@ -64,6 +71,8 @@ const PLANS: Array<{
     id: 'enterprise',
     name: 'Enterprise',
     price: 499,
+    annualMonthly: 415.83,
+    annualTotal: 4990,
     description: 'Para organizaciones con necesidades avanzadas de seguridad y compliance.',
     color: '#EDEDED',
     badge: null,
@@ -92,16 +101,22 @@ function PlanCard({
   plan,
   index,
   arsRate,
+  billingCycle,
 }: {
   plan: typeof PLANS[0]
   index: number
   arsRate: number | null
+  billingCycle: BillingCycle
 }) {
   const { data: session } = useSession()
   const [loading, setLoading] = useState(false)
   const isPopular = plan.badge === 'Más popular'
 
-  const arsPrice = arsRate ? Math.round((plan.price * arsRate) / 100) * 100 : null
+  const usdPrice = billingCycle === 'annual' ? plan.annualMonthly : plan.price
+  const arsPrice = arsRate ? Math.round((usdPrice * arsRate) / 100) * 100 : null
+  const arsSavings = arsRate
+    ? Math.round(((plan.price - plan.annualMonthly) * arsRate) / 100) * 100
+    : null
 
   const handleCheckout = useCallback(async () => {
     if (!session) {
@@ -113,7 +128,7 @@ function PlanCard({
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planId: plan.id }),
+        body: JSON.stringify({ planId: plan.id, billingCycle }),
       })
       const data = await res.json()
       if (res.ok && data.url) {
@@ -126,7 +141,7 @@ function PlanCard({
     } finally {
       setLoading(false)
     }
-  }, [session, plan.id])
+  }, [session, plan.id, billingCycle])
 
   return (
     <motion.div
@@ -154,6 +169,14 @@ function PlanCard({
         <p className="text-xs font-medium tracking-widest uppercase mb-1" style={{ color: plan.color }}>
           {plan.name}
         </p>
+        {/* Annual savings badge */}
+        {billingCycle === 'annual' && arsSavings && (
+          <div className="mb-2">
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-900/50 text-emerald-300 border border-emerald-700/40">
+              Ahorrás ${arsSavings.toLocaleString('es-AR')} ARS/año (2 meses gratis)
+            </span>
+          </div>
+        )}
         <div className="flex items-baseline gap-1 mb-1">
           {arsPrice ? (
             <>
@@ -164,7 +187,12 @@ function PlanCard({
             <span className="text-xl font-bold text-[#EDEDED]/50">Calculando…</span>
           )}
         </div>
-        {arsPrice && (
+        {arsPrice && billingCycle === 'annual' && (
+          <p className="text-xs text-[#EDEDED]/35">
+            ≈ ${plan.annualMonthly.toFixed(2)} USD/mes · facturado anualmente (${plan.annualTotal} USD) · tasa oficial
+          </p>
+        )}
+        {arsPrice && billingCycle === 'monthly' && (
           <p className="text-xs text-[#EDEDED]/35">≈ ${plan.price} USD · tasa oficial</p>
         )}
         <p className="text-xs text-[#EDEDED]/50 leading-relaxed mt-1">{plan.description}</p>
@@ -213,7 +241,7 @@ function PlanCard({
 // ═══════════════════════════════════════════════════════════════════
 export default function PricingPage() {
   const [arsRate, setArsRate] = useState<number | null>(null)
-
+  const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly')
   useEffect(() => {
     fetch('/api/billing/exchange-rate')
       .then(r => r.json())
@@ -259,6 +287,47 @@ export default function PricingPage() {
           </p>
         </motion.div>
 
+        {/* Billing cycle toggle */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.03 }}
+          className="flex justify-center mb-8"
+        >
+          <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-white/[0.04] border border-white/10">
+            <button
+              onClick={() => setBillingCycle('monthly')}
+              className={cn(
+                'px-4 py-1.5 rounded-lg text-sm font-medium transition-all',
+                billingCycle === 'monthly'
+                  ? 'bg-white text-[#0A0A0A] shadow-sm'
+                  : 'text-[#EDEDED]/50 hover:text-white'
+              )}
+            >
+              Mensual
+            </button>
+            <button
+              onClick={() => setBillingCycle('annual')}
+              className={cn(
+                'relative px-4 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2',
+                billingCycle === 'annual'
+                  ? 'bg-white text-[#0A0A0A] shadow-sm'
+                  : 'text-[#EDEDED]/50 hover:text-white'
+              )}
+            >
+              Anual
+              <span className={cn(
+                'text-[10px] font-bold px-1.5 py-0.5 rounded-full',
+                billingCycle === 'annual'
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-emerald-900/60 text-emerald-300'
+              )}>
+                −2 meses
+              </span>
+            </button>
+          </div>
+        </motion.div>
+
         {/* Free plan highlight */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -299,7 +368,7 @@ export default function PricingPage() {
         {/* Plan cards */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-14">
           {PLANS.map((plan, i) => (
-            <PlanCard key={plan.id} plan={plan} index={i} arsRate={arsRate} />
+            <PlanCard key={plan.id} plan={plan} index={i} arsRate={arsRate} billingCycle={billingCycle} />
           ))}
         </div>
 
