@@ -4,7 +4,7 @@
 # ── Stage 1: Build ─────────────────────────────────────────────────
 FROM node:20-slim AS builder
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     && rm -rf /var/lib/apt/lists/*
 
@@ -15,7 +15,7 @@ COPY tsconfig.json ./
 COPY prisma ./prisma/
 
 # Dev deps needed for esbuild/typescript compilation
-RUN npm ci --include=dev
+RUN npm ci --include=dev && npm cache clean --force
 
 RUN npx prisma generate
 
@@ -37,9 +37,8 @@ RUN npx esbuild src/workers/railway-worker.ts \
 # ── Stage 2: Production ───────────────────────────────────────────
 FROM node:20-slim
 
-# Instalar solo las dependencias de runtime para Chromium + git
-RUN apt-get update && apt-get install -y \
-    wget \
+# Minimal Chromium runtime deps — no-install-recommends prevents the 250+ pkg cascade
+RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     fonts-liberation \
     libasound2 \
@@ -59,6 +58,7 @@ RUN apt-get update && apt-get install -y \
     libxfixes3 \
     libxkbcommon0 \
     libxrandr2 \
+    libxss1 \
     xdg-utils \
     git \
     && rm -rf /var/lib/apt/lists/*
@@ -67,34 +67,29 @@ RUN apt-get update && apt-get install -y \
 RUN groupadd --gid 1001 healify && \
     useradd --uid 1001 --gid healify --shell /bin/bash --create-home healify
 
+# Install Playwright chromium into a fixed path (avoids copy step)
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+RUN npx playwright install chromium --with-deps 2>/dev/null || npx playwright install chromium && \
+    chmod -R o+rx /ms-playwright
+
 WORKDIR /app
 
 # Copy only production deps + generated Prisma client
 COPY package.json package-lock.json* ./
 COPY prisma ./prisma/
-RUN npm ci --omit=dev && npx prisma generate
-
-# Install ONLY Chromium
-RUN npx playwright install chromium
+RUN npm ci --omit=dev && npx prisma generate && npm cache clean --force
 
 # Copy compiled worker from builder
 COPY --from=builder /build/dist ./dist
 
-# Create snapshot directory
+# Create snapshot directory and fix ownership
 RUN mkdir -p storage/snapshots && chown -R healify:healify /app
 
-# Variables de entorno
 ENV NODE_ENV=production
-ENV PLAYWRIGHT_BROWSERS_PATH=/home/healify/.cache/ms-playwright
-
-# Move Playwright browsers to non-root user cache
-RUN mkdir -p /home/healify/.cache/ms-playwright && \
-    cp -r /root/.cache/ms-playwright/. /home/healify/.cache/ms-playwright/ 2>/dev/null || true && \
-    chown -R healify:healify /home/healify/.cache
 
 USER healify
 
-# Health check — worker is a background process, so we just verify the process is alive
+# Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD node -e "process.exit(0)" || exit 1
 
