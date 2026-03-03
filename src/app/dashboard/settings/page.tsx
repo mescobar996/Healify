@@ -566,6 +566,9 @@ function AppearanceSection() {
 }
 
 function IntegrationsSection() {
+  const { data: session } = useSession();
+  const githubLogin = session?.user?.name || session?.user?.email?.split('@')[0] || null;
+
   return (
     <div className="space-y-4">
       {/* GitHub */}
@@ -573,20 +576,29 @@ function IntegrationsSection() {
         <div className="flex items-center gap-3">
           <Github className="w-6 h-6 text-[var(--text-secondary)]" />
           <div>
-            <p className="text-sm font-medium text-[var(--text-primary)]">@johndoe</p>
-            <p className="text-xs text-[var(--text-tertiary)]">Conectado</p>
+            {githubLogin ? (
+              <>
+                <p className="text-sm font-medium text-[var(--text-primary)]">@{githubLogin}</p>
+                <p className="text-xs text-[var(--text-tertiary)]">Conectado via OAuth</p>
+              </>
+            ) : (
+              <>
+                <p className="text-sm font-medium text-[var(--text-primary)]">GitHub</p>
+                <p className="text-xs text-[var(--text-tertiary)]">No conectado</p>
+              </>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-white/10 text-white">
-            Sincronizado
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            className=""
-          >
-            Desconectar
+          {githubLogin && (
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-white/10 text-white">
+              Sincronizado
+            </span>
+          )}
+          <Button variant="outline" size="sm" asChild>
+            <a href="/api/auth/signin/github">
+              {githubLogin ? 'Reconectar' : 'Conectar'}
+            </a>
           </Button>
         </div>
       </div>

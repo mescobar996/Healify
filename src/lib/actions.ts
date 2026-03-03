@@ -4,9 +4,9 @@ import { revalidatePath } from 'next/cache'
 import { initProjectApiKey } from '@/lib/api-key-service'
 import { db } from '@/lib/db'
 import { checkProjectLimit } from '@/lib/rate-limit'
-import { analyzeAndHeal } from '@/lib/engine/healing-engine'
+import { addTestJob } from '@/lib/queue'
 import { getSessionUser } from '@/lib/auth/session'
-import type { TestStatus, SelectorType } from '@/lib/enums'
+import type { TestStatus } from '@/lib/enums'
 
 // ============================================
 // PROJECTS ACTIONS
@@ -158,18 +158,41 @@ export async function getTestRuns(params?: {
 
 export async function executeTestRun(projectId: string) {
   try {
-    // 1. Crear test run con estado PENDING
+    const user = await getSessionUser()
+    if (!user?.id) return { success: false, error: 'Not authenticated' }
+
+    // Verify ownership
+    const project = await db.project.findFirst({
+      where: { id: projectId, userId: user.id },
+    })
+    if (!project) return { success: false, error: 'Project not found' }
+
+    // Create test run with PENDING status (worker will update it)
     const testRun = await db.testRun.create({
       data: {
         projectId,
         status: 'PENDING',
         triggeredBy: 'manual',
-        totalTests: Math.floor(Math.random() * 20) + 10,
       },
     })
 
-    // 2. Simular ejecución (en producción, esto sería un job de BullMQ)
-    await simulateTestExecution(testRun.id, projectId)
+    // Enqueue to BullMQ — Railway worker picks it up
+    const job = await addTestJob(projectId, null, testRun.id, {
+      repository: project.repository,
+      branch: 'main',
+    })
+
+    if (!job) {
+      // Redis unavailable — mark run as failed immediately
+      await db.testRun.update({
+        where: { id: testRun.id },
+        data: { status: 'FAILED', finishedAt: new Date(), error: 'Queue unavailable' },
+      })
+      return {
+        success: false,
+        error: 'Test runner is temporarily unavailable. Please try again in a few seconds.',
+      }
+    }
 
     revalidatePath('/dashboard/tests')
     revalidatePath('/dashboard')
@@ -413,82 +436,3 @@ async function getChartData() {
   return byDay
 }
 
-async function simulateTestExecution(testRunId: string, projectId: string) {
-  // Simular delay de ejecución
-  await new Promise(resolve => setTimeout(resolve, 2000))
-
-  // Obtener el test run
-  const testRun = await db.testRun.findUnique({
-    where: { id: testRunId },
-  })
-
-  if (!testRun) return
-
-  // Simular resultados
-  const totalTests = testRun.totalTests
-  const shouldFail = Math.random() < 0.3 // 30% probabilidad de fallo
-  const failedTests = shouldFail ? Math.floor(Math.random() * 3) + 1 : 0
-  const passedTests = totalTests - failedTests
-
-  // Actualizar test run
-  await db.testRun.update({
-    where: { id: testRunId },
-    data: {
-      status: shouldFail ? 'FAILED' : 'PASSED',
-      finishedAt: new Date(),
-      duration: Math.floor(Math.random() * 5000) + 1000,
-      passedTests,
-      failedTests,
-      healedTests: 0,
-    },
-  })
-
-  // Si falló, crear healing events
-  if (shouldFail) {
-    const selectors = [
-      '#login-btn',
-      '.submit-button',
-      '[data-testid="save-btn"]',
-      '#confirm-dialog',
-      '.nav-item-profile',
-    ]
-
-    for (let i = 0; i < failedTests; i++) {
-      const selector = selectors[i % selectors.length]
-      const errorMessage = `Timeout waiting for element: ${selector}`
-
-      // Usar el motor de curación
-      const healingResult = await analyzeAndHeal({
-        selector,
-        errorMessage,
-        testName: `test-${i + 1}.spec.ts`,
-      })
-
-      // Crear healing event
-      await db.healingEvent.create({
-        data: {
-          testRunId,
-          testName: `test-${i + 1}.spec.ts`,
-          failedSelector: selector,
-          selectorType: 'CSS',
-          errorMessage,
-          newSelector: healingResult.fixedSelector,
-          newSelectorType: healingResult.selectorType as SelectorType,
-          confidence: healingResult.confidence,
-          status: healingResult.needsReview ? 'NEEDS_REVIEW' : 'HEALED_AUTO',
-          reasoning: healingResult.explanation,
-        },
-      })
-    }
-
-    // Actualizar test run con healed count
-    const healedCount = failedTests // Simplificación: todos se curan automáticamente
-    await db.testRun.update({
-      where: { id: testRunId },
-      data: {
-        healedTests: healedCount,
-        status: healedCount === failedTests ? 'HEALED' : 'PARTIAL',
-      },
-    })
-  }
-}
