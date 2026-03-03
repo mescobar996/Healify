@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useRouter } from "next/navigation"
 import {
@@ -242,11 +242,31 @@ export function OnboardingBanner({
   const router = useRouter()
   const [dismissed, setDismissed] = useState(false)
   const [sandboxLoading, setSandboxLoading] = useState(false)
+  const [liveProgress, setLiveProgress] = useState<{
+    projectConnected: boolean
+    firstRunExecuted: boolean
+    firstHealingDone: boolean
+  } | null>(null)
+
+  // Self-fetch onboarding status when no progress prop is provided
+  useEffect(() => {
+    if (progress) return
+    fetch('/api/user/onboarding-status', { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setLiveProgress(d) })
+      .catch(() => {})
+  }, [progress])
+
+  const resolvedProgress = progress ?? liveProgress ?? {
+    projectConnected: false,
+    firstRunExecuted: false,
+    firstHealingDone: false,
+  }
 
   const completedByStep = {
-    1: progress?.projectConnected ?? false,
-    2: progress?.firstRunExecuted ?? false,
-    3: progress?.firstHealingDone ?? false,
+    1: resolvedProgress.projectConnected,
+    2: resolvedProgress.firstRunExecuted,
+    3: resolvedProgress.firstHealingDone,
   }
 
   const completedCount = Object.values(completedByStep).filter(Boolean).length

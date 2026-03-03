@@ -2,9 +2,10 @@
 
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
-import { CheckCircle2, XCircle, Clock, Code2, ArrowRight } from 'lucide-react'
+import { CheckCircle2, XCircle, Clock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { HealingStatus } from '@/types'
+import { SelectorDiff } from '@/components/SelectorDiff'
 
 interface TestDetailData {
   id: string
@@ -82,40 +83,7 @@ export function TestDetailSheet({
           </div>
 
           {/* Selector Diff */}
-          <div className="space-y-3">
-            <p className="text-[11px] text-gray-500 uppercase tracking-wider flex items-center gap-2">
-              <Code2 className="w-3.5 h-3.5" />
-              Selector Changes
-            </p>
-            <div className="rounded-lg bg-[#111113] border border-white/5 overflow-hidden">
-              {/* Old */}
-              <div className="px-4 py-3 border-b border-white/5">
-                <p className="text-[10px] text-red-400 mb-1.5 font-medium">ANTES</p>
-                <code className="text-xs text-red-300 font-mono break-all bg-red-500/5 px-2 py-1 rounded block">
-                  {data.oldSelector}
-                </code>
-              </div>
-              {/* Arrow */}
-              {data.newSelector && (
-                <div className="flex items-center justify-center py-2 bg-white/[0.01]">
-                  <ArrowRight className="w-4 h-4 text-gray-600" />
-                </div>
-              )}
-              {/* New */}
-              {data.newSelector ? (
-                <div className="px-4 py-3">
-                  <p className="text-[10px] text-violet-400 mb-1.5 font-medium">DESPUÉS</p>
-                  <code className="text-xs text-violet-300 font-mono break-all bg-violet-500/5 px-2 py-1 rounded block">
-                    {data.newSelector}
-                  </code>
-                </div>
-              ) : (
-                <div className="px-4 py-3">
-                  <p className="text-xs text-gray-500 italic">Selector no encontrado — requiere revisión manual</p>
-                </div>
-              )}
-            </div>
-          </div>
+          <SelectorDiff oldSelector={data.oldSelector} newSelector={data.newSelector} />
 
           {/* AI Reasoning */}
           {data.reasoning && (

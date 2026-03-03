@@ -364,10 +364,11 @@ function NotificationsSection() {
   const [slackUrl, setSlackUrl] = useState("");
   const [slackSaving, setSlackSaving] = useState(false);
   const [slackSaved, setSlackSaved] = useState(false);
+  const [slackTesting, setSlackTesting] = useState(false);
 
-  // Load existing slack URL
+  // Load existing Slack webhook URL from the dedicated notifications API
   React.useEffect(() => {
-    fetch("/api/user/profile/slack", { credentials: "include" })
+    fetch("/api/user/notifications", { credentials: "include" })
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d?.slackWebhookUrl) setSlackUrl(d.slackWebhookUrl) })
       .catch(() => {})
@@ -376,8 +377,8 @@ function NotificationsSection() {
   const handleSlackSave = async () => {
     setSlackSaving(true);
     try {
-      const res = await fetch("/api/user/profile", {
-        method: "PATCH",
+      const res = await fetch("/api/user/notifications", {
+        method: "PUT",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ slackWebhookUrl: slackUrl }),
@@ -397,13 +398,36 @@ function NotificationsSection() {
     }
   };
 
+  const handleSlackTest = async () => {
+    if (!slackUrl) return;
+    setSlackTesting(true);
+    try {
+      const res = await fetch("/api/user/notifications", {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slackWebhookUrl: slackUrl, test: true }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success("Mensaje de prueba enviado", { description: "Revisá tu canal de Slack." });
+      } else {
+        toast.error(data.error || "Error al enviar prueba");
+      }
+    } catch {
+      toast.error("Error inesperado");
+    } finally {
+      setSlackTesting(false);
+    }
+  };
+
   const handleSlackDisconnect = async () => {
     setSlackUrl("");
-    await fetch("/api/user/profile", {
-      method: "PATCH",
+    await fetch("/api/user/notifications", {
+      method: "PUT",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ slackWebhookUrl: null }),
+      body: JSON.stringify({ slackWebhookUrl: "" }),
     });
     toast.success("Slack desconectado");
   };
@@ -463,14 +487,25 @@ function NotificationsSection() {
             className="flex-1 text-sm"
           />
           {slackUrl ? (
-            <Button
-              size="sm"
-              onClick={handleSlackSave}
-              disabled={slackSaving}
-              className="text-xs px-3 shrink-0"
-            >
-              {slackSaving ? "..." : slackSaved ? "✓ Guardado" : "Guardar"}
-            </Button>
+            <>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleSlackTest}
+                disabled={slackTesting || slackSaving}
+                className="text-xs px-3 shrink-0"
+              >
+                {slackTesting ? "..." : "Probar"}
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleSlackSave}
+                disabled={slackSaving}
+                className="text-xs px-3 shrink-0"
+              >
+                {slackSaving ? "..." : slackSaved ? "✓ Guardado" : "Guardar"}
+              </Button>
+            </>
           ) : null}
         </div>
         {slackUrl && (
