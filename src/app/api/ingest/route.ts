@@ -4,6 +4,7 @@ import { addTestJob } from '@/lib/queue'
 import { extractApiKey, validateApiKey } from '@/lib/api-key-service'
 import { sanitizeCommitSha, sanitizeGitBranch } from '@/lib/repo-validation'
 import { apiError } from '@/lib/api-response'
+import { analyzeBrokenSelector } from '@/lib/ai/healing-service'
 
 export async function POST(request: NextRequest) {
     try {
@@ -47,8 +48,8 @@ export async function POST(request: NextRequest) {
             }
         })
 
-        // 3. Crear HealingEvent
-        await db.healingEvent.create({
+        // 3. Crear HealingEvent y analizar con IA
+        const healingEvent = await db.healingEvent.create({
             data: {
                 testRunId: testRun.id,
                 testName,
@@ -60,6 +61,31 @@ export async function POST(request: NextRequest) {
                 status: 'ANALYZING',
             }
         })
+
+        // Resolve the healing event immediately using AI analysis
+        try {
+            const suggestion = await analyzeBrokenSelector(
+                failedSelector || 'unknown',
+                errorMessage || '',
+                domSnapshot || '',
+            )
+            const confidence = suggestion?.confidence ?? 0.0
+            await db.healingEvent.update({
+                where: { id: healingEvent.id },
+                data: {
+                    newSelector: suggestion?.newSelector ?? (failedSelector || 'unknown'),
+                    newSelectorType: (suggestion?.selectorType ?? 'UNKNOWN') as 'CSS' | 'XPATH' | 'TESTID' | 'ROLE' | 'TEXT' | 'UNKNOWN',
+                    confidence,
+                    reasoning: suggestion?.reasoning ?? 'Analysis unavailable',
+                    status: confidence >= 0.95 ? 'HEALED_AUTO' : 'NEEDS_REVIEW',
+                    actionTaken: confidence >= 0.95 ? 'auto_fixed' : 'suggested',
+                    appliedAt: confidence >= 0.95 ? new Date() : null,
+                    appliedBy: 'system',
+                },
+            })
+        } catch {
+            // Non-critical: keep ANALYZING so the worker can retry
+        }
 
         // 4. Encolar Job en BullMQ (puede retornar null si Redis no está disponible)
         const job = await addTestJob(projectId, safeCommitSha || undefined)

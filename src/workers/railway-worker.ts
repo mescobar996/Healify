@@ -32,6 +32,7 @@ const KNOWN_VARS = [
   'PORT',
   'RAILWAY_ENVIRONMENT',
   'RAILWAY_SERVICE_NAME',
+  'ANTHROPIC_API_KEY',
 ]
 console.log('ðŸ” Environment variables present:')
 for (const v of KNOWN_VARS) {
@@ -43,6 +44,9 @@ console.log('========================================')
 // â”€â”€ Guard: REDIS_URL required â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const redisUrl = process.env.REDIS_URL
+if (!process.env.ANTHROPIC_API_KEY) {
+  console.warn('\u26a0\ufe0f  ANTHROPIC_API_KEY not set \u2014 healing will use deterministic fallback only')
+}
 
 if (!redisUrl) {
   console.error('âŒ FATAL: REDIS_URL not set')

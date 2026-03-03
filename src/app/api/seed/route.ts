@@ -11,6 +11,9 @@ export async function GET(request: Request) {
     if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    if (user.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
 
     const { searchParams } = new URL(request.url)
     const reset = searchParams.get('reset') === 'true'
@@ -137,6 +140,9 @@ export async function POST(request: Request) {
     const user = await getSessionUser()
     if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    if (user.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     const body = await request.json().catch(() => ({}))

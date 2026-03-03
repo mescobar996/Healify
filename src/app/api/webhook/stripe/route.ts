@@ -22,6 +22,10 @@ function getPeriodEnd(subscription: Stripe.Subscription): Date {
 }
 
 export async function POST(request: Request) {
+    if (!process.env.STRIPE_SECRET_KEY) {
+        return NextResponse.json({ received: true })
+    }
+
     const body = await request.text()
     const sig = request.headers.get('stripe-signature')
 

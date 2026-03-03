@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { validateApiKeyFromRequest } from '@/lib/api-key-service'
 import { db } from '@/lib/db'
-import { analyzeAndHeal } from '@/lib/engine/healing-engine'
+import { analyzeBrokenSelector } from '@/lib/ai/healing-service'
 import { checkApiReportRateLimit } from '@/lib/rate-limit'
 import type { SelectorType } from '@/lib/enums'
 import { z } from 'zod'
@@ -115,25 +115,29 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // 6. Run Healing Engine
-    const healResult = await analyzeAndHeal({
-      selector: payload.selector,
-      htmlContext: payload.context,
-      testName: payload.testName,
-      errorMessage: payload.error,
-    })
+    // 6. Run Healing Engine (ZAI + deterministic fallback)
+    const suggestion = await analyzeBrokenSelector(
+      payload.selector,
+      payload.error,
+      payload.context ?? '',
+    )
+
+    const fixedSelector = suggestion?.newSelector  ?? payload.selector
+    const confidence    = suggestion?.confidence   ?? 0.0
+    const reasoning     = suggestion?.reasoning    ?? 'Analysis unavailable'
+    const selectorType  = suggestion?.selectorType ?? 'UNKNOWN'
 
     // 7. Update healing event with result
     const updatedEvent = await db.healingEvent.update({
       where: { id: healingEvent.id },
       data: {
-        newSelector: healResult.fixedSelector,
-        newSelectorType: healResult.selectorType as SelectorType,
-        confidence: healResult.confidence,
-        status: healResult.confidence >= 0.95 ? 'HEALED_AUTO' : 'NEEDS_REVIEW',
-        reasoning: healResult.explanation,
-        actionTaken: healResult.confidence >= 0.95 ? 'auto_fixed' : 'suggested',
-        appliedAt: healResult.confidence >= 0.95 ? new Date() : null,
+        newSelector: fixedSelector,
+        newSelectorType: selectorType as SelectorType,
+        confidence,
+        status: confidence >= 0.95 ? 'HEALED_AUTO' : 'NEEDS_REVIEW',
+        reasoning,
+        actionTaken: confidence >= 0.95 ? 'auto_fixed' : 'suggested',
+        appliedAt: confidence >= 0.95 ? new Date() : null,
         appliedBy: 'system',
       },
     })
@@ -143,13 +147,13 @@ export async function POST(request: NextRequest) {
       where: { id: testRun.id },
       data: {
         totalTests: { increment: 1 },
-        healedTests: healResult.confidence >= 0.95 ? { increment: 1 } : undefined,
-        failedTests: healResult.confidence < 0.95 ? { increment: 1 } : undefined,
+        healedTests: confidence >= 0.95 ? { increment: 1 } : undefined,
+        failedTests: confidence < 0.95 ? { increment: 1 } : undefined,
       },
     })
 
     // 9. Create notification for low confidence
-    if (healResult.confidence < 0.70) {
+    if (confidence < 0.70) {
       const project = await db.project.findUnique({
         where: { id: projectId },
         select: { userId: true },
@@ -161,7 +165,7 @@ export async function POST(request: NextRequest) {
             userId: project.userId,
             type: 'warning',
             title: 'Manual Review Required',
-            message: `Test "${payload.testName}" needs review (${Math.round(healResult.confidence * 100)}% confidence)`,
+            message: `Test "${payload.testName}" needs review (${Math.round(confidence * 100)}% confidence)`,
             link: `/dashboard/tests`,
           },
         })
@@ -178,12 +182,12 @@ export async function POST(request: NextRequest) {
         healingEventId: updatedEvent.id,
         project: projectName,
         result: {
-          fixedSelector: healResult.fixedSelector,
-          confidence: healResult.confidence,
-          selectorType: healResult.selectorType,
-          explanation: healResult.explanation,
-          needsReview: healResult.needsReview,
-          alternatives: healResult.alternatives,
+          fixedSelector,
+          confidence,
+          selectorType,
+          explanation: reasoning,
+          needsReview: confidence < 0.95,
+          alternatives: [],
         },
         processingTimeMs: processingTime,
       },

@@ -1,4 +1,5 @@
 import { db } from '@/lib/db'
+import { redis } from '@/lib/redis'
 
 // ═══════════════════════════════════════════════════════════════════════
 // LÍMITES POR PLAN
@@ -27,20 +28,7 @@ type ReportRateCheck = {
     resetInMs: number
 }
 
-const REPORT_WINDOW_MS = 60_000
-
-// In-memory rate-limit state per project.
-// NOTE: state resets on process restart (acceptable for a soft rate limit).
-// For multi-instance deployments, migrate this to Redis.
-const reportWindowByProject = new Map<string, { count: number; resetAt: number }>()
-
-// Prune expired entries every 5 minutes to prevent unbounded growth
-setInterval(() => {
-    const now = Date.now()
-    for (const [key, state] of reportWindowByProject) {
-        if (now > state.resetAt) reportWindowByProject.delete(key)
-    }
-}, 5 * 60_000).unref() // .unref() so the timer doesn't keep the process alive
+const REPORT_WINDOW_SECS = 60 // 1-minute window (Redis TTL in seconds)
 
 // ─── Obtener el plan activo del usuario desde DB ───────────────────────
 async function getUserPlan(userId: string): Promise<PlanKey> {
@@ -146,43 +134,28 @@ export async function checkTestRunLimit(userId: string): Promise<{
 }
 
 export async function checkApiReportRateLimit(projectId: string): Promise<ReportRateCheck> {
-    const now = Date.now()
     const plan = await getProjectPlan(projectId)
     const limit = PLAN_REPORT_LIMITS[plan]
+    const key = `rl:report:${projectId}`
 
-    const windowState = reportWindowByProject.get(projectId)
-    if (!windowState || now > windowState.resetAt) {
-        reportWindowByProject.set(projectId, {
-            count: 1,
-            resetAt: now + REPORT_WINDOW_MS,
-        })
+    try {
+        const count = await redis.incr(key)
+        if (count === 1) {
+            await redis.expire(key, REPORT_WINDOW_SECS)
+        }
+        const ttl = await redis.ttl(key)
+        const resetInMs = Math.max(0, ttl * 1000)
 
         return {
-            allowed: true,
+            allowed: count <= limit,
             plan,
             limit,
-            remaining: Math.max(0, limit - 1),
-            resetInMs: REPORT_WINDOW_MS,
+            remaining: Math.max(0, limit - count),
+            resetInMs,
         }
-    }
-
-    if (windowState.count >= limit) {
-        return {
-            allowed: false,
-            plan,
-            limit,
-            remaining: 0,
-            resetInMs: Math.max(0, windowState.resetAt - now),
-        }
-    }
-
-    windowState.count += 1
-    return {
-        allowed: true,
-        plan,
-        limit,
-        remaining: Math.max(0, limit - windowState.count),
-        resetInMs: Math.max(0, windowState.resetAt - now),
+    } catch {
+        // Redis unavailable — fail-open so requests are not incorrectly blocked
+        return { allowed: true, plan, limit, remaining: limit - 1, resetInMs: REPORT_WINDOW_SECS * 1000 }
     }
 }
 
