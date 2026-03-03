@@ -478,6 +478,13 @@ export default function ProjectsPage() {
   const [isSeedingDemo, setIsSeedingDemo] = useState(false)
   const [isRetryingFetch, setIsRetryingFetch] = useState(false)
 
+  useEffect(() => {
+    if (searchParams.get('new') === 'true') {
+      setIsNewProjectOpen(true)
+      window.history.replaceState({}, '', '/dashboard/projects')
+    }
+  }, [searchParams])
+
   const fetchProjects = async () => {
     setLoading(true);
     setError(null);
