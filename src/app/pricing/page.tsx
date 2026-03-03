@@ -20,7 +20,7 @@ const PLANS = [
     name: 'Starter',
     price: 49,
     description: 'Para equipos pequeños que quieren automatizar sus primeros tests.',
-    color: '#7B5EF8',
+    color: '#5E6AD2',
     badge: null,
     features: [
       { text: '5 proyectos', icon: Zap },
@@ -36,7 +36,7 @@ const PLANS = [
     name: 'Pro',
     price: 99,
     description: 'Para equipos que necesitan velocidad y escala en su pipeline de CI.',
-    color: '#00F5C8',
+    color: '#5E6AD2',
     badge: 'Más popular',
     features: [
       { text: 'Proyectos ilimitados', icon: Infinity },
@@ -54,7 +54,7 @@ const PLANS = [
     name: 'Enterprise',
     price: 499,
     description: 'Para organizaciones con necesidades avanzadas de seguridad y compliance.',
-    color: '#FF6B9D',
+    color: '#EDEDED',
     badge: null,
     features: [
       { text: 'Todo lo de Pro', icon: Check },
@@ -116,11 +116,11 @@ function WaitlistForm({ plan }: { plan: string }) {
         animate={{ opacity: 1, scale: 1 }}
         className="text-center py-4"
       >
-        <div className="w-12 h-12 rounded-full bg-[#00F5C8]/15 border border-[#00F5C8]/30 flex items-center justify-center mx-auto mb-3">
-          <Check className="w-5 h-5 text-[#00F5C8]" />
+        <div className="w-12 h-12 rounded-full bg-white/10 border border-white/25 flex items-center justify-center mx-auto mb-3">
+          <Check className="w-5 h-5 text-[#5E6AD2]" />
         </div>
         <p className="text-sm font-medium text-white">¡Estás en la lista!</p>
-        <p className="text-xs text-[#E8F0FF]/50 mt-1">Te mandamos un email de confirmación.</p>
+        <p className="text-xs text-[#EDEDED]/50 mt-1">Te mandamos un email de confirmación.</p>
       </motion.div>
     )
   }
@@ -132,7 +132,7 @@ function WaitlistForm({ plan }: { plan: string }) {
         placeholder="Tu nombre (opcional)"
         value={name}
         onChange={e => setName(e.target.value)}
-        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-[#7B5EF8]/50 transition-colors"
+        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-white/40 transition-colors"
       />
       <input
         type="email"
@@ -140,13 +140,13 @@ function WaitlistForm({ plan }: { plan: string }) {
         value={email}
         onChange={e => setEmail(e.target.value)}
         onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-[#7B5EF8]/50 transition-colors"
+        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-white/40 transition-colors"
       />
       <button
         onClick={handleSubmit}
         disabled={loading}
         className="w-full py-2.5 rounded-lg text-sm font-semibold text-white transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-        style={{ background: 'linear-gradient(135deg, #7B5EF8, #00F5C8)' }}
+        style={{ background: 'linear-gradient(135deg, #5E6AD2, #9BA3F5)' }}
       >
         {loading ? (
           <Loader2 className="w-4 h-4 animate-spin" />
@@ -174,14 +174,14 @@ function PlanCard({ plan, index }: { plan: typeof PLANS[0]; index: number }) {
       className={cn(
         'relative rounded-2xl border p-6 flex flex-col',
         isPopular
-          ? 'border-[#00F5C8]/40 bg-[#00F5C8]/5'
+          ? 'border-white/20 bg-white/[0.04]'
           : 'border-white/10 bg-white/[0.03]'
       )}
     >
       {/* Popular badge */}
       {plan.badge && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-[#00F5C8] text-[#0A0E1A]">
+          <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-white text-[#0A0A0A]">
             {plan.badge}
           </span>
         </div>
@@ -194,9 +194,9 @@ function PlanCard({ plan, index }: { plan: typeof PLANS[0]; index: number }) {
         </p>
         <div className="flex items-baseline gap-1 mb-2">
           <span className="text-3xl font-bold text-white">${plan.price}</span>
-          <span className="text-sm text-[#E8F0FF]/40">USD / mes</span>
+          <span className="text-sm text-[#EDEDED]/40">USD / mes</span>
         </div>
-        <p className="text-xs text-[#E8F0FF]/50 leading-relaxed">{plan.description}</p>
+        <p className="text-xs text-[#EDEDED]/50 leading-relaxed">{plan.description}</p>
       </div>
 
       {/* Coming soon banner */}
@@ -208,14 +208,14 @@ function PlanCard({ plan, index }: { plan: typeof PLANS[0]; index: number }) {
       {/* Features */}
       <ul className="space-y-2 mb-4 flex-1">
         {plan.features.map(f => (
-          <li key={f.text} className="flex items-center gap-2 text-sm text-[#E8F0FF]/70">
+          <li key={f.text} className="flex items-center gap-2 text-sm text-[#EDEDED]/70">
             <Check className="w-3.5 h-3.5 shrink-0" style={{ color: plan.color }} />
             {f.text}
           </li>
         ))}
         {plan.notIncluded.map(f => (
-          <li key={f} className="flex items-center gap-2 text-sm text-[#E8F0FF]/25 line-through">
-            <Check className="w-3.5 h-3.5 shrink-0 text-[#E8F0FF]/15" />
+          <li key={f} className="flex items-center gap-2 text-sm text-[#EDEDED]/25 line-through">
+            <Check className="w-3.5 h-3.5 shrink-0 text-[#EDEDED]/15" />
             {f}
           </li>
         ))}
@@ -228,8 +228,8 @@ function PlanCard({ plan, index }: { plan: typeof PLANS[0]; index: number }) {
           className={cn(
             'w-full py-2.5 rounded-xl text-sm font-semibold border transition-all flex items-center justify-center gap-2',
             showWaitlist
-              ? 'border-[#7B5EF8]/40 text-[#7B5EF8] bg-[#7B5EF8]/10'
-              : 'border-white/10 text-[#E8F0FF]/70 bg-white/5 hover:bg-white/10 hover:text-white'
+              ? 'border-white/35 text-white bg-white/10'
+              : 'border-white/10 text-[#EDEDED]/70 bg-white/5 hover:bg-white/10 hover:text-white'
           )}
         >
           {showWaitlist ? (
@@ -276,18 +276,18 @@ export default function PricingPage() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-[#0A0E1A] text-[#E8F0FF] relative overflow-hidden">
+    <div className="min-h-screen bg-[#0A0A0A] text-[#EDEDED] relative overflow-hidden">
       {/* Ambient */}
-      <div className="fixed top-[20%] left-[10%] w-[500px] h-[500px] rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(123,94,248,0.08) 0%, transparent 70%)', filter: 'blur(100px)' }} />
-      <div className="fixed bottom-[10%] right-[10%] w-[400px] h-[400px] rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(0,245,200,0.06) 0%, transparent 70%)', filter: 'blur(80px)' }} />
+      <div className="fixed top-[20%] left-[10%] w-[500px] h-[500px] rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(94,106,210,0.08) 0%, transparent 70%)', filter: 'blur(100px)' }} />
+      <div className="fixed bottom-[10%] right-[10%] w-[400px] h-[400px] rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 70%)', filter: 'blur(80px)' }} />
 
       {/* Nav */}
-      <header className="sticky top-0 z-50 border-b border-white/8 bg-[rgba(10,14,26,0.9)] backdrop-blur-xl">
+      <header className="sticky top-0 z-50 border-b border-white/8 bg-[rgba(10,10,10,0.92)] backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
           <Link href="/"><HealifyLogo size="md" showText /></Link>
           <div className="flex items-center gap-4">
-            <Link href="/docs" className="text-sm text-[#E8F0FF]/50 hover:text-white transition-colors">Docs</Link>
-            <Link href="/dashboard" className="text-sm px-3 py-1.5 rounded-lg bg-[#7B5EF8] text-white font-medium hover:bg-[#7B5EF8]/90 transition-colors">
+            <Link href="/docs" className="text-sm text-[#EDEDED]/50 hover:text-white transition-colors">Docs</Link>
+            <Link href="/dashboard" className="text-sm px-3 py-1.5 rounded-lg bg-[#5E6AD2] text-white font-medium hover:bg-[#5E6AD2]/90 transition-colors">
               Dashboard →
             </Link>
           </div>
@@ -309,7 +309,7 @@ export default function PricingPage() {
             style={{ background: 'linear-gradient(135deg, #E8F0FF 0%, #00F5C8 50%, #7B5EF8 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
             Precios simples y transparentes
           </h1>
-          <p className="text-[#E8F0FF]/60 max-w-xl mx-auto leading-relaxed">
+          <p className="text-[#EDEDED]/60 max-w-xl mx-auto leading-relaxed">
             Mientras activamos los pagos, podés usar el plan gratuito sin límite de tiempo.
             Anotate en la lista de espera para ser el primero en acceder.
           </p>

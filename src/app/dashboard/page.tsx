@@ -49,7 +49,6 @@ import { StatusBadge } from "@/components/dashboard/StatusBadge";
 import { ConfidenceBar } from "@/components/dashboard/ConfidenceBar";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { ErrorState } from "@/components/dashboard/ErrorState";
-import { LinearIssueBoard } from "@/components/dashboard/LinearIssueBoard";
 import { toast } from "sonner";
 import type {
   DashboardData,
@@ -874,11 +873,6 @@ function DashboardContent() {
         </TabsContent>
 
         <TabsContent value="funciones" className="space-y-4">
-          <div className="space-y-2">
-            <p className="text-[11px] uppercase tracking-widest text-[#8A8F98]">Issue tracker · Linear style</p>
-            <LinearIssueBoard state={error ? "error" : loading ? "loading" : "success"} />
-          </div>
-
           {/* Activation Progress Bar */}
           {(() => {
             const steps = [

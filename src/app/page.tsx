@@ -49,11 +49,11 @@ function FeatureCard({
         'stagger-' + (index + 1)
       )}
     >
-      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#00F5C8]/20 to-[#7B5EF8]/20 flex items-center justify-center mb-4 border border-[#00F5C8]/20 group-hover:border-[#00F5C8]/40 transition-colors">
-        <Icon className="w-6 h-6 text-[#00F5C8]" />
+      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-white/10 to-white/5 flex items-center justify-center mb-4 border border-white/15 group-hover:border-white/30 transition-colors">
+        <Icon className="w-6 h-6 text-[#5E6AD2]" />
       </div>
-      <h3 className="text-lg font-bold text-[#E8F0FF] mb-2 font-heading">{title}</h3>
-      <p className="text-sm text-[#E8F0FF]/60 leading-relaxed">{description}</p>
+      <h3 className="text-lg font-bold text-[#EDEDED] mb-2 font-heading">{title}</h3>
+      <p className="text-sm text-[#EDEDED]/60 leading-relaxed">{description}</p>
     </motion.div>
   )
 }
@@ -98,7 +98,7 @@ function Stat({ value, label, delay = 0 }: { value: string; label: string; delay
       <div className="text-4xl font-bold text-gradient font-heading mb-2">
         {count}{suffix}
       </div>
-      <div className="text-xs text-[#E8F0FF]/60 uppercase tracking-wider">{label}</div>
+      <div className="text-xs text-[#EDEDED]/60 uppercase tracking-wider">{label}</div>
     </motion.div>
   )
 }
@@ -117,7 +117,7 @@ function LandingHero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="text-4xl sm:text-7xl lg:text-8xl font-bold tracking-tight text-[#E8F0FF] font-heading"
+            className="text-4xl sm:text-7xl lg:text-8xl font-bold tracking-tight text-[#EDEDED] font-heading"
           >
             <TypewriterText text="Tests That Heal Themselves" speed={80} />
           </motion.h1>
@@ -141,7 +141,7 @@ function LandingHero() {
             <Button
               size="lg"
               variant="outline"
-              className="h-14 px-8 glass-elite border-[#00F5C8]/30 text-[#E8F0FF] hover:border-[#00F5C8]/50 hover:bg-white/5"
+              className="h-14 px-8 glass-elite border-white/15 text-[#EDEDED] hover:border-white/30 hover:bg-white/5"
               onClick={() => {
                 const el = document.getElementById('demo-section')
                 el ? el.scrollIntoView({ behavior: 'smooth' }) : signIn('github', { callbackUrl: '/dashboard' })
@@ -155,11 +155,11 @@ function LandingHero() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.45 }}
-            className="text-sm text-[#E8F0FF]/50"
+            className="text-sm text-[#EDEDED]/50"
           >
             Mirá el flujo completo en 15s: test falla → Healify analiza → selector curado → PR abierto.
             <br />
-            <span className="text-[#00F5C8]/60 text-xs">⚡ Demo pública — sin registro requerido</span>
+            <span className="text-[#5E6AD2]/70 text-xs">⚡ Demo pública — sin registro requerido</span>
           </motion.p>
 
           {/* Stats */}
@@ -229,10 +229,10 @@ function FeaturesSection() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl sm:text-5xl font-bold text-[#E8F0FF] mb-4 font-heading">
+          <h2 className="text-4xl sm:text-5xl font-bold text-[#EDEDED] mb-4 font-heading">
             Powerful Features
           </h2>
-          <p className="text-lg text-[#E8F0FF]/60 max-w-2xl mx-auto">
+          <p className="text-lg text-[#EDEDED]/60 max-w-2xl mx-auto">
             Everything you need to keep your tests running smoothly
           </p>
         </motion.div>
@@ -286,7 +286,7 @@ function HowItWorksSection() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl sm:text-5xl font-bold text-[#E8F0FF] mb-4 font-heading">
+          <h2 className="text-4xl sm:text-5xl font-bold text-[#EDEDED] mb-4 font-heading">
             How it works
           </h2>
         </motion.div>
@@ -301,13 +301,13 @@ function HowItWorksSection() {
               transition={{ delay: i * 0.2 }}
               className="relative"
             >
-              <div className="absolute -top-4 -left-4 w-12 h-12 rounded-full glass-elite border border-[#00F5C8]/30 flex items-center justify-center text-[#00F5C8] font-bold text-lg glow-pulse">
+              <div className="absolute -top-4 -left-4 w-12 h-12 rounded-full glass-elite border border-white/25 flex items-center justify-center text-[#5E6AD2] font-bold text-lg glow-pulse">
                 {item.step}
               </div>
               <div className="glass-elite glass-elite-hover p-8 rounded-2xl h-full">
-                <item.icon className="w-10 h-10 text-[#00F5C8] mb-4" />
-                <h3 className="text-xl font-bold text-[#E8F0FF] mb-2 font-heading">{item.title}</h3>
-                <p className="text-sm text-[#E8F0FF]/60">{item.description}</p>
+                <item.icon className="w-10 h-10 text-[#5E6AD2] mb-4" />
+                <h3 className="text-xl font-bold text-[#EDEDED] mb-2 font-heading">{item.title}</h3>
+                <p className="text-sm text-[#EDEDED]/60">{item.description}</p>
               </div>
             </motion.div>
           ))}
@@ -328,14 +328,14 @@ function VideoDemoSection() {
           viewport={{ once: true }}
           className="text-center mb-12"
         >
-          <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium glass-elite border border-[#7B5EF8]/30 text-[#7B5EF8] mb-4">
+          <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium glass-elite border border-white/20 text-[#5E6AD2] mb-4">
             <Code className="w-3 h-3" />
             90-Second Demo
           </span>
-          <h2 className="text-3xl sm:text-5xl font-bold text-[#E8F0FF] mb-4 font-heading">
+          <h2 className="text-3xl sm:text-5xl font-bold text-[#EDEDED] mb-4 font-heading">
             See Healify in Action
           </h2>
-          <p className="text-lg text-[#E8F0FF]/60 max-w-2xl mx-auto">
+          <p className="text-lg text-[#EDEDED]/60 max-w-2xl mx-auto">
             Watch the full healing workflow: test fails → AI analyzes the DOM → selector healed → PR opened automatically.
           </p>
         </motion.div>
@@ -349,17 +349,17 @@ function VideoDemoSection() {
         >
           {/* Video placeholder — replace src with actual Loom/ScreenStudio embed when recorded */}
           <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-[#0A0E1A] via-[#111827] to-[#0A0E1A]">
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-[#0A0A0A] via-[#111111] to-[#0A0A0A]">
               <div className="relative mb-6">
-                <div className="absolute inset-0 bg-[#00F5C8]/20 blur-3xl rounded-full" />
-                <div className="relative w-20 h-20 rounded-full glass-elite border border-[#00F5C8]/30 flex items-center justify-center cursor-pointer group hover:border-[#00F5C8]/60 transition-colors">
-                  <div className="w-0 h-0 border-l-[18px] border-l-[#00F5C8] border-y-[11px] border-y-transparent ml-1.5 group-hover:border-l-[#00F5C8]/80 transition-colors" />
+                <div className="absolute inset-0 bg-white/10 blur-3xl rounded-full" />
+                <div className="relative w-20 h-20 rounded-full glass-elite border border-white/25 flex items-center justify-center cursor-pointer group hover:border-white/45 transition-colors">
+                  <div className="w-0 h-0 border-l-[18px] border-l-[#EDEDED] border-y-[11px] border-y-transparent ml-1.5 group-hover:border-l-white transition-colors" />
                 </div>
               </div>
-              <p className="text-sm text-[#E8F0FF]/50 font-mono">
+              <p className="text-sm text-[#EDEDED]/50 font-mono">
                 demo-healify-90s.mp4
               </p>
-              <p className="text-xs text-[#E8F0FF]/30 mt-2">
+              <p className="text-xs text-[#EDEDED]/30 mt-2">
                 Video coming soon — grab with Loom or ScreenStudio and embed here
               </p>
             </div>
@@ -379,7 +379,7 @@ function VideoDemoSection() {
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           transition={{ delay: 0.3 }}
-          className="flex items-center justify-center gap-8 mt-8 text-xs text-[#E8F0FF]/40"
+          className="flex items-center justify-center gap-8 mt-8 text-xs text-[#EDEDED]/40"
         >
           <span>🎯 98% accuracy</span>
           <span>⚡ 3.2s avg heal time</span>
@@ -401,10 +401,10 @@ function CTASection() {
           viewport={{ once: true }}
           className="glass-elite glass-elite-large p-6 sm:p-10 lg:p-12 rounded-3xl text-center"
         >
-          <h2 className="text-3xl sm:text-4xl font-bold text-[#E8F0FF] mb-4 font-heading">
+          <h2 className="text-3xl sm:text-4xl font-bold text-[#EDEDED] mb-4 font-heading">
             Ready to stop fixing broken tests?
           </h2>
-          <p className="text-lg text-[#E8F0FF]/60 mb-8 max-w-lg mx-auto">
+          <p className="text-lg text-[#EDEDED]/60 mb-8 max-w-lg mx-auto">
             Join 500+ teams who trust Healify to keep their tests running smoothly.
           </p>
           <Button
@@ -416,7 +416,7 @@ function CTASection() {
             Start Free Trial
             <ArrowRight className="w-5 h-5 ml-2" />
           </Button>
-          <p className="text-xs text-[#E8F0FF]/40 mt-4">No credit card required · 14-day free trial</p>
+          <p className="text-xs text-[#EDEDED]/40 mt-4">No credit card required · 14-day free trial</p>
         </motion.div>
       </div>
     </section>
@@ -428,17 +428,17 @@ function Footer() {
   return (
     <footer className="relative py-12 border-t border-white/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-[#E8F0FF]/60">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-[#EDEDED]/60">
           <div className="flex items-center gap-3">
             <HealifyLogo size="sm" showText={true} />
           </div>
           <div className="flex items-center gap-6">
-            <a href="/docs" className="hover:text-[#00F5C8] transition-colors">Documentation</a>
-            <a href="https://github.com/mescobar996/Healify" target="_blank" rel="noopener noreferrer" className="hover:text-[#00F5C8] transition-colors">GitHub</a>
-            <a href="mailto:support@healify.dev" className="hover:text-[#00F5C8] transition-colors">Support</a>
-            <a href="/refund" className="hover:text-[#00F5C8] transition-colors">Reembolsos</a>
-            <a href="/privacy" className="hover:text-[#00F5C8] transition-colors">Privacidad</a>
-            <a href="/terms" className="hover:text-[#00F5C8] transition-colors">Términos</a>
+            <a href="/docs" className="hover:text-[#5E6AD2] transition-colors">Documentation</a>
+            <a href="https://github.com/mescobar996/Healify" target="_blank" rel="noopener noreferrer" className="hover:text-[#5E6AD2] transition-colors">GitHub</a>
+            <a href="mailto:support@healify.dev" className="hover:text-[#5E6AD2] transition-colors">Support</a>
+            <a href="/refund" className="hover:text-[#5E6AD2] transition-colors">Reembolsos</a>
+            <a href="/privacy" className="hover:text-[#5E6AD2] transition-colors">Privacidad</a>
+            <a href="/terms" className="hover:text-[#5E6AD2] transition-colors">Términos</a>
           </div>
         </div>
       </div>
@@ -453,18 +453,18 @@ export default function HomePage() {
   // Show loading while checking session
   if (status === 'loading') {
     return (
-      <div className="min-h-screen bg-[#0A0E1A] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00F5C8]" />
+      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#5E6AD2]" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0E1A] text-[#E8F0FF] relative">
+    <div className="min-h-screen bg-[#0A0A0A] text-[#EDEDED] relative">
       <BackgroundSpace />
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-[60] px-3 py-2 rounded-md bg-[#00F5C8] text-[#0A0E1A] text-sm font-semibold"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-[60] px-3 py-2 rounded-md bg-white text-[#0A0A0A] text-sm font-semibold"
       >
         Saltar al contenido principal
       </a>
@@ -474,13 +474,13 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-2 flex items-center justify-between gap-3">
           <HealifyLogo size="md" showText={true} />
           <nav aria-label="Principal" className="flex items-center gap-3 sm:gap-4">
-            <a href="/pricing" className="text-sm text-[#E8F0FF]/60 hover:text-[#00F5C8] transition-colors">
+            <a href="/pricing" className="text-sm text-[#EDEDED]/60 hover:text-[#5E6AD2] transition-colors">
               Pricing
             </a>
             <Button
               variant="outline"
               size="sm"
-              className="glass-elite border-[#00F5C8]/30 text-[#E8F0FF] hover:border-[#00F5C8]/50 hover:bg-white/5"
+              className="glass-elite border-white/20 text-[#EDEDED] hover:border-white/35 hover:bg-white/5"
               onClick={() => signIn('github', { callbackUrl: '/dashboard' })}
             >
               <Github className="w-4 h-4 mr-2" />
