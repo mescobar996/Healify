@@ -12,7 +12,7 @@ const STATUS_CONFIG: Record<
   HealingStatus,
   { bg: string; text: string; icon: React.ElementType; label: string }
 > = {
-  curado: { bg: "bg-emerald-500/10", text: "text-emerald-400", icon: CheckCircle2, label: "Curado" },
+  curado: { bg: "bg-violet-500/10", text: "text-violet-400", icon: CheckCircle2, label: "Curado" },
   fallido: { bg: "bg-red-500/10",     text: "text-red-400",     icon: XCircle,      label: "Fallido" },
   pendiente: { bg: "bg-amber-500/10", text: "text-amber-400",   icon: Clock,        label: "Pendiente" },
 }

@@ -53,7 +53,7 @@ const MOCK_ACTIVITY: ActivityEvent[] = [
 ]
 
 const typeConfig = {
-  healed: { icon: CheckCircle2, color: 'text-emerald-400', bg: 'bg-emerald-500/10', dot: 'bg-emerald-500' },
+  healed: { icon: CheckCircle2, color: 'text-violet-400', bg: 'bg-violet-500/10', dot: 'bg-violet-500' },
   failed: { icon: XCircle, color: 'text-red-400', bg: 'bg-red-500/10', dot: 'bg-red-500' },
   pending: { icon: Clock, color: 'text-amber-400', bg: 'bg-amber-500/10', dot: 'bg-amber-500' },
   detected: { icon: AlertTriangle, color: 'text-orange-400', bg: 'bg-orange-500/10', dot: 'bg-orange-500' },

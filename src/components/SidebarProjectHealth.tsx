@@ -15,7 +15,8 @@ type ProjectHealth = {
 
 function statusTone(status?: string | null) {
   if (!status) return { dot: "bg-[#6B6B6B]", label: "Sin ejecuciones" }
-  if (status === "PASSED" || status === "HEALED") return { dot: "bg-emerald-400", label: "Saludable" }
+  if (status === "PASSED") return { dot: "bg-green-400", label: "Saludable" }
+  if (status === "HEALED") return { dot: "bg-violet-400", label: "Curado" }
   if (status === "RUNNING" || status === "PENDING" || status === "PARTIAL") return { dot: "bg-amber-400", label: "En observación" }
   return { dot: "bg-red-400", label: "Atención" }
 }

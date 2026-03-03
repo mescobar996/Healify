@@ -34,8 +34,8 @@ import type { TestRun, TestRunStatus } from "@/types";
 function StatusBadge({ status }: { status: TestRunStatus }) {
   const variants: Record<TestRunStatus, { bg: string; text: string; icon: React.ElementType }> = {
     PASSED: {
-      bg: "bg-white/10",
-      text: "text-white",
+      bg: "bg-green-500/10",
+      text: "text-green-400",
       icon: CheckCircle2,
     },
     FAILED: {
@@ -44,8 +44,8 @@ function StatusBadge({ status }: { status: TestRunStatus }) {
       icon: XCircle,
     },
     HEALED: {
-      bg: "bg-white/10",
-      text: "text-white",
+      bg: "bg-violet-500/10",
+      text: "text-violet-400",
       icon: Zap,
     },
     RUNNING: {
@@ -424,7 +424,7 @@ function TestsContent() {
           label="Pasados"
           value={stats.passed}
           icon={CheckCircle2}
-          iconColor="text-white"
+          iconColor="text-green-400"
         />
         <StatCard
           label="Fallidos"
@@ -436,7 +436,7 @@ function TestsContent() {
           label="Curados"
           value={stats.healed}
           icon={Zap}
-          iconColor="text-white"
+          iconColor="text-violet-400"
         />
         <StatCard
           label="En Progreso"
@@ -679,7 +679,7 @@ function TestsContent() {
 
                 {/* Passed */}
                 <div className="col-span-1 flex items-center justify-center">
-                  <span className="text-sm font-medium text-white">
+                  <span className="text-sm font-medium text-green-400">
                     {run.passedTests}
                   </span>
                 </div>
@@ -701,7 +701,7 @@ function TestsContent() {
                   <span
                     className={cn(
                       "text-sm font-medium",
-                      run.healedTests > 0 ? "text-[var(--accent-primary)]" : "text-[var(--text-tertiary)]"
+                      run.healedTests > 0 ? "text-violet-400" : "text-[var(--text-tertiary)]"
                     )}
                   >
                     {run.healedTests}
@@ -752,9 +752,9 @@ function TestsContent() {
                     <StatusBadge status={run.status} />
                   </div>
                   <div className="flex items-center gap-3 text-[11px] text-[var(--text-tertiary)] pl-6">
-                    <span className="text-white font-medium">{run.passedTests}✓</span>
+                    <span className="text-green-400 font-medium">{run.passedTests}✓</span>
                     {run.failedTests > 0 && <span className="text-red-400 font-medium">{run.failedTests}✗</span>}
-                    {run.healedTests > 0 && <span className="text-white font-medium">{run.healedTests}⚡</span>}
+                    {run.healedTests > 0 && <span className="text-violet-400 font-medium">{run.healedTests}⚡</span>}
                     <span className="ml-auto">{formatRelativeTime(run.startedAt)}</span>
                   </div>
                   <div className="pl-6 flex items-center gap-1 flex-wrap mt-1">

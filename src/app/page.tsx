@@ -21,7 +21,6 @@ import { cn } from '@/lib/utils'
 import { TypewriterText } from '@/components/TypewriterText'
 import { HealingDemo } from '@/components/HealingDemo'
 import { HealifyLogo } from '@/components/HealifyLogo'
-import { BackgroundSpace } from '@/components/BackgroundSpace'
 import { useEffect, useState } from 'react'
 
 // Feature Card Component con Glassmorphism
@@ -107,9 +106,6 @@ function Stat({ value, label, delay = 0 }: { value: string; label: string; delay
 function LandingHero() {
   return (
     <div className="relative isolate overflow-hidden min-h-screen flex flex-col">
-      {/* Background Grid Lines */}
-      <div className="absolute inset-0 grid-lines opacity-30" />
-
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex-1 flex flex-col justify-center py-24 sm:py-32">
         <div className="text-center space-y-8">
           {/* Headline con Typewriter Effect */}
@@ -453,15 +449,14 @@ export default function HomePage() {
   // Show loading while checking session
   if (status === 'loading') {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+      <div className="min-h-screen bg-[#000000] flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-[#EDEDED] relative">
-      <BackgroundSpace />
+    <div className="min-h-screen bg-[#000000] text-[#EDEDED] relative">
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-[60] px-3 py-2 rounded-md bg-white text-[#0A0A0A] text-sm font-semibold"

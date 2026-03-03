@@ -9,7 +9,7 @@ import { HealingDemo } from '@/components/HealingDemo'
 
 export const metadata: Metadata = {
   title: 'Docs — Healify',
-  description: 'Documentación del SDK y reporter de Healify. Instalación, configuración y guía de uso.',
+  description: 'Documentación del SDK y test runner de Healify. Instalación, configuración y guía de uso.',
 }
 
 // ─── Code block component ───────────────────────────────────────────
@@ -207,7 +207,7 @@ export default function DocsPage() {
 
           <div className="grid gap-3 mb-6">
             {[
-              { step: '1', title: 'Instalá el reporter', desc: 'npm i -D @healify/reporter' },
+              { step: '1', title: 'Instalá el runner', desc: 'npm i -D @healify/test-runner' },
               { step: '2', title: 'Agregá tu API Key', desc: 'Desde Configuración → API Keys' },
               { step: '3', title: 'Conectá el webhook de GitHub', desc: 'Desde Proyectos → Conectar repo' },
             ].map(item => (
@@ -245,12 +245,13 @@ export default function DocsPage() {
           </SectionHeading>
 
           <p className="text-sm text-[#9B9B9B] mb-4">
-            Instalá el reporter como dependencia de desarrollo:
+            Instalá el paquete según tu framework:
           </p>
 
-          <CodeBlock lang="npm" code="npm install --save-dev @healify/reporter" />
-          <CodeBlock lang="yarn" code="yarn add -D @healify/reporter" />
-          <CodeBlock lang="pnpm" code="pnpm add -D @healify/reporter" />
+          <CodeBlock lang="npm (Playwright/Vitest)" code="npm install --save-dev @healify/test-runner" />
+          <CodeBlock lang="npm (Cypress)" code="npm install --save-dev @healify/cypress-plugin" />
+          <CodeBlock lang="yarn" code="yarn add -D @healify/test-runner" />
+          <CodeBlock lang="pnpm" code="pnpm add -D @healify/test-runner" />
 
           <Callout type="info">
             El reporter solo se activa cuando detecta la variable de entorno{' '}
@@ -282,7 +283,7 @@ HEALIFY_COMMIT_SHA=\${GITHUB_SHA}`} />
           </p>
 
           <CodeBlock lang="playwright.config.ts" code={`import { defineConfig } from '@playwright/test'
-import { HealifyReporter } from '@healify/reporter/playwright'
+import { HealifyReporter } from '@healify/test-runner'
 
 export default defineConfig({
   reporter: [
@@ -307,7 +308,7 @@ export default defineConfig({
           <SubHeading id="cypress">Cypress</SubHeading>
 
           <CodeBlock lang="cypress.config.ts" code={`import { defineConfig } from 'cypress'
-import { HealifyCypressPlugin } from '@healify/reporter/cypress'
+import { HealifyCypressPlugin } from '@healify/cypress-plugin'
 
 export default defineConfig({
   e2e: {
@@ -324,7 +325,7 @@ export default defineConfig({
           <SubHeading id="jest">Jest / Vitest</SubHeading>
 
           <CodeBlock lang="vitest.config.ts" code={`import { defineConfig } from 'vitest/config'
-import { HealifyVitestReporter } from '@healify/reporter/vitest'
+import { HealifyVitestReporter } from '@healify/test-runner/vitest'
 
 export default defineConfig({
   test: {

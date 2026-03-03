@@ -55,7 +55,7 @@ interface HealingDiffData {
 
 function StatusBadge({ status }: { status: string }) {
   const config: Record<string, { bg: string; text: string; icon: React.ElementType; label: string }> = {
-    curado: { bg: "bg-emerald-500/10", text: "text-emerald-400", icon: CheckCircle2, label: "Curado" },
+    curado: { bg: "bg-violet-500/10", text: "text-violet-400", icon: CheckCircle2, label: "Curado" },
     fallido: { bg: "bg-red-500/10", text: "text-red-400", icon: XCircle, label: "Fallido" },
     pendiente: { bg: "bg-amber-500/10", text: "text-amber-400", icon: Clock, label: "Pendiente" },
   };
@@ -369,11 +369,11 @@ export default function HealingDetailPage() {
 
           {/* Status Info */}
           {data.status === "curado" && (
-            <div className="rounded-lg bg-emerald-500/5 border border-emerald-500/10 p-4">
+            <div className="rounded-lg bg-violet-500/5 border border-violet-500/10 p-4">
               <div className="flex items-center gap-3">
-                <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                <CheckCircle2 className="w-5 h-5 text-violet-400" />
                 <div>
-                  <p className="text-sm font-medium text-emerald-400">Curación Aplicada</p>
+                  <p className="text-sm font-medium text-violet-400">Curación Aplicada</p>
                   <p className="text-xs text-gray-500">Este selector fue autocurado exitosamente</p>
                 </div>
               </div>

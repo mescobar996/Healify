@@ -50,7 +50,7 @@ const STATUS_CONFIG: Record<string, {
 }> = {
   PENDING:  { label: "En cola",     icon: Clock,         color: "text-amber-400",   bg: "bg-amber-500/10",  animate: false },
   RUNNING:  { label: "Ejecutando",  icon: Loader2,       color: "text-blue-400",    bg: "bg-blue-500/10",   animate: true  },
-  PASSED:   { label: "Pasado",      icon: CheckCircle2,  color: "text-emerald-400", bg: "bg-emerald-500/10",animate: false },
+  PASSED:   { label: "Pasado",      icon: CheckCircle2,  color: "text-green-400",   bg: "bg-green-500/10", animate: false },
   FAILED:   { label: "Fallido",     icon: XCircle,       color: "text-red-400",     bg: "bg-red-500/10",    animate: false },
   HEALED:   { label: "Curado",      icon: Zap,           color: "text-violet-400",  bg: "bg-violet-500/10", animate: false },
   // BullMQ states
@@ -205,7 +205,7 @@ export function JobProgressCard({
       {/* Results */}
       <div className="px-4 py-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
         <div className="text-center p-2 rounded bg-white/[0.02]">
-          <p className="text-sm font-semibold text-emerald-400">{passed}</p>
+          <p className="text-sm font-semibold text-green-400">{passed}</p>
           <p className="text-[10px] text-gray-500 uppercase tracking-wide">Pasados</p>
         </div>
         <div className="text-center p-2 rounded bg-white/[0.02]">

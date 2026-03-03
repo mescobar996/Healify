@@ -47,9 +47,9 @@ type TeardownEvent = HealingHistoryItem & {
 
 function StatusBadge({ status }: { status: TestRunStatus }) {
   const config: Record<TestRunStatus, { bg: string; text: string; icon: React.ElementType; label: string }> = {
-    PASSED: { bg: "bg-white/10", text: "text-white", icon: CheckCircle2, label: "Pasado" },
+    PASSED: { bg: "bg-green-500/10", text: "text-green-400", icon: CheckCircle2, label: "Pasado" },
     FAILED: { bg: "bg-red-500/10", text: "text-red-400", icon: XCircle, label: "Fallido" },
-    HEALED: { bg: "bg-white/10", text: "text-white", icon: Zap, label: "Curado" },
+    HEALED: { bg: "bg-violet-500/10", text: "text-violet-400", icon: Zap, label: "Curado" },
     RUNNING: { bg: "bg-white/10", text: "text-white", icon: RefreshCw, label: "Ejecutando" },
     PENDING: { bg: "bg-white/10", text: "text-white", icon: Clock, label: "Pendiente" },
     CANCELLED: { bg: "bg-gray-500/10", text: "text-gray-400", icon: XCircle, label: "Cancelado" },
@@ -71,7 +71,7 @@ function StatusBadge({ status }: { status: TestRunStatus }) {
 
 function HealingStatusBadge({ status }: { status: HealingStatus }) {
   const config: Record<HealingStatus, { bg: string; text: string; icon: React.ElementType; label: string }> = {
-    curado: { bg: "bg-white/10", text: "text-white", icon: CheckCircle2, label: "Curado" },
+    curado: { bg: "bg-violet-500/10", text: "text-violet-400", icon: CheckCircle2, label: "Curado" },
     fallido: { bg: "bg-red-500/10", text: "text-red-400", icon: XCircle, label: "Fallido" },
     pendiente: { bg: "bg-white/10", text: "text-white", icon: Clock, label: "Pendiente" },
   };
@@ -307,17 +307,17 @@ export default function TestRunDetailPage() {
             <p className="text-[11px] text-gray-500 uppercase tracking-wide">Total Tests</p>
             <p className="text-xl sm:text-2xl font-semibold text-white mt-1">{testRun.totalTests}</p>
           </div>
-          <div className="p-4 rounded-lg bg-white/5 border border-white/10">
-            <p className="text-[11px] text-white uppercase tracking-wide">Pasados</p>
-            <p className="text-2xl font-semibold text-white mt-1">{testRun.passedTests}</p>
+          <div className="p-4 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
+            <p className="text-[11px] text-emerald-400 uppercase tracking-wide">Pasados</p>
+            <p className="text-2xl font-semibold text-emerald-400 mt-1">{testRun.passedTests}</p>
           </div>
           <div className="p-4 rounded-lg bg-red-500/5 border border-red-500/10">
             <p className="text-[11px] text-red-400 uppercase tracking-wide">Fallidos</p>
             <p className="text-2xl font-semibold text-red-400 mt-1">{testRun.failedTests}</p>
           </div>
-          <div className="p-4 rounded-lg bg-white/5 border border-white/10">
-            <p className="text-[11px] text-white uppercase tracking-wide">Curados</p>
-            <p className="text-2xl font-semibold text-white mt-1">{testRun.healedTests}</p>
+          <div className="p-4 rounded-lg bg-violet-500/5 border border-violet-500/10">
+            <p className="text-[11px] text-violet-400 uppercase tracking-wide">Curados</p>
+            <p className="text-2xl font-semibold text-violet-400 mt-1">{testRun.healedTests}</p>
           </div>
           <div className="p-4 rounded-lg glass-elite">
             <p className="text-[11px] text-gray-500 uppercase tracking-wide">Duración</p>
@@ -461,8 +461,8 @@ export default function TestRunDetailPage() {
                 >
                   <div className="flex-shrink-0">
                     {event.status === "curado" ? (
-                      <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center">
-                        <CheckCircle2 className="w-3 h-3 text-white" />
+                      <div className="w-5 h-5 rounded-full bg-violet-500/10 flex items-center justify-center">
+                        <CheckCircle2 className="w-3 h-3 text-violet-400" />
                       </div>
                     ) : event.status === "fallido" ? (
                       <div className="w-5 h-5 rounded-full bg-red-500/10 flex items-center justify-center">
@@ -481,7 +481,7 @@ export default function TestRunDetailPage() {
                       {event.newSelector && (
                         <>
                           <ChevronRight className="w-3 h-3 text-gray-600" />
-                          <code className="text-[11px] text-white font-mono truncate max-w-[200px]">{event.newSelector}</code>
+                          <code className="text-[11px] text-violet-400 font-mono truncate max-w-[200px]">{event.newSelector}</code>
                         </>
                       )}
                     </div>

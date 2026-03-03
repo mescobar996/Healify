@@ -234,8 +234,8 @@ export function GlobalSearch() {
                 <FileCode2 className="w-4 h-4 text-[#4E9FE8]" />
                 <span>{run.project.name} · {run.branch || run.status}</span>
                 <span className={`ml-auto text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-                  run.status === "HEALED" ? "bg-emerald-500/10 text-emerald-400" :
-                  run.status === "PASSED" ? "bg-blue-500/10 text-blue-400" :
+                  run.status === "HEALED" ? "bg-violet-500/10 text-violet-400" :
+                  run.status === "PASSED" ? "bg-green-500/10 text-green-400" :
                   run.status === "FAILED" ? "bg-red-500/10 text-red-400" :
                   "bg-white/[0.05] text-[#6B6B6B]"
                 }`}>{run.status}</span>
@@ -276,7 +276,7 @@ export function GlobalSearch() {
                     <span className="text-[10px] text-[#6B6B6B] font-mono">{Math.round(event.confidence * 100)}%</span>
                   )}
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-                    event.status === "HEALED_AUTO" ? "bg-emerald-500/10 text-emerald-400" :
+                    event.status === "HEALED_AUTO" ? "bg-violet-500/10 text-violet-400" :
                     event.status === "NEEDS_REVIEW" ? "bg-amber-500/10 text-amber-400" :
                     event.status === "BUG_DETECTED" ? "bg-red-500/10 text-red-400" :
                     "bg-white/[0.05] text-[#6B6B6B]"
