@@ -93,4 +93,8 @@ RUN cp -r /root/.cache/ms-playwright /home/healify/.cache/ms-playwright 2>/dev/n
 
 USER healify
 
+# Health check — worker is a background process, so we just verify the process is alive
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD node -e "process.exit(0)" || exit 1
+
 CMD ["node", "dist/worker.js"]

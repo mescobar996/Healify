@@ -21,7 +21,8 @@ export const testQueue = redisUrl
           age: 24 * 3600, // Or 24 hours
         },
         removeOnFail: {
-          count: 500, // Keep last 500 failed jobs for debugging
+          count: 500,          // Keep last 500 failed jobs for debugging
+          age: 7 * 24 * 3600,  // And no older than 7 days
         },
       },
     })

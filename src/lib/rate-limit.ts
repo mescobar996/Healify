@@ -28,7 +28,19 @@ type ReportRateCheck = {
 }
 
 const REPORT_WINDOW_MS = 60_000
+
+// In-memory rate-limit state per project.
+// NOTE: state resets on process restart (acceptable for a soft rate limit).
+// For multi-instance deployments, migrate this to Redis.
 const reportWindowByProject = new Map<string, { count: number; resetAt: number }>()
+
+// Prune expired entries every 5 minutes to prevent unbounded growth
+setInterval(() => {
+    const now = Date.now()
+    for (const [key, state] of reportWindowByProject) {
+        if (now > state.resetAt) reportWindowByProject.delete(key)
+    }
+}, 5 * 60_000).unref() // .unref() so the timer doesn't keep the process alive
 
 // ─── Obtener el plan activo del usuario desde DB ───────────────────────
 async function getUserPlan(userId: string): Promise<PlanKey> {

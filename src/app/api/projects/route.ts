@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
 import { checkProjectLimit, limitExceededResponse } from '@/lib/rate-limit'
 import { getSessionUser } from '@/lib/auth/session'
 import { initProjectApiKey } from '@/lib/api-key-service'
 import { apiError } from '@/lib/api-response'
+
+// ─── Types inferred from Prisma (no unsafe casting) ─────────────────────────
+type ProjectWithStats = Prisma.ProjectGetPayload<{
+  include: {
+    testRuns: { orderBy: { startedAt: 'desc' }; take: 1 }
+    _count: { select: { testRuns: true } }
+  }
+}>
 
 // GET /api/projects - Get all projects
 export async function GET(request: NextRequest) {
@@ -13,7 +22,7 @@ export async function GET(request: NextRequest) {
       return apiError(request, 401, 'Unauthorized', { code: 'AUTH_REQUIRED' })
     }
 
-    let projects: Array<Record<string, unknown>> = []
+    let projects: ProjectWithStats[] | null = null
 
     try {
       projects = await db.project.findMany({
@@ -28,10 +37,14 @@ export async function GET(request: NextRequest) {
           },
         },
         orderBy: { updatedAt: 'desc' },
-      }) as unknown as Array<Record<string, unknown>>
+      })
     } catch (queryError) {
-      console.error('Error fetching projects with stats include, falling back to basic query:', queryError)
-      projects = await db.project.findMany({
+      console.error('[projects] Full query failed, using basic fallback:', queryError)
+    }
+
+    // Fallback: basic select without relations when include fails
+    if (!projects) {
+      const basic = await db.project.findMany({
         where: { userId: user.id },
         select: {
           id: true,
@@ -42,37 +55,31 @@ export async function GET(request: NextRequest) {
           updatedAt: true,
         },
         orderBy: { updatedAt: 'desc' },
-      }) as unknown as Array<Record<string, unknown>>
+      })
+      return NextResponse.json(basic.map((p) => ({
+        ...p,
+        testRunCount: 0,
+        lastTestRun: null,
+      })))
     }
 
     const projectsWithStats = projects.map((project) => {
-      const testRuns = Array.isArray(project.testRuns) ? project.testRuns : []
-      const lastRun = testRuns[0] as {
-        status?: string
-        startedAt?: Date | string
-        passedTests?: number
-        totalTests?: number
-        healedTests?: number
-      } | undefined
-      const testRunCount =
-        typeof (project._count as { testRuns?: number } | undefined)?.testRuns === 'number'
-          ? ((project._count as { testRuns: number }).testRuns)
-          : 0
+      const lastRun = project.testRuns[0] ?? null
 
       return {
         id: project.id,
         name: project.name,
         description: project.description,
         repository: project.repository,
-        testRunCount,
+        testRunCount: project._count.testRuns,
         lastTestRun: lastRun
           ? {
-            status: lastRun.status,
-            startedAt: lastRun.startedAt,
-            passedTests: lastRun.passedTests,
-            totalTests: lastRun.totalTests,
-            healedTests: lastRun.healedTests,
-          }
+              status: lastRun.status,
+              startedAt: lastRun.startedAt,
+              passedTests: lastRun.passedTests,
+              totalTests: lastRun.totalTests,
+              healedTests: lastRun.healedTests,
+            }
           : null,
         createdAt: project.createdAt,
         updatedAt: project.updatedAt,
