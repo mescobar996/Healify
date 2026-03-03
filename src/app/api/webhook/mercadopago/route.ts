@@ -63,15 +63,30 @@ export async function POST(req: NextRequest) {
   try {
     const normalized = await fetchAndNormalizePreapproval(dataId)
 
-    if (!normalized || !normalized.userId) {
-      console.warn('[MP Webhook] Could not normalize preapproval or missing userId:', dataId)
+    if (!normalized) {
+      console.warn('[MP Webhook] Could not normalize preapproval:', dataId)
       return NextResponse.json({ received: true })
     }
+
+    // Resolve userId: prefer external_reference, fall back to email lookup
+    let resolvedUserId = normalized.userId
+    if (!resolvedUserId && normalized.gatewayCustomerId) {
+      const email = normalized.gatewayCustomerId
+      const user = await db.user.findFirst({ where: { email }, select: { id: true } })
+      if (user) resolvedUserId = user.id
+    }
+
+    if (!resolvedUserId) {
+      console.warn('[MP Webhook] Could not resolve userId for preapproval:', dataId)
+      return NextResponse.json({ received: true })
+    }
+
+    normalized.userId = resolvedUserId
 
     const plan = planIdToEnum(normalized.planId!)
 
     await db.subscription.upsert({
-      where: { userId: normalized.userId },
+      where: { userId: resolvedUserId },
       update: {
         plan,
         status:            normalized.status ?? 'active',

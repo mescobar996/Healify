@@ -100,41 +100,31 @@ export async function createCheckoutSession(params: {
   userId: string
   email: string
 }): Promise<CheckoutResult> {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://healify-sigma.vercel.app'
   const mpPlanId = getPlanId(params.planId)
-  const priceArs = await usdToArs(PLAN_PRICES_USD[params.planId])
 
-  const body = {
-    preapproval_plan_id: mpPlanId,
-    reason: `Healify ${params.planId}`,
-    payer_email: params.email,
-    external_reference: params.userId, // we use this in webhook to identify user
-    auto_recurring: {
-      frequency: 1,
-      frequency_type: 'months',
-      transaction_amount: priceArs,
-      currency_id: 'ARS',
-    },
-    back_url: `${appUrl}/dashboard/upgrade-success?plan=${params.planId}&gateway=mercadopago`,
-    status: 'pending',
-  }
-
-  const res = await fetch(`${MP_API}/preapproval`, {
-    method: 'POST',
+  // Fetch the preapproval_plan to get its init_point (subscription page URL).
+  // This avoids POST /preapproval which requires card_token_id.
+  // The user is redirected to init_point where they enter their card details.
+  const res = await fetch(`${MP_API}/preapproval_plan/${mpPlanId}`, {
     headers: headers(),
-    body: JSON.stringify(body),
   })
 
   if (!res.ok) {
     const text = await res.text()
-    throw new Error(`[MercadoPago] Checkout creation failed ${res.status}: ${text}`)
+    throw new Error(`[MercadoPago] Failed to fetch plan ${res.status}: ${text}`)
   }
 
   const data = await res.json()
   const url = data?.init_point
-  if (!url) throw new Error('[MercadoPago] No init_point in response')
+  if (!url) throw new Error('[MercadoPago] No init_point in plan response')
 
-  return { url, gatewaySubId: data.id }
+  // Pre-fill payer email and set external_reference (userId) so webhook can identify the user.
+  // MP honors these query params on the subscription init_point.
+  const checkoutUrl = new URL(url)
+  checkoutUrl.searchParams.set('payer_email', params.email)
+  checkoutUrl.searchParams.set('external_reference', params.userId)
+
+  return { url: checkoutUrl.toString(), gatewaySubId: '' }
 }
 
 // ── Customer portal ────────────────────────────────────────────────────────
