@@ -167,6 +167,14 @@ export async function executeTestRun(projectId: string) {
     })
     if (!project) return { success: false, error: 'Project not found' }
 
+    // Point 4: Validate repository before enqueuing
+    if (!project.repository) {
+      return {
+        success: false,
+        error: 'Este proyecto no tiene un repositorio conectado. Editalo en /dashboard/projects.',
+      }
+    }
+
     // Create test run with PENDING status (worker will update it)
     const testRun = await db.testRun.create({
       data: {

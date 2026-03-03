@@ -50,6 +50,7 @@ import { ConfidenceBar } from "@/components/dashboard/ConfidenceBar";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { ErrorState } from "@/components/dashboard/ErrorState";
 import { toast } from "sonner";
+import { executeTestRun } from "@/lib/actions";
 import type {
   DashboardData,
   HealingStatus,
@@ -203,18 +204,48 @@ function DashboardContent() {
   // Handler: Run Tests
   const handleRunTests = async () => {
     setIsRunning(true);
-    toast.info("Iniciando ejecución de tests...", {
-      description: "Este proceso puede tardar unos minutos",
-    });
+    try {
+      // Get projects to find one with a connected repository
+      const res = await fetch('/api/projects', { credentials: 'include' });
+      if (!res.ok) throw new Error('No se pudo obtener los proyectos');
+      const projects: Array<{ id: string; name: string; repository: string | null }> = await res.json();
 
-    // Simular proceso
-    setTimeout(() => {
-      toast.success("Tests ejecutados correctamente", {
-        description: "12 tests pasados, 2 curados automáticamente",
+      if (!projects?.length) {
+        toast.error('No tenés proyectos', {
+          description: 'Creá un proyecto primero en /dashboard/projects',
+        });
+        return;
+      }
+
+      const projectWithRepo = projects.find(p => p.repository);
+      if (!projectWithRepo) {
+        toast.error('Ningún proyecto tiene repositorio conectado', {
+          description: 'Editá un proyecto y agregá su URL de repositorio.',
+        });
+        return;
+      }
+
+      toast.info(`Encolando tests para "${projectWithRepo.name}"...`, {
+        description: 'El worker de Railway tomará el job en segundos',
       });
+
+      const result = await executeTestRun(projectWithRepo.id);
+      if (!result.success) {
+        toast.error('Error al iniciar tests', { description: result.error });
+        return;
+      }
+
+      toast.success('Tests encolados correctamente', {
+        description: 'El worker está procesando. Revisá /dashboard/tests para el estado.',
+      });
+      await fetchDashboard();
+    } catch (error) {
+      toast.error('Error inesperado', {
+        description: error instanceof Error ? error.message : 'Intentá de nuevo',
+      });
+    } finally {
       setIsRunning(false);
-      fetchDashboard(); // Refresh data
-    }, 3000);
+    }
   };
 
   // Handler: Open test detail
@@ -223,14 +254,21 @@ function DashboardContent() {
     setSheetOpen(true);
   };
 
-  // Handler: Approve healing
+  // Handler: Approve healing — calls real PATCH /api/healing-events/:id
   const handleApproveHealing = async (id: string) => {
     toast.promise(
-      new Promise((resolve) => setTimeout(resolve, 1000)),
+      fetch(`/api/healing-events/${id}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'accept', appliedBy: session?.user?.name || 'user' }),
+      }).then(async r => {
+        if (!r.ok) throw new Error((await r.json()).error || 'Error al aprobar');
+        return r.json();
+      }),
       {
         loading: "Aprobando curación...",
         success: () => {
-          // Update local state optimistically
           if (data) {
             setData({
               ...data,
@@ -240,17 +278,25 @@ function DashboardContent() {
             });
           }
           setSheetOpen(false);
-          return "Curación aprobada exitosamente";
+          return "Curación aprobada y guardada";
         },
-        error: "Error al aprobar la curación",
+        error: (err) => `Error al aprobar: ${err?.message || 'Inténtalo nuevamente'}`,
       }
     );
   };
 
-  // Handler: Reject healing
+  // Handler: Reject healing — calls real PATCH /api/healing-events/:id
   const handleRejectHealing = async (id: string) => {
     toast.promise(
-      new Promise((resolve) => setTimeout(resolve, 1000)),
+      fetch(`/api/healing-events/${id}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reject', appliedBy: session?.user?.name || 'user' }),
+      }).then(async r => {
+        if (!r.ok) throw new Error((await r.json()).error || 'Error al rechazar');
+        return r.json();
+      }),
       {
         loading: "Rechazando curación...",
         success: () => {
@@ -265,7 +311,7 @@ function DashboardContent() {
           setSheetOpen(false);
           return "Curación rechazada";
         },
-        error: "Error al rechazar la curación",
+        error: (err) => `Error al rechazar: ${err?.message || 'Inténtalo nuevamente'}`,
       }
     );
   };

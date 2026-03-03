@@ -231,6 +231,18 @@ function TestsContent() {
     fetchTestRuns();
   }, [projectIdFilter, statusFilter, searchQuery]);
 
+  // Auto-refresh every 5s while any run is PENDING or RUNNING
+  useEffect(() => {
+    const hasPendingOrRunning = testRuns.some(
+      (r) => r.status === 'PENDING' || r.status === 'RUNNING'
+    );
+    if (!hasPendingOrRunning || isPaused) return;
+    const interval = setInterval(() => {
+      void fetchTestRuns();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [testRuns, isPaused]);
+
   useEffect(() => {
     setSearchQuery(queryFromUrl)
   }, [queryFromUrl])
