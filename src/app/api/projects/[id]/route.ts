@@ -17,7 +17,7 @@ export async function GET(
 
     const { id } = await params;
 
-    const project = await db.project.findUnique({
+    const project = await db.project.findFirst({
       where: { id, userId: user.id },
       include: {
         testRuns: {
@@ -61,7 +61,7 @@ export async function DELETE(
 
     const { id } = await params;
 
-    const project = await db.project.findUnique({
+    const project = await db.project.findFirst({
       where: { id, userId: user.id },
     });
 
@@ -69,9 +69,15 @@ export async function DELETE(
       return apiError(request, 404, 'Project not found', { code: 'PROJECT_NOT_FOUND' });
     }
 
-    await db.project.delete({
-      where: { id, userId: user.id },
-    });
+    await db.$transaction(async (tx) => {
+      await tx.analyticsEvent.deleteMany({
+        where: { projectId: id },
+      })
+
+      await tx.project.delete({
+        where: { id },
+      });
+    })
 
     await auditLogService.log(user.id, 'PROJECT_DELETE', id, {
       name: project.name
@@ -80,7 +86,10 @@ export async function DELETE(
     return NextResponse.json({ message: 'Project deleted successfully' });
   } catch (error) {
     console.error('Error deleting project:', error);
-    return apiError(request, 500, 'Failed to delete project', { code: 'PROJECT_DELETE_FAILED' });
+    return apiError(request, 500, 'Failed to delete project', {
+      code: 'PROJECT_DELETE_FAILED',
+      details: error instanceof Error ? error.message : String(error),
+    });
   }
 }
 
@@ -97,7 +106,7 @@ export async function PATCH(
 
     const { id } = await params
 
-    const project = await db.project.findUnique({
+    const project = await db.project.findFirst({
       where: { id, userId: user.id },
     })
 
@@ -114,7 +123,7 @@ export async function PATCH(
     }
 
     const updated = await db.project.update({
-      where: { id, userId: user.id },
+      where: { id },
       data: {
         ...(name        && { name: String(name).trim() }),
         ...(description !== undefined && { description: description ? String(description).trim() : null }),
