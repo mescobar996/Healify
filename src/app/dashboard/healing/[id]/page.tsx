@@ -89,17 +89,17 @@ function CodeBlock({ label, code, type }: { label: string; code: string; type: "
   const handleCopy = () => { navigator.clipboard.writeText(code); setCopied(true); toast.success("Copiado"); setTimeout(() => setCopied(false), 2000); };
   return (
     <div className="rounded-lg overflow-hidden border border-white/5">
-      <div className={cn("flex items-center justify-between px-4 py-2.5 border-b border-white/5", type === "old" ? "bg-red-500/5" : "bg-emerald-500/5")}>
+      <div className={cn("flex items-center justify-between px-4 py-2.5 border-b border-white/5", type === "old" ? "bg-red-500/5" : "bg-violet-500/5")}>
         <div className="flex items-center gap-2">
-          {type === "old" ? <XCircle className="w-4 h-4 text-red-400" /> : <CheckCircle2 className="w-4 h-4 text-emerald-400" />}
-          <span className={cn("text-xs font-medium", type === "old" ? "text-red-400" : "text-emerald-400")}>{label}</span>
+          {type === "old" ? <XCircle className="w-4 h-4 text-red-400" /> : <CheckCircle2 className="w-4 h-4 text-violet-400" />}
+          <span className={cn("text-xs font-medium", type === "old" ? "text-red-400" : "text-violet-400")}>{label}</span>
         </div>
         <button onClick={handleCopy} className="p-1 rounded hover:bg-white/5 transition-colors">
-          {copied ? <CheckCheck className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-gray-500" />}
+          {copied ? <CheckCheck className="w-4 h-4 text-violet-400" /> : <Copy className="w-4 h-4 text-gray-500" />}
         </button>
       </div>
       <pre className="p-3 sm:p-4 bg-gray-900/50 text-xs sm:text-sm overflow-x-auto">
-        <code className={cn("font-mono", type === "old" ? "text-red-300" : "text-emerald-300")}>{code}</code>
+        <code className={cn("font-mono", type === "old" ? "text-red-300" : "text-violet-300")}>{code}</code>
       </pre>
     </div>
   );
@@ -266,16 +266,16 @@ export default function HealingDetailPage() {
                   href={data.prUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-3 p-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10 transition-colors group"
+                  className="flex items-center gap-3 p-3 rounded-lg border border-violet-500/20 bg-violet-500/5 hover:bg-violet-500/10 transition-colors group"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
-                    <ExternalLink className="w-4 h-4 text-emerald-400" />
+                  <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center shrink-0">
+                    <ExternalLink className="w-4 h-4 text-violet-400" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-emerald-400">Pull Request abierto automáticamente</p>
+                    <p className="text-xs font-medium text-violet-400">Pull Request abierto automáticamente</p>
                     <p className="text-[10px] text-[#E8F0FF]/40 truncate mt-0.5">{data.prUrl}</p>
                   </div>
-                  <span className="text-[10px] text-emerald-400/60 group-hover:text-emerald-400 transition-colors shrink-0">Ver PR →</span>
+                  <span className="text-[10px] text-violet-400/60 group-hover:text-violet-400 transition-colors shrink-0">Ver PR →</span>
                 </a>
               )}
             </div>

@@ -962,7 +962,7 @@ function DashboardContent() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="rounded-md bg-black/40 border border-white/[0.05] p-3">
                 <p className="text-[10px] text-[var(--text-tertiary)] uppercase tracking-widest mb-2">1. Instalar</p>
-                <code className="text-xs text-white font-mono">npm i @healify/playwright-sdk</code>
+                <code className="text-xs text-white font-mono">npm i -D @healify/test-runner</code>
               </div>
               <div className="rounded-md bg-black/40 border border-white/[0.05] p-3">
                 <p className="text-[10px] text-[var(--text-tertiary)] uppercase tracking-widest mb-2">2. Configurar</p>

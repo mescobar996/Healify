@@ -44,7 +44,7 @@ export function TestDetailSheet({
       : 'text-red-400'
 
   const statusConfig = {
-    curado: { icon: CheckCircle2, color: 'text-emerald-400', bg: 'bg-emerald-500/10', label: 'Curado' },
+    curado: { icon: CheckCircle2, color: 'text-violet-400', bg: 'bg-violet-500/10', label: 'Curado' },
     fallido: { icon: XCircle, color: 'text-red-400', bg: 'bg-red-500/10', label: 'Fallido' },
     pendiente: { icon: Clock, color: 'text-amber-400', bg: 'bg-amber-500/10', label: 'Pendiente' },
   }
@@ -104,8 +104,8 @@ export function TestDetailSheet({
               {/* New */}
               {data.newSelector ? (
                 <div className="px-4 py-3">
-                  <p className="text-[10px] text-emerald-400 mb-1.5 font-medium">DESPUÉS</p>
-                  <code className="text-xs text-emerald-300 font-mono break-all bg-emerald-500/5 px-2 py-1 rounded block">
+                  <p className="text-[10px] text-violet-400 mb-1.5 font-medium">DESPUÉS</p>
+                  <code className="text-xs text-violet-300 font-mono break-all bg-violet-500/5 px-2 py-1 rounded block">
                     {data.newSelector}
                   </code>
                 </div>

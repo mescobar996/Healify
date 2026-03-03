@@ -204,7 +204,7 @@ export default function TeamDashboardPage() {
               <div className="flex items-center gap-4 text-xs">
                 <span className="text-gray-400">Proyectos: <span className="text-white">{member.projects}</span></span>
                 <span className="text-gray-400">Runs: <span className="text-white">{member.runs30d}</span></span>
-                <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-full', member.healed30d > 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-gray-500/10 text-gray-400')}>
+                <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-full', member.healed30d > 0 ? 'bg-violet-500/10 text-violet-400' : 'bg-gray-500/10 text-gray-400')}>
                   <ShieldCheck className="w-3 h-3" />
                   Curados: {member.healed30d}
                 </span>

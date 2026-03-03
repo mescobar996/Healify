@@ -307,9 +307,9 @@ export default function TestRunDetailPage() {
             <p className="text-[11px] text-gray-500 uppercase tracking-wide">Total Tests</p>
             <p className="text-xl sm:text-2xl font-semibold text-white mt-1">{testRun.totalTests}</p>
           </div>
-          <div className="p-4 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
-            <p className="text-[11px] text-emerald-400 uppercase tracking-wide">Pasados</p>
-            <p className="text-2xl font-semibold text-emerald-400 mt-1">{testRun.passedTests}</p>
+          <div className="p-4 rounded-lg bg-green-500/5 border border-green-500/10">
+            <p className="text-[11px] text-green-400 uppercase tracking-wide">Pasados</p>
+            <p className="text-2xl font-semibold text-green-400 mt-1">{testRun.passedTests}</p>
           </div>
           <div className="p-4 rounded-lg bg-red-500/5 border border-red-500/10">
             <p className="text-[11px] text-red-400 uppercase tracking-wide">Fallidos</p>
