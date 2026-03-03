@@ -40,7 +40,7 @@ export function TypewriterText({ text, speed = 100, className = '' }: Typewriter
       <motion.span
         animate={{ opacity: [1, 0] }}
         transition={{ duration: 0.8, repeat: Infinity, repeatType: 'reverse' }}
-        className="inline-block w-0.5 h-6 bg-gradient-to-b from-[#00F5C8] to-[#7B5EF8] ml-1"
+        className="inline-block w-0.5 h-6 bg-gradient-to-b from-white to-[#9F9F9F] ml-1"
       />
     </span>
   )

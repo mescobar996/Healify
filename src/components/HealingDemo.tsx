@@ -200,8 +200,8 @@ export function HealingDemo({
           className="glass-elite rounded-2xl sm:rounded-3xl border border-white/10 overflow-hidden"
         >
           <div className="px-5 sm:px-8 pt-5 sm:pt-6 pb-3 border-b border-white/10">
-            <h3 className="text-lg sm:text-xl font-semibold text-[#E8F0FF]">{title}</h3>
-            <p className="text-xs sm:text-sm text-[#E8F0FF]/60 mt-1">{subtitle}</p>
+            <h3 className="text-lg sm:text-xl font-semibold text-[#EDEDED]">{title}</h3>
+            <p className="text-xs sm:text-sm text-[#EDEDED]/60 mt-1">{subtitle}</p>
             <div className="mt-3 flex flex-wrap items-center gap-2" role="tablist" aria-label="Flujos de demo interactiva">
               {DEMO_SCENARIOS.map((item) => (
                 <button
@@ -216,8 +216,8 @@ export function HealingDemo({
                   onKeyDown={(event) => handleScenarioKeyDown(event, item.id)}
                   className={
                     item.id === selectedDemo
-                      ? 'px-2.5 py-1 rounded-md text-xs bg-[#1A1A1A] border border-[#00F5C8]/40 text-[#00F5C8]'
-                      : 'px-2.5 py-1 rounded-md text-xs bg-[#101010] border border-white/[0.1] text-[#9B9B9B] hover:text-[#E8F0FF]'
+                      ? 'px-2.5 py-1 rounded-md text-xs bg-[#1A1A1A] border border-white/40 text-white'
+                      : 'px-2.5 py-1 rounded-md text-xs bg-[#101010] border border-white/[0.1] text-[#9B9B9B] hover:text-[#EDEDED]'
                   }
                 >
                   {item.label}
@@ -228,20 +228,20 @@ export function HealingDemo({
 
           <div className="px-5 sm:px-8 pt-6 sm:pt-8 pb-4 border-b border-white/10">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6 text-sm font-semibold tracking-wide uppercase">
-              <div className="text-[#FF5D7A]">Antes: tu test falla</div>
-              <div className="text-[#00F5C8]">Después: Healify lo cura</div>
+              <div className="text-[#EDEDED]/70">Antes: tu test falla</div>
+              <div className="text-white">Después: Healify lo cura</div>
             </div>
           </div>
 
           <div className="relative px-5 sm:px-8 py-5 sm:py-6">
             <div id="demo-panel" role="tabpanel" aria-labelledby={`demo-tab-${selectedDemo}`} className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-              <div className="rounded-xl border border-white/10 bg-[#0F1528] p-4 sm:p-5 font-mono text-xs sm:text-sm min-h-[220px]">
-                <div className="flex items-center gap-2 text-[#E8F0FF]/80 mb-3">
+              <div className="rounded-xl border border-white/10 bg-[#111111] p-4 sm:p-5 font-mono text-xs sm:text-sm min-h-[220px]">
+                <div className="flex items-center gap-2 text-[#EDEDED]/80 mb-3">
                   <Terminal className="w-4 h-4" />
                   <span>Terminal</span>
                 </div>
 
-                <div className="space-y-2 text-[#E8F0FF]/75">
+                <div className="space-y-2 text-[#EDEDED]/75">
                   <div>$ {scenario.testCommand}</div>
                   <div>{timeline.hasPassed ? '✓ 1 passed (5.5s)' : 'running tests...'}</div>
 
@@ -278,28 +278,28 @@ export function HealingDemo({
                 </div>
               </div>
 
-              <div className="rounded-xl border border-white/10 bg-[#0F1528] p-4 sm:p-5 font-mono text-xs sm:text-sm min-h-[220px] relative">
-                <div className="flex items-center gap-2 text-[#E8F0FF]/80 mb-3">
+              <div className="rounded-xl border border-white/10 bg-[#111111] p-4 sm:p-5 font-mono text-xs sm:text-sm min-h-[220px] relative">
+                <div className="flex items-center gap-2 text-[#EDEDED]/80 mb-3">
                   {scenario.id === 'bug-detected' ? <ShieldAlert className="w-4 h-4" /> : <GitPullRequest className="w-4 h-4" />}
                   <span>{scenario.rightPanelTitle}</span>
                 </div>
 
-                <div className="space-y-2 text-[#E8F0FF]/75">
-                  <div className="text-[#00F5C8]">{scenario.branch}</div>
+                <div className="space-y-2 text-[#EDEDED]/75">
+                  <div className="text-white">{scenario.branch}</div>
                   <div className="border-t border-white/10 pt-2">{scenario.rightPanelSubtitle}</div>
-                  <div className={timeline.showDiff ? 'text-[#FF5D7A]' : 'text-[#E8F0FF]/35'}>
+                  <div className={timeline.showDiff ? 'text-[#C7C7C7]' : 'text-[#EDEDED]/35'}>
                     - selector/error: {scenario.oldSelector}
                   </div>
                   {scenario.newSelector ? (
-                    <div className={timeline.showDiff ? 'text-[#00F5C8]' : 'text-[#E8F0FF]/35'}>
+                    <div className={timeline.showDiff ? 'text-white' : 'text-[#EDEDED]/35'}>
                       + selector: {scenario.newSelector}
                     </div>
                   ) : (
-                    <div className={timeline.showDiff ? 'text-[#E8F0FF]/85' : 'text-[#E8F0FF]/35'}>
+                    <div className={timeline.showDiff ? 'text-[#EDEDED]/85' : 'text-[#EDEDED]/35'}>
                       + acción: revisión humana / retry
                     </div>
                   )}
-                  <div className={timeline.showDiff ? 'text-[#00F5C8]' : 'text-[#E8F0FF]/35'}>
+                  <div className={timeline.showDiff ? 'text-white' : 'text-[#EDEDED]/35'}>
                     {scenario.confidenceLine}
                   </div>
                 </div>
@@ -311,7 +311,7 @@ export function HealingDemo({
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -8 }}
                       transition={{ duration: 0.2 }}
-                      className="absolute right-3 top-3 rounded-lg border border-[#00F5C8]/30 bg-[#00F5C8]/10 px-3 py-2 text-[11px] text-[#00F5C8]"
+                      className="absolute right-3 top-3 rounded-lg border border-white/30 bg-white/10 px-3 py-2 text-[11px] text-white"
                     >
                       {scenario.toastText}
                     </motion.div>
@@ -327,10 +327,10 @@ export function HealingDemo({
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.2 }}
-                  className="absolute inset-0 m-5 sm:m-8 rounded-xl border border-[#00F5C8]/40 bg-[#00F5C8]/10 backdrop-blur-[1px] overflow-hidden"
+                  className="absolute inset-0 m-5 sm:m-8 rounded-xl border border-white/40 bg-white/10 backdrop-blur-[1px] overflow-hidden"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#00F5C8]/20 to-transparent animate-pulse" />
-                  <div className="relative h-full flex items-center justify-center text-[#00F5C8] font-semibold tracking-wide">
+                  <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/20 to-transparent animate-pulse" />
+                  <div className="relative h-full flex items-center justify-center text-white font-semibold tracking-wide">
                     {scenario.overlayText}
                   </div>
                 </motion.div>
@@ -338,7 +338,7 @@ export function HealingDemo({
             </AnimatePresence>
           </div>
 
-          <div className="border-t border-white/10 px-5 sm:px-8 py-4 text-sm text-center text-[#00F5C8]">
+          <div className="border-t border-white/10 px-5 sm:px-8 py-4 text-sm text-center text-white">
             <div className="inline-flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4" />
               <span>
