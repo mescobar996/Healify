@@ -88,7 +88,8 @@ ENV NODE_ENV=production
 ENV PLAYWRIGHT_BROWSERS_PATH=/home/healify/.cache/ms-playwright
 
 # Move Playwright browsers to non-root user cache
-RUN cp -r /root/.cache/ms-playwright /home/healify/.cache/ms-playwright 2>/dev/null || true && \
+RUN mkdir -p /home/healify/.cache/ms-playwright && \
+    cp -r /root/.cache/ms-playwright/. /home/healify/.cache/ms-playwright/ 2>/dev/null || true && \
     chown -R healify:healify /home/healify/.cache
 
 USER healify
