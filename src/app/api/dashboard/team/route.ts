@@ -9,7 +9,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const isAdmin = user.role === 'admin'
+    const isAdmin = user.role === 'ADMIN'
 
     const users = await db.user.findMany({
       where: isAdmin

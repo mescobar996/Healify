@@ -1,4 +1,6 @@
 import NextAuth, { NextAuthOptions } from 'next-auth'
+import type { NextRequest } from 'next/server'
+import { checkAuthRateLimit } from '@/lib/rate-limit'
 import GitHubProvider from 'next-auth/providers/github'
 import GoogleProvider from 'next-auth/providers/google'
 import { PrismaAdapter } from '@next-auth/prisma-adapter'
@@ -52,7 +54,7 @@ export const authOptions: NextAuthOptions = {
       const typedProfile = (profile ?? {}) as OAuthProfileProjection
       if (user) {
         token.id = user.id
-        token.role = ('role' in user ? user.role : undefined) || 'user'
+        token.role = ('role' in user ? user.role : undefined) || 'USER'
       }
       if (profile) {
         token.picture = typedProfile.avatar_url || typedProfile.picture || token.picture
@@ -135,4 +137,26 @@ export const authOptions: NextAuthOptions = {
 }
 
 const handler = NextAuth(authOptions)
-export { handler as GET, handler as POST }
+
+async function rateLimitedHandler(
+  req: NextRequest,
+  ctx: { params: { nextauth: string[] } }
+) {
+  if (req.method === 'POST') {
+    const ip =
+      req.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
+      req.headers.get('x-real-ip') ||
+      'unknown'
+    const allowed = await checkAuthRateLimit(ip)
+    if (!allowed) {
+      return new Response('Too Many Requests', {
+        status: 429,
+        headers: { 'Retry-After': '900', 'Content-Type': 'text/plain' },
+      })
+    }
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (handler as any)(req, ctx)
+}
+
+export { rateLimitedHandler as GET, rateLimitedHandler as POST }

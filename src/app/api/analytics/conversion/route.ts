@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     })
 
     const cohortIds = cohortUsers.map((user) => user.id)
-    const isAdmin = user.role === 'admin'
+    const isAdmin = user.role === 'ADMIN'
     const scopedUserIds = isAdmin ? cohortIds : cohortIds.filter((id) => id === user.id)
 
     if (scopedUserIds.length === 0) {

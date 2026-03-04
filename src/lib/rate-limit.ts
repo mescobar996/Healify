@@ -159,6 +159,25 @@ export async function checkApiReportRateLimit(projectId: string): Promise<Report
     }
 }
 
+// ─── Auth brute-force protection ────────────────────────────────────────
+// 10 sign-in attempts per 15-minute window per IP
+const AUTH_WINDOW_SECS = 15 * 60
+const AUTH_MAX_ATTEMPTS = 10
+
+export async function checkAuthRateLimit(ip: string): Promise<boolean> {
+    const key = `rl:auth:${ip}`
+    try {
+        const count = await redis.incr(key)
+        if (count === 1) {
+            await redis.expire(key, AUTH_WINDOW_SECS)
+        }
+        return count <= AUTH_MAX_ATTEMPTS
+    } catch {
+        // Redis unavailable — fail-open so users are not incorrectly blocked
+        return true
+    }
+}
+
 // ─── Respuesta 429 estándar ────────────────────────────────────────────
 export function limitExceededResponse(type: 'projects' | 'testRuns', result: {
     plan: PlanKey; current: number; limit: number

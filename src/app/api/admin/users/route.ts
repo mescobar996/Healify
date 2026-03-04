@@ -11,7 +11,7 @@ async function assertAdmin() {
   const user = await getSessionUser()
   if (!user?.id) return null
   // role is included in session via next-auth callbacks
-  if (user.role !== 'admin') return null
+  if (user.role !== 'ADMIN') return null
   return user.id
 }
 
