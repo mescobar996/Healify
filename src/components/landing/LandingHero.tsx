@@ -81,7 +81,7 @@ export default function LandingHero() {
           >
             <Button
               size="lg"
-              className="h-14 px-8 btn-neon text-base font-semibold"
+              className="h-14 px-8 w-full sm:w-auto btn-neon text-base font-semibold"
               onClick={() => {
                 fetch('/api/analytics/funnel', {
                   method: 'POST',
@@ -98,7 +98,7 @@ export default function LandingHero() {
             <Button
               size="lg"
               variant="outline"
-              className="h-14 px-8 glass-elite border-white/15 text-[#EDEDED] hover:border-white/30 hover:bg-white/5"
+              className="h-14 px-8 w-full sm:w-auto glass-elite border-white/15 text-[#EDEDED] hover:border-white/30 hover:bg-white/5"
               onClick={() => {
                 const el = document.getElementById('demo-section')
                 if (el) {
@@ -118,9 +118,8 @@ export default function LandingHero() {
             transition={{ duration: 0.4, delay: 0.45 }}
             className="text-sm text-[#EDEDED]/50"
           >
-            Mirá el flujo completo en 15s: test falla → Healify analiza → selector curado → PR abierto.
-            <br />
-            <span className="text-white/70 text-xs">⚡ Demo pública — sin registro requerido</span>
+            Mirá el flujo completo en 15s: test falla → Healify analiza → selector curado → PR abierto.{" "}
+            <span className="text-white/70 text-xs block sm:inline mt-1 sm:mt-0">⚡ Demo pública — sin registro requerido</span>
           </motion.p>
 
           <motion.div

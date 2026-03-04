@@ -63,12 +63,13 @@ export const metadata: Metadata = {
   applicationName: "Healify",
 };
 
-// Viewport configuration - DARK ONLY
+// Viewport configuration - DARK ONLY + mobile notch support
 export const viewport: Viewport = {
   themeColor: "#0A0A0A",
   width: "device-width",
   initialScale: 1,
   colorScheme: "dark",
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

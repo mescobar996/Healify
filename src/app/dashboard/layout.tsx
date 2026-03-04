@@ -37,6 +37,7 @@ import { GlobalSearch } from "@/components/GlobalSearch";
 import { NotificationCenter } from "@/components/NotificationCenter";
 import { SidebarProjectHealth } from "@/components/SidebarProjectHealth";
 import { TrialBanner } from "@/components/TrialBanner";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 
 const navItems = [
   { name: "Dashboard",      href: "/dashboard",          icon: LayoutDashboard },
@@ -265,11 +266,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         {/* Page content */}
-        <main className="p-4 lg:p-6 min-h-[calc(100vh-3.5rem)] pb-safe">
+        <main className="p-4 lg:p-6 min-h-[calc(100vh-3.5rem)] pb-safe pb-20 lg:pb-6">
           <TrialBanner />
           {children}
         </main>
       </div>
+
+      {/* Mobile bottom tab bar */}
+      <MobileBottomNav />
     </div>
   );
 }

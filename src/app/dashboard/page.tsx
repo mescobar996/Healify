@@ -627,7 +627,7 @@ function DashboardContent() {
                     style={{ width: `${pct}%` }}
                   />
                 </div>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {steps.map((step, i) => (
                     <div key={i} className={cn(
                       "flex items-center gap-2 p-2.5 rounded-lg border transition-colors",
@@ -657,7 +657,7 @@ function DashboardContent() {
               </div>
               <p className="text-sm font-medium text-[#EDEDED]">Conectar repositorio</p>
               <p className="text-xs text-[#9B9B9B] mt-1">Creá y configurá proyectos para activar monitoreo</p>
-              <span className="inline-flex items-center gap-1 text-[11px] text-white mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
+              <span className="inline-flex items-center gap-1 text-[11px] text-white mt-3 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                 Ir a proyectos <ChevronRight className="w-3 h-3" />
               </span>
             </Link>
@@ -667,7 +667,7 @@ function DashboardContent() {
               </div>
               <p className="text-sm font-medium text-[#EDEDED]">Sandbox interactivo</p>
               <p className="text-xs text-[#9B9B9B] mt-1">Carga automática de datos demo — 5 test runs y 5 curaciones</p>
-              <span className="inline-flex items-center gap-1 text-[11px] text-white mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
+              <span className="inline-flex items-center gap-1 text-[11px] text-white mt-3 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                 Activar sandbox <ChevronRight className="w-3 h-3" />
               </span>
             </button>
@@ -677,7 +677,7 @@ function DashboardContent() {
               </div>
               <p className="text-sm font-medium text-[#EDEDED]">Implementar SDK</p>
               <p className="text-xs text-[#9B9B9B] mt-1">Quickstart, API Reference y webhook en producción</p>
-              <span className="inline-flex items-center gap-1 text-[11px] text-white mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
+              <span className="inline-flex items-center gap-1 text-[11px] text-white mt-3 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                 Ver documentación <ChevronRight className="w-3 h-3" />
               </span>
             </Link>
