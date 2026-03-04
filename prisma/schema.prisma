@@ -90,6 +90,7 @@ model Notification {
   link      String?
   createdAt DateTime @default(now())
 
+  @@index([userId, createdAt])
   @@map("notifications")
 }
 
@@ -155,6 +156,7 @@ model Project {
   scheduleBranch   String?                  // Branch to test on schedule (null = default)
   lastScheduledAt  DateTime?               // Last time a scheduled run was triggered
 
+  @@index([userId])
   @@map("projects")
 }
 
@@ -186,6 +188,7 @@ model TestRun {
   createdAt     DateTime       @default(now())
 
   @@index([projectId, startedAt])
+  @@index([status])
   @@map("test_runs")
 }
 
@@ -341,6 +344,7 @@ model AnalyticsEvent {
   createdAt   DateTime @default(now())
 
   @@index([eventType, createdAt])
+  @@index([projectId])
   @@map("analytics_events")
 }
 

@@ -67,8 +67,10 @@ const isBuildTime =
 const isTest =
   process.env.NODE_ENV === 'test' || !!process.env.VITEST
 
+const skipValidation = !!process.env.SKIP_ENV_VALIDATION
+
 function validateEnv() {
-  if (isBuildTime || isTest) return
+  if (isBuildTime || isTest || skipValidation) return
 
   const serverResult = serverSchema.safeParse(process.env)
   if (!serverResult.success) {

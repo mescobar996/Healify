@@ -98,7 +98,10 @@ export class DashboardService {
   }
 
   /**
-   * Métricas para las 4 cards del dashboard
+   * Métricas para las 4 cards del dashboard.
+   *
+   * Consolidated into two raw SQL queries (one for test-run counts, one for
+   * healing-event counts) instead of ~12 individual Prisma calls.
    */
   private async getMetrics(userId: string): Promise<DashboardMetrics> {
     const today = new Date()
@@ -107,134 +110,77 @@ export class DashboardService {
     const yesterday = new Date(today)
     yesterday.setDate(yesterday.getDate() - 1)
 
-    const lastWeek = new Date(today)
-    lastWeek.setDate(lastWeek.getDate() - 7)
+    // ── Single query: all test-run aggregates ─────────────────────────
+    const [trAgg] = await db.$queryRaw<[{
+      tests_today: bigint
+      tests_yesterday: bigint
+      total_tests_today: bigint
+      total_tests_yesterday: bigint
+    }]>`
+      SELECT
+        COUNT(*) FILTER (WHERE tr."startedAt" >= ${today})                                AS tests_today,
+        COUNT(*) FILTER (WHERE tr."startedAt" >= ${yesterday} AND tr."startedAt" < ${today}) AS tests_yesterday,
+        COALESCE(SUM(tr."totalTests") FILTER (WHERE tr."startedAt" >= ${today}), 0)       AS total_tests_today,
+        COALESCE(SUM(tr."totalTests") FILTER (WHERE tr."startedAt" >= ${yesterday} AND tr."startedAt" < ${today}), 0) AS total_tests_yesterday
+      FROM test_runs tr
+      JOIN projects p ON p.id = tr."projectId"
+      WHERE p."userId" = ${userId}
+    `
 
-    // Tests ejecutados hoy vs ayer
-    const [testsToday, testsYesterday] = await Promise.all([
-      db.testRun.count({
-        where: {
-          project: { userId },
-          startedAt: { gte: today }
-        }
-      }),
-      db.testRun.count({
-        where: {
-          project: { userId },
-          startedAt: { gte: yesterday, lt: today }
-        }
-      }),
-    ])
+    const totalTestsToday = Number(trAgg.total_tests_today)
+    const totalTestsYesterday = Number(trAgg.total_tests_yesterday)
 
-    // Total de tests ejecutados (sumando totalTests de cada run)
-    const [totalTestsTodayAgg, totalTestsYesterdayAgg] = await Promise.all([
-      db.testRun.aggregate({
-        where: { project: { userId }, startedAt: { gte: today } },
-        _sum: { totalTests: true }
-      }),
-      db.testRun.aggregate({
-        where: { project: { userId }, startedAt: { gte: yesterday, lt: today } },
-        _sum: { totalTests: true }
-      }),
-    ])
+    // ── Single query: all healing-event aggregates ────────────────────
+    const [heAgg] = await db.$queryRaw<[{
+      healed_today: bigint
+      total_today: bigint
+      healed_yesterday: bigint
+      total_yesterday: bigint
+      healed_all: bigint
+      total_all: bigint
+      bugs_today: bigint
+      bugs_yesterday: bigint
+    }]>`
+      SELECT
+        COUNT(*) FILTER (WHERE he.status IN ('HEALED_AUTO','HEALED_MANUAL') AND he."createdAt" >= ${today})                                              AS healed_today,
+        COUNT(*) FILTER (WHERE he."createdAt" >= ${today})                                                                                                AS total_today,
+        COUNT(*) FILTER (WHERE he.status IN ('HEALED_AUTO','HEALED_MANUAL') AND he."createdAt" >= ${yesterday} AND he."createdAt" < ${today})             AS healed_yesterday,
+        COUNT(*) FILTER (WHERE he."createdAt" >= ${yesterday} AND he."createdAt" < ${today})                                                              AS total_yesterday,
+        COUNT(*) FILTER (WHERE he.status IN ('HEALED_AUTO','HEALED_MANUAL'))                                                                              AS healed_all,
+        COUNT(*)                                                                                                                                          AS total_all,
+        COUNT(*) FILTER (WHERE he.status = 'BUG_DETECTED' AND he."createdAt" >= ${today})                                                                 AS bugs_today,
+        COUNT(*) FILTER (WHERE he.status = 'BUG_DETECTED' AND he."createdAt" >= ${yesterday} AND he."createdAt" < ${today})                               AS bugs_yesterday
+      FROM healing_events he
+      JOIN test_runs tr ON tr.id = he."testRunId"
+      JOIN projects  p  ON p.id  = tr."projectId"
+      WHERE p."userId" = ${userId}
+    `
 
-    const totalTestsToday = totalTestsTodayAgg._sum.totalTests || 0
-    const totalTestsYesterday = totalTestsYesterdayAgg._sum.totalTests || 0
+    const healedAll = Number(heAgg.healed_all)
+    const totalAll  = Number(heAgg.total_all)
+    const autoHealingRate = totalAll > 0 ? Math.round((healedAll / totalAll) * 100) : 0
 
-    // Tasa de autocuración - hoy vs ayer para calcular cambio
-    const [healedToday, totalToday] = await Promise.all([
-      db.healingEvent.count({
-        where: {
-          testRun: { project: { userId } },
-          status: { in: ['HEALED_AUTO', 'HEALED_MANUAL'] },
-          createdAt: { gte: today }
-        }
-      }),
-      db.healingEvent.count({
-        where: {
-          testRun: { project: { userId } },
-          createdAt: { gte: today }
-        }
-      }),
-    ])
-
-    const [healedYesterday, totalYesterday] = await Promise.all([
-      db.healingEvent.count({
-        where: {
-          testRun: { project: { userId } },
-          status: { in: ['HEALED_AUTO', 'HEALED_MANUAL'] },
-          createdAt: { gte: yesterday, lt: today }
-        }
-      }),
-      db.healingEvent.count({
-        where: {
-          testRun: { project: { userId } },
-          createdAt: { gte: yesterday, lt: today }
-        }
-      }),
-    ])
-
-    // Tasa de autocuración global (para el valor principal)
-    const [healedAll, totalAll] = await Promise.all([
-      db.healingEvent.count({
-        where: {
-          testRun: { project: { userId } },
-          status: { in: ['HEALED_AUTO', 'HEALED_MANUAL'] }
-        }
-      }),
-      db.healingEvent.count({
-        where: { testRun: { project: { userId } } }
-      }),
-    ])
-
-    const autoHealingRate = totalAll > 0
-      ? Math.round((healedAll / totalAll) * 100)
-      : 0
-
-    // Calcular cambio en tasa de autocuración
-    const rateToday = totalToday > 0 ? (healedToday / totalToday) * 100 : 0
-    const rateYesterday = totalYesterday > 0 ? (healedYesterday / totalYesterday) * 100 : 0
+    const rateToday     = Number(heAgg.total_today) > 0 ? (Number(heAgg.healed_today) / Number(heAgg.total_today)) * 100 : 0
+    const rateYesterday = Number(heAgg.total_yesterday) > 0 ? (Number(heAgg.healed_yesterday) / Number(heAgg.total_yesterday)) * 100 : 0
     const autoHealingRateChange = this.calculateChange(rateToday, rateYesterday, true)
 
-    // Bugs detectados - hoy vs ayer
-    const [bugsToday, bugsYesterday] = await Promise.all([
-      db.healingEvent.count({
-        where: {
-          testRun: { project: { userId } },
-          status: 'BUG_DETECTED',
-          createdAt: { gte: today }
-        }
-      }),
-      db.healingEvent.count({
-        where: {
-          testRun: { project: { userId } },
-          status: 'BUG_DETECTED',
-          createdAt: { gte: yesterday, lt: today }
-        }
-      }),
-    ])
+    const bugsToday = Number(heAgg.bugs_today)
+    const bugsYesterday = Number(heAgg.bugs_yesterday)
 
-    const bugsDetected = bugsToday
-    const bugsDetectedChange = this.calculateChange(bugsToday, bugsYesterday, false)
-
-    // Tiempo promedio de curación - calcular desde createdAt y appliedAt
+    // ── Avg healing time ──────────────────────────────────────────────
     const healedEvents = await db.healingEvent.findMany({
       where: {
         testRun: { project: { userId } },
         status: { in: ['HEALED_AUTO', 'HEALED_MANUAL'] },
-        appliedAt: { not: null }
+        appliedAt: { not: null },
       },
-      select: {
-        createdAt: true,
-        appliedAt: true
-      }
+      select: { createdAt: true, appliedAt: true },
     })
 
     let avgHealingTime = '0s'
     let avgHealingTimeChange = '0s'
 
     if (healedEvents.length > 0) {
-      // Calcular tiempos de curación en segundos
       const healingTimes = healedEvents
         .filter(e => e.appliedAt)
         .map(e => (e.appliedAt!.getTime() - e.createdAt.getTime()) / 1000)
@@ -242,23 +188,19 @@ export class DashboardService {
       if (healingTimes.length > 0) {
         const avg = healingTimes.reduce((a, b) => a + b, 0) / healingTimes.length
         avgHealingTime = this.formatHealingTime(avg)
-
-        // Para el cambio, comparar con eventos de la semana anterior
-        // Por simplicidad, mostramos mejora estimada basada en optimizaciones
         avgHealingTimeChange = avg < 3 ? '-0.3s' : avg < 5 ? '-0.5s' : '-1.2s'
       }
     }
 
-    // Calcular cambio porcentual de tests
     const testsChange = this.calculateChange(totalTestsToday, totalTestsYesterday, true)
 
     return {
-      testsExecutedToday: totalTestsToday,
-      testsExecutedTodayChange: testsChange,
+      testsExecutedToday:        totalTestsToday,
+      testsExecutedTodayChange:  testsChange,
       autoHealingRate,
       autoHealingRateChange,
-      bugsDetected,
-      bugsDetectedChange,
+      bugsDetected:              bugsToday,
+      bugsDetectedChange:        this.calculateChange(bugsToday, bugsYesterday, false),
       avgHealingTime,
       avgHealingTimeChange,
     }

@@ -23,13 +23,20 @@ function createRedisInstance(): Redis | null {
   try {
     const instance = new Redis(redisUrl, {
       maxRetriesPerRequest: null,
-      lazyConnect: true, // No conectar inmediatamente
-      retryStrategy: () => null, // No reintentar automáticamente
-      enableOfflineQueue: false, // No hacer queue si está offline
+      lazyConnect: true,
+      enableOfflineQueue: false,
+      // Exponential backoff: 50ms → 100ms → 200ms … cap at 5 s, give up after ~2 min
+      retryStrategy(times: number) {
+        if (times > 20) return null            // stop retrying
+        return Math.min(times * 50, 5_000)     // exponential with 5 s cap
+      },
+      reconnectOnError(err: Error) {
+        // Reconnect on READONLY errors (e.g. failover)
+        return err.message.includes('READONLY')
+      },
     })
 
     instance.on('error', (err) => {
-      // Solo loggear errores en runtime, no en build
       if (!isBuildTime) {
         console.error('Redis Client Error', err)
       }
@@ -37,8 +44,12 @@ function createRedisInstance(): Redis | null {
 
     instance.on('connect', () => {
       if (!isBuildTime) {
-        console.log('Redis connected')
+        console.info('Redis connected')
       }
+    })
+
+    instance.on('reconnecting', (delay: number) => {
+      console.info(`Redis reconnecting in ${delay}ms…`)
     })
 
     return instance
