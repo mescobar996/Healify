@@ -27,7 +27,10 @@ export function SidebarProjectHealth() {
   useEffect(() => {
     fetch("/api/projects", { credentials: "include" })
       .then((res) => (res.ok ? res.json() : []))
-      .then((data) => setProjects(Array.isArray(data) ? data.slice(0, 5) : []))
+      .then((data) => {
+        const list = Array.isArray(data) ? data : (data?.data ?? [])
+        setProjects(list.slice(0, 5))
+      })
       .catch(() => setProjects([]))
   }, [])
 

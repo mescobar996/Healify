@@ -49,7 +49,9 @@ export const api = {
 
   // PROJECTS
   getProjects: (): Promise<Project[]> =>
-    fetcher<Project[]>('/api/projects'),
+    fetcher<{ data: Project[] } | Project[]>('/api/projects').then((r) =>
+      Array.isArray(r) ? r : (r as { data: Project[] }).data ?? []
+    ),
 
   createProject: (data: { name: string; description?: string; repository: string }) =>
     fetcher<Project>('/api/projects', {
