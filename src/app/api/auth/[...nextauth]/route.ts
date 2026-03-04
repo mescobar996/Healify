@@ -5,6 +5,7 @@ import GitHubProvider from 'next-auth/providers/github'
 import GoogleProvider from 'next-auth/providers/google'
 import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import { db } from '@/lib/db'
+import { trackFunnelEvent } from '@/lib/funnel-analytics'
 
 type OAuthProfileProjection = {
   avatar_url?: string
@@ -121,6 +122,7 @@ export const authOptions: NextAuthOptions = {
           },
         })
         console.log(`[Auth] 14-day trial created for user ${user.id} (ends ${trialEndsAt.toISOString()})`)
+        void trackFunnelEvent('activation', { userId: user.id })
       } catch (err) {
         // May already exist if called twice — not fatal
         console.warn('[Auth] Trial subscription creation failed (may already exist):', err)

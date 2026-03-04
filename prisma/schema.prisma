@@ -27,6 +27,7 @@ model User {
   emailVerified DateTime?
   image         String?
   role             UserRole  @default(USER)
+  devHourlyRate    Float     @default(65)  // USD/hr used in ROI calculations
   slackWebhookUrl  String?   // URL del Slack Incoming Webhook del usuario
   accounts      Account[]
   sessions      Session[]

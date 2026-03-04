@@ -177,5 +177,6 @@ test.describe('API — health y metadatos', () => {
     // Verificar headers de seguridad configurados en next.config.ts
     expect(headers['x-frame-options']).toBe('DENY')
     expect(headers['x-content-type-options']).toBe('nosniff')
+    expect(headers['content-security-policy']).toBeTruthy()
   })
 })

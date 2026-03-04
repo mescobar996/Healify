@@ -3,6 +3,7 @@ import Stripe from 'stripe'
 import { db } from '@/lib/db'
 import { Plan } from '@/lib/enums'
 import { apiError } from '@/lib/api-response'
+import { trackFunnelEvent } from '@/lib/funnel-analytics'
 
 // ═══════════════════════════════════════════════════════════════════════
 // CRÍTICO: NO instanciar Stripe a nivel de módulo.
@@ -93,6 +94,7 @@ export async function POST(request: Request) {
                 })
 
                 console.log(`[Webhook] ✅ Plan ${plan} activado para user ${userId}`)
+                void trackFunnelEvent('payment', { userId, plan, gateway: 'stripe' })
                 break
             }
 

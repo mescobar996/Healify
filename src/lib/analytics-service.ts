@@ -14,7 +14,7 @@ export class AnalyticsService {
     private readonly MINUTES_SAVED_PER_HEALING = 30
     private readonly DEV_HOURLY_RATE = 65
 
-    async getProjectAnalytics(projectId: string): Promise<ProjectAnalytics> {
+    async getProjectAnalytics(projectId: string, hourlyRate = 65): Promise<ProjectAnalytics> {
         const now = new Date()
 
         // 1 SQL query: healing trend for the last 7 days grouped by date
@@ -60,7 +60,7 @@ export class AnalyticsService {
                 : 0
 
         const timeSavedMinutes = autoHealedTotal * this.MINUTES_SAVED_PER_HEALING
-        const roiCurrency = (timeSavedMinutes / 60) * this.DEV_HOURLY_RATE
+        const roiCurrency = (timeSavedMinutes / 60) * hourlyRate
 
         // 1 SQL query: real daily accuracy (auto-healed / all non-ANALYZING) for trend
         const accuracyRows = await db.$queryRaw<

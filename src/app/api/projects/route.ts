@@ -22,45 +22,64 @@ export async function GET(request: NextRequest) {
       return apiError(request, 401, 'Unauthorized', { code: 'AUTH_REQUIRED' })
     }
 
+    const { searchParams } = new URL(request.url)
+    const page  = Math.max(1, parseInt(searchParams.get('page')  || '1',  10))
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '20', 10)))
+    const skip  = (page - 1) * limit
+
     let projects: ProjectWithStats[] | null = null
+    let total = 0
 
     try {
-      projects = await db.project.findMany({
-        where: { userId: user.id },
-        include: {
-          testRuns: {
-            orderBy: { startedAt: 'desc' },
-            take: 1,
+      ;[projects, total] = await Promise.all([
+        db.project.findMany({
+          where: { userId: user.id },
+          include: {
+            testRuns: {
+              orderBy: { startedAt: 'desc' },
+              take: 1,
+            },
+            _count: {
+              select: { testRuns: true },
+            },
           },
-          _count: {
-            select: { testRuns: true },
-          },
-        },
-        orderBy: { updatedAt: 'desc' },
-      })
+          orderBy: { updatedAt: 'desc' },
+          skip,
+          take: limit,
+        }),
+        db.project.count({ where: { userId: user.id } }),
+      ])
     } catch (queryError) {
       console.error('[projects] Full query failed, using basic fallback:', queryError)
     }
 
     // Fallback: basic select without relations when include fails
     if (!projects) {
-      const basic = await db.project.findMany({
-        where: { userId: user.id },
-        select: {
-          id: true,
-          name: true,
-          description: true,
-          repository: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-        orderBy: { updatedAt: 'desc' },
+      const [basic, fallbackTotal] = await Promise.all([
+        db.project.findMany({
+          where: { userId: user.id },
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            repository: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+          orderBy: { updatedAt: 'desc' },
+          skip,
+          take: limit,
+        }),
+        db.project.count({ where: { userId: user.id } }),
+      ])
+      return NextResponse.json({
+        data: basic.map((p) => ({
+          ...p,
+          testRunCount: 0,
+          lastTestRun: null,
+        })),
+        pagination: { total: fallbackTotal, page, limit, pages: Math.ceil(fallbackTotal / limit) },
       })
-      return NextResponse.json(basic.map((p) => ({
-        ...p,
-        testRunCount: 0,
-        lastTestRun: null,
-      })))
     }
 
     const projectsWithStats = projects.map((project) => {
@@ -86,7 +105,10 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    return NextResponse.json(projectsWithStats)
+    return NextResponse.json({
+      data: projectsWithStats,
+      pagination: { total, page, limit, pages: Math.ceil(total / limit) },
+    })
   } catch (error) {
     console.error('Error fetching projects:', error)
     return apiError(request, 500, 'Failed to fetch projects', { code: 'PROJECTS_FETCH_FAILED' })

@@ -160,6 +160,10 @@ jobs:
       DATABASE_URL: 'file:./e2e.db'
       NEXTAUTH_SECRET: 'ci-e2e-secret-not-real'
       NEXTAUTH_URL: 'http://localhost:3000'
+      GITHUB_APP_ID: '0'
+      GITHUB_APP_PRIVATE_KEY: 'stub'
+      GITHUB_APP_INSTALLATION_ID: '0'
+      SKIP_ENV_VALIDATION: 'true'
 
     steps:
       - name: Checkout

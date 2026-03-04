@@ -52,6 +52,14 @@ function Stat({ value, label, delay = 0 }: { value: string; label: string; delay
 }
 
 export default function LandingHero() {
+  useEffect(() => {
+    fetch('/api/analytics/funnel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event: 'landing_view' }),
+    }).catch(() => {})
+  }, [])
+
   return (
     <div className="relative isolate overflow-hidden min-h-screen flex flex-col">
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex-1 flex flex-col justify-center py-24 sm:py-32">
@@ -74,7 +82,14 @@ export default function LandingHero() {
             <Button
               size="lg"
               className="h-14 px-8 btn-neon text-base font-semibold"
-              onClick={() => signIn('github', { callbackUrl: '/dashboard' })}
+              onClick={() => {
+                fetch('/api/analytics/funnel', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ event: 'signup_start' }),
+                }).catch(() => {})
+                signIn('github', { callbackUrl: '/dashboard' })
+              }}
             >
               <Github className="w-5 h-5 mr-2" />
               Get Started Free

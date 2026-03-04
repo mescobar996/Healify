@@ -24,6 +24,7 @@ import { Plan } from '@/lib/enums'
 import { verifyWebhookSignature, fetchAndNormalizePreapproval } from '@/lib/payment/mercadopago'
 import type { NormalizedSubscription } from '@/lib/payment/types'
 import { webhookRateLimit } from '@/lib/http-rate-limiter'
+import { trackFunnelEvent } from '@/lib/funnel-analytics'
 
 function planIdToEnum(planId: NormalizedSubscription['planId']): Plan {
   if (planId === 'enterprise') return Plan.ENTERPRISE
@@ -126,6 +127,7 @@ export async function POST(req: NextRequest) {
     })
 
     console.log(`[MP Webhook] ✅ ${normalized.planId} ${normalized.status} for user ${normalized.userId}`)
+    void trackFunnelEvent('payment', { userId: normalized.userId, plan: normalized.planId, gateway: 'mercadopago' })
     return NextResponse.json({ received: true })
   } catch (err) {
     console.error('[MP Webhook] Error processing notification:', err)
