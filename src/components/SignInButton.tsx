@@ -32,7 +32,12 @@ export function SignInButton({ provider, callbackUrl = '/dashboard' }: SignInBut
 
   const handleSignIn = async () => {
     setIsLoading(true)
-    await signIn(provider, { callbackUrl })
+    try {
+      await signIn(provider, { callbackUrl })
+    } catch (error) {
+      console.error('Sign-in error:', error)
+      setIsLoading(false)
+    }
   }
 
   const isGitHub = provider === 'github'

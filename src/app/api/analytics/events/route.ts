@@ -3,13 +3,22 @@ import { getSessionUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 
 const ALLOWED_EVENTS = new Set([
+  // Onboarding
   'onboarding_step_1_repo_connected',
   'onboarding_step_2_sdk_installed',
   'onboarding_step_3_first_healing',
+  // Search
   'search_open',
   'search_query',
   'search_result_click',
+  // Demo
   'demo_scenario_selected',
+  // Dashboard (Sprint 6)
+  'dashboard_view',
+  'dashboard_tab',
+  'run_tests_click',
+  'roi_export',
+  'healing_detail_open',
 ])
 
 export async function POST(request: NextRequest) {

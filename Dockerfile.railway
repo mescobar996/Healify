@@ -89,8 +89,8 @@ ENV NODE_ENV=production
 
 USER healify
 
-# Health check
+# Health check — verify the worker process is responsive
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD node -e "process.exit(0)" || exit 1
+  CMD node -e "const http = require('http'); const req = http.get('http://localhost:' + (process.env.PORT || 3001) + '/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }); req.on('error', () => process.exit(1)); req.setTimeout(5000, () => process.exit(1));" || exit 1
 
 CMD ["node", "dist/worker.js"]

@@ -29,16 +29,30 @@ describe('security-utils - encrypt / decrypt', () => {
     expect(decrypt(encrypt(long))).toBe(long)
   })
 
-  // Format validation
-  it('encrypted output has the iv:ciphertext format', () => {
+  // Format validation — AES-256-GCM output: iv(24):authTag(32):ciphertext
+  it('encrypted output has the iv:authTag:ciphertext format', () => {
     const ciphertext = encrypt('test')
-    expect(ciphertext).toMatch(/^[0-9a-f]{32}:[0-9a-f]+$/)
+    expect(ciphertext).toMatch(/^[0-9a-f]{24}:[0-9a-f]{32}:[0-9a-f]+$/)
   })
 
-  it('IV part is always 32 hex chars (16 bytes)', () => {
+  it('IV part is always 24 hex chars (12 bytes)', () => {
     const ciphertext = encrypt('hello')
     const iv = ciphertext.split(':')[0]
-    expect(iv).toHaveLength(32)
+    expect(iv).toHaveLength(24)
+  })
+
+  it('authTag part is always 32 hex chars (16 bytes)', () => {
+    const ciphertext = encrypt('hello')
+    const authTag = ciphertext.split(':')[1]
+    expect(authTag).toHaveLength(32)
+  })
+
+  it('tampered ciphertext throws on decryption (integrity check)', () => {
+    const ciphertext = encrypt('sensitive-data')
+    const parts = ciphertext.split(':')
+    // Flip a byte in the ciphertext portion
+    const tampered = parts[0] + ':' + parts[1] + ':ff' + parts[2].slice(2)
+    expect(() => decrypt(tampered)).toThrow()
   })
 
   // Non-determinism: each call uses a fresh random IV

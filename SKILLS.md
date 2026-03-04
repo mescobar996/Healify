@@ -1,91 +1,215 @@
+# 🧠 Skills Hub — Guía de Copilot para tu SaaS
+
+> **Cómo usar este archivo:**
+> 1. Identificá el área de trabajo que necesitás.
+> 2. Elegí el skill correspondiente.
+> 3. Copiá el prompt y pegalo en tu IDE / chat de Copilot.
+> 4. Reemplazá los `[corchetes]` con tu contexto real.
+> 5. Iterá hasta obtener el resultado esperado.
+
+**Stack de referencia:** Next.js 14+ (App Router) · React · Tailwind CSS · Supabase · Vercel · TypeScript
+
 ---
 
-## 🔍 Revisiones completas del proyecto (Auditoría 360°)
+## 📋 Índice rápido
 
-¿Necesitas una visión global de tu proyecto para identificar áreas de mejora? Puedes pedirle a Copilot que realice una **revisión integral** y genere un informe detallado con recomendaciones accionables. Esta auditoría combina múltiples skills para evaluar el estado actual desde todos los ángulos.
+| # | Skill | Cuándo usarlo |
+|---|-------|---------------|
+| 1 | 📦 Product Manager | Features, user stories, roadmap |
+| 2 | 🏗️ Arquitecto / Tech Lead | Estructura, escalabilidad, deuda técnica |
+| 3 | 🎨 Frontend Developer | Componentes React, UI, estado cliente |
+| 4 | ⚙️ Backend Developer | API routes, lógica servidor, integraciones |
+| 5 | 🔒 Security Specialist | Auth, env vars, RLS, vulnerabilidades |
+| 6 | 🚀 DevOps Engineer | Deploy Vercel, CI/CD, entornos |
+| 7 | 🧪 QA Engineer | Casos de prueba, regresión, bugs |
+| 8 | 🖌️ UX/UI Designer | Flujos, usabilidad, accesibilidad |
+| 9 | 📊 Data Analyst | Queries SQL, métricas, analytics |
+| 🔍 | Auditoría 360° | Revisión integral del proyecto |
 
-### 🎯 Objetivo
-Obtener un diagnóstico completo del proyecto (código, arquitectura, UX, seguridad, rendimiento, procesos) y un plan de mejoras priorizado.
+---
 
-### 👥 Roles involucrados
-- Product Manager
-- Arquitecto de software / Tech Lead
-- UX/UI Designer
-- Security Specialist
-- DevOps Engineer
-- QA Engineer
-- (opcional) Data Analyst
+## 👤 Skills Individuales
 
-### 🤖 Prompt base para auditoría integral
-> "Actúa como un equipo de consultoría senior especializado en SaaS. Realiza una **revisión completa de mi proyecto** (descríbelo brevemente o pega fragmentos clave). Quiero un informe estructurado que cubra:
-> 1. **Arquitectura y escalabilidad**: puntos débiles, acoplamiento, deuda técnica.
-> 2. **Calidad del código**: buenas prácticas, patrones, testabilidad.
-> 3. **Experiencia de usuario (UX/UI)**: usabilidad, consistencia, accesibilidad.
-> 4. **Seguridad**: vulnerabilidades potenciales, autenticación, manejo de datos sensibles.
-> 5. **Rendimiento**: tiempos de carga, optimizaciones frontend/backend, base de datos.
-> 6. **Procesos y DevOps**: CI/CD, monitorización, despliegue.
-> 7. **Métricas de negocio**: alineación con objetivos, oportunidades de crecimiento.
+### 1. 📦 Product Manager
+
+**Cuándo usarlo:** Necesitás definir qué construir, en qué orden y por qué.
+
+**Prompt base:**
+> "Actuá como un Product Manager senior especializado en SaaS con 5 años de experiencia.
+> Mi proyecto es: [descripción — stack, usuarios objetivo, modelo de negocio].
+> Necesito:
+> - User stories para [feature] en formato: 'Como [usuario], quiero [acción], para [beneficio]'.
+> - Criterios de aceptación claros y testeables (Gherkin si aplica).
+> - Priorización MoSCoW del backlog.
+> - Edge cases o riesgos de producto que no estoy viendo.
+> Output en markdown listo para Notion o Linear."
+
+---
+
+### 2. 🏗️ Arquitecto de Software / Tech Lead
+
+**Cuándo usarlo:** Decisiones estructurales, deuda técnica, escalabilidad.
+
+**Prompt base:**
+> "Actuá como Arquitecto de Software con experiencia en Next.js 14+ App Router, Supabase y Vercel.
+> Estructura del proyecto: [árbol de carpetas o descripción].
+> Analizá:
+> - Separación de responsabilidades (UI / lógica / datos).
+> - Patrones recomendados para [feature, ej: sistema de pagos dual LemonSqueezy + MercadoPago].
+> - Deuda técnica visible y plan para pagarla sin romper funcionalidad.
+> - Escalabilidad para [X usuarios o volumen].
+> Justificá cada decisión con trade-offs."
+
+---
+
+### 3. 🎨 Frontend Developer
+
+**Cuándo usarlo:** Componentes React, UI, estado en cliente.
+
+**Prompt base:**
+> "Sos frontend senior con React, Next.js 14+ App Router y Tailwind CSS.
+> Tarea: [descripción, ej: componente CurrencySelector que muestre USD/ARS].
+> Requisitos:
+> - TypeScript con tipos explícitos.
+> - Tailwind para estilos (sin CSS externo salvo necesidad).
+> - Estado: [useState / Context / Zustand — elegí uno].
+> - Accesible: aria-labels, roles, teclado.
+> - Mobile-first.
+> Código completo listo para copiar, con comentarios en lógica no obvia."
+
+---
+
+### 4. ⚙️ Backend Developer
+
+**Cuándo usarlo:** API routes, server logic, integraciones externas.
+
+**Prompt base:**
+> "Sos backend senior con Next.js App Router (route handlers), Supabase y TypeScript.
+> Implementar: [descripción, ej: webhook de LemonSqueezy que actualice subscriptions en Supabase].
+> Requisitos:
+> - Validación de firma (HMAC o header secret).
+> - Manejo de errores con respuestas HTTP correctas (200/400/500).
+> - Tipos TypeScript para el payload.
+> - Idempotencia: evitar reprocesamiento del mismo evento.
+> - Logging para debug en producción.
+> Incluí tipos necesarios y helpers recomendados."
+
+---
+
+### 5. 🔒 Security Specialist
+
+**Cuándo usarlo:** Auth, secrets, protección de endpoints, datos sensibles.
+
+**Prompt base:**
+> "Actuá como especialista en seguridad web para Next.js + Supabase.
+> Código a revisar: [pegá el código o describí la feature].
+> Verificá:
+> - ¿Alguna variable NEXT_PUBLIC_ expone un secret que no debería?
+> - ¿Los middleware de Next.js y RLS policies de Supabase están bien configurados?
+> - ¿Hay API routes sin protección que requieren auth?
+> - ¿Riesgo de injection o datos malformados?
+> - ¿Dependencias con CVEs conocidos?
+> Para cada hallazgo: riesgo (🔴 Alto / 🟡 Medio / 🟢 Bajo), causa raíz y fix con código."
+
+---
+
+### 6. 🚀 DevOps Engineer
+
+**Cuándo usarlo:** Deploy, env vars, CI/CD, debug de builds.
+
+**Prompt base:**
+> "Actuá como DevOps Engineer especializado en Vercel y Next.js.
+> Situación: [describí, ej: variables de MercadoPago pendientes, necesito redeploy].
+> Guíame en:
+> - Variables 'Production only' vs 'All environments' en Vercel Dashboard.
+> - Verificar build antes del deploy (errores por env vars faltantes).
+> - Configuración de dominios/rewrites si aplica.
+> - [Opcional] GitHub Actions para CI: lint + type-check + tests.
+> Pasos ordenados, comandos exactos, qué verificar después de cada uno."
+
+---
+
+### 7. 🧪 QA Engineer
+
+**Cuándo usarlo:** Casos de prueba, validación pre-deploy, búsqueda de regresiones.
+
+**Prompt base:**
+> "Actuá como QA Engineer con experiencia en React/Next.js.
+> Feature a testear: [descripción, ej: checkout LemonSqueezy USD con webhook de confirmación].
+> Necesito:
+> - Casos positivos (happy path completo).
+> - Casos negativos (errores esperados, inputs inválidos, timeouts).
+> - Casos de regresión (¿qué podría haberse roto?).
+> - Pruebas de integración (webhook → DB → UI).
+> - Smoke testing checklist pre-merge a main.
+> Formato: tabla markdown [ID | Descripción | Precondición | Pasos | Resultado esperado | Prioridad]."
+
+---
+
+### 8. 🖌️ UX/UI Designer
+
+**Cuándo usarlo:** Flujos, usabilidad, consistencia visual, accesibilidad.
+
+**Prompt base:**
+> "Actuá como diseñador UX/UI especializado en SaaS con foco en conversión.
+> Proyecto: Tailwind CSS, paleta [colores/tokens], componentes [shadcn/ui u otro].
+> Necesito: [descripción, ej: mejorar flujo de selección de plan USD/ARS].
+> Dame:
+> - Análisis del flujo actual y friction points.
+> - Propuesta de mejora con justificación de UX.
+> - Especificaciones: tamaños, espaciados, estados (default/hover/focus/disabled/error).
+> - Copy para CTAs, placeholders y mensajes de error.
+> - Accesibilidad: contraste WCAG AA, ARIA roles, targets táctiles ≥44px."
+
+---
+
+### 9. 📊 Data Analyst
+
+**Cuándo usarlo:** Queries SQL, analytics de uso, métricas de negocio.
+
+**Prompt base:**
+> "Actuá como Data Analyst con experiencia en Supabase (PostgreSQL) y métricas SaaS.
+> Necesito: [descripción, ej: conversión de planes por moneda en los últimos 30 días].
+> Esquema relevante: [pegá tablas o descripción de columnas clave].
+> Dame:
+> - Query SQL optimizada con comentarios.
+> - Índices recomendados si puede ser lenta.
+> - Visualización recomendada (tipo de gráfico y por qué).
+> - 2-3 métricas relacionadas que debería medir."
+
+---
+
+## 🔍 Auditoría 360° — Revisión Integral del Proyecto
+
+Usá este skill antes de un deploy importante, al terminar una fase, o cuando algo falla sin causa obvia.
+
+> ⚠️ **Después de la auditoría:** Abrí **BUGFIX-SKILLS.md** para aplicar correcciones de forma ordenada sin introducir nuevos errores.
+
+### Prompt base para auditoría integral
+
+> "Actuá como equipo de consultoría senior en SaaS (Next.js + Supabase + Vercel).
+> Revisá mi proyecto con esta información:
+> [pegá: descripción, estructura de carpetas, package.json, fragmentos clave, errores actuales]
 >
-> Para cada área, proporciona:
-> - Hallazgos concretos (basados en la información que te doy).
-> - Recomendaciones accionables (con prioridad: alta/media/baja).
-> - Ejemplos de código o configuraciones si aplica.
+> Informe estructurado en 7 áreas:
 >
-> Finalmente, sintetiza un **plan de acción** con los próximos pasos recomendados."
+> **1. Arquitectura y escalabilidad:** ¿Mantenible? ¿Acoplamiento? ¿Escala a 10x?
+> **2. Calidad del código:** Buenas prácticas App Router, TypeScript, refactor seguro.
+> **3. UX/UI:** Flujo principal, consistencia, accesibilidad básica.
+> **4. Seguridad:** Secrets, Auth + RLS, validación de inputs.
+> **5. Rendimiento:** Rendering strategy, queries DB, bundle size.
+> **6. DevOps:** Env vars, CI/CD, monitoreo de errores.
+> **7. Métricas de negocio:** Eventos clave medidos, oportunidades de growth.
+>
+> Para cada área:
+> - ✅ Hallazgos concretos
+> - ⚡ Prioridad: 🔴 Alta / 🟡 Media / 🟢 Baja
+> - 💻 Código o config de ejemplo
+>
+> Al final: plan de acción con sprints sugeridos."
 
-### 📄 Ejemplo de estructura de informe que puedes esperar
+### Estructura del informe esperada
 
-**Resumen ejecutivo**  
-- Estado general del proyecto (verde/amarillo/rojo)  
-- Principales riesgos y oportunidades  
+---
 
-**1. Arquitectura y escalabilidad**  
-- Hallazgo: El monolito actual dificulta el despliegue independiente.  
-- Recomendación (alta): Dividir en microservicios empezando por el módulo de pagos.  
-- Detalle técnico: Propuesta de eventos y API Gateway.  
-
-**2. Calidad del código**  
-- Hallazgo: Falta de pruebas unitarias en servicios críticos.  
-- Recomendación (media): Alcanzar 70% de cobertura en lógica de negocio usando Jest.  
-- Ejemplo: Cómo testear un caso de uso con mocking.  
-
-**3. Experiencia de usuario**  
-- Hallazgo: El flujo de onboarding tiene 7 pasos, alta tasa de abandono.  
-- Recomendación (alta): Reducir a 3 pasos, añadir barra de progreso.  
-- Sugerencia de diseño: Wireframe rápido.  
-
-**4. Seguridad**  
-- Hallazgo: Las claves API están en el frontend.  
-- Recomendación (alta): Moverlas a backend, usar variables de entorno.  
-- Buenas prácticas: Cifrado en tránsito y reposo.  
-
-**5. Rendimiento**  
-- Hallazgo: Las consultas a la tabla de usuarios no están indexadas.  
-- Recomendación (media): Añadir índices compuestos y caché con Redis.  
-- SQL de ejemplo.  
-
-**6. Procesos y DevOps**  
-- Hallazgo: No hay pipeline de pruebas automáticas.  
-- Recomendación (alta): Configurar GitHub Actions para ejecutar tests en cada PR.  
-- YAML de ejemplo.  
-
-**7. Métricas de negocio**  
-- Hallazgo: No se trackean eventos clave (registro, suscripción).  
-- Recomendación (media): Implementar analytics con Segment o Mixpanel.  
-- Código de ejemplo para trackear.  
-
-**Plan de acción priorizado**  
-- Sprint 1: Seguridad + onboarding (alta prioridad)  
-- Sprint 2: Pruebas + pipeline CI/CD  
-- Sprint 3: Optimización de consultas y caché  
-- Próximos: Microservicios (planificación)  
-
-### 🛠️ Cómo usar este informe
-1. Proporciona a Copilot toda la información relevante: descripción del proyecto, enlaces al repositorio (si es público), fragmentos de código, capturas de pantalla, o incluso el contenido de archivos clave (package.json, configuración, etc.).
-2. Ejecuta el prompt y obtén el informe.
-3. Revisa cada recomendación y adáptala a tu contexto.
-4. Convierte las tareas de alta prioridad en issues o historias de usuario en tu gestor de proyectos.
-5. Utiliza los skills individuales para abordar cada área (por ejemplo, activa el skill de Security para implementar las mejoras de seguridad).
-
-### 💡 Ejemplo práctico de solicitud
-> "Adjunto mi archivo `package.json`, `server.js` y la estructura de carpetas. Realiza una revisión completa de mi proyecto Node.js/Express + React. Enfócate en seguridad, rendimiento y buenas prácticas. Dame un informe detallado con prioridades."
+*Ver también: **MOBILE-SKILLS.md** · **BUGFIX-SKILLS.md***

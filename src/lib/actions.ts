@@ -226,7 +226,13 @@ export async function executeTestRun(projectId: string) {
 
 export async function getHealingEvents(params?: { limit?: number }) {
   try {
+    const user = await getSessionUser()
+    if (!user?.id) return []
+
     const events = await db.healingEvent.findMany({
+      where: {
+        testRun: { project: { userId: user.id } },
+      },
       include: {
         testRun: {
           include: {
@@ -259,11 +265,18 @@ export async function getHealingEvents(params?: { limit?: number }) {
 
 export async function approveHealing(eventId: string) {
   try {
-    const event = await db.healingEvent.update({
+    const user = await getSessionUser()
+    if (!user?.id) return { success: false, error: 'Not authenticated' }
+
+    // Verify the healing event belongs to the authenticated user
+    await verifyHealingEventOwnership(eventId, user.id)
+
+    await db.healingEvent.update({
       where: { id: eventId },
       data: {
         status: 'HEALED_MANUAL',
         appliedAt: new Date(),
+        appliedBy: user.id,
       },
     })
 
@@ -271,12 +284,18 @@ export async function approveHealing(eventId: string) {
     return { success: true }
   } catch (error) {
     console.error('Error approving healing:', error)
-    return { success: false }
+    return { success: false, error: error instanceof Error ? error.message : 'Failed to approve healing' }
   }
 }
 
 export async function rejectHealing(eventId: string) {
   try {
+    const user = await getSessionUser()
+    if (!user?.id) return { success: false, error: 'Not authenticated' }
+
+    // Verify the healing event belongs to the authenticated user
+    await verifyHealingEventOwnership(eventId, user.id)
+
     await db.healingEvent.update({
       where: { id: eventId },
       data: {
@@ -288,7 +307,7 @@ export async function rejectHealing(eventId: string) {
     return { success: true }
   } catch (error) {
     console.error('Error rejecting healing:', error)
-    return { success: false }
+    return { success: false, error: error instanceof Error ? error.message : 'Failed to reject healing' }
   }
 }
 
@@ -298,31 +317,45 @@ export async function rejectHealing(eventId: string) {
 
 export async function getDashboardStats() {
   try {
-    const [totalProjects, totalTestRuns, healingEvents, testRuns] = await Promise.all([
-      db.project.count(),
-      db.testRun.count(),
-      db.healingEvent.findMany({
+    const user = await getSessionUser()
+    if (!user?.id) return null
+
+    // Scope ALL queries to the authenticated user
+    const userFilter = { project: { userId: user.id } }
+
+    const [totalProjects, totalTestRuns, healedCount, failedCount, recentHealingEvents] = await Promise.all([
+      db.project.count({ where: { userId: user.id } }),
+      db.testRun.count({ where: userFilter }),
+      db.healingEvent.count({
         where: {
+          ...userFilter,
+          testRun: { project: { userId: user.id } },
           status: { in: ['HEALED_AUTO', 'HEALED_MANUAL'] },
         },
       }),
-      db.testRun.findMany({
-        where: { status: 'FAILED' },
+      db.testRun.count({
+        where: { ...userFilter, status: 'FAILED' },
+      }),
+      db.healingEvent.findMany({
+        where: {
+          testRun: { project: { userId: user.id } },
+          status: { in: ['HEALED_AUTO', 'HEALED_MANUAL'] },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
       }),
     ])
 
-    const healedCount = healingEvents.length
-    const failedCount = testRuns.length
     const healingSuccessRate = failedCount > 0 
       ? Math.round((healedCount / (failedCount + healedCount)) * 100)
       : 0
 
-    // Obtener últimos 7 días para el gráfico
-    const chartData = await getChartData()
+    // Chart data scoped to user
+    const chartData = await getChartData(user.id)
 
-    // Selectores frágiles
+    // Fragile selectors scoped to user
     const fragileSelectors = await db.trackedSelector.findMany({
-      where: { timesFailed: { gt: 0 } },
+      where: { project: { userId: user.id }, timesFailed: { gt: 0 } },
       orderBy: { timesFailed: 'desc' },
       take: 5,
     })
@@ -330,16 +363,12 @@ export async function getDashboardStats() {
     return {
       metrics: {
         testsExecutedToday: totalTestRuns,
-        testsExecutedTodayChange: '+12%',
         autoHealingRate: healingSuccessRate,
-        autoHealingRateChange: '+5%',
         bugsDetected: failedCount,
-        bugsDetectedChange: `-${failedCount}`,
-        avgHealingTime: '2.3s',
-        avgHealingTimeChange: '-0.5s',
+        healedCount,
       },
       chartData,
-      healingEvents: healingEvents.slice(0, 5).map(e => ({
+      healingEvents: recentHealingEvents.map(e => ({
         id: e.id,
         testName: e.testName,
         status: e.status === 'HEALED_AUTO' ? 'curado' : e.status === 'HEALED_MANUAL' ? 'curado' : 'pendiente',
@@ -422,25 +451,26 @@ function formatRelativeTime(date: Date): string {
   return 'hace unos segundos'
 }
 
-async function getChartData() {
-  const days = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom']
+async function getChartData(userId: string) {
+  const days = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
   
-  // Obtener datos reales de los últimos 7 días
   const today = new Date()
   const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)
 
+  // Scope to user's projects only
   const runs = await db.testRun.findMany({
     where: {
+      project: { userId },
       startedAt: { gte: weekAgo },
     },
   })
 
-  // Agrupar por día
+  // Group by calendar date (not day-of-week) to avoid collisions
   const byDay = days.map((day, i) => {
     const dayDate = new Date(today.getTime() - (6 - i) * 24 * 60 * 60 * 1000)
+    const dayStr = dayDate.toISOString().slice(0, 10) // YYYY-MM-DD
     const dayRuns = runs.filter(r => {
-      const runDate = new Date(r.startedAt)
-      return runDate.getDay() === dayDate.getDay()
+      return new Date(r.startedAt).toISOString().slice(0, 10) === dayStr
     })
 
     return {

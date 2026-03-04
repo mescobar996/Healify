@@ -136,27 +136,16 @@ function analyzeSelector(selector: string): SelectorAnalysis {
 }
 
 /**
- * Simula el "pensamiento" de la IA con delays progresivos
+ * Deterministic confidence adjustment based on selector content hash.
+ * Replaces Math.random() to ensure reproducible healing results.
  */
-async function simulateAIThinking(selector: string): Promise<string[]> {
-  const steps: string[] = []
-  
-  steps.push('Analyzing selector structure...')
-  await delay(300)
-  
-  steps.push('Detecting DOM patterns...')
-  await delay(400)
-  
-  steps.push('Evaluating accessibility attributes...')
-  await delay(300)
-  
-  steps.push('Calculating selector robustness...')
-  await delay(200)
-  
-  steps.push('Generating optimal replacement...')
-  await delay(300)
-  
-  return steps
+function deterministicAdjustment(selector: string): number {
+  let hash = 0
+  for (let i = 0; i < selector.length; i++) {
+    hash = ((hash << 5) - hash + selector.charCodeAt(i)) | 0
+  }
+  // Map hash to [-0.05, +0.05] range deterministically
+  return ((Math.abs(hash) % 100) / 1000) - 0.05
 }
 
 /**
@@ -395,9 +384,6 @@ function extractBaseClass(selector: string): string {
 export async function analyzeAndHeal(request: HealRequest): Promise<HealResponse> {
   const { selector, htmlContext, testName, errorMessage } = request
 
-  // Simular pensamiento de IA
-  const thinkingSteps = await simulateAIThinking(selector)
-
   // Analizar el selector
   const analysis = analyzeSelector(selector)
 
@@ -414,9 +400,9 @@ export async function analyzeAndHeal(request: HealRequest): Promise<HealResponse
     technicalReason: 'No suitable pattern found',
   }
 
-  // Generar confianza realista (0.75 - 0.98)
+  // Generar confianza realista (0.75 - 0.98) — deterministic, no Math.random()
   const baseConfidence = bestStrategy.confidence
-  const adjustedConfidence = Math.max(0.75, Math.min(0.98, baseConfidence + (Math.random() * 0.1 - 0.05)))
+  const adjustedConfidence = Math.max(0.75, Math.min(0.98, baseConfidence + deterministicAdjustment(selector)))
 
   // Determinar si necesita revisión
   const needsReview = adjustedConfidence < 0.80

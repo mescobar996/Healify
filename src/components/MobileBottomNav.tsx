@@ -23,6 +23,7 @@ export function MobileBottomNav() {
 
   return (
     <nav
+      aria-label="Navegación principal"
       className="fixed bottom-0 inset-x-0 z-40 lg:hidden border-t border-white/[0.06] bg-[#000000]/95 backdrop-blur-md"
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
@@ -36,8 +37,9 @@ export function MobileBottomNav() {
             <Link
               key={tab.href}
               href={tab.href}
+              aria-current={isActive ? "page" : undefined}
               className={cn(
-                "flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors",
+                "relative flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors",
                 isActive
                   ? "text-white"
                   : "text-[#6B6B6B] active:text-white/70"

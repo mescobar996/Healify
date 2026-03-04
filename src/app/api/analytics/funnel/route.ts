@@ -2,15 +2,22 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { trackFunnelEvent, getFunnelCounts } from '@/lib/funnel-analytics'
 import { getSessionUser } from '@/lib/auth/session'
+import { publicRateLimit } from '@/lib/http-rate-limiter'
 
 const PostSchema = z.object({
   event: z.enum(['landing_view', 'signup_start', 'activation', 'payment']),
   metadata: z.record(z.string(), z.unknown()).optional().default({}),
 })
 
-// POST /api/analytics/funnel — track a client-side funnel event (public, no auth)
+// POST /api/analytics/funnel — track a client-side funnel event (public, rate-limited)
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit: prevent data-poisoning abuse
+    const rl = await publicRateLimit(request)
+    if (!rl.ok) {
+      return NextResponse.json({ ok: false, error: 'Rate limited' }, { status: 429 })
+    }
+
     const body = PostSchema.parse(await request.json())
     await trackFunnelEvent(body.event, body.metadata)
     return NextResponse.json({ ok: true })
