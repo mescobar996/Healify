@@ -142,7 +142,7 @@ const handler = NextAuth(authOptions)
 
 async function rateLimitedHandler(
   req: NextRequest,
-  ctx: { params: { nextauth: string[] } }
+  ctx: { params: Promise<{ nextauth: string[] }> }
 ) {
   if (req.method === 'POST') {
     const ip =
@@ -157,8 +157,10 @@ async function rateLimitedHandler(
       })
     }
   }
+  // Await params before forwarding — Next.js 16+ makes params a Promise
+  const resolvedCtx = { params: await ctx.params }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (handler as any)(req, ctx)
+  return (handler as any)(req, resolvedCtx)
 }
 
 export { rateLimitedHandler as GET, rateLimitedHandler as POST }
