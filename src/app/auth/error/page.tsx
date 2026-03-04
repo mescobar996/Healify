@@ -26,8 +26,8 @@ export default async function AuthErrorPage({
       detail: 'No se pudo construir la URL de OAuth. Intentá de nuevo.',
     },
     OAuthCallback: {
-      title: 'Error al procesar respuesta de GitHub',
-      detail: 'GitHub respondió con un error. Probá de nuevo en unos segundos.',
+      title: 'Error al procesar respuesta del proveedor',
+      detail: 'El proveedor de autenticación respondió con un error. Probá de nuevo en unos segundos.',
     },
     OAuthCreateAccount: {
       title: 'No se pudo crear la cuenta',
@@ -95,10 +95,10 @@ export default async function AuthErrorPage({
             <div className="mt-2 bg-zinc-800/50 rounded-lg p-4">
               <p className="text-xs text-zinc-500 mb-2">Configuración requerida:</p>
               <ul className="text-xs text-zinc-400 space-y-1">
-                <li>• GITHUB_CLIENT_ID configurado</li>
-                <li>• GITHUB_CLIENT_SECRET configurado</li>
+                <li>• GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET configurados</li>
+                <li>• GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET configurados</li>
                 <li>• NEXTAUTH_URL apuntando a este dominio</li>
-                <li>• Callback URL: /api/auth/callback/github</li>
+                <li>• Callback URLs: /api/auth/callback/github y /api/auth/callback/google</li>
               </ul>
             </div>
           </details>

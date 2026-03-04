@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Iniciar sesión — Healify',
-  description: 'Iniciá sesión en Healify con tu cuenta de GitHub para empezar a autocurar tus tests.',
+  description: 'Iniciá sesión en Healify con tu cuenta de GitHub o Google para empezar a autocurar tus tests.',
 }
 
 import { getSessionUser } from '@/lib/auth/session'
