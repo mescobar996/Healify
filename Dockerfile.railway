@@ -2,7 +2,7 @@
 # Multi-stage build: build in full image, run in slim image with non-root user
 
 # ── Stage 1: Build ─────────────────────────────────────────────────
-FROM node:20-slim AS builder
+FROM node:25-slim AS builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
@@ -35,7 +35,7 @@ RUN npx esbuild src/workers/railway-worker.ts \
     --external:tsx
 
 # ── Stage 2: Production ───────────────────────────────────────────
-FROM node:20-slim
+FROM node:25-slim
 
 # Minimal Chromium runtime deps — no-install-recommends prevents the 250+ pkg cascade
 RUN apt-get update && apt-get install -y --no-install-recommends \
