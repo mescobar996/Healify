@@ -50,7 +50,9 @@ Responde SOLO con JSON válido (sin markdown):
         const parsed = JSON.parse(jsonMatch[0])
 
         if (parsed.newSelector && typeof parsed.confidence === 'number') {
-            console.log(`[HealingService] AI -> ${parsed.newSelector} (${Math.round(parsed.confidence * 100)}% conf)`)
+            if (process.env.NODE_ENV === 'development') {
+                console.log(`[HealingService] AI -> ${parsed.newSelector} (${Math.round(parsed.confidence * 100)}% conf)`)
+            }
             return {
                 newSelector: parsed.newSelector,
                 selectorType: parsed.selectorType || 'CSS',

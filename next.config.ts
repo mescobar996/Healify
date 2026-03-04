@@ -19,6 +19,18 @@ const nextConfig: NextConfig = {
         source: "/(.*)",
         headers: [
           {
+            key: "Content-Security-Policy",
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' https://js.stripe.com",
+              "style-src 'self' 'unsafe-inline'",
+              "img-src 'self' data: https: blob:",
+              "connect-src 'self' https://api.stripe.com https://sentry.io https://*.sentry.io",
+              "frame-src https://js.stripe.com https://www.loom.com",
+              "font-src 'self'",
+            ].join("; "),
+          },
+          {
             key: "X-Frame-Options",
             value: "DENY",
           },

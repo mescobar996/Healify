@@ -239,6 +239,7 @@ model HealingEvent {
 
   @@index([testRunId])
   @@index([status])
+  @@index([status, createdAt])   // analytics: filter by status + date range
   @@map("healing_events")
 }
 

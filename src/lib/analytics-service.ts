@@ -15,69 +15,97 @@ export class AnalyticsService {
     private readonly DEV_HOURLY_RATE = 65
 
     async getProjectAnalytics(projectId: string): Promise<ProjectAnalytics> {
-        const healingEvents = await db.healingEvent.findMany({
-            where: {
-                testRun: { projectId },
-                status: { in: ['HEALED_AUTO', 'HEALED_MANUAL'] }
-            },
-            select: {
-                createdAt: true
-            }
-        })
-
-        const healingEventsCount = healingEvents.length
-        const timeSavedMinutes = healingEventsCount * this.MINUTES_SAVED_PER_HEALING
-        const roiCurrency = (timeSavedMinutes / 60) * this.DEV_HOURLY_RATE
-
-        // Calculate real trend for last 7 days
-        const healingTrend: { date: string; count: number }[] = []
         const now = new Date()
 
+        // 1 SQL query: healing trend for the last 7 days grouped by date
+        const trendRows = await db.$queryRaw<{ date: string; count: bigint }[]>`
+            SELECT DATE(he.created_at)::text AS date, COUNT(*) AS count
+            FROM healing_events he
+            JOIN test_runs tr ON he.test_run_id = tr.id
+            WHERE tr.project_id = ${projectId}
+              AND he.status IN ('HEALED_AUTO', 'HEALED_MANUAL')
+              AND he.created_at >= NOW() - INTERVAL '7 days'
+            GROUP BY DATE(he.created_at)
+            ORDER BY date
+        `
+
+        // Build full 7-day healing trend (fill missing days with 0)
+        const trendMap = new Map(trendRows.map(r => [r.date, Number(r.count)]))
+        const healingTrend: { date: string; count: number }[] = []
+        let healingEventsCount = 0
+
         for (let i = 6; i >= 0; i--) {
-            const date = new Date(now)
-            date.setDate(date.getDate() - i)
-            const dateStr = date.toISOString().split('T')[0]
-
-            const count = healingEvents.filter(event =>
-                event.createdAt.toISOString().split('T')[0] === dateStr
-            ).length
-
+            const d = new Date(now)
+            d.setDate(d.getDate() - i)
+            const dateStr = d.toISOString().split('T')[0]
+            const count = trendMap.get(dateStr) ?? 0
+            healingEventsCount += count
             healingTrend.push({ date: dateStr, count })
         }
 
-        // Calculate AI Accuracy based on HealingStatus
-        const totalHealingEvents = await db.healingEvent.count({
-            where: { testRun: { projectId }, status: { not: 'ANALYZING' } }
-        })
-        const autoHealedCount = await db.healingEvent.count({
-            where: { testRun: { projectId }, status: 'HEALED_AUTO' }
+        // 1 groupBy query: all-time counts per status (replaces 2 separate COUNT queries)
+        const statusCounts = await db.healingEvent.groupBy({
+            by: ['status'],
+            where: { testRun: { projectId }, status: { not: 'ANALYZING' } },
+            _count: { status: true },
         })
 
-        const aiAccuracyScore = totalHealingEvents > 0
-            ? Math.round((autoHealedCount / totalHealingEvents) * 100)
-            : 0
+        const totalHealingEvents = statusCounts.reduce((s, r) => s + r._count.status, 0)
+        const autoHealedTotal =
+            statusCounts.find(r => r.status === 'HEALED_AUTO')?._count.status ?? 0
+
+        const aiAccuracyScore =
+            totalHealingEvents > 0
+                ? Math.round((autoHealedTotal / totalHealingEvents) * 100)
+                : 0
+
+        const timeSavedMinutes = autoHealedTotal * this.MINUTES_SAVED_PER_HEALING
+        const roiCurrency = (timeSavedMinutes / 60) * this.DEV_HOURLY_RATE
+
+        // 1 SQL query: real daily accuracy (auto-healed / all non-ANALYZING) for trend
+        const accuracyRows = await db.$queryRaw<
+            { date: string; auto_count: bigint; total_count: bigint }[]
+        >`
+            SELECT
+                DATE(he.created_at)::text AS date,
+                COUNT(*) FILTER (WHERE he.status = 'HEALED_AUTO')  AS auto_count,
+                COUNT(*) FILTER (WHERE he.status != 'ANALYZING')   AS total_count
+            FROM healing_events he
+            JOIN test_runs tr ON he.test_run_id = tr.id
+            WHERE tr.project_id = ${projectId}
+              AND he.status != 'ANALYZING'
+              AND he.created_at >= NOW() - INTERVAL '7 days'
+            GROUP BY DATE(he.created_at)
+            ORDER BY date
+        `
+
+        const accuracyMap = new Map(
+            accuracyRows.map(r => [
+                r.date,
+                Number(r.total_count) > 0
+                    ? Math.round((Number(r.auto_count) / Number(r.total_count)) * 100)
+                    : aiAccuracyScore,
+            ])
+        )
 
         const aiAccuracyTrend: { date: string; accuracy: number }[] = []
         for (let i = 6; i >= 0; i--) {
-            const date = new Date(now)
-            date.setDate(date.getDate() - i)
-            const dateStr = date.toISOString().split('T')[0]
-
-            // Random variation around the actual score for the trend
-            const dailyVariation = Math.floor(Math.random() * 10) - 5
+            const d = new Date(now)
+            d.setDate(d.getDate() - i)
+            const dateStr = d.toISOString().split('T')[0]
             aiAccuracyTrend.push({
                 date: dateStr,
-                accuracy: Math.max(0, Math.min(100, aiAccuracyScore + dailyVariation))
+                accuracy: accuracyMap.get(dateStr) ?? aiAccuracyScore,
             })
         }
 
         return {
             timeSavedMinutes,
             roiCurrency,
-            flakyTestsCount: Math.floor(healingEventsCount / 3),
+            flakyTestsCount: Math.floor(autoHealedTotal / 3),
             healingTrend,
             aiAccuracyTrend,
-            testReliabilityScore: Math.round(85 + Math.random() * 5),
+            testReliabilityScore: Math.min(100, 60 + Math.round(aiAccuracyScore * 0.4)),
             aiAccuracyScore,
         }
     }
