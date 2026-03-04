@@ -1,5 +1,6 @@
 import { getSessionUser } from '@/lib/auth/session'
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 
 export default async function AuthErrorPage({
   searchParams,
@@ -15,18 +16,42 @@ export default async function AuthErrorPage({
   const params = await searchParams
   const error = params?.error
 
-  const errorMessages: Record<string, string> = {
-    Callback: 'OAuth callback error. Check if GitHub OAuth app callback URL is correctly configured.',
-    OAuthSignin: 'Error constructing OAuth sign-in URL.',
-    OAuthCallback: 'Error handling OAuth callback.',
-    OAuthCreateAccount: 'Could not create account.',
-    EmailCreateAccount: 'Could not create account with email.',
-    CallbackRouteError: 'Callback route error.',
-    CredentialsSignin: 'Invalid credentials.',
-    Default: 'An authentication error occurred.',
+  const errorMessages: Record<string, { title: string; detail: string }> = {
+    Callback: {
+      title: 'Error en el callback de OAuth',
+      detail: 'Verificá que la URL de callback en tu app de GitHub sea correcta.',
+    },
+    OAuthSignin: {
+      title: 'Error al iniciar sesión',
+      detail: 'No se pudo construir la URL de OAuth. Intentá de nuevo.',
+    },
+    OAuthCallback: {
+      title: 'Error al procesar respuesta de GitHub',
+      detail: 'GitHub respondió con un error. Probá de nuevo en unos segundos.',
+    },
+    OAuthCreateAccount: {
+      title: 'No se pudo crear la cuenta',
+      detail: 'Ocurrió un problema al registrar tu cuenta. Contactá soporte si persiste.',
+    },
+    EmailCreateAccount: {
+      title: 'No se pudo crear la cuenta',
+      detail: 'Error al crear la cuenta con email.',
+    },
+    CallbackRouteError: {
+      title: 'Error en la ruta de callback',
+      detail: 'El servidor encontró un problema procesando la autenticación.',
+    },
+    CredentialsSignin: {
+      title: 'Credenciales inválidas',
+      detail: 'Verificá tus datos e intentá nuevamente.',
+    },
+    Default: {
+      title: 'Error de autenticación',
+      detail: 'Ocurrió un error inesperado. Intentá de nuevo o contactá soporte.',
+    },
   }
 
-  const errorMessage = errorMessages[error || 'Default'] || errorMessages.Default
+  const msg = errorMessages[error || 'Default'] || errorMessages.Default
 
   return (
     <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center px-4">
@@ -45,38 +70,63 @@ export default async function AuthErrorPage({
             </svg>
           </div>
           <h1 className="text-2xl font-semibold text-white tracking-tight">
-            Authentication Error
+            {msg.title}
           </h1>
         </div>
 
         {/* Error Card */}
         <div className="bg-zinc-900/50 border border-red-500/20 rounded-2xl p-6 backdrop-blur-sm">
           <div className="text-center mb-6">
-            <p className="text-red-400 text-sm font-mono mb-4">
-              {error ? `Error: ${error}` : 'Unknown error'}
-            </p>
-            <p className="text-zinc-400 text-sm">
-              {errorMessage}
+            {error && (
+              <p className="text-red-400 text-sm font-mono mb-3">
+                Código: {error}
+              </p>
+            )}
+            <p className="text-zinc-400 text-sm leading-relaxed">
+              {msg.detail}
             </p>
           </div>
 
-          {/* Debug Info */}
-          <div className="bg-zinc-800/50 rounded-lg p-4 mb-6">
-            <p className="text-xs text-zinc-500 mb-2">Required configuration:</p>
-            <ul className="text-xs text-zinc-400 space-y-1">
-              <li>• GITHUB_CLIENT_ID must be set</li>
-              <li>• GITHUB_CLIENT_SECRET must be set</li>
-              <li>• NEXTAUTH_URL must be set to this domain</li>
-              <li>• GitHub OAuth callback: /api/auth/callback/github</li>
-            </ul>
+          {/* Debug Info (collapsed by default) */}
+          <details className="group mb-6">
+            <summary className="cursor-pointer text-xs text-zinc-500 hover:text-zinc-400 transition-colors select-none">
+              Información técnica
+            </summary>
+            <div className="mt-2 bg-zinc-800/50 rounded-lg p-4">
+              <p className="text-xs text-zinc-500 mb-2">Configuración requerida:</p>
+              <ul className="text-xs text-zinc-400 space-y-1">
+                <li>• GITHUB_CLIENT_ID configurado</li>
+                <li>• GITHUB_CLIENT_SECRET configurado</li>
+                <li>• NEXTAUTH_URL apuntando a este dominio</li>
+                <li>• Callback URL: /api/auth/callback/github</li>
+              </ul>
+            </div>
+          </details>
+
+          <div className="space-y-3">
+            <a 
+              href="/auth/signin"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl font-medium text-white transition-all duration-200"
+            >
+              Intentar de nuevo
+            </a>
+            <Link
+              href="/"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm text-zinc-400 hover:text-white transition-colors"
+            >
+              Volver al inicio
+            </Link>
           </div>
 
-          <a 
-            href="/auth/signin"
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl font-medium text-white transition-all duration-200"
-          >
-            Try Again
-          </a>
+          <p className="text-center text-[11px] text-zinc-600 mt-4">
+            ¿Sigue sin funcionar?{' '}
+            <a
+              href="mailto:support@healify.dev?subject=Auth%20Error%20-%20${error}"
+              className="text-zinc-400 hover:text-white underline underline-offset-2 transition-colors"
+            >
+              Contactar soporte
+            </a>
+          </p>
         </div>
       </div>
     </div>

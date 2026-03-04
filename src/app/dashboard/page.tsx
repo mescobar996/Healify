@@ -6,20 +6,12 @@ import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
   CheckCircle2,
-  XCircle,
-  Clock,
   Zap,
   TrendingUp,
   AlertTriangle,
   ChevronRight,
-  ArrowUpDown,
   RefreshCw,
   Play,
-  DollarSign,
-  Sparkles,
-  ShieldCheck,
-  Timer,
-  Download,
   TestTube2,
   FolderKanban,
   BookOpen,
@@ -28,14 +20,6 @@ import {
   Wrench,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  ResponsiveContainer,
-  Tooltip,
-} from "recharts";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -45,11 +29,13 @@ import { TestDetailSheet } from "@/components/TestDetailSheet";
 import { ActivityFeed } from "@/components/ActivityFeed";
 // OnboardingBanner moved to /dashboard/projects empty state
 import { MetricCard } from "@/components/dashboard/MetricCard";
-import { StatusBadge } from "@/components/dashboard/StatusBadge";
-import { ConfidenceBar } from "@/components/dashboard/ConfidenceBar";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { ErrorState } from "@/components/dashboard/ErrorState";
+import { HealingTrendChart } from "@/components/dashboard/HealingTrendChart";
+import { HealingHistoryList } from "@/components/dashboard/HealingHistoryList";
+import { RoiStrip } from "@/components/dashboard/RoiStrip";
 import { toast } from "sonner";
+import { trackEvent } from "@/lib/track";
 import { executeTestRun } from "@/lib/actions";
 import type {
   DashboardData,
@@ -159,6 +145,7 @@ function DashboardContent() {
   }
 
   const handleExportRoi = (format: 'csv' | 'pdf') => {
+    trackEvent("roi_export", { format });
     const a = document.createElement('a')
     a.href = `/api/analytics/export?format=${format}`
     a.download = ''
@@ -197,6 +184,7 @@ function DashboardContent() {
 
   useEffect(() => {
     fetchDashboard();
+    trackEvent("dashboard_view");
   }, []);
 
 
@@ -204,6 +192,7 @@ function DashboardContent() {
   // Handler: Run Tests
   const handleRunTests = async () => {
     setIsRunning(true);
+    trackEvent("run_tests_click");
     try {
       // Get projects to find one with a connected repository
       const res = await fetch('/api/projects', { credentials: 'include' });
@@ -251,6 +240,7 @@ function DashboardContent() {
 
   // Handler: Open test detail
   const handleOpenDetail = (item: HealingHistoryItem) => {
+    trackEvent("healing_detail_open", { itemId: item.id, status: item.status });
     setSelectedItem(item);
     setSheetOpen(true);
   };
@@ -404,7 +394,7 @@ function DashboardContent() {
           </div>
         </div>
 
-        <Tabs defaultValue="overview" className="space-y-4">
+        <Tabs defaultValue="overview" className="space-y-4" onValueChange={(tab) => trackEvent("dashboard_tab", { tab })}>
           <TabsList className="bg-[#111111] border border-white/[0.08] h-10 w-full sm:w-fit justify-start overflow-x-auto">
             <TabsTrigger value="overview" className="data-[state=active]:bg-[#1A1A1A] data-[state=active]:text-[#EDEDED] gap-1.5 text-[13px]">
               <BarChart3 className="w-3.5 h-3.5" />
@@ -455,97 +445,7 @@ function DashboardContent() {
         </div>
 
         {/* ROI Strip — Bloque 7 */}
-        {roi && (
-          <div className="rounded-lg border border-white/[0.07] bg-[#111111] overflow-hidden">
-            <div className="px-4 py-2.5 border-b border-[var(--border-subtle)] flex items-center gap-2">
-              <Sparkles className="w-3.5 h-3.5 text-[var(--accent-primary)]" />
-              <span className="text-[11px] font-medium tracking-widest text-[var(--text-tertiary)] uppercase">
-                ROI de Healify — acumulado histórico
-              </span>
-              <div className="ml-auto flex items-center gap-2">
-                <button
-                  onClick={() => handleExportRoi('csv')}
-                  className="inline-flex items-center gap-1 text-[11px] text-[var(--text-secondary)] hover:text-[var(--accent-primary)] transition-colors"
-                >
-                  <Download className="w-3 h-3" />
-                  CSV
-                </button>
-                <button
-                  onClick={() => handleExportRoi('pdf')}
-                  className="inline-flex items-center gap-1 text-[11px] text-[var(--text-secondary)] hover:text-[var(--accent-primary)] transition-colors"
-                >
-                  <Download className="w-3 h-3" />
-                  PDF
-                </button>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-0 divide-y md:divide-y-0 divide-x-0 md:divide-x divide-[var(--border-subtle)]">
-              {/* Horas ahorradas */}
-              <div className="px-5 py-4 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ background: '#1A1A1A' }}>
-                  <Timer className="w-4 h-4 text-white" />
-                </div>
-                <div>
-                  <p className="text-lg font-bold text-[var(--text-primary)] leading-none">
-                    {roi.timeSavedHours > 0 ? `${roi.timeSavedHours}h` : '—'}
-                  </p>
-                  <p className="text-[10px] text-[var(--text-tertiary)] mt-0.5">horas ahorradas</p>
-                </div>
-              </div>
-              {/* Ahorro en $ */}
-              <div className="px-5 py-4 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ background: '#1A1A1A' }}>
-                  <DollarSign className="w-4 h-4 text-white" />
-                </div>
-                <div>
-                  <p className="text-lg font-bold text-[var(--text-primary)] leading-none">
-                    {roi.totalCostSaved > 0 ? `$${roi.totalCostSaved.toLocaleString()}` : '—'}
-                  </p>
-                  <p className="text-[10px] text-[var(--text-tertiary)] mt-0.5">ahorro estimado</p>
-                </div>
-              </div>
-              {/* Tests autocurados este mes */}
-              <div className="px-5 py-4 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ background: '#1A1A1A' }}>
-                  <ShieldCheck className="w-4 h-4 text-white" />
-                </div>
-                <div>
-                  <p className="text-lg font-bold text-[var(--text-primary)] leading-none">
-                    {roi.autoHealedMonth > 0 ? roi.autoHealedMonth : '—'}
-                  </p>
-                  <p className="text-[10px] text-[var(--text-tertiary)] mt-0.5">curados este mes</p>
-                </div>
-              </div>
-              {/* Tasa de autocuración */}
-              <div className="px-5 py-4 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ background: '#1A1A1A' }}>
-                  <TrendingUp className="w-4 h-4 text-yellow-400" />
-                </div>
-                <div>
-                  <p className="text-lg font-bold text-[var(--text-primary)] leading-none">
-                    {roi.healingRate > 0 ? `${roi.healingRate}%` : '—'}
-                  </p>
-                  <p className="text-[10px] text-[var(--text-tertiary)] mt-0.5">tasa autocuración</p>
-                </div>
-              </div>
-            </div>
-            {/* Empty state si no hay datos todavía */}
-            {roi.timeSavedHours === 0 && roi.autoHealedMonth === 0 && (
-              <div className="px-5 py-3 border-t border-[var(--border-subtle)]">
-                <p className="text-[11px] text-[var(--text-tertiary)] text-center">
-                  Los datos de ROI aparecerán cuando Healify cure su primer test · 
-                  <a href="/dashboard/projects" className="text-[var(--accent-primary)]/70 hover:text-[var(--accent-primary)] transition-colors ml-1">
-                    Conectá tu primer repo →
-                  </a>
-                </p>
-              </div>
-            )}
-          </div>
-        )}
+        {roi && <RoiStrip roi={roi} onExport={handleExportRoi} />}
 
         {/* Weekly Report Status */}
         {weeklyStatus && (
@@ -599,80 +499,7 @@ function DashboardContent() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 lg:gap-4">
           {/* Chart Section */}
           <div className="lg:col-span-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-card)] p-4">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="text-sm font-medium text-[var(--text-primary)]">
-                  Tendencia de Curación
-                </h2>
-                <p className="text-xs text-[var(--text-secondary)] mt-0.5">Últimos 7 días</p>
-              </div>
-              <div className="flex items-center gap-4 text-xs">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full bg-white" />
-                  <span className="text-[var(--text-secondary)]">Curados</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full bg-red-500" />
-                  <span className="text-[var(--text-secondary)]">Rotos</span>
-                </div>
-              </div>
-            </div>
-
-            {data.chartData.length === 0 ? (
-              <EmptyState
-                title="Sin datos de gráfico"
-                description="Los datos aparecerán cuando se ejecuten tests"
-              />
-            ) : (
-              <div className="h-48">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={data.chartData}>
-                    <defs>
-                      <linearGradient id="healingGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#FFFFFF" stopOpacity={0.15} />
-                        <stop offset="95%" stopColor="#FFFFFF" stopOpacity={0} />
-                      </linearGradient>
-                      <linearGradient id="brokenGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#E85C4A" stopOpacity={0.15} />
-                        <stop offset="95%" stopColor="#E85C4A" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <XAxis
-                      dataKey="date"
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fill: "#6b7280", fontSize: 11 }}
-                    />
-                    <YAxis hide />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "#1a1a1c",
-                        border: "1px solid rgba(255,255,255,0.1)",
-                        borderRadius: "6px",
-                        fontSize: "12px",
-                      }}
-                      labelStyle={{ color: "#fff" }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="curados"
-                      stroke="#FFFFFF"
-                      strokeWidth={2}
-                      fillOpacity={1}
-                      fill="url(#healingGrad)"
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="testsRotos"
-                      stroke="#E85C4A"
-                      strokeWidth={2}
-                      fillOpacity={1}
-                      fill="url(#brokenGrad)"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            )}
+            <HealingTrendChart chartData={data.chartData} />
           </div>
 
           {/* Fragile Selectors */}
@@ -729,121 +556,7 @@ function DashboardContent() {
           <ActivityFeed limit={5} />
 
           {/* Healing History List - Linear Style */}
-          <div className="rounded-lg border border-[var(--border-default)] bg-[var(--bg-card)]">
-          {/* List Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-subtle)]">
-            <div className="flex items-center gap-3">
-              <h2 className="text-sm font-medium text-[var(--text-primary)]">
-                Últimas Curaciones
-              </h2>
-              <span className="text-[10px] text-[var(--text-tertiary)] bg-[var(--bg-elevated)] px-1.5 py-0.5 rounded">
-                {data.healingHistory.length}
-              </span>
-            </div>
-            <button className="min-h-[44px] px-2 inline-flex items-center gap-1 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
-              <ArrowUpDown className="w-3 h-3" />
-              Ordenar
-            </button>
-          </div>
-
-          {/* List Items */}
-          {data.healingHistory.length === 0 ? (
-            <div className="px-4 py-8">
-              <EmptyState
-                title="No hay eventos de curación"
-                description="Los eventos aparecerán cuando se ejecuten tests con fallos"
-              />
-            </div>
-          ) : (
-            <div className="divide-y divide-[var(--border-subtle)]">
-              {data.healingHistory.map((item, index) => (
-                <motion.div
-                  key={item.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: index * 0.03 }}
-                >
-                  <button
-                    onClick={() => handleOpenDetail(item)}
-                    className="group w-full px-4 py-3 hover:bg-[var(--bg-hover)] transition-colors duration-150 text-left"
-                  >
-                    <div className="flex items-start gap-3">
-                      {/* Status Icon */}
-                      <div className="flex-shrink-0 mt-0.5">
-                        {item.status === "curado" ? (
-                          <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center">
-                            <CheckCircle2 className="w-3 h-3 text-white" />
-                          </div>
-                        ) : item.status === "fallido" ? (
-                          <div className="w-5 h-5 rounded-full bg-red-500/10 flex items-center justify-center">
-                            <XCircle className="w-3 h-3 text-red-400" />
-                          </div>
-                        ) : (
-                          <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center">
-                            <Clock className="w-3 h-3 text-white" />
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-[var(--text-primary)] truncate transition-colors">
-                          {item.testName}
-                        </p>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <code className="text-[11px] text-[var(--text-tertiary)] font-mono truncate max-w-[100px] sm:max-w-[200px]">
-                            {item.oldSelector}
-                          </code>
-                          {item.newSelector && (
-                            <>
-                              <ChevronRight className="w-3 h-3 text-[var(--text-tertiary)] flex-shrink-0" />
-                              <code className="text-[11px] text-white font-mono truncate max-w-[100px] sm:max-w-[200px]">
-                                {item.newSelector}
-                              </code>
-                            </>
-                          )}
-                        </div>
-
-                        <div className="flex md:hidden items-center gap-2 mt-1.5">
-                          <StatusBadge status={item.status} />
-                          <span className="text-[10px] text-[var(--text-secondary)] font-mono">
-                            {item.confidence}%
-                          </span>
-                          <span className="text-[10px] text-[var(--text-tertiary)]">{item.timestamp}</span>
-                        </div>
-                      </div>
-
-                      {/* Desktop Metadata */}
-                      <div className="hidden md:flex items-center gap-4 flex-shrink-0">
-                        <ConfidenceBar confidence={item.confidence} />
-                        <StatusBadge status={item.status} />
-                        <span className="text-[11px] text-[var(--text-tertiary)] w-20 text-right">
-                          {item.timestamp}
-                        </span>
-                      </div>
-
-                      {/* Arrow */}
-                      <ChevronRight className="hidden md:block w-4 h-4 text-[var(--text-tertiary)] opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
-                    </div>
-                  </button>
-                </motion.div>
-              ))}
-            </div>
-          )}
-
-          {/* List Footer */}
-          {data.healingHistory.length > 0 && (
-            <div className="px-4 py-3 border-t border-[var(--border-subtle)]">
-              <Link
-                href="/dashboard/tests"
-                className="flex items-center justify-center gap-1 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-              >
-                Ver todos los tests
-                <ChevronRight className="w-3 h-3" />
-              </Link>
-            </div>
-          )}
-          </div>
+          <HealingHistoryList items={data.healingHistory} onOpenDetail={handleOpenDetail} />
         </div>
         </TabsContent>
 
@@ -868,37 +581,7 @@ function DashboardContent() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 lg:gap-4">
             <div className="lg:col-span-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-card)] p-4">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h2 className="text-sm font-medium text-[var(--text-primary)]">Tendencia de Curación</h2>
-                  <p className="text-xs text-[var(--text-secondary)] mt-0.5">Últimos 7 días</p>
-                </div>
-              </div>
-
-              {data.chartData.length === 0 ? (
-                <EmptyState title="Sin datos de análisis" description="Ejecutá tests para activar insights" />
-              ) : (
-                <div className="h-48">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={data.chartData}>
-                      <defs>
-                        <linearGradient id="healingGradAnalysis" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#FFFFFF" stopOpacity={0.15} />
-                          <stop offset="95%" stopColor="#FFFFFF" stopOpacity={0} />
-                        </linearGradient>
-                        <linearGradient id="brokenGradAnalysis" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#E85C4A" stopOpacity={0.15} />
-                          <stop offset="95%" stopColor="#E85C4A" stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "#6b7280", fontSize: 11 }} />
-                      <YAxis hide />
-                      <Area type="monotone" dataKey="curados" stroke="#FFFFFF" strokeWidth={2} fillOpacity={1} fill="url(#healingGradAnalysis)" />
-                      <Area type="monotone" dataKey="testsRotos" stroke="#E85C4A" strokeWidth={2} fillOpacity={1} fill="url(#brokenGradAnalysis)" />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
+              <HealingTrendChart chartData={data.chartData} gradientSuffix="Analysis" />
             </div>
 
             <div className="rounded-lg border border-[var(--border-default)] bg-[var(--bg-card)] p-4">
