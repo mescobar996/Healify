@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
       where.testRunId = testRunId;
     }
     if (projectId) {
-      where.testRun = { projectId };
+      where.testRun = { ...where.testRun, projectId };
     }
     if (status && Object.values(HealingStatus).includes(status)) {
       where.status = status;
@@ -66,9 +66,10 @@ export async function GET(request: NextRequest) {
 
     const total = await db.healingEvent.count({ where });
 
-    // Get summary statistics
+    // Get summary statistics — scoped to current user
     const stats = await db.healingEvent.groupBy({
       by: ['status'],
+      where,
       _count: true,
     });
 

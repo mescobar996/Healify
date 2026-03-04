@@ -126,8 +126,12 @@ export async function getTestRuns(params?: {
   status?: string
 }) {
   try {
+    const user = await getSessionUser()
+    if (!user?.id) return []
+
     const runs = await db.testRun.findMany({
       where: {
+        project: { userId: user.id },
         ...(params?.projectId && { projectId: params.projectId }),
         ...(params?.status && { status: params.status as TestStatus }),
       },

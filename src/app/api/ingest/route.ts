@@ -1,14 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { db } from '@/lib/db'
 import { addTestJob } from '@/lib/queue'
 import { extractApiKey, validateApiKey } from '@/lib/api-key-service'
 import { sanitizeCommitSha, sanitizeGitBranch } from '@/lib/repo-validation'
 import { apiError } from '@/lib/api-response'
 import { analyzeBrokenSelector } from '@/lib/ai/healing-service'
+import { checkApiReportRateLimit } from '@/lib/rate-limit'
+
+const MAX_DOM_SNAPSHOT_BYTES = 500_000 // 500 KB
+
+const IngestSchema = z.object({
+    apiKey:         z.string().max(256).optional(),
+    testName:       z.string().min(1, 'testName required').max(500),
+    testFile:       z.string().max(500).optional(),
+    failedSelector: z.string().max(2000).optional(),
+    errorMessage:   z.string().max(5000).optional(),
+    domSnapshot:    z.string().max(MAX_DOM_SNAPSHOT_BYTES).optional(),
+    branch:         z.string().max(250).optional(),
+    commitSha:      z.string().max(40).optional(),
+})
 
 export async function POST(request: NextRequest) {
     try {
-        const body = await request.json()
+        // ── Parse and validate body with Zod ─────────────────────────────
+        let body: z.infer<typeof IngestSchema>
+        try {
+            body = IngestSchema.parse(await request.json())
+        } catch (err) {
+            if (err instanceof z.ZodError) {
+                return apiError(request, 400, 'Invalid payload', { code: 'INVALID_PAYLOAD', details: err.issues })
+            }
+            return apiError(request, 400, 'Malformed JSON', { code: 'INVALID_JSON' })
+        }
+
         const { apiKey: apiKeyFromBody, testName, testFile, failedSelector, errorMessage, domSnapshot, branch, commitSha } = body
 
         const apiKey = extractApiKey(request) || (typeof apiKeyFromBody === 'string' ? apiKeyFromBody : null)
@@ -18,8 +43,18 @@ export async function POST(request: NextRequest) {
             return apiError(request, 401, 'Invalid API Key', { code: 'INVALID_API_KEY' })
         }
 
-        if (typeof testName !== 'string' || testName.trim().length === 0) {
-            return apiError(request, 400, 'Invalid testName', { code: 'INVALID_TEST_NAME' })
+        // ── Rate limit (same window as /api/v1/report) ───────────────────
+        const rl = await checkApiReportRateLimit(validation.projectId)
+        if (!rl.allowed) {
+            return apiError(request, 429, `Rate limit exceeded (${rl.plan} plan: ${rl.limit}/min)`, {
+                code: 'RATE_LIMITED',
+                details: {
+                    plan: rl.plan,
+                    limit: rl.limit,
+                    remaining: rl.remaining,
+                    resetInMs: rl.resetInMs,
+                },
+            })
         }
 
         const safeBranch = branch ? sanitizeGitBranch(branch) : null

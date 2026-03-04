@@ -208,7 +208,8 @@ function DashboardContent() {
       // Get projects to find one with a connected repository
       const res = await fetch('/api/projects', { credentials: 'include' });
       if (!res.ok) throw new Error('No se pudo obtener los proyectos');
-      const projects: Array<{ id: string; name: string; repository: string | null }> = await res.json();
+      const raw = await res.json();
+      const projects: Array<{ id: string; name: string; repository: string | null }> = Array.isArray(raw) ? raw : (raw?.data ?? []);
 
       if (!projects?.length) {
         toast.error('No tenés proyectos', {

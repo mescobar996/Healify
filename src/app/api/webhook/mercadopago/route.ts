@@ -72,8 +72,12 @@ export async function POST(req: NextRequest) {
       console.warn('[MP Webhook] Invalid signature')
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
     }
+  } else if (process.env.NODE_ENV === 'production') {
+    // In production, NEVER process payment webhooks without signature verification
+    console.error('[MP Webhook] MERCADOPAGO_WEBHOOK_SECRET not configured in production — rejecting')
+    return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 })
   } else {
-    console.warn('[MP Webhook] MERCADOPAGO_WEBHOOK_SECRET not configured — signature verification skipped')
+    console.warn('[MP Webhook] MERCADOPAGO_WEBHOOK_SECRET not configured — signature verification skipped (dev only)')
   }
 
   try {

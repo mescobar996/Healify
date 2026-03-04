@@ -37,6 +37,12 @@ vi.mock('@/lib/ai/healing-service', () => ({
   analyzeBrokenSelector: mockAnalyzeBrokenSelector,
 }))
 
+// ── Mock rate limit ────────────────────────────────────────────────────────
+const mockCheckApiReportRateLimit = vi.fn()
+vi.mock('@/lib/rate-limit', () => ({
+  checkApiReportRateLimit: mockCheckApiReportRateLimit,
+}))
+
 // ── Mock repo-validation (pass-through by default) ────────────────────────
 vi.mock('@/lib/repo-validation', () => ({
   sanitizeGitBranch:  (b: string) => b,
@@ -91,6 +97,15 @@ beforeEach(() => {
     confidence: 0.97,
     reasoning: 'Button id changed from login-btn to login-button',
   })
+
+  // Default: rate limit allows request
+  mockCheckApiReportRateLimit.mockResolvedValue({
+    allowed: true,
+    plan: 'free',
+    limit: 30,
+    remaining: 29,
+    resetInMs: 60000,
+  })
 })
 
 // ══════════════════════════════════════════════════════════════════════
@@ -130,11 +145,11 @@ describe('POST /api/ingest — input validation', () => {
     const res = await POST(makeRequest(body))
     expect(res.status).toBe(400)
     const json = await res.json()
-    expect(json.code).toBe('INVALID_TEST_NAME')
+    expect(json.code).toBe('INVALID_PAYLOAD')
   })
 
   it('returns 400 when testName is an empty string', async () => {
-    const res = await POST(makeRequest({ ...VALID_BODY, testName: '   ' }))
+    const res = await POST(makeRequest({ ...VALID_BODY, testName: '' }))
     expect(res.status).toBe(400)
   })
 

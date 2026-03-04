@@ -380,46 +380,32 @@ export class DashboardService {
   }
 
   /**
-   * Selectores más frágiles
+   * Selectores más frágiles — aggregated in SQL to avoid loading all events into memory
    */
   private async getFragileSelectors(userId: string, limit: number): Promise<FragileSelector[]> {
-    // Obtener todos los healing events del usuario
-    const events = await db.healingEvent.findMany({
-      where: {
-        testRun: { project: { userId } }
-      },
-      select: {
-        failedSelector: true,
-        status: true,
-      }
-    })
+    const rows = await db.$queryRaw<
+      { selector: string; failures: bigint; total: bigint }[]
+    >`
+      SELECT
+        he.failed_selector AS selector,
+        COUNT(*) FILTER (WHERE he.status IN ('NEEDS_REVIEW', 'BUG_DETECTED')) AS failures,
+        COUNT(*) AS total
+      FROM healing_events he
+      JOIN test_runs tr ON he.test_run_id = tr.id
+      JOIN projects   p  ON tr.project_id  = p.id
+      WHERE p.user_id = ${userId}
+      GROUP BY he.failed_selector
+      ORDER BY failures DESC
+      LIMIT ${limit}
+    `
 
-    // Agrupar por selector y contar fallos
-    const selectorMap = new Map<string, { failures: number; total: number }>()
-
-    events.forEach(event => {
-      const selector = event.failedSelector
-      const current = selectorMap.get(selector) || { failures: 0, total: 0 }
-      current.total++
-      if (event.status === 'NEEDS_REVIEW' || event.status === 'BUG_DETECTED') {
-        current.failures++
-      }
-      selectorMap.set(selector, current)
-    })
-
-    // Convertir a array y ordenar por fallos
-    const selectors = Array.from(selectorMap.entries())
-      .map(([selector, data]) => ({
-        selector,
-        failures: data.failures,
-        successRate: data.total > 0 
-          ? Math.round(((data.total - data.failures) / data.total) * 100)
-          : 100
-      }))
-      .sort((a, b) => b.failures - a.failures)
-      .slice(0, limit)
-
-    return selectors
+    return rows.map(r => ({
+      selector: r.selector,
+      failures: Number(r.failures),
+      successRate: Number(r.total) > 0
+        ? Math.round(((Number(r.total) - Number(r.failures)) / Number(r.total)) * 100)
+        : 100,
+    }))
   }
 
   /**
