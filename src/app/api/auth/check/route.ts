@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
+import { db } from '@/lib/db'
 
 /**
  * GET /api/auth/check
- * Lightweight diagnostic endpoint for OAuth configuration.
- * Shows only non-sensitive info: which vars are SET (not their values).
- * Safe for temporary production use.
+ * Diagnostic endpoint for OAuth configuration + DB adapter health.
+ * Shows non-sensitive info: which vars are SET (not their values).
  */
 export async function GET() {
   const githubId = process.env.GITHUB_CLIENT_ID || process.env.GITHUB_ID
@@ -15,9 +15,20 @@ export async function GET() {
   const nextauthUrl = process.env.NEXTAUTH_URL
   const vercelUrl = process.env.VERCEL_URL
 
-  // What NextAuth will resolve as the base URL
   const resolvedBaseUrl = nextauthUrl
     || (vercelUrl ? `https://${vercelUrl}` : 'http://localhost:3000')
+
+  // Test database connectivity (the adapter needs this to work)
+  let dbStatus = '❌ UNKNOWN'
+  let userCount = 0
+  let accountCount = 0
+  try {
+    userCount = await db.user.count()
+    accountCount = await db.account.count()
+    dbStatus = `✅ Connected (${userCount} users, ${accountCount} accounts)`
+  } catch (err) {
+    dbStatus = `❌ FAILED: ${err instanceof Error ? err.message : String(err)}`
+  }
 
   return NextResponse.json({
     timestamp: new Date().toISOString(),
@@ -28,6 +39,7 @@ export async function GET() {
       DATABASE_URL:     process.env.DATABASE_URL      ? '✅ SET' : '❌ NOT SET',
       REDIS_URL:        process.env.REDIS_URL         ? '✅ SET' : '❌ NOT SET',
     },
+    database: dbStatus,
     providers: {
       github: {
         clientId:     githubId     ? `✅ ${githubId.substring(0, 6)}...` : '❌ NOT SET',
