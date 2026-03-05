@@ -159,8 +159,27 @@ async function rateLimitedHandler(
   }
   // Await params before forwarding — Next.js 16+ makes params a Promise
   const resolvedCtx = { params: await ctx.params }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (handler as any)(req, resolvedCtx)
+
+  // Diagnostic logging for OAuth callbacks
+  const route = resolvedCtx.params.nextauth?.join('/') ?? ''
+  if (route.startsWith('callback')) {
+    console.log(`[Auth] OAuth callback: ${req.method} ${route}`, {
+      url: req.url,
+      hasCode: req.nextUrl.searchParams.has('code'),
+      hasState: req.nextUrl.searchParams.has('state'),
+      hasError: req.nextUrl.searchParams.get('error'),
+      NEXTAUTH_URL_SET: !!process.env.NEXTAUTH_URL,
+      VERCEL_URL: process.env.VERCEL_URL ?? 'NOT SET',
+    })
+  }
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return await (handler as any)(req, resolvedCtx)
+  } catch (err) {
+    console.error(`[Auth] Handler error on ${req.method} /${route}:`, err)
+    throw err
+  }
 }
 
 export { rateLimitedHandler as GET, rateLimitedHandler as POST }
