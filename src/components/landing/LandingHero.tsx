@@ -70,7 +70,7 @@ export default function LandingHero() {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="text-4xl sm:text-7xl lg:text-8xl font-bold tracking-tight text-[#EDEDED] font-heading"
           >
-            <TypewriterText text="Tests That Heal Themselves" speed={80} />
+            <TypewriterText text="Tests que se curan solos" speed={80} />
           </motion.h1>
 
           <motion.div
@@ -92,7 +92,7 @@ export default function LandingHero() {
               }}
             >
               <Github className="w-5 h-5 mr-2" />
-              Get Started Free
+              Empezar gratis
               <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
             <Button
@@ -108,7 +108,7 @@ export default function LandingHero() {
                 }
               }}
             >
-              Watch Demo
+              Ver Demo
             </Button>
           </motion.div>
 
@@ -129,10 +129,10 @@ export default function LandingHero() {
             transition={{ duration: 0.5, delay: 0.6 }}
             className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-8 pt-10 sm:pt-16 border-t border-white/10 mt-16"
           >
-            <Stat value="500+" label="Teams" delay={0.7} />
-            <Stat value="10K+" label="Tests Healed" delay={0.8} />
-            <Stat value="98%" label="Accuracy" delay={0.9} />
-            <Stat value="90%" label="Time Saved" delay={1.0} />
+            <Stat value="500+" label="Equipos" delay={0.7} />
+            <Stat value="10K+" label="Tests curados" delay={0.8} />
+            <Stat value="98%" label="Precisión" delay={0.9} />
+            <Stat value="90%" label="Tiempo ahorrado" delay={1.0} />
           </motion.div>
 
           <div className="pt-10 sm:pt-14" id="demo-section">

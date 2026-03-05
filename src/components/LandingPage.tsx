@@ -18,9 +18,9 @@ function Footer() {
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-[#EDEDED]/60">
           <HealifyLogo size="sm" showText={true} />
           <nav aria-label="Footer" className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
-            <a href="/docs" className="hover:text-white transition-colors">Documentation</a>
+            <a href="/docs" className="hover:text-white transition-colors">Documentación</a>
             <a href="https://github.com/mescobar996/Healify" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">GitHub</a>
-            <a href="/support" className="hover:text-white transition-colors">Support</a>
+            <a href="/support" className="hover:text-white transition-colors">Soporte</a>
             <a href="/refund" className="hover:text-white transition-colors">Reembolsos</a>
             <a href="/privacy" className="hover:text-white transition-colors">Privacidad</a>
             <a href="/terms" className="hover:text-white transition-colors">Términos</a>
@@ -56,7 +56,7 @@ export default function LandingPage() {
           <HealifyLogo size="md" showText={true} />
           <nav aria-label="Principal" className="flex items-center gap-3 sm:gap-4">
             <a href="/pricing" className="text-sm text-[#EDEDED]/60 hover:text-white transition-colors">
-              Pricing
+              Precios
             </a>
             <Button
               variant="outline"
@@ -65,7 +65,7 @@ export default function LandingPage() {
               onClick={() => signIn('github', { callbackUrl: '/dashboard' })}
             >
               <Github className="w-4 h-4 mr-2" />
-              Sign In
+              Iniciar sesión
             </Button>
           </nav>
         </div>

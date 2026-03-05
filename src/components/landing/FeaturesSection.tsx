@@ -35,12 +35,12 @@ function FeatureCard({
 }
 
 const features = [
-  { icon: Wand2, title: 'Self-Healing Selectors', description: 'AI automatically detects and fixes broken selectors with 98% accuracy. No more manual test maintenance.' },
-  { icon: FolderGit2, title: 'GitHub Integration', description: 'Seamless integration with GitHub Actions. Auto-heal tests in your CI/CD pipeline.' },
-  { icon: Activity, title: 'Real-time Analytics', description: 'Track healing events, confidence scores, and ROI metrics in real-time.' },
-  { icon: Zap, title: 'Instant Healing', description: 'Tests heal themselves in seconds. Zero downtime, zero manual intervention.' },
-  { icon: Shield, title: 'High Confidence', description: 'AI suggests fixes with confidence scores. Review or auto-apply with trust.' },
-  { icon: Clock, title: 'Time Savings', description: 'Reduce test maintenance time by 90%. Focus on building, not fixing.' },
+  { icon: Wand2, title: 'Selectores que se auto-curan', description: 'La IA detecta y corrige selectores rotos con 98% de precisión. Sin mantenimiento manual de tests.' },
+  { icon: FolderGit2, title: 'Integración con GitHub', description: 'Integración fluida con GitHub Actions. Auto-curá tus tests en tu pipeline de CI/CD.' },
+  { icon: Activity, title: 'Analíticas en tiempo real', description: 'Seguí eventos de curación, scores de confianza y métricas de ROI en tiempo real.' },
+  { icon: Zap, title: 'Curación instantánea', description: 'Los tests se curan solos en segundos. Cero downtime, cero intervención manual.' },
+  { icon: Shield, title: 'Alta confianza', description: 'La IA sugiere correcciones con scores de confianza. Revisá o auto-aplicá con seguridad.' },
+  { icon: Clock, title: 'Ahorro de tiempo', description: 'Reducí el tiempo de mantenimiento de tests en un 90%. Enfocate en construir, no en reparar.' },
 ]
 
 export default function FeaturesSection() {
@@ -53,8 +53,8 @@ export default function FeaturesSection() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl sm:text-5xl font-bold text-[#EDEDED] mb-4 font-heading">Powerful Features</h2>
-          <p className="text-lg text-[#EDEDED]/60 max-w-2xl mx-auto">Everything you need to keep your tests running smoothly</p>
+          <h2 className="text-4xl sm:text-5xl font-bold text-[#EDEDED] mb-4 font-heading">Funcionalidades</h2>
+          <p className="text-lg text-[#EDEDED]/60 max-w-2xl mx-auto">Todo lo que necesitás para mantener tus tests funcionando</p>
         </motion.div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {features.map((feature, i) => (

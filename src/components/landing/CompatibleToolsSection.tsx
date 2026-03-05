@@ -7,51 +7,45 @@ import { cn } from '@/lib/utils'
 const TOOLS = [
   {
     name: 'Playwright',
-    description: 'Modern E2E testing framework by Microsoft.',
+    description: 'Framework de testing E2E moderno de Microsoft.',
     logo: 'https://playwright.dev/img/playwright-logo.svg',
     url: 'https://playwright.dev',
   },
   {
     name: 'Cypress',
-    description: 'Fast, reliable testing for anything in a browser.',
+    description: 'Testing rápido y confiable para el navegador.',
     logo: 'https://raw.githubusercontent.com/cypress-io/cypress/develop/assets/cypress-logo-dark.png',
     url: 'https://cypress.io',
   },
   {
     name: 'Jest',
-    description: 'Delightful JavaScript testing with simplicity.',
+    description: 'Testing de JavaScript con simplicidad.',
     logo: 'https://raw.githubusercontent.com/facebook/jest/main/website/static/img/jest.png',
     url: 'https://jestjs.io',
   },
   {
     name: 'Selenium',
-    description: 'Browser automation for web applications.',
+    description: 'Automatización de navegadores para aplicaciones web.',
     logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/selenium/selenium-original.svg',
     url: 'https://selenium.dev',
   },
   {
     name: 'GitHub Actions',
-    description: 'Automate CI/CD right from your repo.',
+    description: 'Automatizá CI/CD directo desde tu repositorio.',
     logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/githubactions/githubactions-original.svg',
     url: 'https://github.com/features/actions',
   },
   {
     name: 'TypeScript',
-    description: 'Typed JavaScript at any scale.',
+    description: 'JavaScript tipado a cualquier escala.',
     logo: 'https://raw.githubusercontent.com/remojansen/logo.ts/master/ts.png',
     url: 'https://typescriptlang.org',
   },
   {
     name: 'Python',
-    description: 'Popular language for test automation.',
+    description: 'Lenguaje popular para automatización de tests.',
     logo: 'https://raw.githubusercontent.com/github/explore/main/topics/python/python.png',
     url: 'https://python.org',
-  },
-  {
-    name: 'GitHub',
-    description: 'Code hosting and collaboration platform.',
-    logo: 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png',
-    url: 'https://github.com',
   },
 ]
 
@@ -66,10 +60,10 @@ export default function CompatibleToolsSection() {
           className="text-center mb-14"
         >
           <h2 className="text-3xl sm:text-4xl font-bold text-[#EDEDED] mb-3 font-heading">
-            Compatible Tools
+            Herramientas compatibles
           </h2>
           <p className="text-base text-[#EDEDED]/50 max-w-xl mx-auto">
-            Healify integrates seamlessly with your existing testing stack
+            Healify se integra con tu stack de testing actual
           </p>
         </motion.div>
 

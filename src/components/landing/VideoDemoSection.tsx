@@ -15,11 +15,11 @@ export default function VideoDemoSection() {
         >
           <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium glass-elite border border-white/20 text-white mb-4">
             <Code className="w-3 h-3" />
-            90-Second Demo
+            Demo de 90 segundos
           </span>
-          <h2 className="text-3xl sm:text-5xl font-bold text-[#EDEDED] mb-4 font-heading">See Healify in Action</h2>
+          <h2 className="text-3xl sm:text-5xl font-bold text-[#EDEDED] mb-4 font-heading">Mirá Healify en acción</h2>
           <p className="text-lg text-[#EDEDED]/60 max-w-2xl mx-auto">
-            Watch the full healing workflow: test fails → AI analyzes the DOM → selector healed → PR opened automatically.
+            Mirá el flujo completo: test falla → IA analiza el DOM → selector curado → PR abierto automáticamente.
           </p>
         </motion.div>
 
@@ -39,7 +39,7 @@ export default function VideoDemoSection() {
                 </div>
               </div>
               <p className="text-sm text-[#EDEDED]/50 font-mono">demo-healify-90s.mp4</p>
-              <p className="text-xs text-[#EDEDED]/30 mt-2">Video coming soon</p>
+              <p className="text-xs text-[#EDEDED]/30 mt-2">Video próximamente</p>
             </div>
           </div>
           {/* Replace with Loom embed when recorded:
@@ -59,9 +59,9 @@ export default function VideoDemoSection() {
           transition={{ delay: 0.3 }}
           className="flex items-center justify-center gap-8 mt-8 text-xs text-[#EDEDED]/40"
         >
-          <span>🎯 98% accuracy</span>
-          <span>⚡ 3.2s avg heal time</span>
-          <span>🔄 Zero manual maintenance</span>
+          <span>🎯 98% de precisión</span>
+          <span>⚡ 3.2s tiempo promedio</span>
+          <span>🔄 Cero mantenimiento manual</span>
         </motion.div>
       </div>
     </section>

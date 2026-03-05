@@ -6,20 +6,20 @@ import { FolderGit2, Shield, Zap } from 'lucide-react'
 const steps = [
   {
     step: '1',
-    title: 'Connect',
-    description: 'Link your GitHub repository and CI/CD pipeline in minutes.',
+    title: 'Conectá',
+    description: 'Vinculá tu repositorio de GitHub y tu pipeline de CI/CD en minutos.',
     icon: FolderGit2,
   },
   {
     step: '2',
-    title: 'Detect',
-    description: 'Healify monitors test failures and identifies broken selectors.',
+    title: 'Detectá',
+    description: 'Healify monitorea fallas de tests e identifica selectores rotos.',
     icon: Shield,
   },
   {
     step: '3',
-    title: 'Heal',
-    description: 'AI suggests fixes with confidence scores. Auto-apply or review.',
+    title: 'Curá',
+    description: 'La IA sugiere correcciones con scores de confianza. Auto-aplicá o revisá.',
     icon: Zap,
   },
 ]
@@ -34,7 +34,7 @@ export default function HowItWorksSection() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl sm:text-5xl font-bold text-[#EDEDED] mb-4 font-heading">How it works</h2>
+          <h2 className="text-4xl sm:text-5xl font-bold text-[#EDEDED] mb-4 font-heading">Cómo funciona</h2>
         </motion.div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {steps.map((item, i) => (
