@@ -46,11 +46,13 @@ export default function HowItWorksSection() {
               transition={{ delay: i * 0.2 }}
               className="relative"
             >
-              <div className="absolute -top-4 -left-4 w-12 h-12 rounded-full glass-elite border border-white/25 flex items-center justify-center text-white font-bold text-lg glow-pulse">
-                {item.step}
-              </div>
               <div className="glass-elite glass-elite-hover p-8 rounded-2xl h-full">
-                <item.icon className="w-10 h-10 text-white mb-4" />
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-white/15 to-white/5 border border-white/25 flex items-center justify-center text-white font-bold text-lg shrink-0 glow-pulse">
+                    {item.step}
+                  </div>
+                  <item.icon className="w-8 h-8 text-white/70" />
+                </div>
                 <h3 className="text-xl font-bold text-[#EDEDED] mb-2 font-heading">{item.title}</h3>
                 <p className="text-sm text-[#EDEDED]/60">{item.description}</p>
               </div>

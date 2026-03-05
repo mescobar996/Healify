@@ -49,6 +49,59 @@ const TOOLS = [
   },
 ]
 
+const INTEGRATIONS = [
+  { name: 'GitLab', logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/gitlab/gitlab-original.svg' },
+  { name: 'Jenkins', logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/jenkins/jenkins-original.svg' },
+  { name: 'Jira', logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/jira/jira-original.svg' },
+  { name: 'Notion', logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/notion/notion-original.svg' },
+  { name: 'Slack', logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/slack/slack-original.svg' },
+]
+
+function IntegrationsCard({ index }: { index: number }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.4, delay: index * 0.07 }}
+      className={cn(
+        'group glass-elite glass-elite-hover p-5 sm:p-6 rounded-2xl',
+        'flex flex-col items-center text-center gap-4',
+        'hover:scale-[1.03] transition-transform duration-200'
+      )}
+    >
+      {/* Animated mini-window with integration icons */}
+      <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-br from-white/10 to-white/5 border border-white/15 group-hover:border-white/30 transition-colors relative overflow-hidden flex items-center justify-center">
+        <motion.div
+          className="flex gap-1.5 absolute"
+          animate={{ x: [0, -60, -120, -60, 0] }}
+          transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+        >
+          {[...INTEGRATIONS, ...INTEGRATIONS].map((item, i) => (
+            <Image
+              key={`${item.name}-${i}`}
+              src={item.logo}
+              alt={item.name}
+              width={20}
+              height={20}
+              className="object-contain opacity-70 group-hover:opacity-100 transition-opacity shrink-0"
+              unoptimized
+            />
+          ))}
+        </motion.div>
+      </div>
+      <div>
+        <h3 className="text-sm sm:text-base font-semibold text-[#EDEDED] mb-1">
+          Integraciones
+        </h3>
+        <p className="text-[11px] sm:text-xs text-[#EDEDED]/40 leading-relaxed">
+          GitLab, Jenkins, Jira, Notion, Slack y más.
+        </p>
+      </div>
+    </motion.div>
+  )
+}
+
 export default function CompatibleToolsSection() {
   return (
     <section className="relative py-20 sm:py-28">
@@ -104,6 +157,8 @@ export default function CompatibleToolsSection() {
               </div>
             </motion.a>
           ))}
+          {/* Integraciones card with animated icons */}
+          <IntegrationsCard index={TOOLS.length} />
         </div>
       </div>
     </section>
