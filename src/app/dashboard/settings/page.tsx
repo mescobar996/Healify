@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import { useSession } from "next-auth/react";
 import {
   User,
@@ -510,10 +511,10 @@ function IntegrationsSection() {
   const githubLogin = session?.user?.name || session?.user?.email?.split('@')[0] || null;
 
   const comingSoon = [
-    { name: 'GitLab', description: 'Import repos y CI/CD pipelines', icon: '🦊' },
-    { name: 'Jenkins', description: 'Trigger builds y recibir resultados', icon: '🔧' },
-    { name: 'Jira', description: 'Crear tickets automáticos por bugs detectados', icon: '📝' },
-    { name: 'Notion', description: 'Sync de reportes de tests y métricas', icon: '📓' },
+    { name: 'GitLab', description: 'Import repos y CI/CD pipelines', logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/gitlab/gitlab-original.svg' },
+    { name: 'Jenkins', description: 'Trigger builds y recibir resultados', logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/jenkins/jenkins-original.svg' },
+    { name: 'Jira', description: 'Crear tickets automáticos por bugs detectados', logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/jira/jira-original.svg' },
+    { name: 'Notion', description: 'Sync de reportes de tests y métricas', logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/notion/notion-original.svg' },
   ]
 
   return (
@@ -561,7 +562,9 @@ function IntegrationsSection() {
               key={integration.name}
               className="flex items-center gap-3 p-3 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-subtle)] opacity-60"
             >
-              <span className="text-xl">{integration.icon}</span>
+              <div className="w-7 h-7 shrink-0 flex items-center justify-center">
+                <Image src={integration.logo} alt={integration.name} width={24} height={24} className="object-contain" unoptimized />
+              </div>
               <div className="min-w-0">
                 <p className="text-sm font-medium text-[var(--text-primary)]">{integration.name}</p>
                 <p className="text-[11px] text-[var(--text-tertiary)] truncate">{integration.description}</p>

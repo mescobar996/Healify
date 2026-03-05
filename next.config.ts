@@ -20,6 +20,7 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'playwright.dev' },
       { protocol: 'https', hostname: 'raw.githubusercontent.com' },
       { protocol: 'https', hostname: 'github.githubassets.com' },
+      { protocol: 'https', hostname: 'cdn.jsdelivr.net' },
     ],
   },
 
