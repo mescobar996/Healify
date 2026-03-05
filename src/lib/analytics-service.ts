@@ -38,7 +38,7 @@ export class AnalyticsService {
             const d = new Date(now)
             d.setDate(d.getDate() - i)
             const dateStr = d.toISOString().split('T')[0]
-            const count = trendMap.get(dateStr) ?? 0
+            const count = (trendMap.get(dateStr) ?? 0) as number
             healingEventsCount += count
             healingTrend.push({ date: dateStr, count })
         }
@@ -95,7 +95,7 @@ export class AnalyticsService {
             const dateStr = d.toISOString().split('T')[0]
             aiAccuracyTrend.push({
                 date: dateStr,
-                accuracy: accuracyMap.get(dateStr) ?? aiAccuracyScore,
+                accuracy: (accuracyMap.get(dateStr) ?? aiAccuracyScore) as number,
             })
         }
 
