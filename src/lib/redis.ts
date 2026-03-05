@@ -3,15 +3,19 @@ import { Redis } from 'ioredis'
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379'
 
 // Detectar si estamos en build time (Next.js genera páginas estáticas)
-const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build' || 
-                    (process.env.NODE_ENV === 'production' && !process.env.VERCEL_ENV && !process.env.REDIS_URL)
+// IMPORTANTE: No intentar conectar a Railway durante el build en Vercel
+// ya que railway.internal no es accesible desde el entorno de build
+const isBuildTime =
+  process.env.NEXT_PHASE === 'phase-production-build' ||
+  process.env.VERCEL === '1'
 
 // Lazy initialization: solo crear conexión cuando se necesite, no durante build time
 let redisInstance: Redis | null = null
 
 function createRedisInstance(): Redis | null {
-  // Durante build time, no crear instancia
+  // Durante build time en Vercel, no crear instancia (Railway no es accesible)
   if (isBuildTime) {
+    console.log('[Redis] Skipping connection during build time')
     return null
   }
 
@@ -64,6 +68,7 @@ function createRedisInstance(): Redis | null {
 
 // Función helper para obtener instancia de Redis (lazy)
 function getRedis(): Redis | null {
+  // Durante build time en Vercel, retornar null directamente
   if (isBuildTime) {
     return null
   }

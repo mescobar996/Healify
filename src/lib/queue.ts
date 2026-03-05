@@ -5,28 +5,55 @@ export const TEST_QUEUE_NAME = 'test_execution_queue'
 // Use Redis URL directly — avoids ioredis version mismatch between bullmq and app
 const redisUrl = process.env.REDIS_URL
 
-export const testQueue = redisUrl
-  ? new Queue(TEST_QUEUE_NAME, {
-      connection: {
-        url: redisUrl,
+// Detectar build time para no inicializar colas durante build en Vercel
+const isBuildTime = process.env.VERCEL === '1'
+
+// Lazy initialization: solo crear queue cuando se necesite, no durante build
+let testQueueInstance: Queue | null = null
+
+function createTestQueue(): Queue | null {
+  // Durante build time en Vercel, no crear queue
+  if (isBuildTime || !redisUrl) {
+    return null
+  }
+
+  return new Queue(TEST_QUEUE_NAME, {
+    connection: {
+      url: redisUrl,
+    },
+    defaultJobOptions: {
+      attempts: 3,
+      backoff: {
+        type: 'exponential',
+        delay: 5000,
       },
-      defaultJobOptions: {
-        attempts: 3,
-        backoff: {
-          type: 'exponential',
-          delay: 5000,
-        },
-        removeOnComplete: {
-          count: 100, // Keep last 100 completed jobs
-          age: 24 * 3600, // Or 24 hours
-        },
-        removeOnFail: {
-          count: 500,          // Keep last 500 failed jobs for debugging
-          age: 7 * 24 * 3600,  // And no older than 7 days
-        },
+      removeOnComplete: {
+        count: 100, // Keep last 100 completed jobs
+        age: 24 * 3600, // Or 24 hours
       },
-    })
-  : null
+      removeOnFail: {
+        count: 500,          // Keep last 500 failed jobs for debugging
+        age: 7 * 24 * 3600,  // And no older than 7 days
+      },
+    },
+  })
+}
+
+// Exportar getter lazy para la queue
+export function getTestQueue(): Queue | null {
+  if (isBuildTime) {
+    return null
+  }
+
+  if (!testQueueInstance) {
+    testQueueInstance = createTestQueue()
+  }
+
+  return testQueueInstance
+}
+
+// Mantener backward compatibility: testQueue es null durante build
+export const testQueue = isBuildTime ? null : (redisUrl ? createTestQueue() : null)
 
 export interface TestJobData {
   projectId: string
