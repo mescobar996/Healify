@@ -14,6 +14,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { addTestJob } from '@/lib/queue'
 import { TestStatus } from '@/lib/enums'
+import { checkTestRunLimit } from '@/lib/rate-limit'
 
 // Simple cron-next-date checker (no external lib dependency)
 function cronIsDue(cron: string, lastRan: Date | null): boolean {
@@ -80,6 +81,16 @@ export async function GET(req: NextRequest) {
     if (!isDue) {
       skipped.push(project.id)
       continue
+    }
+
+    // Validate test run limit before dispatching (A-M5)
+    if (project.userId) {
+      const limitCheck = await checkTestRunLimit(project.userId)
+      if (!limitCheck.allowed) {
+        console.warn(`[cron/dispatch] Skipping project ${project.id}: test run limit reached (${limitCheck.current}/${limitCheck.limit})`)
+        skipped.push(project.id)
+        continue
+      }
     }
 
     try {

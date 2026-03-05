@@ -23,8 +23,8 @@ const ENCRYPTION_KEY_RAW = (() => {
         )
         return 'dev-only-insecure-key-replace-in-production'
     }
-    if (key.length < 16) {
-        throw new Error('[SECURITY] ENCRYPTION_KEY debe tener al menos 16 caracteres.')
+    if (key.length < 32) {
+        throw new Error('[SECURITY] ENCRYPTION_KEY debe tener al menos 32 caracteres. Genera una con: openssl rand -hex 32')
     }
     return key
 })()

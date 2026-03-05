@@ -27,7 +27,7 @@ export interface ApiKeyCreate {
 // CONSTANTS
 // ============================================
 
-const KEY_CACHE_TTL = 60000 // 1 minute cache
+const KEY_CACHE_TTL = 5000 // 5s cache — short TTL to limit stale-key window in serverless (A-C3)
 
 // In-memory cache for API key validation (keyed by hash)
 const keyCache = new Map<string, { projectId: string; timestamp: number }>()

@@ -157,6 +157,7 @@ model Project {
   lastScheduledAt  DateTime?               // Last time a scheduled run was triggered
 
   @@index([userId])
+  @@index([repository])
   @@map("projects")
 }
 

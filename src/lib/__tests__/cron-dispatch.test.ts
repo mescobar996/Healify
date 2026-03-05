@@ -13,10 +13,15 @@ const mockDb = {
   project: {
     findMany: vi.fn(),
     update: vi.fn(),
+    count: vi.fn().mockResolvedValue(1),
   },
   testRun: {
     create: vi.fn(),
     update: vi.fn(),
+    count: vi.fn().mockResolvedValue(0),
+  },
+  subscription: {
+    findUnique: vi.fn().mockResolvedValue({ plan: 'FREE', status: 'active', trialEndsAt: null }),
   },
 }
 vi.mock('@/lib/db', () => ({ db: mockDb }))

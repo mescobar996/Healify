@@ -167,29 +167,24 @@ export class DashboardService {
     const bugsToday = Number(heAgg.bugs_today)
     const bugsYesterday = Number(heAgg.bugs_yesterday)
 
-    // ── Avg healing time ──────────────────────────────────────────────
-    const healedEvents = await db.healingEvent.findMany({
-      where: {
-        testRun: { project: { userId } },
-        status: { in: ['HEALED_AUTO', 'HEALED_MANUAL'] },
-        appliedAt: { not: null },
-      },
-      select: { createdAt: true, appliedAt: true },
-    })
+    // ── Avg healing time (P-M1: SQL AVG instead of loading all records) ─
+    const [avgRow] = await db.$queryRaw<[{ avg_seconds: number | null }]>`
+      SELECT AVG(EXTRACT(EPOCH FROM ("appliedAt" - "createdAt"))) as avg_seconds
+      FROM "HealingEvent" he
+      JOIN "TestRun" tr ON he."testRunId" = tr.id
+      JOIN "Project" p ON tr."projectId" = p.id
+      WHERE p."userId" = ${userId}
+        AND he.status IN ('HEALED_AUTO', 'HEALED_MANUAL')
+        AND he."appliedAt" IS NOT NULL
+    `
 
     let avgHealingTime = '0s'
     let avgHealingTimeChange = '0s'
 
-    if (healedEvents.length > 0) {
-      const healingTimes = healedEvents
-        .filter(e => e.appliedAt)
-        .map(e => (e.appliedAt!.getTime() - e.createdAt.getTime()) / 1000)
-
-      if (healingTimes.length > 0) {
-        const avg = healingTimes.reduce((a, b) => a + b, 0) / healingTimes.length
-        avgHealingTime = this.formatHealingTime(avg)
-        avgHealingTimeChange = avg < 3 ? '-0.3s' : avg < 5 ? '-0.5s' : '-1.2s'
-      }
+    if (avgRow?.avg_seconds != null) {
+      const avg = Number(avgRow.avg_seconds)
+      avgHealingTime = this.formatHealingTime(avg)
+      avgHealingTimeChange = avg < 3 ? '-0.3s' : avg < 5 ? '-0.5s' : '-1.2s'
     }
 
     const testsChange = this.calculateChange(totalTestsToday, totalTestsYesterday, true)

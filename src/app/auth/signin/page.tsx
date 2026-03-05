@@ -29,7 +29,7 @@ export default async function SignInPage() {
           <h1 className="mt-4 text-2xl font-bold text-[#EDEDED] tracking-tight font-orbitron">
             Healify
           </h1>
-          <p className="mt-2 text-sm text-[#EDEDED]/50">
+          <p className="mt-2 text-sm text-[#EDEDED]/60">
             AI-powered test self-healing platform
           </p>
         </div>
@@ -38,7 +38,7 @@ export default async function SignInPage() {
         <div className="glass-elite rounded-2xl p-8 space-y-4">
           <div className="text-center mb-6">
             <h2 className="text-lg font-semibold text-[#EDEDED]">Iniciar sesión</h2>
-            <p className="text-sm text-[#EDEDED]/40 mt-1">
+            <p className="text-sm text-[#EDEDED]/60 mt-1">
               Elegí tu proveedor para continuar
             </p>
           </div>
@@ -46,7 +46,7 @@ export default async function SignInPage() {
           <SignInButton provider="github" />
           <SignInButton provider="google" />
 
-          <p className="text-xs text-center text-[#EDEDED]/30 pt-2">
+          <p className="text-xs text-center text-[#EDEDED]/50 pt-2">
             Al continuar, aceptás nuestros{' '}
             <a href="/terms" className="text-white/70 hover:text-white">Términos</a>
             {' '}y{' '}
@@ -55,10 +55,10 @@ export default async function SignInPage() {
         </div>
 
         <p className="text-center mt-6 flex items-center justify-center gap-4">
-          <a href="/" className="text-sm text-[#EDEDED]/40 hover:text-white transition-colors">
+          <a href="/" className="text-sm text-[#EDEDED]/60 hover:text-white transition-colors">
             ← Volver al inicio
           </a>
-          <a href="/support" className="text-sm text-[#EDEDED]/40 hover:text-white transition-colors">
+          <a href="/support" className="text-sm text-[#EDEDED]/60 hover:text-white transition-colors">
             Soporte
           </a>
         </p>

@@ -153,14 +153,8 @@ describe('POST /api/ingest — input validation', () => {
     expect(res.status).toBe(400)
   })
 
-  it('returns 400 for invalid branch format', async () => {
-    // sanitizeGitBranch returns null when branch contains illegal characters.
-    // The route checks: if (branch && !safeBranch) → 400
-    // We test this directly by verifying guard logic below (unit level).
-    // The integration path requires a separate module reload; this is covered by
-    // the sanitizeGitBranch unit tests in repo-validation.test.ts.
-    expect(true).toBe(true) // placeholder — see repo-validation unit tests
-  })
+  // Q-M4: Replaced placeholder expect(true) with .todo — actual coverage in repo-validation.test.ts
+  it.todo('returns 400 for invalid branch format (covered by sanitizeGitBranch unit tests)')
 })
 
 // ══════════════════════════════════════════════════════════════════════

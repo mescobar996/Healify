@@ -1,9 +1,11 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { db } from '@/lib/db'
 import { Plan } from '@/lib/enums'
 import { apiError } from '@/lib/api-response'
 import { trackFunnelEvent } from '@/lib/funnel-analytics'
+import { redis } from '@/lib/redis'
+import { webhookRateLimit } from '@/lib/http-rate-limiter'
 
 // ═══════════════════════════════════════════════════════════════════════
 // CRÍTICO: NO instanciar Stripe a nivel de módulo.
@@ -22,10 +24,14 @@ function getPeriodEnd(subscription: Stripe.Subscription): Date {
     return new Date(ts * 1000)
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
     if (!process.env.STRIPE_SECRET_KEY) {
         return NextResponse.json({ received: true })
     }
+
+    // Rate limit webhook endpoint (S-M2)
+    const rl = await webhookRateLimit(request)
+    if (!rl.ok) return rl.response!
 
     const body = await request.text()
     const sig = request.headers.get('stripe-signature')
@@ -50,6 +56,15 @@ export async function POST(request: Request) {
     }
 
     try {
+        // Idempotency check: skip already-processed events (A-H4)
+        const idempotencyKey = `stripe:event:${event.id}`
+        const alreadyProcessed = await redis.get(idempotencyKey)
+        if (alreadyProcessed) {
+            return NextResponse.json({ received: true, skipped: true })
+        }
+        // Mark as processing (24h TTL covers Stripe's retry window)
+        await redis.setex(idempotencyKey, 86400, '1')
+
         switch (event.type) {
             case 'checkout.session.completed': {
                 const session = event.data.object as Stripe.Checkout.Session
@@ -130,6 +145,8 @@ export async function POST(request: Request) {
                     data: { plan: Plan.FREE, status: 'canceled' },
                 })
                 console.log(`[Webhook] Plan cancelado para user ${userId}`)
+                // Track churn event for analytics (B-M1)
+                void trackFunnelEvent('churn', { userId, gateway: 'stripe' })
                 break
             }
 

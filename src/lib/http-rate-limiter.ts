@@ -86,14 +86,15 @@ export async function httpRateLimit(
 
   try {
     // Increment counter — returns new value after increment
-    const count = await (redis as unknown as { incr: (k: string) => Promise<number> }).incr(key)
+    const count = await redis.incr(key)
 
     // Set TTL only on first request in this window
     if (count === 1) {
-      await (redis as unknown as { expire: (k: string, s: number) => Promise<void> }).expire(
-        key,
-        config.window,
-      )
+      await redis.expire(key, config.window)
+    } else {
+      // Safety: if TTL is -1 (EXPIRE failed previously), re-apply
+      const ttlCheck = await redis.ttl(key)
+      if (ttlCheck === -1) await redis.expire(key, config.window)
     }
 
     const remaining = Math.max(0, config.limit - count)

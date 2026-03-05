@@ -142,6 +142,12 @@ export async function checkApiReportRateLimit(projectId: string): Promise<Report
         const count = await redis.incr(key)
         if (count === 1) {
             await redis.expire(key, REPORT_WINDOW_SECS)
+        } else {
+            // Safety: if TTL is -1 (no expiry—EXPIRE failed previously), set it now (A-H2)
+            const ttlCheck = await redis.ttl(key)
+            if (ttlCheck === -1) {
+                await redis.expire(key, REPORT_WINDOW_SECS)
+            }
         }
         const ttl = await redis.ttl(key)
         const resetInMs = Math.max(0, ttl * 1000)
@@ -154,7 +160,8 @@ export async function checkApiReportRateLimit(projectId: string): Promise<Report
             resetInMs,
         }
     } catch {
-        // Redis unavailable — fail-open so requests are not incorrectly blocked
+        // Redis unavailable — fail-open but log for observability (A-H1)
+        console.warn('[rate-limit] Redis unavailable for checkApiReportRateLimit, allowing request')
         return { allowed: true, plan, limit, remaining: limit - 1, resetInMs: REPORT_WINDOW_SECS * 1000 }
     }
 }
@@ -170,10 +177,13 @@ export async function checkAuthRateLimit(ip: string): Promise<boolean> {
         const count = await redis.incr(key)
         if (count === 1) {
             await redis.expire(key, AUTH_WINDOW_SECS)
+        } else {
+            const ttlCheck = await redis.ttl(key)
+            if (ttlCheck === -1) await redis.expire(key, AUTH_WINDOW_SECS)
         }
         return count <= AUTH_MAX_ATTEMPTS
     } catch {
-        // Redis unavailable — fail-open so users are not incorrectly blocked
+        console.warn('[rate-limit] Redis unavailable for checkAuthRateLimit, allowing request')
         return true
     }
 }

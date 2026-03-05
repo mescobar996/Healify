@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import * as Sentry from '@sentry/nextjs'
 import { initProjectApiKey } from '@/lib/api-key-service'
 import { db } from '@/lib/db'
 import { checkProjectLimit } from '@/lib/rate-limit'
@@ -50,6 +51,7 @@ export async function getProjects() {
     }))
   } catch (error) {
     console.error('Error fetching projects:', error)
+    Sentry.captureException(error)
     return []
   }
 }
@@ -93,10 +95,14 @@ export async function createProject(data: {
       },
     })
 
-    // Provision hash-only API key (non-blocking — action callers discover key via /api/projects)
-    initProjectApiKey(project.id).catch((err) => {
+    // Provision hash-only API key — await to ensure key is ready (A-M4)
+    try {
+      await initProjectApiKey(project.id)
+    } catch (err) {
       console.error('[createProject] Failed to init API key for', project.id, err)
-    })
+      Sentry.captureException(err)
+      // Non-fatal: project exists, key can be rotated later
+    }
 
     await db.notification.create({
       data: {
@@ -112,6 +118,7 @@ export async function createProject(data: {
     return { success: true, project }
   } catch (error) {
     console.error('Error creating project:', error)
+    Sentry.captureException(error)
     return { success: false, error: 'Failed to create project' }
   }
 }
@@ -161,6 +168,7 @@ export async function getTestRuns(params?: {
     }))
   } catch (error) {
     console.error('Error fetching test runs:', error)
+    Sentry.captureException(error)
     return []
   }
 }
@@ -216,6 +224,7 @@ export async function executeTestRun(projectId: string) {
     return { success: true, testRunId: testRun.id }
   } catch (error) {
     console.error('Error executing test run:', error)
+    Sentry.captureException(error)
     return { success: false, error: 'Failed to execute test run' }
   }
 }
@@ -259,6 +268,7 @@ export async function getHealingEvents(params?: { limit?: number }) {
     }))
   } catch (error) {
     console.error('Error fetching healing events:', error)
+    Sentry.captureException(error)
     return []
   }
 }
@@ -284,6 +294,7 @@ export async function approveHealing(eventId: string) {
     return { success: true }
   } catch (error) {
     console.error('Error approving healing:', error)
+    Sentry.captureException(error)
     return { success: false, error: error instanceof Error ? error.message : 'Failed to approve healing' }
   }
 }
@@ -307,6 +318,7 @@ export async function rejectHealing(eventId: string) {
     return { success: true }
   } catch (error) {
     console.error('Error rejecting healing:', error)
+    Sentry.captureException(error)
     return { success: false, error: error instanceof Error ? error.message : 'Failed to reject healing' }
   }
 }
@@ -385,6 +397,7 @@ export async function getDashboardStats() {
     }
   } catch (error) {
     console.error('Error fetching dashboard stats:', error)
+    Sentry.captureException(error)
     return null
   }
 }
@@ -438,6 +451,8 @@ async function verifyTestRunOwnership(testRunId: string, userId: string) {
   return testRun
 }
 
+// formatRelativeTime is imported from '@/lib/api' in components.
+// This local version is used only by server actions for Spanish locale.
 function formatRelativeTime(date: Date): string {
   const now = new Date()
   const diff = now.getTime() - date.getTime()

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
@@ -25,13 +26,14 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api, formatNumber } from "@/lib/api";
 import { DashboardSkeleton } from "@/components/ui/skeletons";
-import { TestDetailSheet } from "@/components/TestDetailSheet";
-import { ActivityFeed } from "@/components/ActivityFeed";
+// P-L1: Lazy-load heavy below-the-fold components
+const TestDetailSheet = dynamic(() => import("@/components/TestDetailSheet").then(m => ({ default: m.TestDetailSheet })), { ssr: false });
+const ActivityFeed = dynamic(() => import("@/components/ActivityFeed").then(m => ({ default: m.ActivityFeed })), { ssr: false });
 // OnboardingBanner moved to /dashboard/projects empty state
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { ErrorState } from "@/components/dashboard/ErrorState";
-import { HealingTrendChart } from "@/components/dashboard/HealingTrendChart";
+const HealingTrendChart = dynamic(() => import("@/components/dashboard/HealingTrendChart").then(m => ({ default: m.HealingTrendChart })), { ssr: false });
 import { HealingHistoryList } from "@/components/dashboard/HealingHistoryList";
 import { RoiStrip } from "@/components/dashboard/RoiStrip";
 import { toast } from "sonner";
@@ -411,6 +413,29 @@ function DashboardContent() {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
+
+        {/* U-M1/U-M2: Show activation progress in Overview for new users */}
+        {(() => {
+          const steps = [
+            { label: 'Proyecto conectado', done: ((data as DashboardResponse).projectCount || 0) > 0 },
+            { label: 'Primera ejecución', done: data.metrics.testsExecutedToday > 0 || data.chartData.length > 0 },
+            { label: 'Primera curación', done: data.healingHistory.length > 0 },
+          ]
+          const doneCount = steps.filter(s => s.done).length
+          if (doneCount >= 3) return null
+          const pct = Math.round((doneCount / steps.length) * 100)
+          return (
+            <div className="rounded-lg border border-white/[0.07] bg-[#111111] p-4">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-semibold text-[var(--text-primary)]">Activación: {doneCount}/3 pasos</h3>
+                <span className="text-sm font-bold text-white">{pct}%</span>
+              </div>
+              <div className="h-1.5 rounded-full bg-[var(--bg-elevated)] overflow-hidden">
+                <div className="h-full rounded-full bg-gradient-to-r from-white to-[#BEBEBE] transition-all duration-700" style={{ width: `${pct}%` }} />
+              </div>
+            </div>
+          )
+        })()}
 
         {/* Metrics Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

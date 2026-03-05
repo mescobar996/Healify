@@ -1,4 +1,5 @@
 import { SelectorType } from '@/lib/enums'
+import { db } from '@/lib/db'
 
 export interface AnalyzedSelector {
     selector: string
@@ -48,16 +49,24 @@ export class SelectorAnalyzer {
     }
 
     async analyzeProject(projectId: string): Promise<AnalyzedSelector[]> {
-        // Mocking a set of selectors from the project
-        const rawSelectors = [
-            { selector: '[data-testid="submit-btn"]', type: SelectorType.TESTID },
-            { selector: 'button:has-text("Login")', type: SelectorType.ROLE },
-            { selector: '.login-form .submit-btn', type: SelectorType.CSS },
-            { selector: '#btn-12345', type: SelectorType.CSS },
-            { selector: '/html/body/div[3]/div[1]/input', type: SelectorType.XPATH },
-            { selector: '.aBcDe123', type: SelectorType.CSS }, // Hashed class
-            { selector: 'div:nth-child(2) > span', type: SelectorType.CSS }, // nth-child
-        ]
+        // Query real tracked selectors from the database (Q-M5)
+        const trackedSelectors = await db.trackedSelector.findMany({
+            where: { projectId },
+            orderBy: { timesFailed: 'desc' },
+            take: 50,
+            select: { selector: true, type: true },
+        })
+
+        // If no real selectors exist yet, return demo data for empty projects
+        const rawSelectors = trackedSelectors.length > 0
+            ? trackedSelectors.map(s => ({ selector: s.selector, type: s.type }))
+            : [
+                { selector: '[data-testid="submit-btn"]', type: SelectorType.TESTID },
+                { selector: 'button:has-text("Login")', type: SelectorType.ROLE },
+                { selector: '.login-form .submit-btn', type: SelectorType.CSS },
+                { selector: '#btn-12345', type: SelectorType.CSS },
+                { selector: '/html/body/div[3]/div[1]/input', type: SelectorType.XPATH },
+            ]
 
         return rawSelectors.map(s => {
             const score = this.calculateScore(s.selector, s.type)

@@ -297,6 +297,7 @@ export default function PricingPage() {
           <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-white/[0.04] border border-white/10">
             <button
               onClick={() => setBillingCycle('monthly')}
+              aria-pressed={billingCycle === 'monthly'}
               className={cn(
                 'px-4 py-1.5 rounded-lg text-sm font-medium transition-all',
                 billingCycle === 'monthly'
@@ -308,6 +309,7 @@ export default function PricingPage() {
             </button>
             <button
               onClick={() => setBillingCycle('annual')}
+              aria-pressed={billingCycle === 'annual'}
               className={cn(
                 'relative px-4 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2',
                 billingCycle === 'annual'

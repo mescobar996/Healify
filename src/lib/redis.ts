@@ -82,7 +82,8 @@ export const redis = {
     if (!instance) return null
     try {
       return await instance.get(key)
-    } catch {
+    } catch (err) {
+      console.warn('[Redis] get failed:', (err as Error).message)
       return null
     }
   },
@@ -91,8 +92,8 @@ export const redis = {
     if (!instance) return
     try {
       await instance.set(key, value)
-    } catch {
-      // Silenciar errores
+    } catch (err) {
+      console.warn('[Redis] set failed:', (err as Error).message)
     }
   },
   setex: async (key: string, seconds: number, value: string): Promise<void> => {
@@ -100,8 +101,8 @@ export const redis = {
     if (!instance) return
     try {
       await instance.setex(key, seconds, value)
-    } catch {
-      // Silenciar errores
+    } catch (err) {
+      console.warn('[Redis] setex failed:', (err as Error).message)
     }
   },
   del: async (key: string): Promise<void> => {
@@ -109,8 +110,8 @@ export const redis = {
     if (!instance) return
     try {
       await instance.del(key)
-    } catch {
-      // Silenciar errores
+    } catch (err) {
+      console.warn('[Redis] del failed:', (err as Error).message)
     }
   },
   exists: async (key: string): Promise<number> => {
@@ -118,7 +119,8 @@ export const redis = {
     if (!instance) return 0
     try {
       return await instance.exists(key)
-    } catch {
+    } catch (err) {
+      console.warn('[Redis] exists failed:', (err as Error).message)
       return 0
     }
   },
@@ -127,7 +129,8 @@ export const redis = {
     if (!instance) return 0
     try {
       return await instance.incr(key)
-    } catch {
+    } catch (err) {
+      console.warn('[Redis] incr failed:', (err as Error).message)
       return 0
     }
   },
@@ -136,8 +139,18 @@ export const redis = {
     if (!instance) return
     try {
       await instance.expire(key, seconds)
-    } catch {
-      // ignore
+    } catch (err) {
+      console.warn('[Redis] expire failed:', (err as Error).message)
+    }
+  },
+  ttl: async (key: string): Promise<number> => {
+    const instance = getRedis()
+    if (!instance) return -2
+    try {
+      return await instance.ttl(key)
+    } catch (err) {
+      console.warn('[Redis] ttl failed:', (err as Error).message)
+      return -2
     }
   },
 } as unknown as Redis
