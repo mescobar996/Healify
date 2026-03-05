@@ -1,20 +1,37 @@
+  // Helper to convert Prisma user to AdapterUser
+  function toAdapterUser(user: any): AdapterUser {
+    return {
+      id: user.id,
+      name: user.name ?? '',
+      email: user.email ?? '',
+      emailVerified: user.emailVerified ?? null,
+      image: user.image ?? '',
+    }
+  }
 import NextAuth, { NextAuthOptions } from 'next-auth'
-import type { Adapter } from 'next-auth/adapters'
+import type { Adapter, AdapterUser, AdapterAccount, AdapterSession, VerificationToken } from 'next-auth/adapters'
 import type { NextRequest } from 'next/server'
 import { checkAuthRateLimit } from '@/lib/rate-limit'
 import GitHubProvider from 'next-auth/providers/github'
 import GoogleProvider from 'next-auth/providers/google'
+import type { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
 import { trackFunnelEvent } from '@/lib/funnel-analytics'
+
+type UserCreateInput = Parameters<typeof db.user.create>[0]['data']
+type AccountCreateInput = Prisma.AccountUncheckedCreateInput
+type SessionCreateInput = Parameters<typeof db.session.create>[0]['data']
+type SessionUpdateInput = Parameters<typeof db.session.update>[0]['data']
+type VerificationTokenCreateInput = Parameters<typeof db.verificationToken.create>[0]['data']
 
 // ═══════════════════════════════════════════════════════════════════════
 // Custom Prisma Adapter — compatible with Prisma v6
 // Replaces @next-auth/prisma-adapter v1.0.7 which has issues with Prisma v6.
 // Every method is wrapped in try/catch with logging for diagnosability.
 // ═══════════════════════════════════════════════════════════════════════
-function HealifyPrismaAdapter(): Adapter {
+function HealifyPrismaAdapter() {
   return {
-    async createUser(data) {
+    async createUser(data: Omit<AdapterUser, "id">): Promise<AdapterUser> {
       try {
         console.log('[Adapter] createUser:', { email: data.email, name: data.name })
         const user = await db.user.create({
@@ -25,57 +42,70 @@ function HealifyPrismaAdapter(): Adapter {
             image: data.image,
           },
         })
-        return user
+        return toAdapterUser(user)
       } catch (err) {
         console.error('[Adapter] createUser FAILED:', err)
         throw err
       }
     },
 
-    async getUser(id) {
+    async getUser(id: string): Promise<AdapterUser | null> {
       try {
-        return await db.user.findUnique({ where: { id } })
+        const user = await db.user.findUnique({ where: { id } })
+        return user ? toAdapterUser(user) : null
       } catch (err) {
         console.error('[Adapter] getUser FAILED:', err)
         throw err
       }
     },
 
-    async getUserByEmail(email) {
+    async getUserByEmail(email: string): Promise<AdapterUser | null> {
       try {
         if (!email) return null
-        return await db.user.findUnique({ where: { email } })
+        const user = await db.user.findUnique({ where: { email } })
+        return user ? toAdapterUser(user) : null
       } catch (err) {
         console.error('[Adapter] getUserByEmail FAILED:', err)
         throw err
       }
     },
 
-    async getUserByAccount({ providerAccountId, provider }) {
+    async getUserByAccount({ provider, providerAccountId }: Pick<AdapterAccount, "provider" | "providerAccountId">): Promise<AdapterUser | null> {
       try {
         console.log('[Adapter] getUserByAccount:', { provider, providerAccountId })
         const account = await db.account.findFirst({
           where: { provider, providerAccountId },
           include: { user: true },
         })
-        return account?.user ?? null
+        return account?.user ? toAdapterUser(account.user) : null
       } catch (err) {
         console.error('[Adapter] getUserByAccount FAILED:', err)
         throw err
       }
     },
 
-    async updateUser(data) {
+    async updateUser(data: Partial<AdapterUser> & Pick<AdapterUser, "id">): Promise<AdapterUser> {
       try {
         const { id, ...rest } = data
-        return await db.user.update({ where: { id }, data: rest })
+        // Only update allowed AdapterUser fields
+        const updateData: Record<string, any> = {}
+        if (rest.name !== undefined) updateData.name = rest.name
+        if (rest.email !== undefined) updateData.email = rest.email
+        if (rest.emailVerified !== undefined) updateData.emailVerified = rest.emailVerified
+        if (rest.image !== undefined) updateData.image = rest.image
+        // If role is present and valid, cast to UserRole
+        if (rest.role !== undefined && typeof rest.role === 'string' && ['USER', 'ADMIN'].includes(rest.role)) {
+          updateData.role = rest.role as any // Prisma expects UserRole enum
+        }
+        const user = await db.user.update({ where: { id }, data: updateData })
+        return toAdapterUser(user)
       } catch (err) {
         console.error('[Adapter] updateUser FAILED:', err)
         throw err
       }
     },
 
-    async deleteUser(userId) {
+    async deleteUser(userId: string): Promise<void> {
       try {
         await db.user.delete({ where: { id: userId } })
       } catch (err) {
@@ -84,7 +114,7 @@ function HealifyPrismaAdapter(): Adapter {
       }
     },
 
-    async linkAccount(data) {
+    async linkAccount(data: AdapterAccount): Promise<void> {
       try {
         console.log('[Adapter] linkAccount:', { provider: data.provider, userId: data.userId })
         await db.account.create({
@@ -108,7 +138,7 @@ function HealifyPrismaAdapter(): Adapter {
       }
     },
 
-    async unlinkAccount({ providerAccountId, provider }) {
+    async unlinkAccount({ provider, providerAccountId }: Pick<AdapterAccount, "provider" | "providerAccountId">): Promise<void> {
       try {
         await db.account.deleteMany({ where: { provider, providerAccountId } })
       } catch (err) {
@@ -117,7 +147,7 @@ function HealifyPrismaAdapter(): Adapter {
       }
     },
 
-    async createSession(data) {
+    async createSession(data: AdapterSession): Promise<AdapterSession> {
       try {
         return await db.session.create({ data })
       } catch (err) {
@@ -126,25 +156,26 @@ function HealifyPrismaAdapter(): Adapter {
       }
     },
 
-    async getSessionAndUser(sessionToken) {
+    async getSessionAndUser(sessionToken: string): Promise<{ session: AdapterSession; user: AdapterUser } | null> {
       try {
         const session = await db.session.findUnique({
           where: { sessionToken },
           include: { user: true },
         })
         if (!session) return null
-        return { session, user: session.user }
+        return { session, user: toAdapterUser(session.user) }
       } catch (err) {
         console.error('[Adapter] getSessionAndUser FAILED:', err)
         throw err
       }
     },
 
-    async updateSession(data) {
+    async updateSession(data: Partial<AdapterSession> & Pick<AdapterSession, "sessionToken">): Promise<AdapterSession | null | undefined> {
       try {
+        const { sessionToken, ...sessionData } = data
         return await db.session.update({
-          where: { sessionToken: data.sessionToken },
-          data,
+          where: { sessionToken },
+          data: sessionData,
         })
       } catch (err) {
         console.error('[Adapter] updateSession FAILED:', err)
@@ -152,7 +183,7 @@ function HealifyPrismaAdapter(): Adapter {
       }
     },
 
-    async deleteSession(sessionToken) {
+    async deleteSession(sessionToken: string): Promise<void> {
       try {
         await db.session.delete({ where: { sessionToken } })
       } catch (err) {
@@ -161,7 +192,7 @@ function HealifyPrismaAdapter(): Adapter {
       }
     },
 
-    async createVerificationToken(data) {
+    async createVerificationToken(data: VerificationToken): Promise<VerificationToken | null | undefined> {
       try {
         return await db.verificationToken.create({ data })
       } catch (err) {
@@ -170,7 +201,7 @@ function HealifyPrismaAdapter(): Adapter {
       }
     },
 
-    async useVerificationToken({ identifier, token }) {
+    async useVerificationToken({ identifier, token }: { identifier: string; token: string }): Promise<VerificationToken | null> {
       try {
         return await db.verificationToken.delete({
           where: { identifier_token: { identifier, token } },
@@ -180,7 +211,7 @@ function HealifyPrismaAdapter(): Adapter {
         throw err
       }
     },
-  }
+  } as Adapter
 }
 
 type OAuthProfileProjection = {
