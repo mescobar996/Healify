@@ -1,28 +1,18 @@
 import NextAuth, { NextAuthOptions } from 'next-auth'
-import { logger } from '@/lib/logger'
-import { emailWelcome } from '@/lib/email-templates'
+import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import GitHubProvider from 'next-auth/providers/github'
 import GoogleProvider from 'next-auth/providers/google'
+import { db } from '@/lib/db'
+import { logger } from '@/lib/logger'
+import { emailWelcome } from '@/lib/email-templates'
 
-// ─── Unificación de nombres de env vars ──────────────────────────────
-// En Vercel configurar: GITHUB_ID y GITHUB_SECRET
-// También acepta GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET como fallback
+// ─── Env vars ────────────────────────────────────────────────────────
 const GITHUB_ID     = process.env.GITHUB_ID     || process.env.GITHUB_CLIENT_ID     || ''
 const GITHUB_SECRET = process.env.GITHUB_SECRET || process.env.GITHUB_CLIENT_SECRET || ''
 const GOOGLE_ID     = process.env.GOOGLE_CLIENT_ID     || ''
 const GOOGLE_SECRET = process.env.GOOGLE_CLIENT_SECRET || ''
 
-// Advertencias en desarrollo (no bloquean el build)
-if (process.env.NODE_ENV !== 'production') {
-  if (!GITHUB_ID)                   logger.warn('[Auth]', 'GITHUB_ID no configurado')
-  if (!GITHUB_SECRET)               logger.warn('[Auth]', 'GITHUB_SECRET no configurado')
-  if (!process.env.NEXTAUTH_SECRET) logger.warn('[Auth]', 'NEXTAUTH_SECRET no configurado')
-  if (!GOOGLE_ID || !GOOGLE_SECRET) logger.warn('[Auth]', 'GOOGLE_CLIENT_ID/SECRET no configurados — Google OAuth deshabilitado')
-}
-
-// ─── Providers dinámicos ─────────────────────────────────────────────
-// Google se activa solo si ambas vars están presentes.
-// Esto evita el error "OAuthSignin" cuando Google no está configurado.
+// ─── Providers ───────────────────────────────────────────────────────
 const providers: NextAuthOptions['providers'] = [
   GitHubProvider({
     clientId: GITHUB_ID,
@@ -56,15 +46,18 @@ if (GOOGLE_ID && GOOGLE_SECRET) {
 }
 
 export const authOptions: NextAuthOptions = {
-  // ── Sin PrismaAdapter ─────────────────────────────────────────────
-  // Razón: NextAuth v4 con PrismaAdapter + strategy:'jwt' simultáneos
-  // causa un conflicto — el adapter intenta escribir en tabla Session
-  // pero el JWT callback la ignora, rompiendo el login en el segundo
-  // intento. JWT puro es serverless-safe y no requiere DB sessions.
-  // Si en el futuro se quiere strategy:'database', activar el adapter
-  // y eliminar los callbacks jwt/session (son mutuamente excluyentes).
-
+  // ── PrismaAdapter: crea User en DB al primer login ────────────────
+  // CRÍTICO: sin adapter, el User no existe en Postgres y todas las
+  // operaciones que usan userId (crear proyecto, demo, etc.) fallan
+  // con Foreign Key violation.
+  //
+  // ¿Por qué funciona con JWT al mismo tiempo?
+  // NextAuth v4 soporta adapter + strategy:'jwt' en conjunto:
+  // - El adapter se encarga de crear/actualizar User y Account en DB
+  // - JWT maneja la sesión (no escribe en tabla Session)
+  // - La tabla Session queda vacía — eso está bien, no es un error
   providers,
+  adapter: PrismaAdapter(db),
 
   session: {
     strategy: 'jwt',
@@ -72,25 +65,23 @@ export const authOptions: NextAuthOptions = {
   },
 
   callbacks: {
-    async jwt({ token, user, profile }: any) {
+    async jwt({ token, user, account }: any) {
+      // En el primer login, `user` viene del adapter con el ID real de Postgres
       if (user) {
-        token.id   = user.id
-        token.role = (user as any).role || 'user'
+        token.id   = user.id    // ID real de la tabla User en Postgres
+        token.role = user.role || 'user'
       }
-      if (profile) {
-        token.picture = (profile as any).avatar_url || (profile as any).picture || token.picture
-        token.name    = (profile as any).name || (profile as any).login || token.name
-        token.email   = (profile as any).email || token.email
+      // Guardar provider para referencia futura
+      if (account) {
+        token.provider = account.provider
       }
       return token
     },
     async session({ session, token }: any) {
       if (session.user) {
-        session.user.id    = token.id    as string
-        session.user.role  = token.role  as string
-        if (token.picture) session.user.image = token.picture as string
-        if (token.name)    session.user.name  = token.name    as string
-        if (token.email)   session.user.email = token.email   as string
+        session.user.id       = token.id       as string  // ID de Postgres
+        session.user.role     = token.role     as string
+        session.user.provider = token.provider as string
       }
       return session
     },
@@ -98,6 +89,7 @@ export const authOptions: NextAuthOptions = {
 
   events: {
     async createUser({ user }) {
+      // Email de bienvenida al primer registro
       try {
         const { Resend } = await import('resend')
         const apiKey = process.env.RESEND_API_KEY

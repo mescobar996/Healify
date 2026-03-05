@@ -6,13 +6,8 @@ import { getSessionUser } from '@/lib/auth/session'
 import { initProjectApiKey } from '@/lib/api-key-service'
 import { apiError } from '@/lib/api-response'
 
-// ─── Types inferred from Prisma (no unsafe casting) ─────────────────────────
-type ProjectWithStats = Prisma.ProjectGetPayload<{
-  include: {
-    testRuns: { orderBy: { startedAt: 'desc' }; take: 1 }
-    _count: { select: { testRuns: true } }
-  }
-}>
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ProjectWithStats = any
 
 // GET /api/projects - Get all projects
 export async function GET(request: NextRequest) {
