@@ -17,7 +17,6 @@ export default defineConfig({
         'src/lib/__tests__/**',
         'src/lib/db.ts',        // thin Prisma wrapper
         'src/lib/redis.ts',     // only runtime I/O
-        'src/lib/stripe.ts',    // thin SDK wrapper
       ],
       thresholds: {
         lines: 60,

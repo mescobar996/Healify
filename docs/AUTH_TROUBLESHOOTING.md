@@ -32,3 +32,33 @@ En **GitHub → Settings → Developer settings → OAuth Apps**:
 3. En Vercel: `DATABASE_URL=postgresql://user:pass@host/db?sslmode=require`
 4. Cambiar `prisma/schema.prisma`: `provider = "postgresql"`
 5. Ejecutar: `npx prisma migrate deploy`
+
+---
+
+## 4. Diagnóstico rápido
+
+Healify incluye un endpoint de diagnóstico:
+
+```
+GET /api/auth/check
+```
+
+Devuelve el estado de la sesión, las variables de entorno configuradas (sin secretos) y las tablas de auth en la BD. Úsalo para verificar que todo esté conectado antes de intentar login.
+
+## 5. NEXTAUTH_URL — Validación automática
+
+A partir del sprint de limpieza (marzo 2026), `NEXTAUTH_URL` se valida en `src/lib/env.ts`:
+
+- Si **ni `NEXTAUTH_URL` ni `VERCEL_URL`** están definidas, el servidor falla al arrancar con un error claro.
+- En Vercel, `VERCEL_URL` se inyecta automáticamente, pero se recomienda setear `NEXTAUTH_URL` explícitamente para evitar problemas con OAuth callbacks.
+
+## 6. Google OAuth (opcional)
+
+Si también querés habilitar "Continue with Google":
+
+| Variable | Valor |
+|----------|-------|
+| `GOOGLE_CLIENT_ID` | Client ID de la consola de Google Cloud |
+| `GOOGLE_CLIENT_SECRET` | Client Secret |
+
+Callback URL: `https://healify-sigma.vercel.app/api/auth/callback/google`

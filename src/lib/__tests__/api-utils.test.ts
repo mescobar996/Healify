@@ -16,22 +16,27 @@ describe('formatNumber', () => {
 describe('formatRelativeTime', () => {
   const ago = (ms: number) => new Date(Date.now() - ms).toISOString()
 
-  it('30 segundos → "just now"', () =>
-    expect(formatRelativeTime(ago(30_000))).toBe('just now'))
+  // Default locale is 'es' (Spanish)
+  it('30 segundos → "hace unos segundos"', () =>
+    expect(formatRelativeTime(ago(30_000))).toBe('hace unos segundos'))
 
-  it('5 minutos → "5m ago"', () =>
-    expect(formatRelativeTime(ago(5 * 60_000))).toBe('5m ago'))
+  it('5 minutos → "hace 5 min"', () =>
+    expect(formatRelativeTime(ago(5 * 60_000))).toBe('hace 5 min'))
 
-  it('2 horas → "2h ago"', () =>
-    expect(formatRelativeTime(ago(2 * 3_600_000))).toBe('2h ago'))
+  it('2 horas → "hace 2 horas"', () =>
+    expect(formatRelativeTime(ago(2 * 3_600_000))).toBe('hace 2 horas'))
 
-  it('3 días → "3d ago"', () =>
-    expect(formatRelativeTime(ago(3 * 86_400_000))).toBe('3d ago'))
+  it('3 días → "hace 3 días"', () =>
+    expect(formatRelativeTime(ago(3 * 86_400_000))).toBe('hace 3 días'))
 
   it('acepta objeto Date además de string', () => {
     const d = new Date(Date.now() - 60_000)
-    expect(formatRelativeTime(d)).toBe('1m ago')
+    expect(formatRelativeTime(d)).toBe('hace 1 min')
   })
+
+  // English locale
+  it('english: 5m ago', () =>
+    expect(formatRelativeTime(ago(5 * 60_000), 'en')).toBe('5m ago'))
 
   it('siempre retorna string', () =>
     expect(typeof formatRelativeTime(ago(1000))).toBe('string'))

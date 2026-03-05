@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Montserrat, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "sonner";
 import { Providers } from "@/components/Providers";
 
@@ -29,8 +28,8 @@ export const metadata: Metadata = {
     template: "Healify",
   },
   description: 
-    "Automatically heal your failing E2E tests with AI. Healify detects broken selectors, suggests fixes with high confidence scores, and opens PRs automatically.",
-  keywords: ["Healify", "Test Automation", "Self-Healing Tests", "AI Testing", "E2E Testing"],
+    "Infraestructura de self-healing para tests con IA. Dejá de reparar selectores manualmente. Healify detecta, corrige y abre PRs automáticamente.",
+  keywords: ["Healify", "Test Automation", "Self-Healing Tests", "IA Testing", "E2E Testing", "Tests automáticos"],
   authors: [{ name: "Healify Team", url: baseUrl }],
   creator: "Healify",
   publisher: "Healify",
@@ -44,18 +43,18 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   openGraph: {
     type: "website",
-    locale: "en_US",
+    locale: "es_AR",
     url: baseUrl,
     siteName: "Healify",
-    title: "Healify",
-    description: "AI-powered test self-healing platform.",
+    title: "Healify - Tests que se curan solos",
+    description: "Infraestructura de self-healing para tests con IA. Dejá de reparar selectores manualmente.",
     images: [{ url: `${baseUrl}/opengraph-image`, width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",
     site: "@healify_dev",
-    title: "Healify",
-    description: "AI-powered test self-healing platform.",
+    title: "Healify - Tests que se curan solos",
+    description: "Infraestructura de self-healing para tests con IA.",
   },
   robots: { index: true, follow: true },
   alternates: { canonical: baseUrl },
@@ -78,7 +77,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
+    <html lang="es" className="dark" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -88,7 +87,6 @@ export default function RootLayout({
       >
         <Providers>
           {children}
-          <Toaster />
           <SonnerToaster position="bottom-right" theme="dark" />
         </Providers>
       </body>

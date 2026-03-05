@@ -91,15 +91,7 @@ const nextConfig: NextConfig = {
     ];
   },
 
-  // ============================================
-  // REDIRECTS
-  // ============================================
-  async redirects() {
-    return [
-      // Redirect authenticated users away from landing
-      // Handled client-side via useSession
-    ];
-  },
+
 };
 
 export default withSentryConfig(nextConfig, {

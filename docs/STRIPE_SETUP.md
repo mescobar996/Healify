@@ -1,4 +1,14 @@
-# Stripe Configuration Guide for Healify
+# ⚠️ DEPRECATED — Stripe Configuration Guide for Healify
+
+> **Nota (marzo 2026):** Healify migró a **MercadoPago** como gateway principal de pagos.
+> El código de Stripe (webhook handler) se mantiene solo por compatibilidad con suscripciones legacy.
+> Para nuevas integraciones, ver `src/lib/payment/mercadopago.ts` y `src/lib/payment/types.ts`.
+>
+> Si necesitás configurar pagos, usá el flujo de waitlist (`/api/waitlist`) hasta que los pagos con MercadoPago estén habilitados en producción.
+
+---
+
+# Stripe Configuration Guide for Healify (Legacy)
 
 This guide will walk you through setting up Stripe for the Healify subscription system.
 

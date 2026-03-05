@@ -6,8 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { getSessionUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { getPortalUrl as mpPortal } from '@/lib/payment/mercadopago'
 import Stripe from 'stripe'
@@ -18,13 +17,13 @@ export async function GET(req: NextRequest) {
   const rl = await billingRateLimit(req)
   if (!rl.ok) return rl.response!
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const user = await getSessionUser()
+    if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const subscription = await db.subscription.findUnique({
-      where: { userId: session.user.id },
+      where: { userId: user.id },
     })
 
     if (!subscription) {

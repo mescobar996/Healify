@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { z } from 'zod'
+import { publicRateLimit } from '@/lib/http-rate-limiter'
 
 const WaitlistSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -9,57 +10,12 @@ const WaitlistSchema = z.object({
   source: z.enum(['pricing', 'landing', 'docs']).default('pricing'),
 })
 
-// ── IP-based rate limit: max 5 requests per IP per hour ─────────────────────
-const RATE_LIMIT_MAX = 5
-const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000 // 1 hour
-
-const ipWindows = new Map<string, { count: number; resetAt: number }>()
-
-function checkIpRateLimit(ip: string): { allowed: boolean; remaining: number; resetInMs: number } {
-  const now = Date.now()
-  const window = ipWindows.get(ip)
-
-  if (!window || now >= window.resetAt) {
-    ipWindows.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS })
-    return { allowed: true, remaining: RATE_LIMIT_MAX - 1, resetInMs: RATE_LIMIT_WINDOW_MS }
-  }
-
-  if (window.count >= RATE_LIMIT_MAX) {
-    return { allowed: false, remaining: 0, resetInMs: window.resetAt - now }
-  }
-
-  window.count++
-  return { allowed: true, remaining: RATE_LIMIT_MAX - window.count, resetInMs: window.resetAt - now }
-}
-
-function getClientIp(request: NextRequest): string {
-  return (
-    request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
-    request.headers.get('x-real-ip') ||
-    'unknown'
-  )
-}
-// ────────────────────────────────────────────────────────────────────────────
-
 // POST /api/waitlist — register interest
 export async function POST(request: NextRequest) {
   try {
-    // IP-based rate limit check
-    const ip = getClientIp(request)
-    const rateCheck = checkIpRateLimit(ip)
-    if (!rateCheck.allowed) {
-      return NextResponse.json(
-        { error: 'Demasiados intentos. Esperá un momento e intentá de nuevo.' },
-        {
-          status: 429,
-          headers: {
-            'Retry-After': String(Math.ceil(rateCheck.resetInMs / 1000)),
-            'X-RateLimit-Limit': String(RATE_LIMIT_MAX),
-            'X-RateLimit-Remaining': '0',
-          },
-        }
-      )
-    }
+    // Centralized rate limit (works in serverless, unlike in-memory Map)
+    const rl = await publicRateLimit(request)
+    if (!rl.ok) return rl.response!
 
     const body = await request.json()
     const data = WaitlistSchema.parse(body)

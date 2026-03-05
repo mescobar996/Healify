@@ -19,12 +19,18 @@ import { z } from 'zod'
 const serverSchema = z.object({
   DATABASE_URL:        z.string().min(1, 'DATABASE_URL is required'),
   NEXTAUTH_SECRET:     z.string().min(1, 'NEXTAUTH_SECRET is required'),
+  // NEXTAUTH_URL — required in production for OAuth callback verification
+  NEXTAUTH_URL:        z.string().url('NEXTAUTH_URL must be a valid URL (e.g. https://healify-sigma.vercel.app)').optional(),
   // GitHub OAuth – accept either GITHUB_CLIENT_ID or GITHUB_ID
   GITHUB_CLIENT_ID:    z.string().min(1).optional(),
   GITHUB_ID:           z.string().min(1).optional(),
   GITHUB_CLIENT_SECRET: z.string().min(1).optional(),
   GITHUB_SECRET:       z.string().min(1).optional(),
 })
+  .refine(
+    (env) => !!env.NEXTAUTH_URL || process.env.VERCEL_URL,
+    { message: 'NEXTAUTH_URL must be set (or VERCEL_URL must exist for auto-detection)' },
+  )
   .refine(
     (env) => !!(env.GITHUB_CLIENT_ID || env.GITHUB_ID),
     { message: 'Either GITHUB_CLIENT_ID or GITHUB_ID must be set' },
@@ -35,7 +41,6 @@ const serverSchema = z.object({
   )
 
 const optionalSchema = z.object({
-  NEXTAUTH_URL:                z.string().url().optional(),
   NEXT_PUBLIC_APP_URL:         z.string().url().optional(),
   REDIS_URL:                   z.string().min(1).optional(),
   RESEND_API_KEY:              z.string().min(1).optional(),

@@ -175,32 +175,10 @@ export const api = {
 }
 
 // ============================================
-// FORMAT HELPERS
+// FORMAT HELPERS (re-exported from utils for backward compat)
 // ============================================
 
-export function formatNumber(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
-  return String(n)
-}
-
-export function formatDuration(ms: number): string {
-  if (ms < 1000) return `${ms}ms`
-  if (ms < 60_000) return `${(ms / 1000).toFixed(1)}s`
-  return `${Math.floor(ms / 60_000)}m ${Math.floor((ms % 60_000) / 1000)}s`
-}
-
-export function formatRelativeTime(date: string | Date): string {
-  const d = typeof date === 'string' ? new Date(date) : date
-  const diff = Date.now() - d.getTime()
-  const mins = Math.floor(diff / 60_000)
-  const hrs = Math.floor(diff / 3_600_000)
-  const days = Math.floor(diff / 86_400_000)
-  if (mins < 1) return 'just now'
-  if (mins < 60) return `${mins}m ago`
-  if (hrs < 24) return `${hrs}h ago`
-  return `${days}d ago`
-}
+export { formatNumber, formatDuration, formatRelativeTime } from '@/lib/utils'
 
 // ============================================
 // REPO HELPERS

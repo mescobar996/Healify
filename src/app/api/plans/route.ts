@@ -1,38 +1,36 @@
-// trigger redeploy 2026-02-24
 import { NextResponse } from 'next/server'
+import { PLAN_META, type PlanId } from '@/lib/payment/types'
 
-// GET /api/plans - runtime env var evaluation
-// CRÍTICO: Lee env vars directamente en el handler, NO importa PLANS desde lib/stripe
-// porque ese archivo cachea process.env en build time.
+// Features per plan (not part of PLAN_META since they're display-only)
+const PLAN_FEATURES: Record<PlanId, string[]> = {
+  starter:    ['5 Projects', '100 Test Runs/mo', 'Email Support'],
+  pro:        ['Unlimited Projects', '1,000 Test Runs/mo', 'Priority Support', 'Custom Selectors'],
+  enterprise: ['Custom Limits', 'Dedicated Support', 'SSO & Audit Logs', 'On-premise option'],
+}
+
+// GET /api/plans — runtime env var evaluation (reads at request time, not build time)
 export async function GET() {
-    const plans = [
-        {
-            id: 'starter',
-            name: 'Starter',
-            price: 49,
-            priceId: process.env.STRIPE_STARTER_PRICE_ID || null,
-            features: ['5 Projects', '100 Test Runs/mo', 'Email Support'],
-            configured: !!(process.env.STRIPE_STARTER_PRICE_ID && !process.env.STRIPE_STARTER_PRICE_ID.includes('mock')),
-        },
-        {
-            id: 'pro',
-            name: 'Pro',
-            price: 99,
-            priceId: process.env.STRIPE_PRO_PRICE_ID || null,
-            features: ['Unlimited Projects', '1,000 Test Runs/mo', 'Priority Support', 'Custom Selectors'],
-            configured: !!(process.env.STRIPE_PRO_PRICE_ID && !process.env.STRIPE_PRO_PRICE_ID.includes('mock')),
-        },
-        {
-            id: 'enterprise',
-            name: 'Enterprise',
-            price: 499,
-            priceId: process.env.STRIPE_ENTERPRISE_PRICE_ID || null,
-            features: ['Custom Limits', 'Dedicated Support', 'SSO & Audit Logs', 'On-premise option'],
-            configured: !!(process.env.STRIPE_ENTERPRISE_PRICE_ID && !process.env.STRIPE_ENTERPRISE_PRICE_ID.includes('mock')),
-        },
-    ]
+  const PRICE_ID_MAP: Record<PlanId, string | undefined> = {
+    starter:    process.env.STRIPE_STARTER_PRICE_ID,
+    pro:        process.env.STRIPE_PRO_PRICE_ID,
+    enterprise: process.env.STRIPE_ENTERPRISE_PRICE_ID,
+  }
 
-    const stripeConfigured = plans.some(p => p.configured)
+  const plans = (Object.keys(PLAN_META) as PlanId[]).map((id) => {
+    const meta = PLAN_META[id]
+    const priceId = PRICE_ID_MAP[id] ?? null
+    return {
+      id: meta.id,
+      name: meta.name,
+      price: meta.priceUsd,
+      annualPrice: meta.annualPriceUsd,
+      annualMonthly: meta.annualMonthlyUsd,
+      priceId,
+      features: PLAN_FEATURES[id],
+      configured: !!(priceId && !priceId.includes('mock')),
+    }
+  })
 
-    return NextResponse.json({ plans, stripeConfigured })
+  const stripeConfigured = plans.some((p) => p.configured)
+  return NextResponse.json({ plans, stripeConfigured })
 }
