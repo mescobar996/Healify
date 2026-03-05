@@ -414,29 +414,6 @@ function DashboardContent() {
 
           <TabsContent value="overview" className="space-y-4">
 
-        {/* U-M1/U-M2: Show activation progress in Overview for new users */}
-        {(() => {
-          const steps = [
-            { label: 'Proyecto conectado', done: ((data as DashboardResponse).projectCount || 0) > 0 },
-            { label: 'Primera ejecución', done: data.metrics.testsExecutedToday > 0 || data.chartData.length > 0 },
-            { label: 'Primera curación', done: data.healingHistory.length > 0 },
-          ]
-          const doneCount = steps.filter(s => s.done).length
-          if (doneCount >= 3) return null
-          const pct = Math.round((doneCount / steps.length) * 100)
-          return (
-            <div className="rounded-lg border border-white/[0.07] bg-[#111111] p-4">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-semibold text-[var(--text-primary)]">Activación: {doneCount}/3 pasos</h3>
-                <span className="text-sm font-bold text-white">{pct}%</span>
-              </div>
-              <div className="h-1.5 rounded-full bg-[var(--bg-elevated)] overflow-hidden">
-                <div className="h-full rounded-full bg-gradient-to-r from-white to-[#BEBEBE] transition-all duration-700" style={{ width: `${pct}%` }} />
-              </div>
-            </div>
-          )
-        })()}
-
         {/* Metrics Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <MetricCard

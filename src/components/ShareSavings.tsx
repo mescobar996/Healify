@@ -20,7 +20,9 @@ export function ShareSavings({
   const [open, setOpen] = useState(false)
   const [copied, setCopied] = useState(false)
 
-  const text = [
+  const isEmpty = timeSavedHours === 0 && totalCostSaved === 0 && autoHealedMonth === 0
+
+  const text = isEmpty ? '' : [
     `🩹 Healify ahorra a mi equipo ${timeSavedHours}h/mes`,
     `y ~$${totalCostSaved.toLocaleString()} en mantenimiento de tests.`,
     `${autoHealedMonth} tests autocurados este mes con ${healingRate}% de tasa de éxito.`,
@@ -66,45 +68,54 @@ export function ShareSavings({
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
 
           {/* Dropdown */}
-          <div className="absolute right-0 top-full mt-2 z-50 w-64 rounded-lg border border-[var(--border-default)] bg-[var(--bg-card)] shadow-xl p-3 space-y-2">
+          <div className="absolute right-0 top-full mt-2 z-50 w-72 rounded-xl border border-[var(--border-default)] bg-[var(--bg-card)] shadow-2xl p-4 space-y-3">
             <p className="text-[10px] uppercase tracking-widest text-[var(--text-tertiary)] font-medium">
               Compartir resultados
             </p>
 
-            {/* Preview */}
-            <div className="rounded-md bg-[var(--bg-elevated)] p-2.5 text-[11px] text-[var(--text-secondary)] leading-relaxed whitespace-pre-line">
-              {text}
-            </div>
+            {isEmpty ? (
+              <div className="rounded-lg bg-[var(--bg-elevated)] p-4 text-center">
+                <p className="text-sm text-[var(--text-secondary)]">📊 Estadísticas disponibles cuando Healify cure su primer test</p>
+                <a href="/dashboard/projects" className="text-xs text-white underline mt-2 inline-block">Conectar repositorio →</a>
+              </div>
+            ) : (
+              <>
+                {/* Preview */}
+                <div className="rounded-lg bg-[var(--bg-elevated)] p-3 text-[12px] text-[var(--text-secondary)] leading-relaxed whitespace-pre-line">
+                  {text}
+                </div>
 
-            <div className="flex items-center gap-2">
-              <a
-                href={twitterUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => trackEvent("share_savings_twitter")}
-                className="flex-1 flex items-center justify-center gap-1.5 rounded-md border border-[var(--border-subtle)] px-2.5 py-2 text-[11px] text-[var(--text-secondary)] hover:text-white hover:border-white/20 transition-colors"
-              >
-                <Twitter className="w-3.5 h-3.5" />
-                X
-              </a>
-              <a
-                href={linkedinUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => trackEvent("share_savings_linkedin")}
-                className="flex-1 flex items-center justify-center gap-1.5 rounded-md border border-[var(--border-subtle)] px-2.5 py-2 text-[11px] text-[var(--text-secondary)] hover:text-white hover:border-white/20 transition-colors"
-              >
-                <Linkedin className="w-3.5 h-3.5" />
-                LinkedIn
-              </a>
-              <button
-                onClick={handleCopy}
-                className="flex-1 flex items-center justify-center gap-1.5 rounded-md border border-[var(--border-subtle)] px-2.5 py-2 text-[11px] text-[var(--text-secondary)] hover:text-white hover:border-white/20 transition-colors"
-              >
-                {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
-                {copied ? "Copiado" : "Copiar"}
-              </button>
-            </div>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={twitterUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => trackEvent("share_savings_twitter")}
+                    className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5 text-[12px] text-[var(--text-secondary)] hover:text-white hover:border-white/20 hover:bg-white/5 transition-all"
+                  >
+                    <Twitter className="w-4 h-4" />
+                    X
+                  </a>
+                  <a
+                    href={linkedinUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => trackEvent("share_savings_linkedin")}
+                    className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5 text-[12px] text-[var(--text-secondary)] hover:text-white hover:border-white/20 hover:bg-white/5 transition-all"
+                  >
+                    <Linkedin className="w-4 h-4" />
+                    LinkedIn
+                  </a>
+                  <button
+                    onClick={handleCopy}
+                    className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-[var(--border-subtle)] px-3 py-2.5 text-[12px] text-[var(--text-secondary)] hover:text-white hover:border-white/20 hover:bg-white/5 transition-all"
+                  >
+                    {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+                    {copied ? "Copiado" : "Copiar"}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </>
       )}

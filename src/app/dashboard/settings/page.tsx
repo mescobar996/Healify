@@ -8,7 +8,6 @@ import {
   CreditCard,
   Bell,
   Shield,
-  Palette,
   Github,
   Copy,
   CheckCheck,
@@ -22,13 +21,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 
@@ -54,7 +46,6 @@ const tabs = [
   { id: "api", label: "API Keys", icon: Key },
   { id: "billing", label: "Facturación", icon: CreditCard },
   { id: "notifications", label: "Notificaciones", icon: Bell },
-  { id: "appearance", label: "Apariencia", icon: Palette },
   { id: "integrations", label: "Integraciones", icon: Github },
 ] as const;
 
@@ -172,94 +163,87 @@ function AccountSection() {
 }
 
 function ApiKeysSection() {
-  const [showApiKey, setShowApiKey] = useState<number | string | null>(null);
-  const [dynamicApiKeys, setDynamicApiKeys] = useState<Array<{id: string|number, name: string, key: string, createdAt: string, lastUsed: string}>>([]);
-  const [copied, setCopied] = useState<number | string | null>(null);
+  const [showApiKey, setShowApiKey] = useState<string | null>(null);
+  const [projectKeys, setProjectKeys] = useState<Array<{id: string, name: string, apiKeyPrefix: string | null}>>([]);
+  const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState<string | null>(null);
 
-  const copyToClipboard = (text: string, id: number | string) => {
-    void id; // suppress unused
-    navigator.clipboard.writeText(text);
-    setCopied(id);
-    toast.success("API Key copiada al portapapeles");
-    setTimeout(() => setCopied(null), 2000);
-  };
+  React.useEffect(() => {
+    fetch('/api/projects', { credentials: 'include' })
+      .then(r => r.ok ? r.json() : [])
+      .then((data: Array<{id: string, name: string, apiKeyPrefix?: string | null}>) => {
+        const projects = Array.isArray(data) ? data : [];
+        setProjectKeys(projects.map(p => ({ id: p.id, name: p.name, apiKeyPrefix: p.apiKeyPrefix || null })));
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
-  const handleGenerateNewKey = () => {
-    toast.promise(
-      fetch('/api/projects', { credentials: 'include' })
-        .then(r => r.json())
-        .then(projects => {
-          if (!projects?.length) throw new Error('No hay proyectos');
-          return projects[0].apiKey || 'Actualizado';
-        }),
-      {
-        loading: "Generando nueva API Key...",
-        success: (key: string) => `Nueva API Key lista`,
-        error: "Primero creá un proyecto para obtener una API Key",
+  const handleRotateKey = async (projectId: string) => {
+    try {
+      const res = await fetch(`/api/projects/${projectId}/rotate-key`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('Error al rotar');
+      const data = await res.json();
+      toast.success('API Key rotada', { description: 'Copiá la nueva key — no se volverá a mostrar.' });
+      if (data.apiKey) {
+        await navigator.clipboard.writeText(data.apiKey);
+        toast.success('Key copiada al portapapeles');
       }
-    );
+    } catch {
+      toast.error('Error al rotar la API Key');
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="space-y-3">
+        {[1, 2].map(i => <div key={i} className="h-16 rounded-lg bg-white/5 animate-pulse" />)}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
-      {dynamicApiKeys.length > 0 ? dynamicApiKeys.map((apiKey) => (
+      {projectKeys.length > 0 ? projectKeys.map((project) => (
         <div
-          key={apiKey.id}
+          key={project.id}
           className="p-4 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-subtle)] space-y-2"
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-[var(--text-primary)]">{apiKey.name}</p>
+              <p className="text-sm font-medium text-[var(--text-primary)]">{project.name}</p>
               <p className="text-[11px] text-[var(--text-tertiary)]">
-                Creada: {apiKey.createdAt} • Último uso: {apiKey.lastUsed}
+                Proyecto ID: {project.id.slice(0, 8)}...
               </p>
             </div>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() =>
-                  setShowApiKey(showApiKey === apiKey.id ? null : apiKey.id)
-                }
-                className="p-1.5 rounded-md text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] transition-colors"
-              >
-                {showApiKey === apiKey.id ? (
-                  <EyeOff className="w-4 h-4" />
-                ) : (
-                  <Eye className="w-4 h-4" />
-                )}
-              </button>
-              <button
-                onClick={() => copyToClipboard(apiKey.key, apiKey.id)}
-                className="p-1.5 rounded-md text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] transition-colors"
-              >
-                {copied === apiKey.id ? (
-                  <CheckCheck className="w-4 h-4 text-white" />
-                ) : (
-                  <Copy className="w-4 h-4" />
-                )}
-              </button>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleRotateKey(project.id)}
+              className="text-xs"
+            >
+              <Key className="w-3 h-3 mr-1" />
+              Rotar key
+            </Button>
           </div>
-          <code className="block p-2 bg-[var(--bg-primary)] rounded text-xs font-mono text-[var(--text-secondary)]">
-            {showApiKey === apiKey.id
-              ? apiKey.key
-              : apiKey.key.slice(0, 12) + "•".repeat(24) + apiKey.key.slice(-4)}
-          </code>
+          {project.apiKeyPrefix && (
+            <code className="block p-2 bg-[var(--bg-primary)] rounded text-xs font-mono text-[var(--text-secondary)]">
+              {project.apiKeyPrefix}•••••••••••••••••••••••••
+            </code>
+          )}
         </div>
       )) : (
-        <div className="p-4 text-center text-[var(--text-tertiary)] text-sm">
-          Creá un proyecto para obtener tu API Key
+        <div className="p-6 text-center rounded-lg border border-dashed border-white/10">
+          <Key className="w-8 h-8 mx-auto text-[var(--text-tertiary)] mb-2" />
+          <p className="text-sm text-[var(--text-secondary)] mb-1">No hay proyectos aún</p>
+          <p className="text-xs text-[var(--text-tertiary)]">
+            Creá un proyecto en <a href="/dashboard/projects" className="text-white underline">Proyectos</a> para obtener una API Key
+          </p>
         </div>
       )}
-
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={handleGenerateNewKey}
-        className="w-full"
-      >
-        <Key className="w-3.5 h-3.5 mr-1.5" />
-        Generar nueva API Key
-      </Button>
     </div>
   );
 }
@@ -521,53 +505,16 @@ function NotificationsSection() {
   );
 }
 
-function AppearanceSection() {
-  const [accent, setAccent] = useState("white");
-
-  const accents = [
-    { id: "white", color: "bg-white" },
-    { id: "gray", color: "bg-gray-300" },
-    { id: "slate", color: "bg-slate-400" },
-    { id: "zinc", color: "bg-zinc-500" },
-  ];
-
-  return (
-    <div className="space-y-6">
-      {/* App is always dark mode — Healify design system */}
-      <div className="rounded-xl p-4 flex items-center gap-3 border border-[var(--border-default)] bg-[var(--bg-elevated)]">
-        <div className="w-3 h-3 rounded-full bg-[var(--accent-primary)]" />
-        <p className="text-sm text-[var(--text-secondary)]">Healify utiliza diseño oscuro permanente optimizado para desarrolladores.</p>
-      </div>
-
-      {/* Accent Color */}
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-[var(--text-primary)]">Color de acento</p>
-          <p className="text-xs text-[var(--text-tertiary)]">Color principal de la interfaz</p>
-        </div>
-        <div className="flex gap-2">
-          {accents.map((a) => (
-            <button
-              key={a.id}
-              onClick={() => setAccent(a.id)}
-              className={cn(
-                "w-7 h-7 rounded-full transition-all",
-                a.color,
-                accent === a.id
-                  ? "ring-2 ring-offset-2 ring-offset-[#111113] ring-white"
-                  : "hover:ring-2 hover:ring-offset-2 hover:ring-offset-[#111113] hover:ring-white/50"
-              )}
-            />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function IntegrationsSection() {
   const { data: session } = useSession();
   const githubLogin = session?.user?.name || session?.user?.email?.split('@')[0] || null;
+
+  const comingSoon = [
+    { name: 'GitLab', description: 'Import repos y CI/CD pipelines', icon: '🦊' },
+    { name: 'Jenkins', description: 'Trigger builds y recibir resultados', icon: '🔧' },
+    { name: 'Jira', description: 'Crear tickets automáticos por bugs detectados', icon: '📝' },
+    { name: 'Notion', description: 'Sync de reportes de tests y métricas', icon: '📓' },
+  ]
 
   return (
     <div className="space-y-4">
@@ -603,12 +550,28 @@ function IntegrationsSection() {
         </div>
       </div>
 
-      {/* Coming Soon */}
-      <div className="p-4 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-subtle)]">
-        <p className="text-sm text-[var(--text-secondary)]">Más integraciones próximamente</p>
-        <p className="text-xs text-[var(--text-tertiary)] mt-1">
-          GitLab, Bitbucket, Jenkins...
+      {/* Coming Soon Integrations */}
+      <div className="space-y-2">
+        <p className="text-[11px] font-medium tracking-widest text-[var(--text-tertiary)] uppercase">
+          Próximamente
         </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {comingSoon.map((integration) => (
+            <div
+              key={integration.name}
+              className="flex items-center gap-3 p-3 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-subtle)] opacity-60"
+            >
+              <span className="text-xl">{integration.icon}</span>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-[var(--text-primary)]">{integration.name}</p>
+                <p className="text-[11px] text-[var(--text-tertiary)] truncate">{integration.description}</p>
+              </div>
+              <span className="ml-auto px-2 py-0.5 rounded text-[9px] font-medium bg-white/5 text-[var(--text-tertiary)] shrink-0">
+                Soon
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -631,8 +594,6 @@ export default function SettingsPage() {
         return <BillingSection />;
       case "notifications":
         return <NotificationsSection />;
-      case "appearance":
-        return <AppearanceSection />;
       case "integrations":
         return <IntegrationsSection />;
       default:

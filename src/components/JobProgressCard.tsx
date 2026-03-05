@@ -234,9 +234,16 @@ export function JobProgressCard({
       {/* No Redis fallback */}
       {!status.jobId && status.dbStatus === "PENDING" && (
         <div className="px-4 pb-3">
-          <p className="text-[10px] text-amber-400/70">
-            ⚠️ Sin REDIS_URL — el job no fue encolado. Configuralo en Railway para procesamiento automático.
-          </p>
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/5 border border-amber-500/10">
+            <span className="text-amber-400 text-sm mt-0.5">⏳</span>
+            <div>
+              <p className="text-[12px] text-amber-400 font-medium">Test en espera</p>
+              <p className="text-[11px] text-amber-400/60 mt-0.5">
+                El worker procesará este job automáticamente. Si el estado no avanza,
+                verificá que REDIS_URL esté configurado en tu entorno de deploy.
+              </p>
+            </div>
+          </div>
         </div>
       )}
     </div>

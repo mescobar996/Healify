@@ -11,6 +11,19 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
 
   // ============================================
+  // IMAGE REMOTE PATTERNS
+  // ============================================
+  images: {
+    remotePatterns: [
+      { protocol: 'https', hostname: 'avatars.githubusercontent.com' },
+      { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
+      { protocol: 'https', hostname: 'playwright.dev' },
+      { protocol: 'https', hostname: 'raw.githubusercontent.com' },
+      { protocol: 'https', hostname: 'github.githubassets.com' },
+    ],
+  },
+
+  // ============================================
   // SECURITY HEADERS
   // ============================================
   async headers() {
