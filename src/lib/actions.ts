@@ -1,7 +1,8 @@
-'use server'
-
 /**
  * Barrel re-exports — backward-compatible entry point.
+ *
+ * Each sub-module already has its own 'use server' directive.
+ * Do NOT add 'use server' here — Turbopack forbids re-exports in server files.
  *
  * The monolith was split into focused modules:
  *   actions/projects.ts   — getProjects, createProject
