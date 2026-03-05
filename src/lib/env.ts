@@ -55,6 +55,11 @@ const optionalSchema = z.object({
   // MercadoPago
   MERCADOPAGO_ACCESS_TOKEN:    z.string().min(1).optional(),
   MERCADOPAGO_WEBHOOK_SECRET:  z.string().min(1).optional(),
+  // Anthropic (Claude AI)
+  ANTHROPIC_API_KEY:           z.string().min(1).optional(),
+  // Slack Bot
+  SLACK_SIGNING_SECRET:        z.string().min(1).optional(),
+  SLACK_BOT_TOKEN:             z.string().min(1).optional(),
   // AWS / S3
   AWS_S3_BUCKET:               z.string().min(1).optional(),
   AWS_REGION:                  z.string().min(1).optional(),

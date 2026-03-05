@@ -6,6 +6,7 @@ import { CheckCircle2, XCircle, Clock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { HealingStatus } from '@/types'
 import { SelectorDiff } from '@/components/SelectorDiff'
+import { ScreenshotComparator } from '@/components/ScreenshotComparator'
 
 interface TestDetailData {
   id: string
@@ -18,6 +19,8 @@ interface TestDetailData {
   oldSelector: string
   newSelector: string | null
   reasoning: string | null
+  screenshotBefore?: string | null
+  screenshotAfter?: string | null
 }
 
 interface TestDetailSheetProps {
@@ -89,6 +92,18 @@ export function TestDetailSheet({
             <p className="text-[11px] text-gray-500 uppercase tracking-wider font-medium">Selector Changes</p>
             <SelectorDiff oldSelector={data.oldSelector} newSelector={data.newSelector} />
           </div>
+
+          {/* Screenshot Comparator */}
+          {data.screenshotBefore && data.screenshotAfter && (
+            <div className="space-y-2.5">
+              <p className="text-[11px] text-gray-500 uppercase tracking-wider font-medium">Capturas</p>
+              <ScreenshotComparator
+                beforeUrl={data.screenshotBefore}
+                afterUrl={data.screenshotAfter}
+                testName={data.testName}
+              />
+            </div>
+          )}
 
           {/* AI Reasoning */}
           {data.reasoning && (

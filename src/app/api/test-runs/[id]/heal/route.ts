@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { tryOpenAutoPR } from '@/lib/github/auto-pr';
 import { db } from '@/lib/db';
-import ZAI from 'z-ai-web-dev-sdk';
+import Anthropic from '@anthropic-ai/sdk';
 import { SelectorType, HealingStatus } from '@/lib/enums';
 import { notificationService } from '@/lib/notification-service';
 import { getSessionUser } from '@/lib/auth/session';
@@ -87,9 +87,9 @@ export async function POST(
       },
     });
 
-    // Perform AI analysis in background (for now, we'll do it synchronously)
+    // Perform AI analysis with Claude
     try {
-      const zai = await ZAI.create();
+      const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
       const analysisPrompt = `You are a test healing expert analyzing a failed test. Your job is to determine if this is a flaky test, a real bug, or a selector change that can be auto-fixed.
 
@@ -111,7 +111,7 @@ Analyze this failure and provide:
 4. Your reasoning for the analysis
 5. Recommended action: AUTO_FIX (confidence > 0.95), SUGGEST (confidence 0.5-0.95), BUG_REPORT (confidence < 0.5 and appears to be a real bug), or IGNORE (legitimate UI change)
 
-Respond in JSON format:
+Respond ONLY with valid JSON (no markdown):
 {
   "confidence": <number>,
   "newSelector": "<string or null>",
@@ -120,21 +120,16 @@ Respond in JSON format:
   "recommendedAction": "<AUTO_FIX|SUGGEST|BUG_REPORT|IGNORE>"
 }`;
 
-      const completion = await zai.chat.completions.create({
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a test healing expert. Always respond with valid JSON.',
-          },
-          {
-            role: 'user',
-            content: analysisPrompt,
-          },
-        ],
+      const message = await anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 512,
         temperature: 0.3,
+        system: 'You are a test healing expert. Always respond with valid JSON only, no markdown.',
+        messages: [{ role: 'user', content: analysisPrompt }],
       });
 
-      const responseContent = completion.choices[0]?.message?.content;
+      const responseBlock = message.content[0];
+      const responseContent = responseBlock?.type === 'text' ? responseBlock.text : null;
 
       if (responseContent) {
         // Parse AI response

@@ -1,6 +1,5 @@
 import { db } from '@/lib/db'
-import { createPullRequest } from './repos'
-import { getGitHubOctokit } from './auth'
+import { createSmartPR, createHealifyCheckRun } from './checks'
 
 // ═══════════════════════════════════════════════════════════════════════
 // AUTO-PR — Bloque 8
@@ -50,45 +49,18 @@ async function getDefaultBranch(
     repo: string
 ): Promise<string> {
     try {
-        const octokit = getGitHubOctokit(accessToken)
-        const { data } = await octokit.rest.repos.get({ owner, repo })
+        const res = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+                Accept: 'application/vnd.github+json',
+            },
+        })
+        if (!res.ok) return 'main'
+        const data = await res.json()
         return data.default_branch || 'main'
     } catch {
         return 'main'
     }
-}
-
-// ─── Construir el body del PR ──────────────────────────────────────────
-function buildPRBody(params: {
-    testName: string
-    testFile: string | null
-    failedSelector: string
-    newSelector: string
-    confidence: number
-    reasoning: string | null
-}): string {
-    const confidencePct = Math.round(params.confidence * 100)
-    return `## 🪄 Healify Auto-Fix
-
-Healify detectó un selector roto y encontró una solución con **${confidencePct}% de confianza**.
-
-### Test afectado
-\`\`\`
-${params.testName}${params.testFile ? `\nArchivo: ${params.testFile}` : ''}
-\`\`\`
-
-### Cambio del selector
-| | Selector |
-|---|---|
-| ❌ **Roto** | \`${params.failedSelector}\` |
-| ✅ **Nuevo** | \`${params.newSelector}\` |
-
-### Razonamiento de la IA
-${params.reasoning || 'El nuevo selector es más estable y resistente a cambios de UI.'}
-
----
-*Generado automáticamente por [Healify](https://healify-sigma.vercel.app) · Confianza: ${confidencePct}%*
-*Revisá el cambio antes de mergear.*`
 }
 
 // ─── FUNCIÓN PRINCIPAL ─────────────────────────────────────────────────
@@ -147,47 +119,45 @@ export async function tryOpenAutoPR(healingEventId: string): Promise<AutoPRResul
         // 7. Obtener rama por defecto
         const baseBranch = await getDefaultBranch(accessToken, parsed.owner, parsed.repo)
 
-        // 8. Construir el contenido del archivo modificado
-        // Como no tenemos el archivo real, creamos un patch file de Healify
-        const testFile = event.testFile || 'tests/healify-fixes.js'
-        const patchContent = `// Healify Auto-Fix — ${new Date().toISOString()}
-// Test: ${event.testName}
-// Confianza: ${Math.round(event.confidence * 100)}%
-
-// SELECTOR ROTO (reemplazar en tu test):
-// ${event.failedSelector}
-
-// SELECTOR NUEVO SUGERIDO POR HEALIFY:
-// ${event.newSelector}
-
-// Razonamiento: ${event.reasoning || 'Selector más estable detectado'}
-`
-
-        // 9. Abrir el PR
-        const pr = await createPullRequest(
+        // 8. Crear Smart PR (find-and-replace real en el test file + fallback a patch)
+        const prResult = await createSmartPR({
             accessToken,
-            parsed.owner,
-            parsed.repo,
+            owner: parsed.owner,
+            repo: parsed.repo,
             baseBranch,
-            `healify-fixes/${healingEventId.slice(0, 8)}.md`,
-            patchContent,
-            `🪄 Healify: Auto-fix selector en ${event.testName}`,
-            buildPRBody({
-                testName: event.testName,
-                testFile: event.testFile,
-                failedSelector: event.failedSelector,
-                newSelector: event.newSelector,
-                confidence: event.confidence,
-                reasoning: event.reasoning,
-            })
-        )
+            testFile: event.testFile,
+            oldSelector: event.failedSelector,
+            newSelector: event.newSelector,
+            testName: event.testName,
+            confidence: event.confidence,
+            reasoning: event.reasoning || '',
+            healingEventId,
+        })
+
+        if (!prResult) {
+            return { opened: false, reason: 'Failed to create pull request' }
+        }
+
+        // 9. Crear GitHub Check Run en el commit del PR
+        await createHealifyCheckRun({
+            accessToken,
+            owner: parsed.owner,
+            repo: parsed.repo,
+            headSha: prResult.headSha,
+            healingEventId,
+            testName: event.testName,
+            confidence: event.confidence,
+            oldSelector: event.failedSelector,
+            newSelector: event.newSelector,
+            reasoning: event.reasoning || '',
+        }).catch(err => console.warn('[Auto-PR] Check run creation failed (non-fatal):', err))
 
         // 10. Guardar prUrl en el HealingEvent
         await db.healingEvent.update({
             where: { id: healingEventId },
             data: {
-                prUrl: pr.html_url,
-                prBranch: pr.head.ref,
+                prUrl: prResult.prUrl,
+                prBranch: prResult.branch,
             }
         })
 
@@ -198,13 +168,13 @@ export async function tryOpenAutoPR(healingEventId: string): Promise<AutoPRResul
                     type: 'success',
                     title: 'PR automático creado',
                     message: `Healify abrió un PR para "${event.testName}" (${Math.round(event.confidence * 100)}% confianza).`,
-                    link: pr.html_url,
+                    link: prResult.prUrl,
                 },
             }).catch(() => {})
         }
 
-        console.log(`[Auto-PR] ✅ PR abierto: ${pr.html_url}`)
-        return { opened: true, prUrl: pr.html_url, prBranch: pr.head.ref }
+        console.log(`[Auto-PR] ✅ PR abierto: ${prResult.prUrl}`)
+        return { opened: true, prUrl: prResult.prUrl, prBranch: prResult.branch }
 
     } catch (error: unknown) {
         const msg = error instanceof Error ? error.message : String(error)

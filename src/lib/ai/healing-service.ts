@@ -1,5 +1,5 @@
 import { HEALING_SYSTEM_PROMPT } from './prompts'
-import ZAI from 'z-ai-web-dev-sdk'
+import Anthropic from '@anthropic-ai/sdk'
 
 export interface HealingSuggestion {
     newSelector: string
@@ -8,17 +8,35 @@ export interface HealingSuggestion {
     reasoning: string
 }
 
+// Singleton — created lazily, reused across requests
+let _client: Anthropic | null = null
+
+function getClient(): Anthropic {
+    if (!_client) {
+        const apiKey = process.env.ANTHROPIC_API_KEY
+        if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not set')
+        _client = new Anthropic({ apiKey })
+    }
+    return _client
+}
+
+/**
+ * Model used for healing analysis.
+ * Claude 3.5 Haiku — fast, cheap, great at structured JSON output.
+ */
+const CLAUDE_MODEL = 'claude-sonnet-4-20250514'
+
 export async function analyzeBrokenSelector(
     failedSelector: string,
     errorMessage: string,
     domSnapshot: string
 ): Promise<HealingSuggestion | null> {
 
-    // ── Intentar IA real con ZAI ────────────────────────────────────
+    // ── Intentar IA real con Claude ─────────────────────────────────
     try {
-        const zai = await ZAI.create()
+        const client = getClient()
 
-        const prompt = `Selector que falló: ${failedSelector}
+        const userPrompt = `Selector que falló: ${failedSelector}
 Error: ${errorMessage}
 DOM actual:
 \`\`\`html
@@ -33,25 +51,26 @@ Responde SOLO con JSON válido (sin markdown):
   "reasoning": "string"
 }`
 
-        const completion = await zai.chat.completions.create({
-            messages: [
-                { role: 'system', content: HEALING_SYSTEM_PROMPT },
-                { role: 'user', content: prompt },
-            ],
+        const message = await client.messages.create({
+            model: CLAUDE_MODEL,
+            max_tokens: 512,
             temperature: 0.2,
+            system: HEALING_SYSTEM_PROMPT,
+            messages: [{ role: 'user', content: userPrompt }],
         })
 
-        const content = completion.choices[0]?.message?.content
-        if (!content) throw new Error('Empty response')
+        const content = message.content[0]
+        if (content.type !== 'text') throw new Error('Non-text response')
 
-        const jsonMatch = content.match(/\{[\s\S]*\}/)
+        const text = content.text
+        const jsonMatch = text.match(/\{[\s\S]*\}/)
         if (!jsonMatch) throw new Error('No JSON in response')
 
         const parsed = JSON.parse(jsonMatch[0])
 
         if (parsed.newSelector && typeof parsed.confidence === 'number') {
             if (process.env.NODE_ENV === 'development') {
-                console.log(`[HealingService] AI -> ${parsed.newSelector} (${Math.round(parsed.confidence * 100)}% conf)`)
+                console.log(`[HealingService] Claude → ${parsed.newSelector} (${Math.round(parsed.confidence * 100)}% conf)`)
             }
             return {
                 newSelector: parsed.newSelector,
@@ -64,7 +83,7 @@ Responde SOLO con JSON válido (sin markdown):
 
     } catch (error) {
         const msg = error instanceof Error ? error.message : String(error)
-        console.warn(`[HealingService] ZAI failed, using deterministic fallback: ${msg}`)
+        console.warn(`[HealingService] Claude failed, using deterministic fallback: ${msg}`)
     }
 
     // ── Fallback determinístico ─────────────────────────────────────
