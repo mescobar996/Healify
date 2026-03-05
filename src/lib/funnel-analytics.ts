@@ -5,7 +5,7 @@ import { db } from '@/lib/db'
 // signup_start  → user clicks "Get Started" / "Sign In" on the landing
 // activation    → user creates an account (first login)
 // payment       → user completes a paid subscription
-export type FunnelEvent = 'landing_view' | 'signup_start' | 'activation' | 'payment'
+export type FunnelEvent = 'landing_view' | 'signup_start' | 'activation' | 'payment' | 'churn'
 
 /**
  * Fire-and-forget funnel event tracking.
