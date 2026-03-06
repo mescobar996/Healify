@@ -9,7 +9,7 @@ import { TestStatus, HealingStatus, SelectorType } from '../lib/enums'
 import type { TestJobData } from '../lib/queue'
 import { cloneRepository, detectTestFramework, installDependencies } from './lib/git-ops'
 import { installPlaywrightBrowsers, runPlaywrightTests } from './lib/playwright-runner'
-import { healTestFailure, createHealingPR, cleanupWorkDir } from './lib/healing-ops'
+import { healTestFailure, createHealingPR, cleanupWorkDir, closePullRequest } from './lib/healing-ops'
 import { log, logError } from './lib/logger'
 import { publishTestRunEvent } from './lib/event-bus'
 import { notifyJobCompleted, notifyJobFailed } from './lib/notify'
@@ -123,25 +123,39 @@ export async function processJob(job: Job<TestJobData>): Promise<ProcessJobResul
           },
         })
 
-        // ── 6. Create auto-PR for high-confidence heals ───────────────
-        const prUrl = await createHealingPR(jobId, project, failure, healing.suggestion)
+        // ── 6. Create auto-PR for high-confidence heals ─────────────────────
+        // SAFETY: If DB update fails after PR creation, we roll back by closing
+        // the PR on GitHub to avoid "Ghost PR" state (PR exists, DB says NEEDS_REVIEW).
+        const prBranch = `healify-fix-${Date.now()}`
+        const prResult = await createHealingPR(jobId, project, failure, healing.suggestion)
 
-        if (prUrl) {
-          await db.healingEvent.update({
-            where: { id: healingEvent.id },
-            data: {
-              prUrl,
-              prBranch: `healify-fix-${Date.now()}`,
-              actionTaken: 'auto_fixed',
-              appliedAt: new Date(),
-              appliedBy: 'system',
-            },
-          })
-          await publishTestRunEvent(testRunId, 'pr_created', {
-            message: `PR created: ${prUrl}`,
-            data: { prUrl, testName: failure.testName },
-          })
-          healedCount++
+        if (prResult) {
+          const { prUrl, prNumber, owner, repo, accessToken } = prResult
+          try {
+            await db.healingEvent.update({
+              where: { id: healingEvent.id },
+              data: {
+                prUrl,
+                prBranch,
+                actionTaken: 'auto_fixed',
+                appliedAt: new Date(),
+                appliedBy: 'system',
+              },
+            })
+            await publishTestRunEvent(testRunId, 'pr_created', {
+              message: `PR created: ${prUrl}`,
+              data: { prUrl, testName: failure.testName },
+            })
+            healedCount++
+          } catch (dbError) {
+            // ── ROLLBACK: Close the PR to avoid Ghost PR state ───────────
+            logError(jobId, `DB update failed after PR creation — rolling back PR #${prNumber}`)
+            await closePullRequest(accessToken, owner, repo, prNumber).catch((closeErr: Error) => {
+              logError(jobId, `Could not close ghost PR #${prNumber}: ${closeErr.message}. Manual cleanup required at ${prUrl}`)
+            })
+            // Re-throw so the healing event stays as NEEDS_REVIEW (correct state)
+            throw dbError
+          }
         }
       }
     }

@@ -22,6 +22,15 @@ export interface HealingResult {
   suggestion?: HealingSuggestion
 }
 
+/** Structured result returned by createHealingPR — used for rollback if DB write fails */
+export interface PrCreationResult {
+  prUrl: string
+  prNumber: number
+  owner: string
+  repo: string
+  accessToken: string
+}
+
 /**
  * Calls the AI healing service to analyze a test failure.
  * Returns a suggestion only when confidence >= 0.95.
@@ -66,7 +75,7 @@ export async function createHealingPR(
   project: { id: string; repository: string | null },
   failure: TestFailure,
   suggestion: HealingSuggestion
-): Promise<string | null> {
+): Promise<PrCreationResult | null> {
   const projectWithUser = await db.project.findUnique({
     where: { id: project.id },
     include: {
@@ -84,6 +93,7 @@ export async function createHealingPR(
     return null
   }
 
+  const accessToken = githubAccount.access_token
   const repoUrl = project.repository ?? ''
   const parts = repoUrl.replace('https://github.com/', '').split('/')
   const owner = parts[0]
@@ -98,7 +108,7 @@ export async function createHealingPR(
     log(jobId, `Creating PR on ${owner}/${repo}...`)
 
     const pr = await createPullRequest(
-      githubAccount.access_token,
+      accessToken,
       owner,
       repo,
       'main',
@@ -119,12 +129,28 @@ export async function createHealingPR(
     )
 
     log(jobId, `PR created: ${pr.html_url}`)
-    return pr.html_url
+    return { prUrl: pr.html_url, prNumber: pr.number, owner, repo, accessToken }
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error))
     logError(jobId, `Failed to create PR: ${err.message}`)
     return null
   }
+}
+
+// ── PR Rollback ───────────────────────────────────────────────────────────────
+
+/**
+ * Closes a GitHub PR — used as rollback when the DB update fails after PR creation.
+ */
+export async function closePullRequest(
+  accessToken: string,
+  owner: string,
+  repo: string,
+  prNumber: number
+): Promise<void> {
+  const { getGitHubOctokit } = await import('../../lib/github/auth')
+  const octokit = getGitHubOctokit(accessToken)
+  await octokit.rest.pulls.update({ owner, repo, pull_number: prNumber, state: 'closed' })
 }
 
 // ── Cleanup ───────────────────────────────────────────────────────────────

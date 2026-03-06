@@ -4,8 +4,15 @@ import { TestStatus, HealingStatus, SelectorType } from '@/lib/enums'
 import { getSessionUser } from '@/lib/auth/session'
 import { initProjectApiKey } from '@/lib/api-key-service'
 
+// ── Environment guard: this endpoint must NEVER run in production ──────────
+const SEED_ALLOWED = process.env.NODE_ENV === 'development'
+
 // GET /api/seed - Seed the database with sample data
 export async function GET(request: Request) {
+  // 🔴 HARD BLOCK: Reject immediately outside development
+  if (!SEED_ALLOWED) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
   try {
     const user = await getSessionUser()
     if (!user?.id) {
@@ -45,7 +52,7 @@ export async function GET(request: Request) {
         userId: user.id,
       },
     })
-    await initProjectApiKey(project1.id).catch(() => {})
+    await initProjectApiKey(project1.id).catch(() => { })
 
     const project2 = await db.project.create({
       data: {
@@ -55,7 +62,7 @@ export async function GET(request: Request) {
         userId: user.id,
       },
     })
-    await initProjectApiKey(project2.id).catch(() => {})
+    await initProjectApiKey(project2.id).catch(() => { })
 
     const project3 = await db.project.create({
       data: {
@@ -65,7 +72,7 @@ export async function GET(request: Request) {
         userId: user.id,
       },
     })
-    await initProjectApiKey(project3.id).catch(() => {})
+    await initProjectApiKey(project3.id).catch(() => { })
 
     // Create test runs with distributed dates across 7 days
     const now = new Date()
@@ -136,6 +143,10 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  // 🔴 HARD BLOCK: Reject immediately outside development
+  if (!SEED_ALLOWED) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
   try {
     const user = await getSessionUser()
     if (!user?.id) {
