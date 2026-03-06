@@ -2,48 +2,80 @@ import { Queue, Job } from 'bullmq'
 
 export const TEST_QUEUE_NAME = 'test_execution_queue'
 
-// Use Redis URL directly — avoids ioredis version mismatch between bullmq and app
-const redisUrl = process.env.REDIS_URL
-
 // Detectar build time real (evitar falsos positivos con VERCEL='1' en runtime)
 const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build'
 
-// Lazy initialization: solo crear queue cuando se necesite, no durante build
+// ── Parseo robusto de REDIS_URL ───────────────────────────────────────────────
+// Railway usa URLs con credenciales: redis://:password@host:port
+// BullMQ con { url } no siempre las parsea bien — pasamos campos explícitos.
+function parseRedisConnection(): { host: string; port: number; password?: string; tls?: boolean } | null {
+  const redisUrl = process.env.REDIS_URL
+  if (!redisUrl) return null
+
+  try {
+    const url = new URL(redisUrl)
+    const host = url.hostname
+    const port = parseInt(url.port || '6379', 10)
+    // Railway pone la password en url.password (después de `:` en la parte de auth)
+    const password = url.password || undefined
+    // Upstash y algunos Redis cloud usan TLS (rediss://)
+    const tls = url.protocol === 'rediss:' ? true : undefined
+
+    return { host, port, password, ...(tls ? { tls: true as boolean } : {}) }
+  } catch {
+    // Si no se puede parsear, fallback a la URL directa
+    console.warn('[Queue] Could not parse REDIS_URL, falling back to url string')
+    return null
+  }
+}
+
+function getBullMQConnection() {
+  const redisUrl = process.env.REDIS_URL
+  if (!redisUrl) return null
+
+  const parsed = parseRedisConnection()
+  if (parsed) {
+    return {
+      host: parsed.host,
+      port: parsed.port,
+      password: parsed.password,
+      ...(parsed.tls ? { tls: parsed.tls } : {}),
+      maxRetriesPerRequest: null,
+      enableOfflineQueue: false,
+    }
+  }
+  // Fallback: url string
+  return { url: redisUrl, maxRetriesPerRequest: null, enableOfflineQueue: false }
+}
+
+// ── Lazy singleton ────────────────────────────────────────────────────────────
 let testQueueInstance: Queue | null = null
 
 function createTestQueue(): Queue | null {
-  // Durante build time en Vercel, no crear queue
-  if (isBuildTime || !redisUrl) {
-    return null
-  }
+  // Durante build time en Vercel NO crear queue (Redis no accesible en build)
+  if (isBuildTime) return null
+
+  const connection = getBullMQConnection()
+  if (!connection) return null
 
   return new Queue(TEST_QUEUE_NAME, {
-    connection: {
-      url: redisUrl,
-    },
+    connection,
     defaultJobOptions: {
       attempts: 3,
-      backoff: {
-        type: 'exponential',
-        delay: 5000,
-      },
-      removeOnComplete: {
-        count: 100, // Keep last 100 completed jobs
-        age: 24 * 3600, // Or 24 hours
-      },
-      removeOnFail: {
-        count: 500,          // Keep last 500 failed jobs for debugging
-        age: 7 * 24 * 3600,  // And no older than 7 days
-      },
+      backoff: { type: 'exponential', delay: 5000 },
+      removeOnComplete: { count: 100, age: 24 * 3600 },
+      removeOnFail: { count: 500, age: 7 * 24 * 3600 },
     },
   })
 }
 
-// Exportar getter lazy para la queue
+/**
+ * Getter lazy de la queue — siempre llama esto en runtime, nunca uses
+ * la variable testQueue exportada directamente (puede ser null si el módulo
+ * fue importado durante build time en Vercel).
+ */
 export function getTestQueue(): Queue | null {
-  if (isBuildTime) {
-    return null
-  }
+  if (isBuildTime) return null
 
   if (!testQueueInstance) {
     testQueueInstance = createTestQueue()
@@ -52,8 +84,9 @@ export function getTestQueue(): Queue | null {
   return testQueueInstance
 }
 
-// Mantener backward compatibility: testQueue es null durante build
-export const testQueue = isBuildTime ? null : (redisUrl ? createTestQueue() : null)
+// Solo para backward compatibility — NO usar en código nuevo
+// En runtime de Vercel puede ser null si el módulo se cacheó durante build
+export const testQueue = isBuildTime ? null : null // deprecated: usar getTestQueue()
 
 export interface TestJobData {
   projectId: string
@@ -86,8 +119,13 @@ export async function addTestJob(
     repository?: string | null
   }
 ): Promise<Job | null> {
-  if (!testQueue) {
-    console.warn('[Queue] Test queue not available (REDIS_URL not set)')
+  // CRITICO: usar getTestQueue() en cada invocacion, NO el singleton exportado.
+  // El modulo puede haberse importado durante build time (isBuildTime=true) y el
+  // singleton quedo null. getTestQueue() lo reinicializa correctamente en runtime.
+  const queue = getTestQueue()
+
+  if (!queue) {
+    console.warn('[Queue] Test queue not available (REDIS_URL not set or build time)')
     return null
   }
 
@@ -101,12 +139,11 @@ export async function addTestJob(
     repository: metadata?.repository || undefined,
   }
 
-  const job = await testQueue.add('execute_tests', jobData, {
-    // Job-specific options
-    jobId: testRunId ? `testrun-${testRunId}` : undefined, // Para tracking fácil
+  const job = await queue.add('execute_tests', jobData, {
+    jobId: testRunId ? `testrun-${testRunId}` : undefined,
   })
 
-  console.log(`[Queue] Job ${job.id} created for project ${projectId}`)
+  console.log(`[Queue] Job ${job.id} enqueued for project ${projectId}, testRun ${testRunId}`)
   return job
 }
 
@@ -119,9 +156,10 @@ export async function getJobStatus(jobId: string): Promise<{
   failedReason?: string
   returnValue?: unknown
 } | null> {
-  if (!testQueue) return null
+  const queue = getTestQueue()
+  if (!queue) return null
 
-  const job = await testQueue.getJob(jobId)
+  const job = await queue.getJob(jobId)
   if (!job) return null
 
   const state = await job.getState()
