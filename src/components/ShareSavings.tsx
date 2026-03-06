@@ -56,7 +56,7 @@ export function ShareSavings({
     <div className="relative inline-block">
       <button
         onClick={handleOpen}
-        className="inline-flex items-center gap-1.5 text-[11px] text-[var(--text-secondary)] hover:text-[var(--accent-primary)] transition-colors"
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-[11px] font-medium text-white hover:bg-[var(--accent-primary)] hover:text-black hover:border-transparent transition-all shadow-sm"
       >
         <Share2 className="w-3.5 h-3.5" />
         Compartir ahorro
@@ -69,7 +69,7 @@ export function ShareSavings({
 
           {/* Dropdown */}
           <div className="absolute right-0 top-full mt-2 z-50 w-72 rounded-xl border border-[var(--border-default)] bg-[var(--bg-card)] shadow-2xl p-4 space-y-3">
-            <p className="text-[10px] uppercase tracking-widest text-[var(--text-tertiary)] font-medium">
+            <p className="text-[10px] uppercase tracking-widest text-[var(--text-tertiary)] font-medium mb-1">
               Compartir resultados
             </p>
 

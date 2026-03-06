@@ -5,8 +5,8 @@ export const TEST_QUEUE_NAME = 'test_execution_queue'
 // Use Redis URL directly — avoids ioredis version mismatch between bullmq and app
 const redisUrl = process.env.REDIS_URL
 
-// Detectar build time para no inicializar colas durante build en Vercel
-const isBuildTime = process.env.VERCEL === '1'
+// Detectar build time real (evitar falsos positivos con VERCEL='1' en runtime)
+const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build'
 
 // Lazy initialization: solo crear queue cuando se necesite, no durante build
 let testQueueInstance: Queue | null = null
@@ -125,7 +125,7 @@ export async function getJobStatus(jobId: string): Promise<{
   if (!job) return null
 
   const state = await job.getState()
-  
+
   return {
     state,
     progress: typeof job.progress === 'number' ? job.progress : 0,

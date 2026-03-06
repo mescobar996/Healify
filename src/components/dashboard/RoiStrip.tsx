@@ -37,14 +37,14 @@ export function RoiStrip({ roi, onExport }: RoiStripProps) {
         <div className="ml-auto flex items-center gap-2">
           <button
             onClick={() => onExport("csv")}
-            className="inline-flex items-center gap-1 text-[11px] text-[var(--text-secondary)] hover:text-[var(--accent-primary)] transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-[11px] font-medium text-[var(--text-secondary)] hover:text-white hover:border-white/20 hover:bg-white/5 transition-all"
           >
             <Download className="w-3 h-3" />
             CSV
           </button>
           <button
             onClick={() => onExport("pdf")}
-            className="inline-flex items-center gap-1 text-[11px] text-[var(--text-secondary)] hover:text-[var(--accent-primary)] transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-[11px] font-medium text-[var(--text-secondary)] hover:text-white hover:border-white/20 hover:bg-white/5 transition-all"
           >
             <Download className="w-3 h-3" />
             PDF
