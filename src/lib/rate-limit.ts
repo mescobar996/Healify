@@ -5,10 +5,10 @@ import { redis } from '@/lib/redis'
 // LÍMITES POR PLAN
 // ═══════════════════════════════════════════════════════════════════════
 export const PLAN_LIMITS = {
-    FREE:       { projects: 1,  testRunsPerMonth: 50  },
-    STARTER:    { projects: 5,  testRunsPerMonth: 100 },
-    PRO:        { projects: -1, testRunsPerMonth: 1000 }, // -1 = ilimitado
-    ENTERPRISE: { projects: -1, testRunsPerMonth: -1  },
+    FREE: { projects: 1, testRunsPerMonth: 50 },
+    STARTER: { projects: 5, testRunsPerMonth: 100 },
+    PRO: { projects: -1, testRunsPerMonth: 1000 }, // -1 = ilimitado
+    ENTERPRISE: { projects: -1, testRunsPerMonth: -1 },
 } as const
 
 export const PLAN_REPORT_LIMITS = {
@@ -55,7 +55,8 @@ async function getProjectPlan(projectId: string): Promise<PlanKey> {
             user: {
                 select: {
                     subscription: {
-                        select: { plan: true, status: true },
+                        // Include trialEndsAt here to avoid a second DB round-trip (N+1)
+                        select: { plan: true, status: true, trialEndsAt: true },
                     },
                 },
             },
@@ -66,11 +67,8 @@ async function getProjectPlan(projectId: string): Promise<PlanKey> {
     if (!project?.userId || !sub || sub.status === 'canceled') return 'FREE'
 
     if (sub.status === 'trial') {
-        const trialSub = await db.subscription.findUnique({
-            where: { userId: project.userId },
-            select: { trialEndsAt: true },
-        })
-        if (trialSub?.trialEndsAt && trialSub.trialEndsAt > new Date()) return 'STARTER'
+        // Use the already-fetched trialEndsAt — no second query needed
+        if (sub.trialEndsAt && sub.trialEndsAt > new Date()) return 'STARTER'
         return 'FREE'
     }
 

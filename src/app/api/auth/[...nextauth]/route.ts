@@ -1,15 +1,17 @@
-import NextAuth, { NextAuthOptions } from 'next-auth'
+import NextAuth, { NextAuthOptions, Session, User } from 'next-auth'
 import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import GitHubProvider from 'next-auth/providers/github'
 import GoogleProvider from 'next-auth/providers/google'
+import type { JWT } from 'next-auth/jwt'
+import type { Account } from 'next-auth'
 import { db } from '@/lib/db'
 import { logger } from '@/lib/logger'
 import { emailWelcome } from '@/lib/email-templates'
 
 // ─── Env vars ────────────────────────────────────────────────────────
-const GITHUB_ID     = process.env.GITHUB_ID     || process.env.GITHUB_CLIENT_ID     || ''
+const GITHUB_ID = process.env.GITHUB_ID || process.env.GITHUB_CLIENT_ID || ''
 const GITHUB_SECRET = process.env.GITHUB_SECRET || process.env.GITHUB_CLIENT_SECRET || ''
-const GOOGLE_ID     = process.env.GOOGLE_CLIENT_ID     || ''
+const GOOGLE_ID = process.env.GOOGLE_CLIENT_ID || ''
 const GOOGLE_SECRET = process.env.GOOGLE_CLIENT_SECRET || ''
 
 // ─── Providers ───────────────────────────────────────────────────────
@@ -65,11 +67,11 @@ export const authOptions: NextAuthOptions = {
   },
 
   callbacks: {
-    async jwt({ token, user, account }: any) {
+    async jwt({ token, user, account }: { token: JWT; user?: User; account?: Account | null }) {
       // En el primer login, `user` viene del adapter con el ID real de Postgres
       if (user) {
-        token.id   = user.id    // ID real de la tabla User en Postgres
-        token.role = user.role || 'user'
+        token.id = user.id    // ID real de la tabla User en Postgres
+        token.role = (user as User & { role?: string }).role ?? 'user'
       }
       // Guardar provider para referencia futura
       if (account) {
@@ -77,11 +79,11 @@ export const authOptions: NextAuthOptions = {
       }
       return token
     },
-    async session({ session, token }: any) {
+    async session({ session, token }: { session: Session; token: JWT }) {
       if (session.user) {
-        session.user.id       = token.id       as string  // ID de Postgres
-        session.user.role     = token.role     as string
-        session.user.provider = token.provider as string
+        session.user.id = token.id as string  // ID de Postgres
+          ; (session.user as Session['user'] & { role?: string; provider?: string }).role = token.role as string
+          ; (session.user as Session['user'] & { role?: string; provider?: string }).provider = token.provider as string
       }
       return session
     },
@@ -111,7 +113,7 @@ export const authOptions: NextAuthOptions = {
 
   pages: {
     signIn: '/auth/signin',
-    error:  '/auth/error',
+    error: '/auth/error',
   },
 
   secret: process.env.NEXTAUTH_SECRET,
