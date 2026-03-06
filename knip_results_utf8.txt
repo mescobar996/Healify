@@ -1,0 +1,185 @@
+﻿[93m[4mUnused files[24m[39m (31)
+e2e/global.setup.ts                         
+scripts/nullify-legacy-api-keys.ts          
+scripts/playwright-visual-audit.mjs         
+cli/src/healify.ts                          
+src/components/OnboardingBanner.tsx         
+src/hooks/use-mobile.ts                     
+src/styles/design-tokens.css                
+mini-services/vscode-plugin/out/extension.js
+mini-services/vscode-plugin/src/extension.ts
+src/components/ui/alert.tsx                 
+src/components/ui/aspect-ratio.tsx          
+src/components/ui/card.tsx                  
+src/components/ui/checkbox.tsx              
+src/components/ui/collapsible.tsx           
+src/components/ui/drawer.tsx                
+src/components/ui/form.tsx                  
+src/components/ui/hover-card.tsx            
+src/components/ui/popover.tsx               
+src/components/ui/progress.tsx              
+src/components/ui/radio-group.tsx           
+src/components/ui/resizable.tsx             
+src/components/ui/scroll-area.tsx           
+src/components/ui/select.tsx                
+src/components/ui/separator.tsx             
+src/components/ui/sidebar.tsx               
+src/components/ui/slider.tsx                
+src/components/ui/sonner.tsx                
+src/components/ui/table.tsx                 
+src/components/ui/toggle-group.tsx          
+src/components/ui/toggle.tsx                
+src/components/ui/tooltip.tsx               
+[93m[4mUnused dependencies[24m[39m (41)
+@dnd-kit/core                    package.json:33:6 
+@dnd-kit/sortable                package.json:34:6 
+@dnd-kit/utilities               package.json:35:6 
+@hookform/resolvers              package.json:36:6 
+@radix-ui/react-accordion        package.json:40:6 
+@radix-ui/react-aspect-ratio     package.json:42:6 
+@radix-ui/react-checkbox         package.json:44:6 
+@radix-ui/react-collapsible      package.json:45:6 
+@radix-ui/react-context-menu     package.json:46:6 
+@radix-ui/react-hover-card       package.json:49:6 
+@radix-ui/react-menubar          package.json:51:6 
+@radix-ui/react-navigation-menu  package.json:52:6 
+@radix-ui/react-popover          package.json:53:6 
+@radix-ui/react-progress         package.json:54:6 
+@radix-ui/react-radio-group      package.json:55:6 
+@radix-ui/react-scroll-area      package.json:56:6 
+@radix-ui/react-select           package.json:57:6 
+@radix-ui/react-separator        package.json:58:6 
+@radix-ui/react-slider           package.json:59:6 
+@radix-ui/react-toggle           package.json:63:6 
+@radix-ui/react-toggle-group     package.json:64:6 
+@radix-ui/react-tooltip          package.json:65:6 
+@reactuses/core                  package.json:66:6 
+@swc/helpers                     package.json:68:6 
+@tanstack/react-query            package.json:69:6 
+@tanstack/react-table            package.json:70:6 
+axios                            package.json:71:6 
+date-fns                         package.json:76:6 
+embla-carousel-react             package.json:77:6 
+input-otp                        package.json:79:6 
+next-intl                        package.json:84:6 
+next-themes                      package.json:85:6 
+react-day-picker                 package.json:90:6 
+react-hook-form                  package.json:92:6 
+react-markdown                   package.json:93:6 
+react-resizable-panels           package.json:94:6 
+react-syntax-highlighter         package.json:95:6 
+sharp                            package.json:98:6 
+uuid                             package.json:103:6
+vaul                             package.json:104:6
+zustand                          package.json:106:6
+[93m[4mUnused devDependencies[24m[39m (4)
+@testing-library/jest-dom  package.json:110:6
+@testing-library/react     package.json:111:6
+bun-types                  package.json:116:6
+ts-node                    package.json:122:6
+[93m[4mUnlisted dependencies[24m[39m (1)
+postcss  postcss.config.mjs
+[93m[4mUnlisted binaries[24m[39m (1)
+nodemon  package.json
+[93m[4mUnused exports[24m[39m (68)
+getTestQueue              function  src/lib/queue.ts:43:17                    
+testQueue                           src/lib/queue.ts:56:14                    
+default                             src/components/HealifyLogo.tsx:68:16      
+DropdownMenuPortal                  src/components/ui/dropdown-menu.tsx:243:3 
+DropdownMenuGroup                   src/components/ui/dropdown-menu.tsx:246:3 
+DropdownMenuCheckboxItem            src/components/ui/dropdown-menu.tsx:249:3 
+DropdownMenuRadioGroup              src/components/ui/dropdown-menu.tsx:250:3 
+DropdownMenuRadioItem               src/components/ui/dropdown-menu.tsx:251:3 
+DropdownMenuShortcut                src/components/ui/dropdown-menu.tsx:253:3 
+DropdownMenuSub                     src/components/ui/dropdown-menu.tsx:254:3 
+DropdownMenuSubTrigger              src/components/ui/dropdown-menu.tsx:255:3 
+DropdownMenuSubContent              src/components/ui/dropdown-menu.tsx:256:3 
+PlanLimitError            class     src/lib/api.ts:9:14                       
+SettingsSkeleton          function  src/components/ui/skeletons.tsx:171:17    
+HealingDetailSkeleton     function  src/components/ui/skeletons.tsx:193:17    
+getProjects                         src/lib/actions.ts:18:10                  
+getTestRuns                         src/lib/actions.ts:19:10                  
+getHealingEvents                    src/lib/actions.ts:20:10                  
+approveHealing                      src/lib/actions.ts:20:28                  
+rejectHealing                       src/lib/actions.ts:20:44                  
+getDashboardStats                   src/lib/actions.ts:21:10                  
+rotateApiKey              function  src/lib/api-key-service.ts:165:23         
+getProjectApiKeyInfo      function  src/lib/api-key-service.ts:191:23         
+PLAN_REPORT_LIMITS                  src/lib/rate-limit.ts:14:14               
+checkAuthRateLimit        function  src/lib/rate-limit.ts:174:23              
+generateApiKey            function  src/lib/security-utils.ts:44:17           
+rotateApiKey              function  src/lib/security-utils.ts:48:23           
+requireSessionUser        function  src/lib/auth/session.ts:17:23             
+AnalyticsService          class     src/lib/analytics-service.ts:13:14        
+RATE_LIMITS                         src/lib/http-rate-limiter.ts:42:14        
+httpRateLimit             function  src/lib/http-rate-limiter.ts:79:23        
+authRateLimit                       src/lib/http-rate-limiter.ts:132:14       
+heavyRateLimit                      src/lib/http-rate-limiter.ts:134:14       
+apiRateLimit                        src/lib/http-rate-limiter.ts:136:14       
+DashboardService          class     src/lib/dashboard-service.ts:58:14        
+HealResponseSchema                  src/lib/engine/healing-engine.ts:23:14    
+HealingEngine                       src/lib/engine/healing-engine.ts:445:14   
+default                             src/lib/engine/healing-engine.ts:451:16   
+SelectorAnalyzer          class     src/lib/selector-analyzer.ts:11:14        
+AlertDialogPortal                   src/components/ui/alert-dialog.tsx:147:3  
+AlertDialogOverlay                  src/components/ui/alert-dialog.tsx:148:3  
+AlertDialogTrigger                  src/components/ui/alert-dialog.tsx:149:3  
+DialogClose                         src/components/ui/dialog.tsx:134:3        
+DialogOverlay                       src/components/ui/dialog.tsx:139:3        
+DialogPortal                        src/components/ui/dialog.tsx:140:3        
+DialogTrigger                       src/components/ui/dialog.tsx:142:3        
+NotificationService       class     src/lib/notification-service.ts:102:14    
+AuditLogService           class     src/lib/audit-log-service.ts:12:14        
+publishTestRunEvent       function  src/lib/event-bus.ts:39:23                
+Command                             src/components/ui/command.tsx:175:3       
+CommandShortcut                     src/components/ui/command.tsx:182:3       
+SheetTrigger                        src/components/ui/sheet.tsx:132:3         
+SheetClose                          src/components/ui/sheet.tsx:133:3         
+SheetFooter                         src/components/ui/sheet.tsx:136:3         
+getProjects               function  src/lib/actions/projects.ts:10:23         
+getTestRuns               function  src/lib/actions/test-runs.ts:10:23        
+getHealingEvents          function  src/lib/actions/healing.ts:9:23           
+approveHealing            function  src/lib/actions/healing.ts:49:23          
+rejectHealing             function  src/lib/actions/healing.ts:75:23          
+getDashboardStats         function  src/lib/actions/dashboard.ts:8:23         
+validateEnv                         src/lib/env.ts:114:10                     
+extractSelectorFromError  function  src/workers/lib/playwright-runner.ts:49:17
+verifyProjectOwnership    function  src/lib/actions/helpers.ts:9:23           
+verifyTestRunOwnership    function  src/lib/actions/helpers.ts:36:23          
+getGitHubUser             function  src/lib/github/auth.ts:9:23               
+getFileContent            function  src/lib/github/checks.ts:85:23            
+listUserRepos             function  src/lib/github/repos.ts:13:23             
+setupWebhook              function  src/lib/github/repos.ts:31:23             
+[93m[4mUnused exported types[24m[39m (28)
+HealingSuggestion     interface  src/lib/ai/healing-service.ts:4:18         
+ApiKeyValidation      interface  src/lib/api-key-service.ts:14:18           
+ApiKeyCreate          interface  src/lib/api-key-service.ts:21:18           
+GitImpact             interface  src/lib/git-analyzer.ts:7:18               
+ProjectAnalytics      interface  src/lib/analytics-service.ts:3:18          
+PlanMeta              interface  src/lib/payment/types.ts:14:18             
+PortalResult          interface  src/lib/payment/types.ts:35:18             
+RateLimitConfig       interface  src/lib/http-rate-limiter.ts:23:18         
+RateLimitResult       interface  src/lib/http-rate-limiter.ts:32:18         
+DashboardMetrics      interface  src/lib/dashboard-service.ts:14:18         
+ChartDataPoint        interface  src/lib/dashboard-service.ts:25:18         
+HealingHistoryItem    interface  src/lib/dashboard-service.ts:31:18         
+FragileSelector       interface  src/lib/dashboard-service.ts:41:18         
+DashboardData         interface  src/lib/dashboard-service.ts:47:18         
+HealRequest           type       src/lib/engine/healing-engine.ts:21:13     
+HealResponse          type       src/lib/engine/healing-engine.ts:42:13     
+AnalyzedSelector      interface  src/lib/selector-analyzer.ts:4:18          
+FunnelEvent           type       src/lib/funnel-analytics.ts:8:13           
+NotificationType      type       src/lib/notification-service.ts:4:13       
+AuditAction           type       src/lib/audit-log-service.ts:3:13          
+TestRunStreamState    interface  src/hooks/use-test-run-stream.ts:8:18      
+FrameworkInfo         interface  src/workers/lib/git-ops.ts:86:18           
+TestFailure           type       src/workers/lib/playwright-runner.ts:155:15
+TestResult            type       src/workers/lib/playwright-runner.ts:155:28
+HealingSuggestion     interface  src/workers/lib/healing-ops.ts:14:18       
+HealingResult         interface  src/workers/lib/healing-ops.ts:20:18       
+CreateCheckRunParams  interface  src/lib/github/checks.ts:14:18             
+GitHubRepo            interface  src/lib/github/repos.ts:3:18               
+[93m[4mDuplicate exports[24m[39m (2)
+HealifyLogo|default    src/components/HealifyLogo.tsx  
+HealingEngine|default  src/lib/engine/healing-engine.ts
+[33m[4mConfiguration hints[24m (1)[39m

@@ -1,32 +1,19 @@
-/**
- * Sentry — Server-side (Node.js) configuration
- *
- * Captures unhandled exceptions and errors in API routes, server components,
- * server actions, and middleware running on the Node.js runtime.
- */
+// This file configures the initialization of Sentry on the server.
+// The config you add here will be used whenever the server handles a request.
+// https://docs.sentry.io/platforms/javascript/guides/nextjs/
 
-import * as Sentry from '@sentry/nextjs'
+import * as Sentry from "@sentry/nextjs";
 
 Sentry.init({
-  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+  dsn: "https://2620ed14e19cfcf1d6540c27bf382267@o4510981221908480.ingest.us.sentry.io/4510994863751168",
 
-  enabled: !!process.env.NEXT_PUBLIC_SENTRY_DSN,
+  // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
+  tracesSampleRate: 1,
 
-  environment: process.env.NODE_ENV,
+  // Enable logs to be sent to Sentry
+  enableLogs: true,
 
-  tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
-
-  // Spotlight shows Sentry events in the browser in dev
-  spotlight: process.env.NODE_ENV === 'development',
-
-  beforeSend(event) {
-    // Redact sensitive fields
-    if (event.request?.data) {
-      const data = event.request.data as Record<string, unknown>
-      for (const key of ['password', 'token', 'secret', 'apiKey', 'authorization']) {
-        if (key in data) data[key] = '[Filtered]'
-      }
-    }
-    return event
-  },
-})
+  // Enable sending user PII (Personally Identifiable Information)
+  // https://docs.sentry.io/platforms/javascript/guides/nextjs/configuration/options/#sendDefaultPii
+  sendDefaultPii: true,
+});

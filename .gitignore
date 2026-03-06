@@ -57,3 +57,6 @@ test-results/
 playwright/.auth/user.json
 /e2e/screenshots/
 /e2e/videos/
+
+# Sentry Config File
+.env.sentry-build-plugin
