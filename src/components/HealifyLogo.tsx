@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import Image from 'next/image'
+import { Logo } from '@/components/Logo'
 import { cn } from '@/lib/utils'
 
 interface HealifyLogoProps {
@@ -16,25 +16,18 @@ const sizes = {
   lg: { icon: 44, text: 'text-xl' },
 }
 
-export function HealifyLogo({ 
-  className, 
-  size = 'md', 
-  showText = true 
+export function HealifyLogo({
+  className,
+  size = 'md',
+  showText = true
 }: HealifyLogoProps) {
   const { icon, text } = sizes[size]
 
   return (
     <div className={cn('flex items-center gap-2.5', className)}>
-      {/* Logo — nuevo ícono H+ con bug/code */}
+      {/* Logo — nuevo ícono SVG nativo */}
       <div className="relative shrink-0 group">
-        <Image
-          src="/healify-logo.png"
-          alt="Healify"
-          width={icon}
-          height={icon}
-          className="object-contain drop-shadow-[0_0_6px_rgba(255,255,255,0.15)] group-hover:drop-shadow-[0_0_12px_rgba(255,255,255,0.25)] transition-all duration-300"
-          priority
-        />
+        <Logo size={size} withText={false} className="drop-shadow-[0_0_6px_rgba(255,255,255,0.15)] group-hover:drop-shadow-[0_0_12px_rgba(255,255,255,0.25)] transition-all duration-300" />
       </div>
 
       {/* Texto monocromático */}
