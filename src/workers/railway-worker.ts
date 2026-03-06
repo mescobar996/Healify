@@ -15,7 +15,6 @@
  */
 
 import { createServer } from 'http'
-import { execSync as _execSync } from 'child_process'
 import { Worker, Job } from 'bullmq'
 import { TEST_QUEUE_NAME, TestJobData } from '../lib/queue'
 import { processJob } from './job-processor'
@@ -75,19 +74,6 @@ console.log(`ðŸ”§ Environment: ${process.env.NODE_ENV ?? 'development'}`)
 
 // â”€â”€ BullMQ Worker â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-// ── Playwright browser cache ─────────────────────────────────────────────────
-// Pre-install browsers once at worker startup to avoid downloading 140MB per job.
-// The browsers are shared in /root/.cache/ms-playwright across all job workdirs.
-try {
-  console.log('🎭 Pre-warming Playwright browser cache...')
-  _execSync('npx playwright install chromium --with-deps', {
-    stdio: 'pipe',
-    timeout: 300_000,
-  })
-  console.log('✅ Playwright browser cache ready (Chromium pre-installed)')
-} catch {
-  console.warn('⚠️  Playwright pre-install failed — browsers will download per-job')
-}
 
 const worker = new Worker<TestJobData>(
   TEST_QUEUE_NAME,
