@@ -87,11 +87,19 @@ export async function POST(
       },
     });
 
-    // Perform AI analysis with Claude
     try {
-      const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+      let message: Anthropic.Messages.Message | null = null;
+      let retries = 0;
+      const maxRetries = 3;
 
-      const analysisPrompt = `You are a test healing expert analyzing a failed test. Your job is to determine if this is a flaky test, a real bug, or a selector change that can be auto-fixed.
+      while (retries < maxRetries) {
+        try {
+          const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+
+          let imageContext = '';
+          const userMessages: Anthropic.MessageParam[] = [];
+
+          const analysisPrompt = `You are a test healing expert analyzing a failed test. Your job is to determine if this is a flaky test, a real bug, or a selector change that can be auto-fixed.
 
 **Test Information:**
 - Test Name: ${testName}
@@ -120,13 +128,52 @@ Respond ONLY with valid JSON (no markdown):
   "recommendedAction": "<AUTO_FIX|SUGGEST|BUG_REPORT|IGNORE>"
 }`;
 
-      const message = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 512,
-        temperature: 0.3,
-        system: 'You are a test healing expert. Always respond with valid JSON only, no markdown.',
-        messages: [{ role: 'user', content: analysisPrompt }],
-      });
+          userMessages.push({ role: 'user', content: [{ type: 'text', text: analysisPrompt }] });
+
+          // Multimodal: If Base64 image is provided, pass it to Claude visually.
+          if (screenshotBefore && screenshotBefore.startsWith('data:image/')) {
+            const base64Data = screenshotBefore.split(',')[1];
+            let mediaType = 'image/png';
+            if (screenshotBefore.includes('jpeg') || screenshotBefore.includes('jpg')) mediaType = 'image/jpeg';
+            if (screenshotBefore.includes('webp')) mediaType = 'image/webp';
+
+            if (base64Data) {
+              userMessages.push({
+                role: 'user',
+                content: [
+                  {
+                    type: 'image',
+                    source: { type: 'base64', media_type: mediaType as 'image/png' | 'image/jpeg' | 'image/webp' | 'image/gif', data: base64Data }
+                  },
+                  { type: 'text', text: 'Evaluate this visual capture of the failure scene as well.' }
+                ]
+              });
+            }
+          }
+
+          message = await anthropic.messages.create({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 512,
+            temperature: 0.3,
+            system: 'You are a test healing expert. Always respond with valid JSON only, no markdown.',
+            messages: userMessages,
+          });
+
+          break; // success, break out of retry loop
+        } catch (err: any) {
+          retries++;
+          if (err?.status === 429 || retries < maxRetries) {
+            console.warn(`[Heal API] Rate limit hit or AI failed. Retrying ${retries}/${maxRetries} in ${retries * 1500}ms`);
+            await new Promise(r => setTimeout(r, retries * 1500)); // Exponential-ish backoff
+          } else {
+            throw err;
+          }
+        }
+      }
+
+      if (!message) {
+        throw new Error('Failed to retrieve analysis from AI after retries.');
+      }
 
       const responseBlock = message.content[0];
       const responseContent = responseBlock?.type === 'text' ? responseBlock.text : null;
@@ -208,7 +255,7 @@ Respond ONLY with valid JSON (no markdown):
                 message: JSON.stringify({ testRunId: id, healingEventId: updatedEvent.id }),
                 link: '/dashboard/healing',
               },
-            }).catch(() => {})
+            }).catch(() => { })
           }
 
           if (healingStatus === 'BUG_DETECTED') {

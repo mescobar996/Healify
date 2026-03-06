@@ -103,13 +103,22 @@ export async function createProject(data: {
         message: JSON.stringify({ projectId: project.id, source: 'create_project_action' }),
         link: '/dashboard/projects',
       },
-    }).catch(() => {})
+    }).catch(() => { })
 
     revalidatePath('/dashboard/projects')
     return { success: true, project }
   } catch (error) {
-    console.error('Error creating project:', error)
+    console.error('[createProject] Error creating project:', error)
     Sentry.captureException(error)
-    return { success: false, error: 'Failed to create project' }
+
+    const errorDetails = error instanceof Error ? error.message : 'Unknown database error'
+    const isDbError = errorDetails.includes('Prisma') || errorDetails.includes('database') || errorDetails.includes('connect') || errorDetails.includes('fetch');
+
+    return {
+      success: false,
+      error: isDbError
+        ? 'El servidor de base de datos demoró en responder. ¿Querés reintentar manualmente?'
+        : 'Error inesperado al crear el proyecto.'
+    }
   }
 }

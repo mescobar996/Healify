@@ -3,6 +3,7 @@ import { getSessionUser } from '@/lib/auth/session'
 import { db } from '@/lib/db'
 import { HealingStatus, SelectorType, TestStatus } from '@/lib/enums'
 import { initProjectApiKey } from '@/lib/api-key-service'
+import * as Sentry from '@sentry/nextjs'
 
 export async function POST() {
   try {
@@ -28,7 +29,7 @@ export async function POST() {
           repository: 'https://github.com/healify/demo-project',
         },
       })
-      await initProjectApiKey(project.id).catch(() => {})
+      await initProjectApiKey(project.id).catch(() => { })
       created = true
     }
 
@@ -231,7 +232,7 @@ export async function POST() {
           message: 'Tu proyecto Sandbox Demo está listo con 5 test runs y 5 healing events para que explores.',
           link: '/dashboard/projects',
         },
-      }).catch(() => {})
+      }).catch(() => { })
     }
 
     return NextResponse.json({
@@ -242,6 +243,19 @@ export async function POST() {
     })
   } catch (error) {
     console.error('Sandbox setup error:', error)
-    return NextResponse.json({ error: 'Failed to setup sandbox' }, { status: 500 })
+    Sentry.captureException(error)
+
+    const isDev = process.env.NODE_ENV === 'development'
+    const errorDetails = error instanceof Error ? error.message : 'Unknown database error'
+
+    const isDbError = errorDetails.includes('Prisma') || errorDetails.includes('database') || errorDetails.includes('connect') || errorDetails.includes('fetch');
+    const clientMessage = isDbError
+      ? 'El servidor de base de datos demoró en responder. ¿Querés reintentar manualmente?'
+      : 'Error interno al configurar el sandbox'
+
+    return NextResponse.json({
+      error: clientMessage,
+      details: isDev ? errorDetails : undefined
+    }, { status: 500 })
   }
 }

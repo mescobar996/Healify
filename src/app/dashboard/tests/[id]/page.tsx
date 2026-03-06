@@ -54,7 +54,7 @@ function StatusBadge({ status }: { status: TestRunStatus }) {
     RUNNING: { bg: "bg-white/10", text: "text-white", icon: RefreshCw, label: "Ejecutando" },
     PENDING: { bg: "bg-white/10", text: "text-white", icon: Clock, label: "Pendiente" },
     CANCELLED: { bg: "bg-gray-500/10", text: "text-gray-400", icon: XCircle, label: "Cancelado" },
-      PARTIAL: {
+    PARTIAL: {
       bg: "bg-white/10",
       text: "text-white",
       icon: AlertTriangle,
@@ -517,7 +517,7 @@ export default function TestRunDetailPage() {
           errorMessage: null,
           oldSelector: selectedEvent.oldSelector,
           newSelector: selectedEvent.newSelector,
-          reasoning: null,
+          reasoning: selectedEvent.reasoning || null,
         } : null}
         onApprove={handleApproveHealing}
         onReject={handleRejectHealing}
