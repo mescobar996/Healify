@@ -27,19 +27,12 @@ export const metadata: Metadata = {
     default: "Healify",
     template: "Healify",
   },
-  description: 
+  description:
     "Infraestructura de self-healing para tests con IA. Dejá de reparar selectores manualmente. Healify detecta, corrige y abre PRs automáticamente.",
   keywords: ["Healify", "Test Automation", "Self-Healing Tests", "IA Testing", "E2E Testing", "Tests automáticos"],
   authors: [{ name: "Healify Team", url: baseUrl }],
   creator: "Healify",
   publisher: "Healify",
-  icons: {
-    icon: [
-      { url: "/icon.png", sizes: "any", type: "image/png" },
-    ],
-    apple: { url: "/icon.png", sizes: "180x180", type: "image/png" },
-    shortcut: "/icon.png",
-  },
   manifest: "/manifest.json",
   openGraph: {
     type: "website",
