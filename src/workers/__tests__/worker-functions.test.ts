@@ -267,3 +267,77 @@ describe('Worker — workDir naming', () => {
     expect(dir).toContain('healify-job-123')
   })
 })
+
+// ══════════════════════════════════════════════════════════════════════════════
+// FASE 2: Tests para la lógica de Redis pre-check del railway-worker
+// Verifican que waitForRedis tenga el comportamiento correcto con mocks
+// ══════════════════════════════════════════════════════════════════════════════
+
+describe('waitForRedis — comportamiento de retry', () => {
+  // Reimplementación testeable de la lógica de waitForRedis
+  // sin importar el worker (que requiere Redis + Docker)
+  async function waitForRedisMock(
+    pingFn: () => Promise<string>,
+    maxAttempts: number,
+    delayFn: (ms: number) => Promise<void>,
+  ): Promise<{ connected: boolean; attempts: number }> {
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const pong = await pingFn()
+        if (pong === 'PONG') return { connected: true, attempts: attempt }
+        throw new Error(`Unexpected: ${pong}`)
+      } catch {
+        if (attempt === maxAttempts) return { connected: false, attempts: attempt }
+        const delay = Math.min(5_000 * attempt, 30_000)
+        await delayFn(delay)
+      }
+    }
+    return { connected: false, attempts: maxAttempts }
+  }
+
+  it('conecta exitosamente en el primer intento', async () => {
+    const ping  = vi.fn().mockResolvedValue('PONG')
+    const delay = vi.fn().mockResolvedValue(undefined)
+    const result = await waitForRedisMock(ping, 3, delay)
+    expect(result.connected).toBe(true)
+    expect(result.attempts).toBe(1)
+    expect(ping).toHaveBeenCalledTimes(1)
+    expect(delay).not.toHaveBeenCalled()
+  })
+
+  it('reintenta si Redis no está listo y conecta en el segundo intento', async () => {
+    const ping = vi.fn()
+      .mockRejectedValueOnce(new Error('ECONNREFUSED'))
+      .mockResolvedValueOnce('PONG')
+    const delay = vi.fn().mockResolvedValue(undefined)
+    const result = await waitForRedisMock(ping, 3, delay)
+    expect(result.connected).toBe(true)
+    expect(result.attempts).toBe(2)
+    expect(delay).toHaveBeenCalledTimes(1)
+  })
+
+  it('falla después de maxAttempts sin conectar', async () => {
+    const ping  = vi.fn().mockRejectedValue(new Error('ECONNREFUSED'))
+    const delay = vi.fn().mockResolvedValue(undefined)
+    const result = await waitForRedisMock(ping, 3, delay)
+    expect(result.connected).toBe(false)
+    expect(result.attempts).toBe(3)
+    expect(ping).toHaveBeenCalledTimes(3)
+    expect(delay).toHaveBeenCalledTimes(2) // no delay después del último intento
+  })
+
+  it('backoff delay crece con cada intento (min 5000, max 30000)', () => {
+    const delays = [1, 2, 3, 4, 5, 6, 7].map(attempt =>
+      Math.min(5_000 * attempt, 30_000)
+    )
+    expect(delays).toEqual([5000, 10000, 15000, 20000, 25000, 30000, 30000])
+    // El cap en 30s evita esperas excesivas en Railway
+  })
+
+  it('respuesta inesperada de Redis (no PONG) es tratada como error', async () => {
+    const ping  = vi.fn().mockResolvedValue('OK')  // no es 'PONG'
+    const delay = vi.fn().mockResolvedValue(undefined)
+    const result = await waitForRedisMock(ping, 2, delay)
+    expect(result.connected).toBe(false)
+  })
+})

@@ -2,7 +2,7 @@
  * GET /api/billing/portal
  *
  * Returns { url: string } — the billing/subscription management URL for the
- * current user's active gateway: LemonSqueezy, MercadoPago, or Stripe.
+ * current user's active gateway: MercadoPago (ARS) or Stripe (legacy).
  */
 
 import { NextRequest, NextResponse } from 'next/server'

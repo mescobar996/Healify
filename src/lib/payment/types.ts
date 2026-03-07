@@ -1,11 +1,11 @@
 /**
  * Shared types for the payment abstraction layer.
- * Both LemonSqueezy and MercadoPago implement the same interface.
+ * MercadoPago (ARS) is the active payment gateway.
  */
 
 export type PlanId = 'starter' | 'pro' | 'enterprise'
 export type Currency = 'USD' | 'ARS'
-export type GatewayId = 'lemonsqueezy' | 'mercadopago' | 'stripe'
+export type GatewayId = 'mercadopago' | 'stripe'
 export type BillingCycle = 'monthly' | 'annual'
 
 // Annual = 10 months price (2 months free, ~17% savings)
