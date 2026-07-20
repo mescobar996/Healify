@@ -4,12 +4,16 @@ const SELECTOR_PATTERNS = [
   /Unable to locate element: (\S+)/,
   /selector ["']([^"']+)["'] not found/,
   / locator\(["']([^"']+)["']\)/,
+  /Expected to find element: `([^`]+)`/,
 ]
 
 /**
  * Extracts the failing CSS/XPath selector from a Playwright/Cypress error
- * message. Kept in sync with src/workers/lib/playwright-runner.ts so the
- * Railway worker and the reporter packages parse errors identically.
+ * message. The first 5 patterns are kept in sync with
+ * src/workers/lib/playwright-runner.ts (Playwright's own error phrasing).
+ * The last pattern additionally covers Cypress's `cy.get()`/`cy.find()`
+ * timeout phrasing ("Expected to find element: `...`"), which
+ * playwright-runner.ts never needs since it only parses Playwright output.
  */
 export function extractSelectorFromError(errorMessage: string): string {
   for (const pattern of SELECTOR_PATTERNS) {

@@ -22,6 +22,12 @@ describe('extractSelectorFromError', () => {
     expect(extractSelectorFromError("Timed out waiting for locator('button.primary')")).toBe('button.primary')
   })
 
+  it('extrae selector de un timeout de Cypress (cy.get)', () => {
+    expect(extractSelectorFromError(
+      'Expected to find element: `#does-not-exist`, but never found it.'
+    )).toBe('#does-not-exist')
+  })
+
   it('devuelve "Unknown selector" cuando no hay match', () => {
     expect(extractSelectorFromError('Generic random error without selector info')).toBe('Unknown selector')
     expect(extractSelectorFromError('')).toBe('Unknown selector')
