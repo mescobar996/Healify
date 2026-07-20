@@ -1,0 +1,1 @@
+export { HealifyCypressPlugin } from './plugin'
