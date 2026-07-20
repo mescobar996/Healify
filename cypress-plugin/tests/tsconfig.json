@@ -1,0 +1,17 @@
+{
+  // Needed because Cypress's TS preprocessor picks the nearest ancestor
+  // tsconfig.json to the spec file. Without this one, it would pick up
+  // ../tsconfig.json (the package build config, rootDir: "src") and fail
+  // with TS6059 since specs here live outside src/.
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["ES2020", "dom"],
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "types": ["cypress"]
+  },
+  "include": ["**/*.ts", "../src/**/*.ts"]
+}
