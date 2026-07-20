@@ -42,6 +42,9 @@
     "examples",
     "scripts",
     "vitest.config.ts",
-    "playwright.config.ts"
+    "playwright.config.ts",
+    "reporter-core",
+    "test-runner",
+    "cypress-plugin"
   ]
 }

@@ -60,3 +60,13 @@ playwright/.auth/user.json
 
 # Sentry Config File
 .env.sentry-build-plugin
+
+reporter-core/dist
+reporter-core/node_modules
+test-runner/dist
+test-runner/node_modules
+test-runner/tests/test-results
+cypress-plugin/dist
+cypress-plugin/node_modules
+cypress-plugin/tests/cypress/screenshots
+cypress-plugin/tests/cypress/videos

@@ -1,0 +1,21 @@
+{
+  "name": "@healify/cypress-plugin",
+  "version": "0.1.0",
+  "description": "Healify reporter for Cypress — reports broken selectors without requiring GitHub repo access.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "peerDependencies": {
+    "cypress": ">=13.0.0"
+  },
+  "dependencies": {
+    "@healify/reporter-core": "*"
+  },
+  "devDependencies": {
+    "cypress": "^15.4.0",
+    "typescript": "^5.4.0"
+  }
+}

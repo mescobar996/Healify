@@ -1,0 +1,21 @@
+{
+  "name": "@healify/test-runner",
+  "version": "0.1.0",
+  "description": "Healify reporter for Playwright — reports broken selectors without requiring GitHub repo access.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "peerDependencies": {
+    "@playwright/test": ">=1.40.0"
+  },
+  "dependencies": {
+    "@healify/reporter-core": "*"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "typescript": "^5.4.0"
+  }
+}
