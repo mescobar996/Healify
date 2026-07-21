@@ -145,7 +145,7 @@ model Project {
   updatedAt     DateTime       @updatedAt
 
   // ── Project-level configuration ────────────────────
-  autoHealThreshold  Float    @default(0.85)  // Min AI confidence to auto-apply a selector fix
+  autoHealThreshold  Float    @default(0.95)  // Min AI confidence to auto-apply a selector fix
   autoPrEnabled      Boolean  @default(true)  // Auto-create PR when selectors are healed
   notifyOnHeal       Boolean  @default(true)  // Send notification when healing succeeds
   notifyOnFail       Boolean  @default(true)  // Send notification when tests fail
