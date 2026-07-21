@@ -1,4 +1,5 @@
 import { test as base } from '@playwright/test'
+import { resolveConfig } from '@healify/reporter-core'
 
 const MAX_DOM_CHARS = 8000
 const ATTACHMENT_NAME = 'healify-dom'
@@ -8,6 +9,9 @@ const ATTACHMENT_NAME = 'healify-dom'
  * page's HTML on failure and attaches it as `healify-dom`, which
  * HealifyReporter reads to send as `context` in the failure report.
  *
+ * No-op entirely when HEALIFY_API_KEY isn't set — matches the reporter's
+ * own "zero overhead when disabled" contract (design spec §5).
+ *
  * If capturing fails (page already closed/crashed), the error is swallowed —
  * the test already failed on its own; we must never add a second failure.
  */
@@ -15,6 +19,7 @@ export const test = base.extend({
   page: async ({ page }, use, testInfo) => {
     await use(page)
 
+    if (!resolveConfig()) return
     if (testInfo.status !== testInfo.expectedStatus) {
       try {
         const html = await page.content()
