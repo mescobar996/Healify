@@ -1,13 +1,14 @@
 import { db } from '@/lib/db'
 import { createSmartPR, createHealifyCheckRun } from './checks'
+import { evaluateGate } from '@/lib/gate/evaluate-gate'
+import type { SelectorType } from '@/lib/enums'
 
 // ═══════════════════════════════════════════════════════════════════════
 // AUTO-PR — Bloque 8
-// Cuando Healify cura un test con confidence >= 0.95, abre automáticamente
+// Cuando Healify cura un test y pasa evaluateGate() (confidence >= project.autoHealThreshold,
+// selector no frágil, selector único en el DOM capturado), abre automáticamente
 // un Pull Request en el repositorio del usuario con el selector corregido.
 // ═══════════════════════════════════════════════════════════════════════
-
-const AUTO_PR_CONFIDENCE_THRESHOLD = 0.95
 
 interface AutoPRResult {
     opened: boolean
@@ -82,21 +83,27 @@ export async function tryOpenAutoPR(healingEventId: string): Promise<AutoPRResul
 
         if (!event) return { opened: false, reason: 'Healing event no encontrado' }
 
-        // 2. Verificar confidence threshold
-        if (!event.confidence || event.confidence < AUTO_PR_CONFIDENCE_THRESHOLD) {
-            return {
-                opened: false,
-                reason: `Confidence ${Math.round((event.confidence || 0) * 100)}% < ${AUTO_PR_CONFIDENCE_THRESHOLD * 100}% requerido`
-            }
-        }
-
-        // 3. Verificar que hay un selector nuevo
+        // 2. Verificar que hay un selector nuevo
         if (!event.newSelector) {
             return { opened: false, reason: 'No hay selector nuevo para aplicar' }
         }
 
-        // 4. Verificar que el proyecto tiene repo configurado
         const project = event.testRun.project
+        const confidence = event.confidence ?? 0
+
+        // 3. Gate: confidence, fragilidad y unicidad del selector propuesto
+        const gate = evaluateGate({
+            confidence,
+            selector: event.newSelector,
+            selectorType: (event.newSelectorType ?? event.selectorType) as SelectorType,
+            threshold: project.autoHealThreshold,
+            domSnapshot: event.newDomSnapshot ?? event.oldDomSnapshot ?? undefined,
+        })
+        if (!gate.pass) {
+            return { opened: false, reason: `gate:${gate.blockedBy.map(r => r.code).join(',')}` }
+        }
+
+        // 4. Verificar que el proyecto tiene repo configurado
         if (!project.repository) {
             return { opened: false, reason: 'Proyecto sin repositorio GitHub configurado' }
         }
@@ -129,7 +136,7 @@ export async function tryOpenAutoPR(healingEventId: string): Promise<AutoPRResul
             oldSelector: event.failedSelector,
             newSelector: event.newSelector,
             testName: event.testName,
-            confidence: event.confidence,
+            confidence,
             reasoning: event.reasoning || '',
             healingEventId,
         })
@@ -146,7 +153,7 @@ export async function tryOpenAutoPR(healingEventId: string): Promise<AutoPRResul
             headSha: prResult.headSha,
             healingEventId,
             testName: event.testName,
-            confidence: event.confidence,
+            confidence,
             oldSelector: event.failedSelector,
             newSelector: event.newSelector,
             reasoning: event.reasoning || '',
@@ -167,7 +174,7 @@ export async function tryOpenAutoPR(healingEventId: string): Promise<AutoPRResul
                     userId: project.userId,
                     type: 'success',
                     title: 'PR automático creado',
-                    message: `Healify abrió un PR para "${event.testName}" (${Math.round(event.confidence * 100)}% confianza).`,
+                    message: `Healify abrió un PR para "${event.testName}" (${Math.round(confidence * 100)}% confianza).`,
                     link: prResult.prUrl,
                 },
             }).catch(() => {})
