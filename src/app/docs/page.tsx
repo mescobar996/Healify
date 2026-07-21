@@ -72,9 +72,8 @@ const TOC = [
   { id: 'installation',  label: 'Instalación',         indent: false },
   { id: 'configuration', label: 'Configuración',       indent: false },
   { id: 'playwright',    label: 'Playwright',          indent: true  },
+  { id: 'fixture',       label: 'Fixture',             indent: true  },
   { id: 'cypress',       label: 'Cypress',             indent: true  },
-  { id: 'jest',          label: 'Jest / Vitest',       indent: true  },
-  { id: 'selenium',      label: 'Selenium',            indent: true  },
   { id: 'api',           label: 'API Reference',       indent: false },
   { id: 'ci',            label: 'CI Integrations',     indent: false },
   { id: 'jira',          label: 'Jira Integration',    indent: false },
@@ -167,7 +166,7 @@ export default function DocsPage() {
             <div className="relative">
               <div className="flex items-center gap-2 mb-3">
                 <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-white/10 text-white border border-white/20">
-                  SDK v1.0
+                  v0.1.0
                 </span>
                 <span className="text-xs text-[#6B6B6B]">Última actualización: Mar 2026</span>
               </div>
@@ -185,9 +184,6 @@ export default function DocsPage() {
                 </span>
                 <span className="inline-flex items-center gap-1.5 text-xs text-white bg-white/10 px-2.5 py-1 rounded-full">
                   <CheckCircle className="w-3 h-3" /> Cypress
-                </span>
-                <span className="inline-flex items-center gap-1.5 text-xs text-white bg-white/10 px-2.5 py-1 rounded-full">
-                  <CheckCircle className="w-3 h-3" /> Jest / Vitest
                 </span>
                 <span className="inline-flex items-center gap-1.5 text-xs text-[#9B9B9B] bg-white/[0.05] px-2.5 py-1 rounded-full">
                   <Code2 className="w-3 h-3" /> Selenium
@@ -209,7 +205,7 @@ export default function DocsPage() {
             {[
               { step: '1', title: 'Instalá el runner', desc: 'npm i -D @healify/test-runner' },
               { step: '2', title: 'Agregá tu API Key', desc: 'Desde Configuración → API Keys' },
-              { step: '3', title: 'Conectá el webhook de GitHub', desc: 'Desde Proyectos → Conectar repo' },
+              { step: '3', title: 'Ejecutá tus tests', desc: 'Healify reporta los selectores rotos automáticamente' },
             ].map(item => (
               <div key={item.step} className="flex items-start gap-3 p-3 rounded-xl bg-[#111111] border border-white/[0.07]">
                 <span className="w-6 h-6 rounded-full bg-[#1A1A1A] border border-white/[0.12] text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
@@ -279,30 +275,34 @@ HEALIFY_COMMIT_SHA=\${GITHUB_SHA}`} />
           <SubHeading id="playwright">Playwright</SubHeading>
 
           <p className="text-sm text-[#9B9B9B] mb-4">
-            Importá el reporter en tu <code className="text-white bg-[#1A1A1A] px-1 rounded">playwright.config.ts</code>:
+            Agregá el reporter en tu <code className="text-white bg-[#1A1A1A] px-1 rounded">playwright.config.ts</code>:
           </p>
 
           <CodeBlock lang="playwright.config.ts" code={`import { defineConfig } from '@playwright/test'
-import { HealifyReporter } from '@healify/test-runner'
 
 export default defineConfig({
   reporter: [
     ['list'],
-    // Agregar el reporter de Healify
-    [HealifyReporter, {
-      apiKey: process.env.HEALIFY_API_KEY,
-      // Opcional: capturar HTML del DOM en cada fallo para mejor autocuración
-      captureDOM: true,
-    }],
+    ['@healify/test-runner/reporter'],
   ],
-  // ...resto de tu config
 })`} />
 
-          <Callout type="tip">
-            Activá <code className="text-white bg-[#1A1A1A] px-1 rounded">captureDOM: true</code> para
-            que Healify tenga más contexto sobre la estructura del DOM al momento del fallo.
-            Mejora la precisión de autocuración en un ~30%.
-          </Callout>
+          <SubHeading id="fixture">Fixture extendida</SubHeading>
+
+          <p className="text-sm text-[#9B9B9B] mb-4">
+            En tus archivos de test, importá la fixture extendida desde <code className="text-white bg-[#1A1A1A] px-1 rounded">@healify/test-runner</code>.
+            El DOM se captura automáticamente cuando un test falla — no requiere cambios adicionales.
+          </p>
+
+          <CodeBlock lang="auth.spec.ts" code={`import { test, expect } from '@healify/test-runner'
+
+test('should log in', async ({ page }) => {
+  await page.goto('/login')
+  await page.fill('#email', 'user@example.com')
+  // Si este selector falla, Healify lo reporta automáticamente
+  await page.click('#login-btn')
+  await expect(page.locator('h1')).toHaveText('Dashboard')
+})`} />
 
           {/* ── CYPRESS ── */}
           <SubHeading id="cypress">Cypress</SubHeading>
@@ -313,10 +313,7 @@ import { HealifyCypressPlugin } from '@healify/cypress-plugin'
 export default defineConfig({
   e2e: {
     setupNodeEvents(on, config) {
-      HealifyCypressPlugin(on, config, {
-        apiKey: process.env.HEALIFY_API_KEY,
-      })
-      return config
+      return HealifyCypressPlugin(on, config)
     },
   },
 })`} />
@@ -324,44 +321,59 @@ export default defineConfig({
           {/* ── JEST / VITEST ── */}
           <SubHeading id="jest">Jest / Vitest</SubHeading>
 
-          <CodeBlock lang="vitest.config.ts" code={`import { defineConfig } from 'vitest/config'
-import { HealifyVitestReporter } from '@healify/test-runner/vitest'
+          <p className="text-sm text-[#9B9B9B] mb-4">
+            No existe un paquete dedicado para Jest o Vitest. Usá el endpoint de la API directamente
+            para reportar fallos desde cualquier framework:
+          </p>
 
-export default defineConfig({
-  test: {
-    reporters: [
-      'default',
-      new HealifyVitestReporter({
-        apiKey: process.env.HEALIFY_API_KEY,
-      }),
-    ],
+          <CodeBlock lang="typescript" code={`await fetch('https://healify-sigma.vercel.app/api/v1/report', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'x-api-key': process.env.HEALIFY_API_KEY,
   },
+  body: JSON.stringify({
+    testName: 'Mi test',
+    selector: '#mi-selector',
+    error: 'Timeout waiting for selector',
+    context: document.body?.innerHTML,
+    selectorType: 'CSS',
+    branch: process.env.HEALIFY_BRANCH,
+    commitSha: process.env.HEALIFY_COMMIT_SHA,
+  }),
 })`} />
 
-      <SubHeading id="selenium">Selenium (basic)</SubHeading>
+          <Callout type="info">
+            Consultá la <a href="#api" className="text-white underline">API Reference</a> para más detalles sobre los parámetros aceptados.
+          </Callout>
 
-      <CodeBlock lang="python" code={`# pip install requests selenium
-import requests
+      <SubHeading id="selenium">Selenium / Python</SubHeading>
+
+      <p className="text-sm text-[#9B9B9B] mb-4">
+        No existe un paquete pip dedicado. Usá el endpoint de la API directamente desde Python:
+      </p>
+
+      <CodeBlock lang="python" code={`import requests
 
 def report_to_healify(test_name, selector, error, html):
-  response = requests.post(
-    "https://healify-sigma.vercel.app/api/v1/report",
-    headers={
-      "x-api-key": "hf_live_xxx",
-      "Content-Type": "application/json",
-    },
-    json={
-      "testName": test_name,
-      "selector": selector,
-      "error": error,
-      "context": html,
-      "selectorType": "CSS",
-      "branch": "main",
-    },
-    timeout=15,
-  )
-  response.raise_for_status()
-  return response.json()`} />
+    response = requests.post(
+        "https://healify-sigma.vercel.app/api/v1/report",
+        headers={
+            "x-api-key": "hf_live_xxx",
+            "Content-Type": "application/json",
+        },
+        json={
+            "testName": test_name,
+            "selector": selector,
+            "error": error,
+            "context": html,
+            "selectorType": "CSS",
+            "branch": "main",
+        },
+        timeout=15,
+    )
+    response.raise_for_status()
+    return response.json()}`} />
 
           {/* ── API REFERENCE ── */}
           <SectionHeading id="api">
@@ -628,7 +640,7 @@ REDIS_URL=rediss://...`} />
               },
               {
                 q: '¿Funciona con tests de backend (Jest, Vitest)?',
-                a: 'Sí, pero está optimizado para tests E2E que trabajan con selectores del DOM. Para tests unitarios, la autocuración es menos efectiva ya que no hay selectores que reparar.',
+                a: 'No hay un paquete dedicado para Jest o Vitest, pero podés usar el endpoint /api/v1/report directamente. La autocuración está optimizada para tests E2E con selectores del DOM; para tests unitarios no hay selectores que reparar.',
               },
               {
                 q: '¿Cuántos reportes puedo enviar?',
@@ -640,7 +652,7 @@ REDIS_URL=rediss://...`} />
               },
               {
                 q: '¿Puedo usar Healify sin el worker de Railway?',
-                a: 'Sí. Podés usar solo el endpoint /api/v1/report para análisis on-demand. El worker de Railway es para el flujo automático: push → test → heal → PR.',
+                a: 'Sí. Los paquetes reporter se conectan directamente a la API de Healify sin necesidad del worker de Railway. Solo necesitás las variables de entorno configuradas.',
               },
             ].map(({ q, a }) => (
               <details key={q} className="group p-4 rounded-xl bg-[#111111] border border-white/[0.07] cursor-pointer">

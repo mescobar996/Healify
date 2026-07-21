@@ -15,139 +15,68 @@ const snippets = {
   playwright: {
     name: 'Playwright',
     icon: Play,
-    install: 'npm install @healify/test-runner',
-    code: `import { test, expect } from '@playwright/test';
-import { HealifyReporter } from '@healify/test-runner';
+    install: 'npm install --save-dev @healify/test-runner',
+    code: `// playwright.config.ts
+import { defineConfig } from '@playwright/test'
 
-// Configure Healify
-const healify = new HealifyReporter({
-  apiKey: process.env.HEALIFY_API_KEY, // Your API key
-  projectId: '{{PROJECT_ID}}',
-  apiUrl: 'https://healify-sigma.vercel.app/api/v1/report'
-});
+export default defineConfig({
+  reporter: [
+    ['list'],
+    ['@healify/test-runner/reporter'],
+  ],
+})
 
-test.beforeEach(async ({ page }, testInfo) => {
-  // Track test execution
-  healify.trackTest(testInfo);
-});
+// ─── test file (e.g. auth.spec.ts) ───
+import { test, expect } from '@healify/test-runner'
 
-test('login flow', async ({ page }) => {
-  await page.goto('https://your-app.com');
-  
-  // If this selector fails, Healify will auto-heal it
-  await page.click('#login-btn'); // Healify tracks this
-  await page.fill('#email', 'test@example.com');
-  await page.fill('#password', 'password123');
-  
-  // Auto-report failures with context
-  await healify.wrap(async () => {
-    await page.click('button[type="submit"]');
-  });
-});
-
-// Auto-report on failure
-test.afterEach(async ({}, testInfo) => {
-  if (testInfo.status === 'failed') {
-    await healify.reportFailure(testInfo);
-  }
-});`,
+test('should log in', async ({ page }) => {
+  await page.goto('/login')
+  await page.fill('#email', 'user@example.com')
+  await page.click('#login-btn')
+  await expect(page.locator('h1')).toHaveText('Dashboard')
+})`,
   },
   cypress: {
     name: 'Cypress',
     icon: Terminal,
-    install: 'npm install @healify/cypress-plugin',
-    code: `// cypress.config.js
-const { defineConfig } = require('cypress');
-const HealifyPlugin = require('@healify/cypress-plugin');
+    install: 'npm install --save-dev @healify/cypress-plugin',
+    code: `// cypress.config.ts
+import { defineConfig } from 'cypress'
+import { HealifyCypressPlugin } from '@healify/cypress-plugin'
 
-module.exports = defineConfig({
+export default defineConfig({
   e2e: {
-    baseUrl: 'https://your-app.com',
     setupNodeEvents(on, config) {
-      // Initialize Healify
-      HealifyPlugin(on, config, {
-        apiKey: process.env.HEALIFY_API_KEY,
-        projectId: '{{PROJECT_ID}}',
-        apiUrl: 'https://healify-sigma.vercel.app/api/v1/report'
-      });
-    }
-  }
-});
-
-// cypress/e2e/login.cy.js
-describe('Login Flow', () => {
-  beforeEach(() => {
-    cy.healifyStart(); // Start tracking
-  });
-
-  it('should login successfully', () => {
-    cy.visit('/login');
-    
-    // Healify auto-tracks selectors
-    cy.get('#email').type('test@example.com');
-    cy.get('#password').type('password123');
-    
-    // If this fails, Healify will report and suggest fix
-    cy.get('#login-btn').click();
-    
-    // Auto-healed assertions
-    cy.healifyAssert('h1', 'Dashboard');
-  });
-
-  afterEach(function() {
-    if (this.currentTest.state === 'failed') {
-      cy.healifyReport(this.currentTest);
-    }
-  });
-});`,
+      return HealifyCypressPlugin(on, config)
+    },
+  },
+})`,
   },
   selenium: {
     name: 'Selenium',
     icon: FileCode,
-    install: 'pip install healify-selenium',
-    code: `# healify_config.py
-from healify_selenium import HealifyReporter
+    install: 'pip install requests',
+    code: `import requests
 
-# Initialize Healify
-healify = HealifyReporter(
-    api_key="YOUR_API_KEY",  # Get from dashboard
-    project_id="{{PROJECT_ID}}",
-    api_url="https://healify-sigma.vercel.app/api/v1/report"
-)
-
-# test_login.py
-import pytest
-from selenium import webdriver
-from healify_config import healify
-
-@pytest.fixture
-def driver():
-    driver = webdriver.Chrome()
-    healify.set_driver(driver)
-    yield driver
-    healify.report_test_status()
-    driver.quit()
-
-@healify.track_test
-def test_login_flow(driver):
-    driver.get("https://your-app.com/login")
-    
-    # Healify tracks selectors automatically
-    email_input = healify.find_element("#email")
-    email_input.send_keys("test@example.com")
-    
-    password_input = healify.find_element("#password")
-    password_input.send_keys("password123")
-    
-    # If selector fails, Healify will:
-    # 1. Report the failure
-    # 2. Analyze the DOM
-    # 3. Return the fixed selector
-    login_btn = healify.find_element("#login-btn")
-    login_btn.click()
-    
-    # Verify with auto-healing
-    healify.assert_element_exists("h1", text="Dashboard")`,
+def report_to_healify(test_name, selector, error, html):
+    response = requests.post(
+        "https://healify-sigma.vercel.app/api/v1/report",
+        headers={
+            "x-api-key": "YOUR_API_KEY",
+            "Content-Type": "application/json",
+        },
+        json={
+            "testName": test_name,
+            "selector": selector,
+            "error": error,
+            "context": html,
+            "selectorType": "CSS",
+            "branch": "main",
+        },
+        timeout=15,
+    )
+    response.raise_for_status()
+    return response.json()`,
   },
 }
 
@@ -280,6 +209,7 @@ export default function ConnectPage() {
   const [activeFramework, setActiveFramework] = useState<keyof typeof snippets>('playwright')
   const [detectedFramework, setDetectedFramework] = useState<keyof typeof snippets | null>(null)
   const [projectRepository, setProjectRepository] = useState<string | null>(null)
+  const [apiKey, setApiKey] = useState<string | null>(null)
   const [projectRepositoryStatus, setProjectRepositoryStatus] = useState<'idle' | 'loaded' | 'error'>('idle')
   const [trackedSdkStep, setTrackedSdkStep] = useState(false)
 
@@ -334,6 +264,17 @@ export default function ConnectPage() {
           setProjectRepository(repositoryUrl || null)
           setProjectRepositoryStatus('loaded')
         }
+
+        // Fetch API key
+        try {
+          const keyRes = await fetch(`/api/projects/${projectId}?includeApiKey=true`)
+          if (keyRes.ok) {
+            const keyData = await keyRes.json()
+            if (mounted && keyData?.apiKey) {
+              setApiKey(keyData.apiKey)
+            }
+          }
+        } catch {}
 
         if (!repositoryUrl) return
 
@@ -422,9 +363,10 @@ export default function ConnectPage() {
 
       {/* Step 1: Webhook setup */}
       <div className="glass-elite p-4">
-        <h2 className="text-sm font-medium text-gray-400 mb-3">Paso 1. Conectar webhook de GitHub</h2>
+        <h2 className="text-sm font-medium text-gray-400 mb-3">Paso 1 (opcional). Conectar webhook de GitHub</h2>
         <p className="text-xs text-gray-500 mb-3">
-          Configurá este endpoint en tu repo de GitHub para que cada push dispare tests automáticamente.
+          Configurá este endpoint en tu repo de GitHub para auto-ejecución en cada push.
+          Si ya usás GitHub Actions, podés saltear este paso.
         </p>
         <CodeBlock
           code={webhookUrl}
@@ -485,10 +427,15 @@ export default function ConnectPage() {
       <div className="glass-elite p-4">
         <h2 className="text-sm font-medium text-gray-400 mb-3">Paso 2.3 Configurar API key</h2>
         <CodeBlock 
-          code={`HEALIFY_API_KEY=hf_live_your_api_key_here`}
+          code={`HEALIFY_API_KEY=${apiKey || 'hf_live_your_api_key_here'}`}
           language="env"
           onCopy={trackOnboardingStep2}
         />
+        <p className="text-xs text-gray-500 mt-2">
+          Agregá esta variable de entorno en tu CI/CD o archivo <code className="text-gray-300">.env.local</code>.
+          Variables opcionales: <code className="text-gray-300">HEALIFY_BRANCH</code> (git branch) y{' '}
+          <code className="text-gray-300">HEALIFY_COMMIT_SHA</code> (commit SHA).
+        </p>
       </div>
 
       {/* Step 3 */}
