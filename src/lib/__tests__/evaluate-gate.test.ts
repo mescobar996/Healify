@@ -164,6 +164,25 @@ describe('evaluateGate — not_unique', () => {
     expect(resultAttr.pass).toBe(true)
     expect(resultAttr.blockedBy.find(r => r.code === 'not_unique')).toBeUndefined()
   })
+
+  it('no cuenta un atributo no relacionado cuyo sufijo coincide con "class" (data-class vs class)', () => {
+    // Misma regresión que arriba, en la rama de selectores de clase:
+    // classAttrRe usaba \bclass=, que también matcheaba dentro de
+    // "data-class=" / "aria-class=", extrayendo su valor como si fuera un
+    // class="" real. El chequeo de pertenencia de token no salva esto
+    // porque el atributo ya fue mal identificado como "class" antes de
+    // llegar a esa validación.
+    const html = '<div data-class="foo">A</div><div class="foo">B</div>'
+    const result = evaluateGate({
+      confidence: 1.0,
+      selector: '.foo',
+      selectorType: 'CSS',
+      threshold: 0.85,
+      domSnapshot: html,
+    })
+    expect(result.pass).toBe(true)
+    expect(result.blockedBy.find(r => r.code === 'not_unique')).toBeUndefined()
+  })
 })
 
 describe('evaluateGate — múltiples razones simultáneas', () => {

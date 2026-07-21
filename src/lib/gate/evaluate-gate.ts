@@ -67,7 +67,14 @@ function countSimpleSelectorMatches(selector: string, html: string): number | nu
 
   const classMatch = selector.match(/^\.([A-Za-z0-9_-]+)$/)
   if (classMatch) {
-    const classAttrRe = /\bclass=["']([^"']*)["']/g
+    // Same (?<![\w-]) fix as the id/attribute branches: \b before "class"
+    // also matches right after a hyphen, so a raw \bclass= search matched
+    // inside "data-class=" / "aria-class=" too, mis-extracting their value
+    // as if it were a real class-attribute value. Token-membership checking
+    // below only helps once the attribute has been correctly identified as
+    // "class" — it can't rescue a match that was never really "class=" to
+    // begin with.
+    const classAttrRe = /(?<![\w-])class=["']([^"']*)["']/g
     let count = 0
     let m: RegExpExecArray | null
     while ((m = classAttrRe.exec(html)) !== null) {
