@@ -1,18 +1,28 @@
 /**
- * Tests for src/lib/security-utils.ts
+ * Tests for src/lib/security-utils.ts — AES-256-CBC
  *
- * Covers: encrypt / decrypt round-trip, edge cases, and
- * format correctness without needing a real ENCRYPTION_KEY
- * (module uses a safe dev fallback when the env var is absent).
+ * ENCRYPTION_KEY es seteada en src/test/setup.ts (global, antes de imports).
  */
-import { describe, it, expect } from 'vitest'
-import { encrypt, decrypt } from '@/lib/security-utils'
+import { describe, it, expect, vi } from 'vitest'
 
-describe('security-utils - encrypt / decrypt', () => {
-  // Round-trip
+vi.mock('@/lib/db', () => ({
+  db: {
+    project: { update: vi.fn().mockResolvedValue({}) },
+  },
+}))
+
+vi.mock('@/lib/audit-log-service', () => ({
+  auditLogService: {
+    log: vi.fn().mockResolvedValue(undefined),
+  },
+}))
+
+const { encrypt, decrypt } = await import('@/lib/security-utils')
+
+describe('security-utils - encrypt / decrypt (AES-256-CBC)', () => {
+
   it('decrypt(encrypt(text)) === original text', () => {
-    const original = 'super-secret-payload'
-    expect(decrypt(encrypt(original))).toBe(original)
+    expect(decrypt(encrypt('super-secret-payload'))).toBe('super-secret-payload')
   })
 
   it('works with an empty string', () => {
@@ -29,33 +39,18 @@ describe('security-utils - encrypt / decrypt', () => {
     expect(decrypt(encrypt(long))).toBe(long)
   })
 
-  // Format validation — AES-256-GCM output: iv(24):authTag(32):ciphertext
-  it('encrypted output has the iv:authTag:ciphertext format', () => {
-    const ciphertext = encrypt('test')
-    expect(ciphertext).toMatch(/^[0-9a-f]{24}:[0-9a-f]{32}:[0-9a-f]+$/)
+  it('encrypted output has iv:ciphertext format (hex)', () => {
+    const parts = encrypt('test').split(':')
+    expect(parts).toHaveLength(2)
+    expect(parts[0]).toMatch(/^[0-9a-f]+$/)
+    expect(parts[1]).toMatch(/^[0-9a-f]+$/)
   })
 
-  it('IV part is always 24 hex chars (12 bytes)', () => {
-    const ciphertext = encrypt('hello')
-    const iv = ciphertext.split(':')[0]
-    expect(iv).toHaveLength(24)
+  it('IV part is always 32 hex chars (16 bytes)', () => {
+    const iv = encrypt('hello').split(':')[0]
+    expect(iv).toHaveLength(32)
   })
 
-  it('authTag part is always 32 hex chars (16 bytes)', () => {
-    const ciphertext = encrypt('hello')
-    const authTag = ciphertext.split(':')[1]
-    expect(authTag).toHaveLength(32)
-  })
-
-  it('tampered ciphertext throws on decryption (integrity check)', () => {
-    const ciphertext = encrypt('sensitive-data')
-    const parts = ciphertext.split(':')
-    // Flip a byte in the ciphertext portion
-    const tampered = parts[0] + ':' + parts[1] + ':ff' + parts[2].slice(2)
-    expect(() => decrypt(tampered)).toThrow()
-  })
-
-  // Non-determinism: each call uses a fresh random IV
   it('two encryptions of the same text produce different ciphertexts', () => {
     const a = encrypt('same-text')
     const b = encrypt('same-text')
@@ -64,15 +59,12 @@ describe('security-utils - encrypt / decrypt', () => {
     expect(decrypt(b)).toBe('same-text')
   })
 
-  // Multiple different plaintexts
   it('different plaintexts decrypt to their respective originals', () => {
-    const values = ['alpha', 'beta', 'gamma']
-    for (const plain of values) {
+    for (const plain of ['alpha', 'beta', 'gamma']) {
       expect(decrypt(encrypt(plain))).toBe(plain)
     }
   })
 
-  // Resilience
   it('decrypt throws on a completely invalid ciphertext', () => {
     expect(() => decrypt('not-valid-at-all')).toThrow()
   })

@@ -1,9 +1,11 @@
 /**
  * Tests for payment abstraction layer:
- *   - LemonSqueezy webhook signature verification
- *   - LemonSqueezy webhook payload parsing
+ *   - HMAC-SHA256 webhook signature verification (genérico y MercadoPago)
  *   - MercadoPago webhook signature verification
- *   - Exchange rate helpers
+ *   - Exchange rate helpers (USD → ARS)
+ *
+ * Nota: las funciones verifyLsSignature/parseLsPayload son implementaciones
+ * puras inline para testear lógica de HMAC — no dependen de ninguna gateway real.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
