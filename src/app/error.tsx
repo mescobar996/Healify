@@ -31,7 +31,7 @@ export default function Error({
           Algo salió mal
         </h1>
         <p className="text-sm text-[#EDEDED]/60 mb-8 leading-relaxed">
-          Ocurrió un error inesperado. Nuestra IA ya está analizando el problema.
+          Ocurrió un error inesperado.
         </p>
 
         {error.digest && (

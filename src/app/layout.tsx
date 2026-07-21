@@ -1,8 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Montserrat, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import { Toaster as SonnerToaster } from "sonner";
-import { Providers } from "@/components/Providers";
 
 const montserrat = Montserrat({
   variable: "--font-montserrat",
@@ -23,13 +21,14 @@ const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://healify-sigma.vercel
 
 // Complete SEO Metadata configuration
 export const metadata: Metadata = {
+  metadataBase: new URL(baseUrl),
   title: {
     default: "Healify",
     template: "Healify",
   },
   description:
-    "Infraestructura de self-healing para tests con IA. Dejá de reparar selectores manualmente. Healify detecta, corrige y abre PRs automáticamente.",
-  keywords: ["Healify", "Test Automation", "Self-Healing Tests", "IA Testing", "E2E Testing", "Tests automáticos"],
+    "Reporter local y gratuito para Playwright y Cypress: cuando un selector se rompe, Healify sugiere el fix en tu propia máquina, sin cuenta ni servidor.",
+  keywords: ["Healify", "Test Automation", "Self-Healing Tests", "Playwright", "Cypress", "E2E Testing"],
   authors: [{ name: "Healify Team", url: baseUrl }],
   creator: "Healify",
   publisher: "Healify",
@@ -39,15 +38,15 @@ export const metadata: Metadata = {
     locale: "es_AR",
     url: baseUrl,
     siteName: "Healify",
-    title: "Healify - Tests que se curan solos",
-    description: "Infraestructura de self-healing para tests con IA. Dejá de reparar selectores manualmente.",
+    title: "Healify - Sanado local de selectores rotos",
+    description: "Reporter local y gratuito para Playwright y Cypress. Sin cuenta, sin servidor.",
     images: [{ url: `${baseUrl}/opengraph-image`, width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",
     site: "@healify_dev",
-    title: "Healify - Tests que se curan solos",
-    description: "Infraestructura de self-healing para tests con IA.",
+    title: "Healify - Sanado local de selectores rotos",
+    description: "Reporter local y gratuito para Playwright y Cypress.",
   },
   robots: { index: true, follow: true },
   alternates: { canonical: baseUrl },
@@ -78,10 +77,7 @@ export default function RootLayout({
       <body
         className={`${montserrat.variable} ${jetbrainsMono.variable} font-sans antialiased bg-[#0A0A0A] text-[#EDEDED]`}
       >
-        <Providers>
-          {children}
-          <SonnerToaster position="bottom-right" theme="dark" />
-        </Providers>
+        {children}
       </body>
     </html>
   );
