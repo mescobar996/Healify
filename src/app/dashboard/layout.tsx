@@ -126,12 +126,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   "min-h-[44px] flex items-center gap-2.5 px-2.5 py-2 rounded-md text-[13px] font-medium transition-all duration-150 group",
                   isActive
                     ? "bg-[#1A1A1A] text-[#EDEDED] border-l-2 border-white"
-                    : "text-[#6B6B6B] hover:text-[#EDEDED] hover:bg-[#151515]"
+                    : "text-[#8A8A8A] hover:text-[#EDEDED] hover:bg-[#151515]"
                 )}
               >
                 <item.icon className={cn(
                   "w-4 h-4 transition-colors duration-150",
-                  isActive ? "text-white" : "text-[#6B6B6B] group-hover:text-[#EDEDED]"
+                  isActive ? "text-white" : "text-[#8A8A8A] group-hover:text-[#EDEDED]"
                 )} />
                 <span className="flex-1">{item.name}</span>
                 {isActive && (

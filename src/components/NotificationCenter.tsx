@@ -122,7 +122,7 @@ export function NotificationCenter() {
 
           <div className="h-[calc(100%-76px)] overflow-y-auto">
             {notifs.length === 0 ? (
-              <div className="h-full flex items-center justify-center text-sm text-[#6B6B6B]">Sin notificaciones</div>
+              <div className="h-full flex items-center justify-center text-sm text-[#8A8A8A]">Sin notificaciones</div>
             ) : (
               <div className="divide-y divide-white/[0.06]">
                 {notifs.map((n) => (
@@ -133,7 +133,7 @@ export function NotificationCenter() {
                     </div>
                     <p className="text-xs text-[#9B9B9B] leading-relaxed">{n.message}</p>
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-[#6B6B6B]">
+                      <span className="text-[10px] text-[#8A8A8A]">
                         {new Date(n.createdAt).toLocaleString("es-AR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
                       </span>
                       {n.link && (

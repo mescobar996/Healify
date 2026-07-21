@@ -17,7 +17,7 @@ function CodeBlock({ code, lang = 'bash' }: { code: string; lang?: string }) {
   return (
     <div className="relative group">
       <div className="flex items-center justify-between px-4 py-2 bg-[#151515] border-b border-white/[0.07] rounded-t-xl">
-        <span className="text-[11px] text-[#6B6B6B] font-mono uppercase tracking-widest">{lang}</span>
+        <span className="text-[11px] text-[#8A8A8A] font-mono uppercase tracking-widest">{lang}</span>
         <div className="flex gap-1.5">
           <span className="w-3 h-3 rounded-full bg-white/[0.12]" />
           <span className="w-3 h-3 rounded-full bg-white/[0.12]" />
@@ -94,10 +94,10 @@ export default function DocsPage() {
             <Link href="/" className="flex items-center gap-2 font-semibold text-[#EDEDED]">
               <Book className="w-4 h-4 text-white" />
               <span>Healify</span>
-              <span className="text-[#6B6B6B]">/</span>
+              <span className="text-[#8A8A8A]">/</span>
               <span className="text-[#9B9B9B] font-normal">Docs</span>
             </Link>
-            <nav className="hidden md:flex items-center gap-4 text-sm text-[#6B6B6B]">
+            <nav className="hidden md:flex items-center gap-4 text-sm text-[#8A8A8A]">
               <a href="#quickstart" className="hover:text-[#EDEDED] transition-colors">Quickstart</a>
               <a href="#api" className="hover:text-[#EDEDED] transition-colors">API</a>
               <a href="#webhook" className="hover:text-[#EDEDED] transition-colors">Webhook</a>
@@ -142,7 +142,7 @@ export default function DocsPage() {
                 <a
                   key={item.id}
                   href={`#${item.id}`}
-                  className={`block text-sm py-1.5 pl-3 -ml-px border-l border-transparent transition-colors hover:text-[#EDEDED] hover:border-white/50 text-[#6B6B6B] ${item.indent ? 'pl-6 text-xs' : ''}`}
+                  className={`block text-sm py-1.5 pl-3 -ml-px border-l border-transparent transition-colors hover:text-[#EDEDED] hover:border-white/50 text-[#8A8A8A] ${item.indent ? 'pl-6 text-xs' : ''}`}
                 >
                   {item.label}
                 </a>
@@ -168,7 +168,7 @@ export default function DocsPage() {
                 <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-white/10 text-white border border-white/20">
                   v0.1.0
                 </span>
-                <span className="text-xs text-[#6B6B6B]">Última actualización: Mar 2026</span>
+                <span className="text-xs text-[#8A8A8A]">Última actualización: Mar 2026</span>
               </div>
               <h1 className="text-3xl font-bold text-[#EDEDED] mb-3 tracking-tight">
                 Documentación del SDK
@@ -213,7 +213,7 @@ export default function DocsPage() {
                 </span>
                 <div>
                   <p className="text-sm font-medium text-[#EDEDED]">{item.title}</p>
-                  <p className="text-xs text-[#6B6B6B] font-mono mt-0.5">{item.desc}</p>
+                  <p className="text-xs text-[#8A8A8A] font-mono mt-0.5">{item.desc}</p>
                 </div>
               </div>
             ))}
@@ -410,10 +410,10 @@ def report_to_healify(test_name, selector, error, html):
             <table className="w-full min-w-[640px] text-sm">
               <thead>
                 <tr className="bg-[#151515] border-b border-white/[0.07]">
-                  <th className="text-left px-4 py-3 text-[#6B6B6B] font-medium text-xs tracking-wide">Campo</th>
-                  <th className="text-left px-4 py-3 text-[#6B6B6B] font-medium text-xs tracking-wide">Tipo</th>
-                  <th className="text-left px-4 py-3 text-[#6B6B6B] font-medium text-xs tracking-wide">Requerido</th>
-                  <th className="text-left px-4 py-3 text-[#6B6B6B] font-medium text-xs tracking-wide">Descripción</th>
+                  <th className="text-left px-4 py-3 text-[#8A8A8A] font-medium text-xs tracking-wide">Campo</th>
+                  <th className="text-left px-4 py-3 text-[#8A8A8A] font-medium text-xs tracking-wide">Tipo</th>
+                  <th className="text-left px-4 py-3 text-[#8A8A8A] font-medium text-xs tracking-wide">Requerido</th>
+                  <th className="text-left px-4 py-3 text-[#8A8A8A] font-medium text-xs tracking-wide">Descripción</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.07]">
@@ -429,8 +429,8 @@ def report_to_healify(test_name, selector, error, html):
                 ].map(([field, type, req, desc]) => (
                   <tr key={field} className="hover:bg-[#151515]">
                     <td className="px-4 py-3 font-mono text-white text-xs">{field}</td>
-                    <td className="px-4 py-3 text-[#6B6B6B] text-xs">{type}</td>
-                    <td className="px-4 py-3 text-center text-xs">{req === '✓' ? <span className="text-white">✓</span> : <span className="text-[#6B6B6B]">—</span>}</td>
+                    <td className="px-4 py-3 text-[#8A8A8A] text-xs">{type}</td>
+                    <td className="px-4 py-3 text-center text-xs">{req === '✓' ? <span className="text-white">✓</span> : <span className="text-[#8A8A8A]">—</span>}</td>
                     <td className="px-4 py-3 text-[#9B9B9B] text-xs">{desc}</td>
                   </tr>
                 ))}
@@ -567,7 +567,7 @@ JIRA_PROJECT_KEY=QA`} />
                 ['Secret',       'Configurar en el repo → igual que GITHUB_WEBHOOK_SECRET'],
               ].map(([k, v]) => (
                 <div key={k} className="p-3 rounded-xl bg-[#111111] border border-white/[0.07]">
-                  <p className="text-[11px] text-[#6B6B6B] uppercase tracking-widest mb-1">{k}</p>
+                  <p className="text-[11px] text-[#8A8A8A] uppercase tracking-widest mb-1">{k}</p>
                   <p className="text-xs text-[#9B9B9B] font-mono">{v}</p>
                 </div>
               ))}
@@ -658,7 +658,7 @@ REDIS_URL=rediss://...`} />
               <details key={q} className="group p-4 rounded-xl bg-[#111111] border border-white/[0.07] cursor-pointer">
                 <summary className="text-sm font-medium text-[#EDEDED] list-none flex items-center justify-between">
                   {q}
-                  <ArrowRight className="w-4 h-4 text-[#6B6B6B] group-open:rotate-90 transition-transform" />
+                  <ArrowRight className="w-4 h-4 text-[#8A8A8A] group-open:rotate-90 transition-transform" />
                 </summary>
                 <p className="text-sm text-[#9B9B9B] mt-3 leading-relaxed">{a}</p>
               </details>

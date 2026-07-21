@@ -42,13 +42,13 @@ export function MobileBottomNav() {
                 "relative flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors",
                 isActive
                   ? "text-white"
-                  : "text-[#6B6B6B] active:text-white/70"
+                  : "text-[#8A8A8A] active:text-white/70"
               )}
             >
               <tab.icon
                 className={cn(
                   "w-5 h-5 transition-colors",
-                  isActive ? "text-white" : "text-[#6B6B6B]"
+                  isActive ? "text-white" : "text-[#8A8A8A]"
                 )}
               />
               <span>{tab.name}</span>

@@ -13,8 +13,6 @@ import {
   XCircle,
   ChevronRight,
   RefreshCw,
-  AlertTriangle,
-  FolderKanban,
   Loader2,
   Zap,
   FolderPlus,
@@ -25,6 +23,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/dashboard/EmptyState";
+import { ErrorState } from "@/components/dashboard/ErrorState";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -260,53 +260,6 @@ function ProjectCard({
           Run
         </Button>
       </div>
-    </div>
-  );
-}
-
-function EmptyState({
-  title,
-  description,
-  action,
-}: {
-  title: string;
-  description: string;
-  action?: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col items-center justify-center py-12 text-center">
-      <div className="p-3 rounded-full bg-white/5 mb-3">
-        <FolderKanban className="w-5 h-5 text-gray-500" />
-      </div>
-      <p className="text-sm text-gray-400">{title}</p>
-      <p className="text-xs text-gray-500 mt-1">{description}</p>
-      {action && <div className="mt-4">{action}</div>}
-    </div>
-  );
-}
-
-function ErrorState({
-  message,
-  onRetry,
-}: {
-  message: string;
-  onRetry: () => void;
-}) {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
-      <div className="p-3 rounded-full bg-red-500/10">
-        <AlertTriangle className="w-6 h-6 text-red-400" />
-      </div>
-      <p className="text-gray-400 text-sm">{message}</p>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={onRetry}
-        className="bg-white/5 border-white/10 text-gray-300 hover:bg-white/10"
-      >
-        <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
-        Reintentar
-      </Button>
     </div>
   );
 }

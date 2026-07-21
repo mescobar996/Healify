@@ -33,6 +33,8 @@ import { TestDetailSheet } from "@/components/TestDetailSheet";
 import { JobProgressCard } from "@/components/JobProgressCard";
 import { LiveConsole } from "@/components/LiveConsole";
 import { TestRunStatusBadge, HealingStatusBadge } from "@/components/dashboard/StatusBadge";
+import { ConfidenceBar } from "@/components/dashboard/ConfidenceBar";
+import { EmptyState } from "@/components/dashboard/EmptyState";
 import type { TestRun, TestRunStatus, HealingStatus, HealingHistoryItem } from "@/types";
 
 type TeardownEvent = HealingHistoryItem & {
@@ -42,33 +44,6 @@ type TeardownEvent = HealingHistoryItem & {
   screenshotAfter?: string | null;
   prUrl?: string | null;
 };
-
-// ============================================
-// LINEAR STYLE COMPONENTS
-// ============================================
-
-function ConfidenceBar({ confidence }: { confidence: number }) {
-  return (
-    <div className="flex items-center gap-2">
-      <div className="w-16 h-1.5 rounded-full bg-gray-800 overflow-hidden">
-        <div className={cn("h-full rounded-full transition-all duration-300", confidence >= 80 ? "bg-white" : confidence >= 50 ? "bg-[#BEBEBE]" : "bg-red-500")} style={{ width: `${confidence}%` }} />
-      </div>
-      <span className="text-[11px] text-gray-500 font-mono">{confidence}%</span>
-    </div>
-  );
-}
-
-function EmptyState({ title, description }: { title: string; description: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-8 text-center">
-      <div className="p-3 rounded-full bg-white/5 mb-3">
-        <FileCode className="w-5 h-5 text-gray-500" />
-      </div>
-      <p className="text-sm text-gray-400">{title}</p>
-      <p className="text-xs text-gray-500 mt-1">{description}</p>
-    </div>
-  );
-}
 
 // ============================================
 // MAIN COMPONENT

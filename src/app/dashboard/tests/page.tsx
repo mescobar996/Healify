@@ -16,7 +16,6 @@ import {
   ChevronRight,
   FileCode,
   ArrowUpDown,
-  AlertTriangle,
   Tag,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -25,6 +24,8 @@ import { Input } from "@/components/ui/input";
 import { api, formatRelativeTime } from "@/lib/api";
 import { TestRunsSkeleton } from "@/components/ui/skeletons";
 import { TestRunStatusBadge } from "@/components/dashboard/StatusBadge";
+import { EmptyState } from "@/components/dashboard/EmptyState";
+import { ErrorState } from "@/components/dashboard/ErrorState";
 import { toast } from "sonner";
 import type { TestRun, TestRunStatus } from "@/types";
 
@@ -54,38 +55,6 @@ function StatCard({
           <Icon className="w-4 h-4" />
         </div>
       </div>
-    </div>
-  );
-}
-
-function EmptyState({ title, description }: { title: string; description: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-12 text-center">
-      <div className="p-3 rounded-full bg-[var(--bg-elevated)] mb-3">
-        <FileCode className="w-5 h-5 text-[var(--text-tertiary)]" />
-      </div>
-      <p className="text-sm text-[var(--text-secondary)]">{title}</p>
-      <p className="text-xs text-[var(--text-tertiary)] mt-1">{description}</p>
-    </div>
-  );
-}
-
-function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
-      <div className="p-3 rounded-full bg-white/10">
-        <AlertTriangle className="w-6 h-6 text-white" />
-      </div>
-      <p className="text-[var(--text-secondary)] text-sm">{message}</p>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={onRetry}
-        className=""
-      >
-        <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
-        Reintentar
-      </Button>
     </div>
   );
 }
@@ -484,7 +453,7 @@ function TestsContent() {
                 "px-3 py-1.5 rounded-md text-[13px] font-medium transition-all duration-150 border",
                 statusFilter === f.value
                   ? "bg-[#1A1A1A] text-[#EDEDED] border border-white/[0.12]"
-                  : "border-transparent text-[#6B6B6B] hover:text-[#EDEDED] hover:bg-[#151515]"
+                  : "border-transparent text-[#8A8A8A] hover:text-[#EDEDED] hover:bg-[#151515]"
               )}
             >
               {f.label}

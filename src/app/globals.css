@@ -62,9 +62,9 @@
   --popover-foreground: #EDEDED;
   --border: rgba(255, 255, 255, 0.06);
   --input: #141414;
-  --ring: rgba(255, 255, 255, 0.35);
+  --ring: rgba(139, 92, 246, 0.5);
   --muted: #141414;
-  --muted-foreground: #6B6B6B;
+  --muted-foreground: #8A8A8A;
   --accent: #FFFFFF;
   --accent-foreground: #FFFFFF;
 
@@ -87,7 +87,7 @@
   --sidebar-accent: #0F0F0F;
   --sidebar-accent-foreground: #EDEDED;
   --sidebar-border: rgba(255, 255, 255, 0.06);
-  --sidebar-ring: rgba(255, 255, 255, 0.35);
+  --sidebar-ring: rgba(139, 92, 246, 0.5);
 
   --bg-primary: #000000;
   --bg-sidebar: #000000;
@@ -97,7 +97,7 @@
 
   --text-primary: #EDEDED;
   --text-secondary: #9B9B9B;
-  --text-tertiary: #6B6B6B;
+  --text-tertiary: #8A8A8A;
 
   --border-subtle: rgba(255, 255, 255, 0.06);
   --border-default: rgba(255, 255, 255, 0.10);
@@ -193,7 +193,7 @@
   .btn-neon:focus-visible {
     filter: brightness(0.96);
     transform: translateY(-1px);
-    box-shadow: 0 2px 0 rgba(255, 255, 255, 0.1) inset, 0 14px 32px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 2px 0 rgba(255, 255, 255, 0.1) inset, 0 14px 32px rgba(0, 0, 0, 0.4), 0 0 28px rgba(139, 92, 246, 0.35);
     outline: none;
   }
 

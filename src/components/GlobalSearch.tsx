@@ -155,7 +155,7 @@ export function GlobalSearch() {
                 <CommandGroup heading="Búsquedas recientes">
                   {recentSearches.map((s) => (
                     <CommandItem key={s} onSelect={() => setQuery(s)}>
-                      <Clock className="w-3.5 h-3.5 text-[#6B6B6B]" />
+                      <Clock className="w-3.5 h-3.5 text-[#8A8A8A]" />
                       <span className="text-[#9B9B9B]">{s}</span>
                     </CommandItem>
                   ))}
@@ -166,27 +166,27 @@ export function GlobalSearch() {
                 <CommandItem onSelect={() => { router.push("/dashboard"); setOpen(false) }}>
                   <BarChart3 className="w-4 h-4 text-[#5E6AD2]" />
                   <span>Dashboard</span>
-                  <ArrowRight className="w-3 h-3 ml-auto text-[#6B6B6B]" />
+                  <ArrowRight className="w-3 h-3 ml-auto text-[#8A8A8A]" />
                 </CommandItem>
                 <CommandItem onSelect={() => { router.push("/dashboard/projects"); setOpen(false) }}>
                   <FolderKanban className="w-4 h-4 text-[#3DB779]" />
                   <span>Proyectos</span>
-                  <ArrowRight className="w-3 h-3 ml-auto text-[#6B6B6B]" />
+                  <ArrowRight className="w-3 h-3 ml-auto text-[#8A8A8A]" />
                 </CommandItem>
                 <CommandItem onSelect={() => { router.push("/dashboard/tests"); setOpen(false) }}>
                   <Zap className="w-4 h-4 text-[#E8A642]" />
                   <span>Test Runs</span>
-                  <ArrowRight className="w-3 h-3 ml-auto text-[#6B6B6B]" />
+                  <ArrowRight className="w-3 h-3 ml-auto text-[#8A8A8A]" />
                 </CommandItem>
                 <CommandItem onSelect={() => { router.push("/docs"); setOpen(false) }}>
                   <BookOpen className="w-4 h-4 text-[#4E9FE8]" />
                   <span>Documentación</span>
-                  <ArrowRight className="w-3 h-3 ml-auto text-[#6B6B6B]" />
+                  <ArrowRight className="w-3 h-3 ml-auto text-[#8A8A8A]" />
                 </CommandItem>
                 <CommandItem onSelect={() => { router.push("/dashboard/settings"); setOpen(false) }}>
                   <Settings className="w-4 h-4 text-[#9B9B9B]" />
                   <span>Configuración</span>
-                  <ArrowRight className="w-3 h-3 ml-auto text-[#6B6B6B]" />
+                  <ArrowRight className="w-3 h-3 ml-auto text-[#8A8A8A]" />
                 </CommandItem>
               </CommandGroup>
             </>
@@ -209,7 +209,7 @@ export function GlobalSearch() {
               >
                 <FolderKanban className="w-4 h-4 text-[#3DB779]" />
                 <span>{p.name}</span>
-                {p.repository && <span className="ml-auto text-[10px] text-[#6B6B6B] font-mono truncate max-w-[200px]">{p.repository}</span>}
+                {p.repository && <span className="ml-auto text-[10px] text-[#8A8A8A] font-mono truncate max-w-[200px]">{p.repository}</span>}
               </CommandItem>
             ))}
           </CommandGroup>
@@ -237,7 +237,7 @@ export function GlobalSearch() {
                   run.status === "HEALED" ? "bg-violet-500/10 text-violet-400" :
                   run.status === "PASSED" ? "bg-green-500/10 text-green-400" :
                   run.status === "FAILED" ? "bg-red-500/10 text-red-400" :
-                  "bg-white/[0.05] text-[#6B6B6B]"
+                  "bg-white/[0.05] text-[#8A8A8A]"
                 }`}>{run.status}</span>
               </CommandItem>
             ))}
@@ -273,13 +273,13 @@ export function GlobalSearch() {
                 <span>{event.testName}</span>
                 <div className="ml-auto flex items-center gap-1.5">
                   {event.confidence != null && (
-                    <span className="text-[10px] text-[#6B6B6B] font-mono">{Math.round(event.confidence * 100)}%</span>
+                    <span className="text-[10px] text-[#8A8A8A] font-mono">{Math.round(event.confidence * 100)}%</span>
                   )}
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
                     event.status === "HEALED_AUTO" ? "bg-violet-500/10 text-violet-400" :
                     event.status === "NEEDS_REVIEW" ? "bg-amber-500/10 text-amber-400" :
                     event.status === "BUG_DETECTED" ? "bg-red-500/10 text-red-400" :
-                    "bg-white/[0.05] text-[#6B6B6B]"
+                    "bg-white/[0.05] text-[#8A8A8A]"
                   }`}>{event.status}</span>
                 </div>
               </CommandItem>
@@ -287,7 +287,7 @@ export function GlobalSearch() {
           </CommandGroup>
 
           {query.trim().length >= 2 && total > 0 && (
-            <div className="px-3 py-2 text-[10px] text-[#6B6B6B] border-t border-white/[0.06] flex items-center justify-between">
+            <div className="px-3 py-2 text-[10px] text-[#8A8A8A] border-t border-white/[0.06] flex items-center justify-between">
               <span>{total} resultado(s)</span>
               <span className="text-[#5E6AD2]">↑↓ navegar · ↵ seleccionar · esc cerrar</span>
             </div>

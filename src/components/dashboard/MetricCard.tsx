@@ -14,7 +14,7 @@ interface MetricCardProps {
 export function MetricCard({ label, value, change, trend, icon: Icon }: MetricCardProps) {
   return (
     <div className="p-4 rounded-lg bg-[#111111] border border-white/[0.07] flex flex-col gap-2">
-      <span className="text-[11px] font-medium text-[#6B6B6B] uppercase tracking-widest inline-flex items-center gap-1.5">
+      <span className="text-[11px] font-medium text-[#8A8A8A] uppercase tracking-widest inline-flex items-center gap-1.5">
         <Icon className="w-3 h-3" />
         {label}
       </span>
@@ -26,7 +26,7 @@ export function MetricCard({ label, value, change, trend, icon: Icon }: MetricCa
           "text-[12px] font-medium flex items-center gap-1",
           trend === "up" && "text-[#3DB779]",
           trend === "down" && "text-[#E85C4A]",
-          trend === "neutral" && "text-[#6B6B6B]"
+          trend === "neutral" && "text-[#8A8A8A]"
         )}
       >
         {trend === "up" ? (

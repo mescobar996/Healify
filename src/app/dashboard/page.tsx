@@ -565,17 +565,17 @@ function DashboardContent() {
         <TabsContent value="analisis" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="rounded-lg border border-white/[0.07] bg-[#111111] p-4">
-              <p className="text-[11px] uppercase tracking-widest text-[#6B6B6B]">Tests monitoreados</p>
+              <p className="text-[11px] uppercase tracking-widest text-[#8A8A8A]">Tests monitoreados</p>
               <p className="text-2xl font-semibold text-[#EDEDED] mt-1">{formatNumber(monitoredTests)}</p>
               <p className="text-xs text-[#9B9B9B] mt-1">Últimos 7 días</p>
             </div>
             <div className="rounded-lg border border-white/[0.07] bg-[#111111] p-4">
-              <p className="text-[11px] uppercase tracking-widest text-[#6B6B6B]">Curaciones recientes</p>
+              <p className="text-[11px] uppercase tracking-widest text-[#8A8A8A]">Curaciones recientes</p>
               <p className="text-2xl font-semibold text-[#EDEDED] mt-1">{data.healingHistory.length}</p>
               <p className="text-xs text-[#9B9B9B] mt-1">Eventos con IA y revisión</p>
             </div>
             <div className="rounded-lg border border-white/[0.07] bg-[#111111] p-4">
-              <p className="text-[11px] uppercase tracking-widest text-[#6B6B6B]">Tiempo promedio</p>
+              <p className="text-[11px] uppercase tracking-widest text-[#8A8A8A]">Tiempo promedio</p>
               <p className="text-2xl font-semibold text-[#EDEDED] mt-1">{data.metrics.avgHealingTime}</p>
               <p className="text-xs text-[#9B9B9B] mt-1">Cambio {data.metrics.avgHealingTimeChange}</p>
             </div>
