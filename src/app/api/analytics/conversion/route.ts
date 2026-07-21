@@ -49,6 +49,16 @@ export async function GET(request: NextRequest) {
           conversionRepoToHealingPct: 0,
           conversionHealingToPaidPct: 0,
         },
+        // Was missing here — the frontend (dashboard/team/page.tsx) reads
+        // conversion.onboardingSteps.step1 unconditionally, only guarding on
+        // `conversion` itself being truthy, so omitting this field crashed the
+        // page with "Cannot read properties of undefined (reading 'step1')"
+        // whenever the cohort window had zero new registrations.
+        onboardingSteps: {
+          step1: 0,
+          step2: 0,
+          step3: 0,
+        },
         kpiTargets: KPI_TARGETS,
         kpiActuals: {
           activation24hPct: 0,
