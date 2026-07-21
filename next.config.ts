@@ -37,6 +37,11 @@ const nextConfig: NextConfig = {
             value: [
               "default-src 'self'",
               "script-src 'self' 'unsafe-inline' https://js.stripe.com",
+              // Without this, worker-src falls back to script-src, which lacks
+              // blob: — Sentry's session replay compresses events in a Web
+              // Worker created from a blob: URL, so every worker creation was
+              // silently blocked by CSP.
+              "worker-src 'self' blob:",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https: blob:",
               "connect-src 'self' https://api.stripe.com https://sentry.io https://*.sentry.io",
