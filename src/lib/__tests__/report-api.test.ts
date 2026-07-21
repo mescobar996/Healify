@@ -1,5 +1,73 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { NextRequest } from 'next/server'
 import { evaluateGate } from '@/lib/gate/evaluate-gate'
+
+// ── Mock DB (route.ts + real evaluateGate()/selectorAnalyzer transitively use this) ──
+//
+// Uses vi.hoisted() rather than plain top-level consts: the static
+// `import { evaluateGate } from '@/lib/gate/evaluate-gate'` above transitively
+// imports '@/lib/db' (via selector-analyzer.ts) and static imports execute
+// before any of this file's own top-level statements — so a plain `const
+// mockDb = {...}` declared after the vi.mock() calls would not be initialized
+// yet when the '@/lib/db' factory runs. vi.hoisted() guarantees this object
+// exists before any import (static or hoisted vi.mock) touches it.
+const { mockDb, mockValidateApiKeyFromRequest, mockCheckApiReportRateLimit, mockAnalyzeBrokenSelector } = vi.hoisted(() => ({
+  mockDb: {
+    testRun: {
+      findFirst: vi.fn(),
+      create:    vi.fn(),
+      update:    vi.fn(),
+    },
+    healingEvent: {
+      create: vi.fn(),
+      update: vi.fn(),
+    },
+    project: {
+      findUnique: vi.fn(),
+    },
+    notification: {
+      create: vi.fn(),
+    },
+  },
+  mockValidateApiKeyFromRequest: vi.fn(),
+  mockCheckApiReportRateLimit: vi.fn(),
+  mockAnalyzeBrokenSelector: vi.fn(),
+}))
+
+vi.mock('@/lib/db', () => ({ db: mockDb }))
+
+// ── Mock API key auth ──────────────────────────────────────────────────
+vi.mock('@/lib/api-key-service', () => ({
+  validateApiKeyFromRequest: mockValidateApiKeyFromRequest,
+}))
+
+// ── Mock rate limiting ─────────────────────────────────────────────────
+vi.mock('@/lib/rate-limit', () => ({
+  checkApiReportRateLimit: mockCheckApiReportRateLimit,
+}))
+
+// ── Mock the AI healing engine (evaluateGate() itself stays REAL below) ─
+vi.mock('@/lib/ai/healing-service', () => ({
+  analyzeBrokenSelector: mockAnalyzeBrokenSelector,
+}))
+
+// ── Re-import the route after all mocks are set up ─────────────────────
+const { POST } = await import('@/app/api/v1/report/route')
+
+function makeReportRequest(body: Record<string, unknown>): NextRequest {
+  return new NextRequest('http://localhost/api/v1/report', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+}
+
+const VALID_REPORT_BODY = {
+  testName: 'Login test',
+  selector: '#old-submit-btn',
+  error: 'Element not found',
+  context: '<button id="old-submit-btn">Submit</button>',
+}
 
 // ── Simulate the in-memory rate limiter logic ─────────────────────────
 const REPORT_LIMIT  = 60
@@ -163,5 +231,89 @@ describe('/api/v1/report — healing result logic (evaluateGate real)', () => {
     const ms = Date.now() - start
     expect(ms).toBeGreaterThan(0)
     expect(typeof ms).toBe('number')
+  })
+})
+
+// ══════════════════════════════════════════════════════════════════════
+// INTEGRATION — calls the real POST handler, mocks only its dependencies.
+// This is what actually proves the 5 gate.pass wire-ups in route.ts
+// (status, actionTaken, appliedAt, healedTests/failedTests, needsReview)
+// are correct — the describe block above only proves evaluateGate() is
+// correct in isolation, it never touches route.ts.
+// ══════════════════════════════════════════════════════════════════════
+describe('POST /api/v1/report — real handler + real evaluateGate()', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+
+    mockValidateApiKeyFromRequest.mockResolvedValue({
+      valid: true,
+      projectId: 'proj_1',
+      projectName: 'Test Project',
+    })
+
+    mockCheckApiReportRateLimit.mockResolvedValue({
+      allowed: true,
+      plan: 'FREE',
+      limit: 60,
+      remaining: 59,
+      resetInMs: 60000,
+    })
+
+    mockDb.testRun.findFirst.mockResolvedValue({ id: 'run_1' })
+    mockDb.testRun.create.mockResolvedValue({ id: 'run_1' })
+    mockDb.testRun.update.mockResolvedValue({ id: 'run_1' })
+    mockDb.healingEvent.create.mockResolvedValue({ id: 'evt_1' })
+    mockDb.healingEvent.update.mockResolvedValue({ id: 'evt_1' })
+    mockDb.notification.create.mockResolvedValue({})
+  })
+
+  it('confidence alta + selector robusto + threshold cumplido → HEALED_AUTO, auto_fixed, appliedAt seteado, needsReview:false', async () => {
+    mockDb.project.findUnique.mockResolvedValue({ userId: 'user_1', autoHealThreshold: 0.95 })
+    mockAnalyzeBrokenSelector.mockResolvedValue({
+      newSelector: '[data-testid="submit-btn"]',
+      selectorType: 'TESTID',
+      confidence: 0.97,
+      reasoning: 'Stable data-testid found',
+    })
+
+    const res = await POST(makeReportRequest(VALID_REPORT_BODY))
+    expect(res.status).toBe(200)
+    const json = await res.json()
+
+    expect(mockDb.healingEvent.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: 'HEALED_AUTO',
+          actionTaken: 'auto_fixed',
+          appliedAt: expect.any(Date),
+        }),
+      })
+    )
+    expect(json.result.needsReview).toBe(false)
+  })
+
+  it('confidence alta pero selector frágil → NEEDS_REVIEW, suggested, appliedAt:null, needsReview:true (el gate real bloquea, no evaluateGate() aislado)', async () => {
+    mockDb.project.findUnique.mockResolvedValue({ userId: 'user_1', autoHealThreshold: 0.85 })
+    mockAnalyzeBrokenSelector.mockResolvedValue({
+      newSelector: 'div:nth-child(3)',
+      selectorType: 'CSS',
+      confidence: 0.99,
+      reasoning: 'Best guess based on DOM position',
+    })
+
+    const res = await POST(makeReportRequest(VALID_REPORT_BODY))
+    expect(res.status).toBe(200)
+    const json = await res.json()
+
+    expect(mockDb.healingEvent.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: 'NEEDS_REVIEW',
+          actionTaken: 'suggested',
+          appliedAt: null,
+        }),
+      })
+    )
+    expect(json.result.needsReview).toBe(true)
   })
 })

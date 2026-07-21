@@ -138,6 +138,9 @@ export async function POST(request: NextRequest) {
       selector: fixedSelector,
       selectorType: selectorType as SelectorType,
       threshold: project?.autoHealThreshold ?? 0.95,
+      // No `newDomSnapshot ?? oldDomSnapshot` fallback like auto-pr.ts here: this
+      // endpoint never runs a post-fix browser pass, so payload.context (the DOM
+      // at the time of the ORIGINAL failure) is the only snapshot that exists.
       domSnapshot: payload.context,
     })
 
