@@ -55,9 +55,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-2 flex items-center justify-between gap-3">
           <HealifyLogo size="md" showText={true} />
           <nav aria-label="Principal" className="flex items-center gap-3 sm:gap-4">
-            <a href="/pricing" className="text-sm text-[#EDEDED]/60 hover:text-white transition-colors">
-              Precios
-            </a>
+            {/* Pricing deshabilitado temporalmente mientras se termina el motor de healing */}
             <Button
               variant="outline"
               size="sm"

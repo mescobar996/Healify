@@ -14,7 +14,17 @@ import { PLAN_META, type PlanId, type BillingCycle } from '@/lib/payment/types'
 import { createCheckoutSession } from '@/lib/payment/mercadopago'
 import { billingRateLimit } from '@/lib/http-rate-limiter'
 
+// Pagos deshabilitados temporalmente — foco en terminar el motor de healing primero.
+const PAYMENTS_ENABLED = false
+
 export async function POST(req: NextRequest) {
+  if (!PAYMENTS_ENABLED) {
+    return NextResponse.json(
+      { error: 'Los pagos todavía no están habilitados.' },
+      { status: 503 }
+    )
+  }
+
   // 10 req / min per IP — prevents checkout spam
   const rl = await billingRateLimit(req)
   if (!rl.ok) return rl.response!

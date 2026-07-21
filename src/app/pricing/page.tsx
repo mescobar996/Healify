@@ -11,7 +11,6 @@ import { cn } from '@/lib/utils'
 import { HealifyLogo } from '@/components/HealifyLogo'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { useSession } from 'next-auth/react'
 
 type PlanId = 'starter' | 'pro' | 'enterprise'
 type BillingCycle = 'monthly' | 'annual'
@@ -108,8 +107,7 @@ function PlanCard({
   arsRate: number | null
   billingCycle: BillingCycle
 }) {
-  const { data: session } = useSession()
-  const [loading, setLoading] = useState(false)
+  const [loading] = useState(false)
   const isPopular = plan.badge === 'Más popular'
 
   const usdPrice = billingCycle === 'annual' ? plan.annualMonthly : plan.price
@@ -119,29 +117,9 @@ function PlanCard({
     : null
 
   const handleCheckout = useCallback(async () => {
-    if (!session) {
-      window.location.href = `/auth/signin?callbackUrl=/pricing`
-      return
-    }
-    setLoading(true)
-    try {
-      const res = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planId: plan.id, billingCycle }),
-      })
-      const data = await res.json()
-      if (res.ok && data.url) {
-        window.location.href = data.url
-      } else {
-        toast.error(data.error ?? 'Error al iniciar el pago. Intentá de nuevo.')
-      }
-    } catch {
-      toast.error('Error de conexión. Intentá de nuevo.')
-    } finally {
-      setLoading(false)
-    }
-  }, [session, plan.id, billingCycle])
+    // Pagos deshabilitados temporalmente — foco en terminar el motor de healing primero.
+    toast.info('Los pagos todavía no están habilitados. Mientras tanto podés usar el plan gratuito.')
+  }, [])
 
   return (
     <motion.div
