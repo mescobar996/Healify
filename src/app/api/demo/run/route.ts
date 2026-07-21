@@ -100,7 +100,7 @@ export async function POST() {
             },
         })
 
-        // ── Bloque 8: Auto-PR si confidence >= 0.95 ─────────────────
+        // ── Bloque 8: Auto-PR si pasa evaluateGate() (confidence >= project.autoHealThreshold, selector no frágil, selector único) ──
         tryOpenAutoPR(createdHealingEvent.id).then(result => {
             console.log('[Demo Auto-PR]', result.opened ? `✅ ${result.prUrl}` : result.reason)
         }).catch(() => {})

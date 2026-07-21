@@ -213,7 +213,7 @@ Respond ONLY with valid JSON (no markdown):
               },
             });
 
-            // ── Bloque 8: Auto-PR cuando confidence >= 0.95 ────────────
+            // ── Bloque 8: Auto-PR cuando pasa evaluateGate() (confidence >= project.autoHealThreshold, selector no frágil, selector único) ──
             // Se ejecuta async para no bloquear la respuesta
             tryOpenAutoPR(updatedEvent.id).then(result => {
               if (result.opened) {

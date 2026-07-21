@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { createSmartPR, createHealifyCheckRun } from './checks'
 import { evaluateGate } from '@/lib/gate/evaluate-gate'
+import type { GateFailureReason } from '@/lib/gate/evaluate-gate'
 import type { SelectorType } from '@/lib/enums'
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -15,6 +16,20 @@ interface AutoPRResult {
     prUrl?: string
     prBranch?: string
     reason?: string
+}
+
+// ─── Formatear una razón de bloqueo del gate con sus valores reales ───
+// El `reason` de AutoPRResult nunca se persiste — solo se hace console.log
+// en los dos call sites (demo/run, test-runs/[id]/heal), así que es el
+// único lugar donde esta info de diagnóstico sale a la luz. Usar solo el
+// `code` (gate:low_confidence) pierde confidence/threshold/score/matches,
+// que son justamente lo que hace falta para entender por qué no abrió el PR.
+function describeGateFailure(reason: GateFailureReason): string {
+    switch (reason.code) {
+        case 'low_confidence': return `low_confidence(${reason.confidence}<${reason.threshold})`
+        case 'fragile_selector': return `fragile_selector(score=${reason.score})`
+        case 'not_unique': return `not_unique(matches=${reason.matches})`
+    }
 }
 
 // ─── Obtener el access_token de GitHub del usuario ────────────────────
@@ -100,7 +115,7 @@ export async function tryOpenAutoPR(healingEventId: string): Promise<AutoPRResul
             domSnapshot: event.newDomSnapshot ?? event.oldDomSnapshot ?? undefined,
         })
         if (!gate.pass) {
-            return { opened: false, reason: `gate:${gate.blockedBy.map(r => r.code).join(',')}` }
+            return { opened: false, reason: `gate:${gate.blockedBy.map(describeGateFailure).join(',')}` }
         }
 
         // 4. Verificar que el proyecto tiene repo configurado

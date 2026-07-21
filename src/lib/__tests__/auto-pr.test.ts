@@ -59,6 +59,7 @@ describe('tryOpenAutoPR — gate integration', () => {
 
     expect(result.opened).toBe(false)
     expect(result.reason).toContain('gate:fragile_selector')
+    expect(result.reason).toMatch(/fragile_selector\(score=0(\.\d+)?\)/)
     expect(mockCreateSmartPR).not.toHaveBeenCalled()
   })
 
@@ -74,11 +75,15 @@ describe('tryOpenAutoPR — gate integration', () => {
 
     expect(result.opened).toBe(false)
     expect(result.reason).toContain('gate:low_confidence')
+    expect(result.reason).toContain('low_confidence(0.9<0.95)')
     expect(mockCreateSmartPR).not.toHaveBeenCalled()
   })
 
   it('permite auto-PR cuando confidence, fragilidad y unicidad pasan el gate', async () => {
-    mockFindUnique.mockResolvedValue(makeEvent({ confidence: 0.87 }))
+    mockFindUnique.mockResolvedValue(makeEvent({
+      confidence: 0.87,
+      newDomSnapshot: '<button data-testid="submit-btn">Submit</button>',
+    }))
     mockDb.account.findFirst.mockResolvedValue({ access_token: 'gh_token' })
     ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
       ok: true,
