@@ -289,6 +289,14 @@ describe('POST /api/v1/report — real handler + real evaluateGate()', () => {
         }),
       })
     )
+    expect(mockDb.testRun.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          healedTests: { increment: 1 },
+          failedTests: undefined,
+        }),
+      })
+    )
     expect(json.result.needsReview).toBe(false)
   })
 
@@ -311,6 +319,14 @@ describe('POST /api/v1/report — real handler + real evaluateGate()', () => {
           status: 'NEEDS_REVIEW',
           actionTaken: 'suggested',
           appliedAt: null,
+        }),
+      })
+    )
+    expect(mockDb.testRun.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          failedTests: { increment: 1 },
+          healedTests: undefined,
         }),
       })
     )
