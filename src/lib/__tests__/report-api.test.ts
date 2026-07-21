@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { evaluateGate } from '@/lib/gate/evaluate-gate'
 
 // ── Simulate the in-memory rate limiter logic ─────────────────────────
 const REPORT_LIMIT  = 60
@@ -118,18 +119,38 @@ describe('/api/v1/report — rate limiting', () => {
   })
 })
 
-describe('/api/v1/report — healing result logic', () => {
+describe('/api/v1/report — healing result logic (evaluateGate real)', () => {
 
-  it('confidence >= 0.95 → HEALED_AUTO', () => {
-    const confidence = 0.97
-    const status = confidence >= 0.95 ? 'HEALED_AUTO' : 'NEEDS_REVIEW'
+  it('confidence >= threshold, selector robusto y sin domSnapshot → HEALED_AUTO', () => {
+    const gate = evaluateGate({
+      confidence: 0.97,
+      selector: '[data-testid="submit-btn"]',
+      selectorType: 'TESTID',
+      threshold: 0.95,
+    })
+    const status = gate.pass ? 'HEALED_AUTO' : 'NEEDS_REVIEW'
     expect(status).toBe('HEALED_AUTO')
   })
 
-  it('confidence < 0.95 → NEEDS_REVIEW', () => {
-    const confidence = 0.80
-    const status = confidence >= 0.95 ? 'HEALED_AUTO' : 'NEEDS_REVIEW'
+  it('confidence < threshold → NEEDS_REVIEW', () => {
+    const gate = evaluateGate({
+      confidence: 0.80,
+      selector: '[data-testid="submit-btn"]',
+      selectorType: 'TESTID',
+      threshold: 0.95,
+    })
+    const status = gate.pass ? 'HEALED_AUTO' : 'NEEDS_REVIEW'
     expect(status).toBe('NEEDS_REVIEW')
+  })
+
+  it('confidence alta pero selector frágil → también NEEDS_REVIEW (gate bloquea aunque el modelo esté seguro)', () => {
+    const gate = evaluateGate({
+      confidence: 0.99,
+      selector: 'div:nth-child(3)',
+      selectorType: 'CSS',
+      threshold: 0.85,
+    })
+    expect(gate.pass).toBe(false)
   })
 
   it('confidence < 0.70 → notificación requerida', () => {

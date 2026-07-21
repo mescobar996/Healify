@@ -9,6 +9,7 @@ import { db } from '@/lib/db'
 import { analyzeBrokenSelector } from '@/lib/ai/healing-service'
 import { checkApiReportRateLimit } from '@/lib/rate-limit'
 import type { SelectorType } from '@/lib/enums'
+import { evaluateGate } from '@/lib/gate/evaluate-gate'
 import { z } from 'zod'
 
 // ============================================
@@ -127,6 +128,19 @@ export async function POST(request: NextRequest) {
     const reasoning     = suggestion?.reasoning    ?? 'Analysis unavailable'
     const selectorType  = suggestion?.selectorType ?? 'UNKNOWN'
 
+    // 6b. Gate: confidence, fragilidad y unicidad del selector propuesto
+    const project = await db.project.findUnique({
+      where: { id: projectId },
+      select: { userId: true, autoHealThreshold: true },
+    })
+    const gate = evaluateGate({
+      confidence,
+      selector: fixedSelector,
+      selectorType: selectorType as SelectorType,
+      threshold: project?.autoHealThreshold ?? 0.95,
+      domSnapshot: payload.context,
+    })
+
     // 7. Update healing event with result
     const updatedEvent = await db.healingEvent.update({
       where: { id: healingEvent.id },
@@ -134,10 +148,10 @@ export async function POST(request: NextRequest) {
         newSelector: fixedSelector,
         newSelectorType: selectorType as SelectorType,
         confidence,
-        status: confidence >= 0.95 ? 'HEALED_AUTO' : 'NEEDS_REVIEW',
+        status: gate.pass ? 'HEALED_AUTO' : 'NEEDS_REVIEW',
         reasoning,
-        actionTaken: confidence >= 0.95 ? 'auto_fixed' : 'suggested',
-        appliedAt: confidence >= 0.95 ? new Date() : null,
+        actionTaken: gate.pass ? 'auto_fixed' : 'suggested',
+        appliedAt: gate.pass ? new Date() : null,
         appliedBy: 'system',
       },
     })
@@ -147,29 +161,22 @@ export async function POST(request: NextRequest) {
       where: { id: testRun.id },
       data: {
         totalTests: { increment: 1 },
-        healedTests: confidence >= 0.95 ? { increment: 1 } : undefined,
-        failedTests: confidence < 0.95 ? { increment: 1 } : undefined,
+        healedTests: gate.pass ? { increment: 1 } : undefined,
+        failedTests: !gate.pass ? { increment: 1 } : undefined,
       },
     })
 
     // 9. Create notification for low confidence
-    if (confidence < 0.70) {
-      const project = await db.project.findUnique({
-        where: { id: projectId },
-        select: { userId: true },
+    if (confidence < 0.70 && project?.userId) {
+      await db.notification.create({
+        data: {
+          userId: project.userId,
+          type: 'warning',
+          title: 'Manual Review Required',
+          message: `Test "${payload.testName}" needs review (${Math.round(confidence * 100)}% confidence)`,
+          link: `/dashboard/tests`,
+        },
       })
-      
-      if (project?.userId) {
-        await db.notification.create({
-          data: {
-            userId: project.userId,
-            type: 'warning',
-            title: 'Manual Review Required',
-            message: `Test "${payload.testName}" needs review (${Math.round(confidence * 100)}% confidence)`,
-            link: `/dashboard/tests`,
-          },
-        })
-      }
     }
 
     // 10. Return response
@@ -186,7 +193,7 @@ export async function POST(request: NextRequest) {
           confidence,
           selectorType,
           explanation: reasoning,
-          needsReview: confidence < 0.95,
+          needsReview: !gate.pass,
           alternatives: [],
         },
         processingTimeMs: processingTime,
