@@ -1,7 +1,7 @@
 {
   "name": "Healify",
   "short_name": "Healify",
-  "description": "Automatically heal your failing E2E tests with AI. Zero broken tests, no manual intervention.",
+  "description": "Local, free selector-healing reporter for Playwright and Cypress. No account, no server.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#000000",
@@ -23,18 +23,7 @@
       "purpose": "any maskable"
     }
   ],
-  "shortcuts": [
-    {
-      "name": "Dashboard",
-      "url": "/dashboard",
-      "description": "View your test healing dashboard"
-    },
-    {
-      "name": "Pricing",
-      "url": "/pricing",
-      "description": "View pricing plans"
-    }
-  ],
+  "shortcuts": [],
   "related_applications": [],
   "prefer_related_applications": false
 }
