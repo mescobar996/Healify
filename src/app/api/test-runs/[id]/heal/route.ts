@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { tryOpenAutoPR } from '@/lib/github/auto-pr';
 import { db } from '@/lib/db';
-import { generateText } from '@/lib/ai/local-llm-client';
+import { generateText, isLocalLLMConfigured } from '@/lib/ai/local-llm-client';
 import { SelectorType, HealingStatus } from '@/lib/enums';
 import { notificationService } from '@/lib/notification-service';
 import { getSessionUser } from '@/lib/auth/session';
@@ -123,6 +123,13 @@ Respond ONLY with valid JSON (no markdown):
   "reasoning": "<string>",
   "recommendedAction": "<AUTO_FIX|SUGGEST|BUG_REPORT|IGNORE>"
 }`;
+
+      if (!isLocalLLMConfigured()) {
+        // No local LLM configured in this environment (e.g. production without
+        // OLLAMA_BASE_URL) — retrying would just repeat the same guaranteed
+        // failure with artificial backoff delay for no benefit.
+        throw new Error('OLLAMA_BASE_URL no está configurada en este entorno — LLM local deshabilitado');
+      }
 
       while (retries < maxRetries) {
         try {
