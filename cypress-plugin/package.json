@@ -27,6 +27,7 @@
     }
   },
   "devDependencies": {
+    "@types/node": "^25.5.0",
     "cypress": "^15.4.0",
     "esbuild": "^0.27.3",
     "typescript": "^5.4.0"

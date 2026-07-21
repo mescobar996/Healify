@@ -1,10 +1,22 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { mockReportFailure, getMockConfig, setMockConfig } = vi.hoisted(() => {
+const { mockReportFailure, mockRunLocalHealing, getMockConfig, setMockConfig } = vi.hoisted(() => {
   const mockReportFailure = vi.fn()
+  const mockRunLocalHealing = vi.fn((input: { testName: string; testFile?: string; errorMessage: string }) => ({
+    testName: input.testName,
+    testFile: input.testFile,
+    selector: 'Unknown selector',
+    errorMessage: input.errorMessage,
+    status: 'unresolved' as const,
+    fixedSelector: '',
+    confidence: 0,
+    explanation: '',
+    selectorType: 'UNKNOWN',
+  }))
   let mockConfig: unknown = { apiKey: 'test', apiUrl: 'http://localhost:3000' }
   return {
     mockReportFailure,
+    mockRunLocalHealing,
     getMockConfig: () => mockConfig,
     setMockConfig: (v: unknown) => { mockConfig = v },
   }
@@ -18,6 +30,9 @@ vi.mock('@healify/reporter-core', () => ({
     return m ? m[1] : 'Unknown selector'
   }),
   ATTACHMENT_NAME: 'healify-dom',
+  runLocalHealing: mockRunLocalHealing,
+  renderLocalReportHtml: vi.fn(() => '<html></html>'),
+  renderLocalReportJson: vi.fn(() => '{}'),
 }))
 
 import HealifyReporter from '../reporter'
@@ -46,13 +61,18 @@ describe('HealifyReporter', () => {
     setMockConfig({ apiKey: 'test', apiUrl: 'http://localhost:3000' })
   })
 
-  it('does nothing when config is disabled (HEALIFY_API_KEY not set)', () => {
+  it('runs local healing instead of reporting to the cloud when config is disabled (HEALIFY_API_KEY not set)', () => {
     setMockConfig(null)
     const reporter = new HealifyReporter()
 
     reporter.onTestEnd(makeTest(), makeResult())
 
     expect(mockReportFailure).not.toHaveBeenCalled()
+    expect(mockRunLocalHealing).toHaveBeenCalledTimes(1)
+    expect(mockRunLocalHealing.mock.calls[0][0]).toMatchObject({
+      testName: 'root > should log in',
+      testFile: 'tests/login.spec.ts',
+    })
   })
 
   it('does nothing when the test passed', () => {

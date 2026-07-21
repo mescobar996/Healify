@@ -1,55 +1,50 @@
 /**
- * HEALIFY - Motor de Autocuración de Tests v2.0
- * 
- * Motor de simulación de IA de alta fidelidad con explicaciones técnicas convincentes.
- * No usa APIs externas - toda la lógica es determinística y educada.
+ * Motor de heurísticas de sanado — modo local.
+ *
+ * Migrado desde src/lib/engine/healing-engine.ts (sin tocar el archivo de
+ * producción, mismo patrón que selector-extractor.ts). Sin dependencia de
+ * zod: el paquete original la usaba para validar payloads de API HTTP, acá
+ * no hay red, solo tipos.
+ *
+ * Importante para quien lo lea de nuevo: esto NO analiza el DOM capturado.
+ * A pesar de que el caller puede pasar `htmlContext`, esta función decide
+ * todo por pattern-matching del texto del selector contra diccionarios
+ * fijos (login→Login, email→Email, etc.) más un ajuste determinístico por
+ * hash — no hay verificación de que el selector sugerido exista realmente
+ * en el DOM. Es una heurística de buena fe, no un motor de IA ni un
+ * verificador. Repórtalo como tal en cualquier UI que consuma esto.
  */
 
-import { z } from 'zod'
+export interface HealRequest {
+  selector: string
+  htmlContext?: string
+  testName?: string
+  errorMessage?: string
+}
 
-// ============================================
-// TIPOS Y SCHEMAS
-// ============================================
+export type SelectorType = 'CSS' | 'XPATH' | 'TESTID' | 'ROLE' | 'TEXT' | 'MIXED'
 
-export const HealRequestSchema = z.object({
-  selector: z.string().min(1, "Selector is required"),
-  htmlContext: z.string().optional(),
-  testName: z.string().optional(),
-  errorMessage: z.string().optional(),
-})
-
-export type HealRequest = z.infer<typeof HealRequestSchema>
-
-export const HealResponseSchema = z.object({
-  fixedSelector: z.string(),
-  confidence: z.number().min(0).max(1),
-  explanation: z.string(),
-  selectorType: z.enum(['CSS', 'XPATH', 'TESTID', 'ROLE', 'TEXT', 'MIXED']),
-  alternatives: z.array(z.object({
-    selector: z.string(),
-    confidence: z.number(),
-  })).optional(),
-  needsReview: z.boolean(),
-  robustnessImprovement: z.number(), // Porcentaje de mejora
-  technicalDetails: z.object({
-    detectedIssue: z.string(),
-    proposedSolution: z.string(),
-    accessibilityCompliant: z.boolean(),
-    stableAgainstDOMChanges: z.boolean(),
-  }),
-})
-
-export type HealResponse = z.infer<typeof HealResponseSchema>
-
-// ============================================
-// PATRONES DE ANÁLISIS AVANZADO
-// ============================================
+export interface HealResponse {
+  fixedSelector: string
+  confidence: number
+  explanation: string
+  selectorType: SelectorType
+  alternatives?: { selector: string; confidence: number }[]
+  needsReview: boolean
+  robustnessImprovement: number
+  technicalDetails: {
+    detectedIssue: string
+    proposedSolution: string
+    accessibilityCompliant: boolean
+    stableAgainstDOMChanges: boolean
+  }
+}
 
 interface SelectorAnalysis {
   type: 'ID' | 'CLASS' | 'TESTID' | 'ROLE' | 'TEXT' | 'XPATH' | 'ATTRIBUTE' | 'COMPOUND' | 'CSS'
   issues: string[]
-  element: string // button, input, link, etc.
-  action: string // click, type, etc.
+  element: string
+  action: string
   isDynamic: boolean
   isFragile: boolean
 }
@@ -63,13 +58,6 @@ interface HealingStrategy {
   technicalReason: string
 }
 
-// ============================================
-// ANÁLISIS INTELIGENTE DE SELECTORES
-// ============================================
-
-/**
- * Analiza un selector y detecta problemas
- */
 function analyzeSelector(selector: string): SelectorAnalysis {
   const analysis: SelectorAnalysis = {
     type: 'CSS',
@@ -80,12 +68,9 @@ function analyzeSelector(selector: string): SelectorAnalysis {
     isFragile: false,
   }
 
-  // Detectar tipo
   if (selector.startsWith('#')) {
     analysis.type = 'ID'
     analysis.issues.push('ID selectors are brittle and can change')
-    
-    // Detectar IDs dinámicos
     if (/\d+/.test(selector) || /-[a-f0-9]{6,}/i.test(selector)) {
       analysis.isDynamic = true
       analysis.issues.push('Dynamic ID detected - will break on next build')
@@ -93,28 +78,23 @@ function analyzeSelector(selector: string): SelectorAnalysis {
   } else if (selector.startsWith('.')) {
     analysis.type = 'CLASS'
     analysis.issues.push('Class names can change during refactoring')
-    
-    // Detectar clases de CSS modules o styled-components
     if (/_[a-z]+_[a-z0-9]+/.test(selector) || /sc-[a-z]+/.test(selector)) {
       analysis.isDynamic = true
       analysis.issues.push('Generated CSS class detected - unstable')
     }
   } else if (selector.includes('[data-testid=')) {
     analysis.type = 'TESTID'
-    // TestIDs son estables, no hay issues críticos
   } else if (selector.startsWith('//')) {
     analysis.type = 'XPATH'
     analysis.issues.push('XPath is fragile to DOM structure changes')
     analysis.isFragile = true
   } else if (selector.includes('[role=')) {
     analysis.type = 'ROLE'
-    // Roles son muy estables
   } else if (selector.includes('text=') || selector.includes('has-text')) {
     analysis.type = 'TEXT'
     analysis.issues.push('Text content can change with copy updates')
   }
 
-  // Detectar elemento inferido
   if (/button|btn/i.test(selector)) {
     analysis.element = 'button'
     analysis.action = 'click'
@@ -135,41 +115,68 @@ function analyzeSelector(selector: string): SelectorAnalysis {
   return analysis
 }
 
-/**
- * Deterministic confidence adjustment based on selector content hash.
- * Replaces Math.random() to ensure reproducible healing results.
- */
+/** Ajuste determinístico por hash del selector — reemplaza Math.random() para resultados reproducibles. */
 function deterministicAdjustment(selector: string): number {
   let hash = 0
   for (let i = 0; i < selector.length; i++) {
     hash = ((hash << 5) - hash + selector.charCodeAt(i)) | 0
   }
-  // Map hash to [-0.05, +0.05] range deterministically
   return ((Math.abs(hash) % 100) / 1000) - 0.05
 }
 
-/**
- * Genera estrategias de curación basadas en el análisis
- */
-function generateHealingStrategies(
-  selector: string,
-  analysis: SelectorAnalysis
-): HealingStrategy[] {
+const ACTIONS: Record<string, string> = {
+  login: 'Login', signin: 'Sign In', submit: 'Submit', save: 'Save', cancel: 'Cancel',
+  delete: 'Delete', edit: 'Edit', update: 'Update', create: 'Create', add: 'Add',
+  remove: 'Remove', search: 'Search', send: 'Send', confirm: 'Confirm', accept: 'Accept',
+  reject: 'Reject', next: 'Next', previous: 'Previous', back: 'Back', continue: 'Continue',
+  finish: 'Finish', start: 'Start', stop: 'Stop', play: 'Play', pause: 'Pause',
+}
+
+const FIELDS: Record<string, string> = {
+  email: 'Email', password: 'Password', username: 'Username', name: 'Name', phone: 'Phone',
+  address: 'Address', search: 'Search', date: 'Date', title: 'Title', description: 'Description',
+}
+
+function extractActionFromSelector(selector: string): string {
+  for (const [key, value] of Object.entries(ACTIONS)) {
+    if (selector.toLowerCase().includes(key)) return value
+  }
+  return 'Submit'
+}
+
+function extractFieldName(selector: string): string {
+  for (const [key, value] of Object.entries(FIELDS)) {
+    if (selector.toLowerCase().includes(key)) return value
+  }
+  return 'Field'
+}
+
+function extractTestid(selector: string): string {
+  const match = selector.match(/data-testid=['"]([^'"]+)['"]/)
+  return match ? match[1] : 'element'
+}
+
+function extractBaseClass(selector: string): string {
+  return selector
+    .replace(/[#.]/, '')
+    .replace(/[-_]?\d+/g, '')
+    .replace(/[-_][a-f0-9]{6,}/gi, '')
+    .toLowerCase()
+}
+
+function generateHealingStrategies(selector: string, analysis: SelectorAnalysis): HealingStrategy[] {
   const strategies: HealingStrategy[] = []
 
-  // Estrategia 1: Selectores semánticos por rol
   if (analysis.element === 'button') {
     const action = extractActionFromSelector(selector)
-    
     strategies.push({
       selector: `role('button', { name: '${action}' })`,
       type: 'ROLE',
       confidence: 0.92,
-      explanation: `Se detectó un ${analysis.type} inestable; se cambió por un selector basado en accesibilidad (ARIA role) para mayor robustez. Los selectores por rol son resilientes a cambios de estructura del DOM.`,
+      explanation: `Se detectó un ${analysis.type} inestable; se cambió por un selector basado en accesibilidad (ARIA role) para mayor robustez.`,
       robustnessGain: 45,
       technicalReason: 'ARIA roles are stable across refactors and DOM restructures',
     })
-
     strategies.push({
       selector: `button:has-text('${action}')`,
       type: 'TEXT',
@@ -180,10 +187,8 @@ function generateHealingStrategies(
     })
   }
 
-  // Estrategia 2: Para inputs
   if (analysis.element === 'input') {
     const fieldName = extractFieldName(selector)
-    
     strategies.push({
       selector: `input[placeholder*='${fieldName}']`,
       type: 'CSS',
@@ -192,7 +197,6 @@ function generateHealingStrategies(
       robustnessGain: 35,
       technicalReason: 'Placeholder attributes are typically stable and semantic',
     })
-
     strategies.push({
       selector: `label:has-text('${fieldName}') + input`,
       type: 'CSS',
@@ -203,12 +207,9 @@ function generateHealingStrategies(
     })
   }
 
-  // Estrategia 3: Para enlaces
   if (analysis.element === 'link') {
-    const linkText = extractLinkText(selector)
-    
     strategies.push({
-      selector: `role('link', { name: '${linkText}' })`,
+      selector: `role('link', { name: '${extractActionFromSelector(selector)}' })`,
       type: 'ROLE',
       confidence: 0.91,
       explanation: `Selector por rol de enlace con texto. Muy estable y accesible.`,
@@ -217,12 +218,9 @@ function generateHealingStrategies(
     })
   }
 
-  // Estrategia 4: Para selectores con data-testid
   if (analysis.type === 'TESTID') {
-    const testid = extractTestid(selector)
-    
     strategies.push({
-      selector: `[data-testid='${testid}']`,
+      selector: `[data-testid='${extractTestid(selector)}']`,
       type: 'TESTID',
       confidence: 0.95,
       explanation: `El testid se mantiene pero se normaliza la sintaxis. Los data-testid son la opción más estable cuando están disponibles.`,
@@ -231,7 +229,6 @@ function generateHealingStrategies(
     })
   }
 
-  // Estrategia 5: Para XPATH complejos
   if (analysis.type === 'XPATH') {
     strategies.push({
       selector: `role('button')`,
@@ -243,7 +240,6 @@ function generateHealingStrategies(
     })
   }
 
-  // Estrategia 6: Fallback para IDs dinámicos
   if (analysis.isDynamic && analysis.type === 'ID') {
     strategies.push({
       selector: `.${extractBaseClass(selector)}`,
@@ -255,7 +251,6 @@ function generateHealingStrategies(
     })
   }
 
-  // Estrategia 7: Selector compuesto robusto
   if (strategies.length === 0) {
     strategies.push({
       selector: `visible=${selector.replace(/[.#]/, '')}`,
@@ -270,128 +265,13 @@ function generateHealingStrategies(
   return strategies.sort((a, b) => b.confidence - a.confidence)
 }
 
-/**
- * Extrae información contextual del selector
- */
-function extractActionFromSelector(selector: string): string {
-  const actions: Record<string, string> = {
-    'login': 'Login',
-    'signin': 'Sign In',
-    'submit': 'Submit',
-    'save': 'Save',
-    'cancel': 'Cancel',
-    'delete': 'Delete',
-    'edit': 'Edit',
-    'update': 'Update',
-    'create': 'Create',
-    'add': 'Add',
-    'remove': 'Remove',
-    'search': 'Search',
-    'send': 'Send',
-    'confirm': 'Confirm',
-    'accept': 'Accept',
-    'reject': 'Reject',
-    'next': 'Next',
-    'previous': 'Previous',
-    'back': 'Back',
-    'continue': 'Continue',
-    'finish': 'Finish',
-    'start': 'Start',
-    'stop': 'Stop',
-    'play': 'Play',
-    'pause': 'Pause',
-  }
-
-  for (const [key, value] of Object.entries(actions)) {
-    if (selector.toLowerCase().includes(key)) {
-      return value
-    }
-  }
-
-  return 'Submit'
-}
-
-function extractFieldName(selector: string): string {
-  const fields: Record<string, string> = {
-    'email': 'Email',
-    'password': 'Password',
-    'username': 'Username',
-    'name': 'Name',
-    'phone': 'Phone',
-    'address': 'Address',
-    'search': 'Search',
-    'date': 'Date',
-    'title': 'Title',
-    'description': 'Description',
-  }
-
-  for (const [key, value] of Object.entries(fields)) {
-    if (selector.toLowerCase().includes(key)) {
-      return value
-    }
-  }
-
-  return 'Field'
-}
-
-function extractLinkText(selector: string): string {
-  const links: Record<string, string> = {
-    'home': 'Home',
-    'about': 'About',
-    'contact': 'Contact',
-    'help': 'Help',
-    'settings': 'Settings',
-    'profile': 'Profile',
-    'logout': 'Logout',
-    'login': 'Login',
-    'signup': 'Sign Up',
-    'learn': 'Learn More',
-    'read': 'Read More',
-    'view': 'View',
-    'download': 'Download',
-  }
-
-  for (const [key, value] of Object.entries(links)) {
-    if (selector.toLowerCase().includes(key)) {
-      return value
-    }
-  }
-
-  return 'Link'
-}
-
-function extractTestid(selector: string): string {
-  const match = selector.match(/data-testid=['"]([^'"]+)['"]/)
-  return match ? match[1] : 'element'
-}
-
-function extractBaseClass(selector: string): string {
-  // Remover prefijos y sufijos dinámicos
-  return selector
-    .replace(/[#.]/, '')
-    .replace(/[-_]?\d+/g, '')
-    .replace(/[-_][a-f0-9]{6,}/gi, '')
-    .toLowerCase()
-}
-
-// ============================================
-// FUNCIÓN PRINCIPAL DE CURACIÓN
-// ============================================
-
-/**
- * Analiza un selector fallido y propone una curación
- */
-export async function analyzeAndHeal(request: HealRequest): Promise<HealResponse> {
-  const { selector, htmlContext, testName, errorMessage } = request
-
-  // Analizar el selector
+/** Analiza un selector fallido y propone una heurística de sanado — sin red, sin verificar contra DOM real. */
+export function analyzeAndHeal(request: HealRequest): HealResponse {
+  const { selector } = request
   const analysis = analyzeSelector(selector)
-
-  // Generar estrategias de curación
   const strategies = generateHealingStrategies(selector, analysis)
 
-  // Seleccionar la mejor estrategia
-  const bestStrategy = strategies[0] || {
+  const bestStrategy = strategies[0] ?? {
     selector: 'body',
     type: 'CSS' as const,
     confidence: 0.5,
@@ -400,52 +280,28 @@ export async function analyzeAndHeal(request: HealRequest): Promise<HealResponse
     technicalReason: 'No suitable pattern found',
   }
 
-  // Generar confianza realista (0.75 - 0.98) — deterministic, no Math.random()
-  const baseConfidence = bestStrategy.confidence
-  const adjustedConfidence = Math.max(0.75, Math.min(0.98, baseConfidence + deterministicAdjustment(selector)))
-
-  // Determinar si necesita revisión
+  const adjustedConfidence = Math.max(
+    0.75,
+    Math.min(0.98, bestStrategy.confidence + deterministicAdjustment(selector))
+  )
   const needsReview = adjustedConfidence < 0.80
 
-  // Construir respuesta completa
-  const response: HealResponse = {
+  return {
     fixedSelector: bestStrategy.selector,
     confidence: Math.round(adjustedConfidence * 100) / 100,
     explanation: bestStrategy.explanation,
     selectorType: bestStrategy.type,
-    alternatives: strategies.slice(1, 4).map(s => ({
+    alternatives: strategies.slice(1, 4).map((s) => ({
       selector: s.selector,
       confidence: Math.round(s.confidence * 100) / 100,
     })),
     needsReview,
     robustnessImprovement: bestStrategy.robustnessGain,
     technicalDetails: {
-      detectedIssue: analysis.issues[0] || 'Selector pattern analysis',
+      detectedIssue: analysis.issues[0] ?? 'Selector pattern analysis',
       proposedSolution: bestStrategy.technicalReason,
       accessibilityCompliant: bestStrategy.type === 'ROLE' || bestStrategy.type === 'TEXT',
       stableAgainstDOMChanges: bestStrategy.type !== 'XPATH',
     },
   }
-
-  return response
 }
-
-// ============================================
-// UTILIDADES
-// ============================================
-
-function delay(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms))
-}
-
-// ============================================
-// EXPORTACIONES
-// ============================================
-
-export const HealingEngine = {
-  analyzeAndHeal,
-  analyzeSelector,
-  generateHealingStrategies,
-}
-
-export default HealingEngine
