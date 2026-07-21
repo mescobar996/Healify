@@ -127,7 +127,7 @@ export async function processJob(job: Job<TestJobData>): Promise<ProcessJobResul
         // SAFETY: If DB update fails after PR creation, we roll back by closing
         // the PR on GitHub to avoid "Ghost PR" state (PR exists, DB says NEEDS_REVIEW).
         const prBranch = `healify-fix-${Date.now()}`
-        const prResult = await createHealingPR(jobId, project, failure, healing.suggestion)
+        const prResult = await createHealingPR(jobId, project, failure, healing.suggestion, workDir)
 
         if (prResult) {
           const { prUrl, prNumber, owner, repo, accessToken } = prResult

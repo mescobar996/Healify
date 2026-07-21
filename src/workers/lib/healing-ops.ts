@@ -3,6 +3,7 @@
  */
 
 import fs from 'fs/promises'
+import path from 'path'
 import { db } from '../../lib/db'
 import { analyzeBrokenSelector } from '../../lib/ai/healing-service'
 import { createPullRequest } from '../../lib/github/repos'
@@ -20,6 +21,46 @@ export interface HealingSuggestion {
 export interface HealingResult {
   healed: boolean
   suggestion?: HealingSuggestion
+}
+
+/** Escapes a string for safe interpolation into a RegExp. */
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/**
+ * Reads the real test file from the cloned working directory and replaces the
+ * exact quoted occurrence of `failedSelector` with `newSelector`.
+ *
+ * Returns null (instead of guessing) when the file can't be read, or when the
+ * selector doesn't appear as an unambiguous quoted literal exactly once —
+ * in that case the caller should leave the event as NEEDS_REVIEW rather than
+ * risk corrupting the file.
+ */
+export async function buildHealedFileContent(
+  workDir: string,
+  failure: TestFailure,
+  newSelector: string
+): Promise<string | null> {
+  const absolutePath = path.join(workDir, failure.testFile)
+
+  let original: string
+  try {
+    original = await fs.readFile(absolutePath, 'utf-8')
+  } catch {
+    return null
+  }
+
+  // Match the selector only as a quoted string literal (how it appears in real
+  // test code), never as a bare substring — avoids clobbering unrelated text.
+  const pattern = new RegExp(`(['"])${escapeRegExp(failure.failedSelector)}\\1`, 'g')
+  const matches = original.match(pattern)
+
+  if (!matches || matches.length !== 1) {
+    return null
+  }
+
+  return original.replace(pattern, `$1${newSelector}$1`)
 }
 
 /** Structured result returned by createHealingPR — used for rollback if DB write fails */
@@ -74,7 +115,8 @@ export async function createHealingPR(
   jobId: string,
   project: { id: string; repository: string | null },
   failure: TestFailure,
-  suggestion: HealingSuggestion
+  suggestion: HealingSuggestion,
+  workDir: string
 ): Promise<PrCreationResult | null> {
   const projectWithUser = await db.project.findUnique({
     where: { id: project.id },
@@ -104,6 +146,15 @@ export async function createHealingPR(
     return null
   }
 
+  const healedContent = await buildHealedFileContent(workDir, failure, suggestion.newSelector)
+  if (healedContent === null) {
+    log(
+      jobId,
+      `Could not safely locate a unique occurrence of "${failure.failedSelector}" in ${failure.testFile} — skipping auto-PR (needs manual review)`
+    )
+    return null
+  }
+
   try {
     log(jobId, `Creating PR on ${owner}/${repo}...`)
 
@@ -113,7 +164,7 @@ export async function createHealingPR(
       repo,
       'main',
       failure.testFile,
-      `// Healed by Healify\nconst selector = '${suggestion.newSelector}';`,
+      healedContent,
       `🪄 Healify: Fix broken selector in ${failure.testName}`,
       [
         'Healify identified a broken selector and automatically fixed it.',

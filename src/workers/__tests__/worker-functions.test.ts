@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import path from 'path'
 import os from 'os'
+import fs from 'fs/promises'
+import { buildHealedFileContent } from '../lib/healing-ops'
+import type { TestFailure } from '../lib/types'
 
 /**
  * Unit tests para las funciones puras del Railway Worker.
@@ -265,5 +268,86 @@ describe('Worker — workDir naming', () => {
     const dir = path.join(os.tmpdir(), 'healify-job-123-1234567890')
     expect(dir).toContain(os.tmpdir())
     expect(dir).toContain('healify-job-123')
+  })
+})
+
+describe('buildHealedFileContent — parchea el archivo real en vez de reemplazarlo', () => {
+  let workDir: string
+
+  const makeFailure = (testFile: string, failedSelector: string): TestFailure => ({
+    testName: 'should log in',
+    testFile,
+    failedSelector,
+    errorMessage: `Waiting for selector '${failedSelector}' failed`,
+  })
+
+  beforeEach(async () => {
+    workDir = await fs.mkdtemp(path.join(os.tmpdir(), 'healify-test-'))
+  })
+
+  it('reemplaza únicamente el selector citado y conserva el resto del archivo', async () => {
+    const original = [
+      "import { test, expect } from '@playwright/test'",
+      '',
+      "test('should log in', async ({ page }) => {",
+      "  await page.click('#btn-login')",
+      "  await expect(page.locator('.welcome')).toBeVisible()",
+      '})',
+      '',
+    ].join('\n')
+
+    await fs.mkdir(path.join(workDir, 'tests'), { recursive: true })
+    await fs.writeFile(path.join(workDir, 'tests/login.spec.ts'), original, 'utf-8')
+
+    const healed = await buildHealedFileContent(
+      workDir,
+      makeFailure('tests/login.spec.ts', '#btn-login'),
+      '[data-testid="login-btn"]'
+    )
+
+    expect(healed).not.toBeNull()
+    expect(healed).toContain("await page.click('[data-testid=\"login-btn\"]')")
+    // El resto del archivo (imports, otro assert) se preserva intacto
+    expect(healed).toContain("import { test, expect } from '@playwright/test'")
+    expect(healed).toContain("await expect(page.locator('.welcome')).toBeVisible()")
+  })
+
+  it('devuelve null si el selector no aparece como literal citado (evita adivinar)', async () => {
+    const original = "await page.click('#other-button')\n"
+    await fs.writeFile(path.join(workDir, 'test.spec.ts'), original, 'utf-8')
+
+    const healed = await buildHealedFileContent(
+      workDir,
+      makeFailure('test.spec.ts', '#btn-login'),
+      '[data-testid="login-btn"]'
+    )
+
+    expect(healed).toBeNull()
+  })
+
+  it('devuelve null si el selector aparece más de una vez (ambiguo)', async () => {
+    const original = [
+      "await page.click('#btn-login')",
+      "await page.click('#btn-login') // usado dos veces",
+    ].join('\n')
+    await fs.writeFile(path.join(workDir, 'test.spec.ts'), original, 'utf-8')
+
+    const healed = await buildHealedFileContent(
+      workDir,
+      makeFailure('test.spec.ts', '#btn-login'),
+      '[data-testid="login-btn"]'
+    )
+
+    expect(healed).toBeNull()
+  })
+
+  it('devuelve null si el archivo no existe en el workDir', async () => {
+    const healed = await buildHealedFileContent(
+      workDir,
+      makeFailure('tests/does-not-exist.spec.ts', '#btn-login'),
+      '[data-testid="login-btn"]'
+    )
+
+    expect(healed).toBeNull()
   })
 })
