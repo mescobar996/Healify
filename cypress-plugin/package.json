@@ -18,13 +18,7 @@
     "access": "public"
   },
   "peerDependencies": {
-    "cypress": ">=13.0.0",
-    "@healify/reporter-core": "*"
-  },
-  "peerDependenciesMeta": {
-    "@healify/reporter-core": {
-      "optional": true
-    }
+    "cypress": ">=13.0.0"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",

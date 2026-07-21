@@ -22,13 +22,7 @@
     "access": "public"
   },
   "peerDependencies": {
-    "@playwright/test": ">=1.40.0",
-    "@healify/reporter-core": "*"
-  },
-  "peerDependenciesMeta": {
-    "@healify/reporter-core": {
-      "optional": true
-    }
+    "@playwright/test": ">=1.40.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",

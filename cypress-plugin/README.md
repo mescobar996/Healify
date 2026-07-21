@@ -1,6 +1,8 @@
 # @healify/cypress-plugin
 
-Healify reporter for Cypress. Reports broken selectors to Healify without requiring GitHub repo access or webhook setup.
+Reporter local para Cypress. Cuando un test falla por un selector roto, corre una
+heurística en el mismo proceso (sin red) y al final de la corrida genera
+`healify-report.html`/`healify-report.json` con la sugerencia de fix.
 
 ## Setup
 
@@ -8,13 +10,11 @@ Healify reporter for Cypress. Reports broken selectors to Healify without requir
 npm install --save-dev @healify/cypress-plugin
 ```
 
-Requires `cypress >= 13.0.0` as a peer dependency.
+Requiere `cypress >= 13.0.0` como peer dependency.
 
-## Usage
+## Uso — modo local (default, sin configuración)
 
-### 1. Register the plugin
-
-In `cypress.config.ts`:
+En `cypress.config.ts`:
 
 ```ts
 import { defineConfig } from 'cypress'
@@ -29,21 +29,26 @@ export default defineConfig({
 })
 ```
 
-### 2. Set environment variables
+Corré tus tests normalmente (`npx cypress run`). Sin nada más que configurar: si algún test
+falla por un selector roto, al terminar la corrida aparece `healify-report.html` en el
+directorio desde el que corriste Cypress. Nada sale de tu máquina.
 
-| Env var | Required | Description |
+## Modo nube (opcional)
+
+Si además querés mandar los reportes a un servidor propio en vez de solo generar el HTML
+local, seteá estas variables de entorno (en tu CI/CD o `cypress.env.json`):
+
+| Env var | Requerida | Descripción |
 |---|---|---|
-| `HEALIFY_API_KEY` | Yes | Your project API key from the Healify dashboard |
-| `HEALIFY_API_URL` | No | API base URL (defaults to `https://healify-sigma.vercel.app`) |
-| `HEALIFY_BRANCH` | No | Git branch name to include in reports |
-| `HEALIFY_COMMIT_SHA` | No | Git commit SHA to include in reports |
+| `HEALIFY_API_KEY` | Sí | Activa el modo nube. Sin esto, el plugin siempre corre en modo local |
+| `HEALIFY_API_URL` | No | URL base de tu servidor (default: `https://healify-sigma.vercel.app`) |
+| `HEALIFY_BRANCH` | No | Rama de git a incluir en los reportes |
+| `HEALIFY_COMMIT_SHA` | No | Commit SHA a incluir en los reportes |
 
-Set these in your CI/CD provider or `cypress.env.json`.
+## Cómo funciona
 
-## How it works
-
-1. After each spec finishes, the plugin inspects all failed tests.
-2. It extracts the failing selector from the error message and POSTs the report to Healify.
-3. Healify's AI analyzes the selector and returns a suggested fix.
-
-The plugin is fire-and-forget — reports are sent via `Promise.allSettled` and never block the Cypress run. When `HEALIFY_API_KEY` is not set, the plugin returns the config unchanged (zero overhead when disabled).
+- **Modo local** (sin `HEALIFY_API_KEY`): tras cada spec (`after:spec`) se corre la
+  heurística para cada test fallido; al terminar la corrida (`after:run`) se escribe el
+  HTML/JSON.
+- **Modo nube** (con `HEALIFY_API_KEY`): tras cada spec se extrae el selector del error y se
+  postea el reporte a tu servidor. Fire-and-forget — nunca bloquea ni hace fallar la corrida.
