@@ -7,100 +7,29 @@ import { cn } from '@/lib/utils'
 const TOOLS = [
   {
     name: 'Playwright',
-    description: 'Framework de testing E2E moderno de Microsoft.',
+    description: 'SDK propio: @healify/test-runner, con captura de DOM al fallar.',
     logo: 'https://playwright.dev/img/playwright-logo.svg',
     url: 'https://playwright.dev',
   },
   {
     name: 'Cypress',
-    description: 'Testing rápido y confiable para el navegador.',
+    description: 'SDK propio: @healify/cypress-plugin, mismo flujo de auto-curación.',
     logo: 'https://raw.githubusercontent.com/cypress-io/cypress/develop/assets/cypress-logo-dark.png',
     url: 'https://cypress.io',
   },
   {
-    name: 'Jest',
-    description: 'Testing de JavaScript con simplicidad.',
-    logo: 'https://raw.githubusercontent.com/facebook/jest/main/website/static/img/jest.png',
-    url: 'https://jestjs.io',
+    name: 'GitHub',
+    description: 'Webhook + Pull Requests automáticos con el selector corregido.',
+    logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/github/github-original.svg',
+    url: 'https://github.com',
   },
   {
-    name: 'Selenium',
-    description: 'Automatización de navegadores para aplicaciones web.',
-    logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/selenium/selenium-original.svg',
-    url: 'https://selenium.dev',
-  },
-  {
-    name: 'GitHub Actions',
-    description: 'Automatizá CI/CD directo desde tu repositorio.',
-    logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/githubactions/githubactions-original.svg',
-    url: 'https://github.com/features/actions',
-  },
-  {
-    name: 'TypeScript',
-    description: 'JavaScript tipado a cualquier escala.',
-    logo: 'https://raw.githubusercontent.com/remojansen/logo.ts/master/ts.png',
-    url: 'https://typescriptlang.org',
-  },
-  {
-    name: 'Python',
-    description: 'Lenguaje popular para automatización de tests.',
-    logo: 'https://raw.githubusercontent.com/github/explore/main/topics/python/python.png',
-    url: 'https://python.org',
+    name: 'Slack',
+    description: 'Slash commands (/healify status, /healify heal) y alertas.',
+    logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/slack/slack-original.svg',
+    url: 'https://slack.com',
   },
 ]
-
-const INTEGRATIONS = [
-  { name: 'GitLab', logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/gitlab/gitlab-original.svg' },
-  { name: 'Jenkins', logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/jenkins/jenkins-original.svg' },
-  { name: 'Jira', logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/jira/jira-original.svg' },
-  { name: 'Notion', logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/notion/notion-original.svg' },
-  { name: 'Slack', logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/slack/slack-original.svg' },
-]
-
-function IntegrationsCard({ index }: { index: number }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.4, delay: index * 0.07 }}
-      className={cn(
-        'group glass-elite glass-elite-hover p-5 sm:p-6 rounded-2xl',
-        'flex flex-col items-center text-center gap-4',
-        'hover:scale-[1.03] transition-transform duration-200'
-      )}
-    >
-      {/* Animated mini-window with integration icons */}
-      <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-br from-white/10 to-white/5 border border-white/15 group-hover:border-white/30 transition-colors relative overflow-hidden flex items-center justify-center">
-        <motion.div
-          className="flex gap-1.5 absolute"
-          animate={{ x: [0, -60, -120, -60, 0] }}
-          transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-        >
-          {[...INTEGRATIONS, ...INTEGRATIONS].map((item, i) => (
-            <Image
-              key={`${item.name}-${i}`}
-              src={item.logo}
-              alt={item.name}
-              width={20}
-              height={20}
-              className="object-contain opacity-70 group-hover:opacity-100 transition-opacity shrink-0"
-              unoptimized
-            />
-          ))}
-        </motion.div>
-      </div>
-      <div>
-        <h3 className="text-sm sm:text-base font-semibold text-[#EDEDED] mb-1">
-          Integraciones
-        </h3>
-        <p className="text-[11px] sm:text-xs text-[#EDEDED]/40 leading-relaxed">
-          GitLab, Jenkins, Jira, Notion, Slack y más.
-        </p>
-      </div>
-    </motion.div>
-  )
-}
 
 export default function CompatibleToolsSection() {
   return (
@@ -120,7 +49,7 @@ export default function CompatibleToolsSection() {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-5">
           {TOOLS.map((tool, i) => (
             <motion.a
               key={tool.name}
@@ -157,8 +86,6 @@ export default function CompatibleToolsSection() {
               </div>
             </motion.a>
           ))}
-          {/* Integraciones card with animated icons */}
-          <IntegrationsCard index={TOOLS.length} />
         </div>
       </div>
     </section>
