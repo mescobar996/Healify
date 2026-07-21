@@ -401,6 +401,8 @@ git commit -m "feat(reporter-core): add env-based config resolution"
 
 This migrates the exact regex logic already used in production at `src/workers/lib/playwright-runner.ts:38-55`, so both the Railway worker and the new reporter packages parse Playwright error messages identically.
 
+**Addendum (added during Task 9):** `reporter-core`'s copy later gained one extra pattern beyond the Playwright-only set below — `/Expected to find element: `([^`]+)`/` — to also parse Cypress's `cy.get()`/`cy.find()` timeout phrasing, which Playwright's own worker (`playwright-runner.ts`) never needs since it only parses Playwright output. From that point on, `reporter-core/src/selector-extractor.ts` is a **superset** of `playwright-runner.ts`, not a byte-for-byte mirror — the first 5 patterns stay in sync, the 6th is Cypress-only.
+
 - [ ] **Step 1: Write the failing test**
 
 Create `reporter-core/src/__tests__/selector-extractor.test.ts`:
@@ -427,7 +429,7 @@ describe('extractSelectorFromError', () => {
   })
 
   it('extrae selector de locator()', () => {
-    expect(extractSelectorFromError("page.locator('button.primary') timed out after 30000ms")).toBe('button.primary')
+    expect(extractSelectorFromError("Timed out waiting for locator('button.primary')")).toBe('button.primary')
   })
 
   it('devuelve "Unknown selector" cuando no hay match', () => {
@@ -657,7 +659,14 @@ function warnOnce(message: string): void {
   hasWarned = true
   console.warn(`[healify] ${message} — your tests are unaffected`)
 }
+
+/** Test-only: resets the module-level warn-once flag between test cases. Not part of the public API surface consumers should rely on. */
+export function __resetWarnStateForTests(): void {
+  hasWarned = false
+}
 ```
+
+(In the test file, `beforeEach` must also call `__resetWarnStateForTests()` — otherwise "warn once per process" and per-`it()`-isolated assertions contradict each other across test cases in the same file. Import it alongside `reportFailure`/`ReportPayload` in the test.)
 
 - [ ] **Step 4: Run the test to verify it passes**
 
@@ -869,7 +878,7 @@ export default class HealifyReporter implements Reporter {
     const context = domAttachment?.body?.toString('utf-8')
 
     void reportFailure(this.config, {
-      testName: test.titlePath().slice(1).join(' > '),
+      testName: test.titlePath().filter(Boolean).join(' > '),
       testFile: test.location.file,
       selector: extractSelectorFromError(errorMessage),
       error: errorMessage,
@@ -945,8 +954,16 @@ if (captured.headers['x-api-key'] !== 'hf_live_faketest') {
   console.error(`FAIL: expected x-api-key hf_live_faketest, got ${captured.headers['x-api-key']}`)
   process.exit(1)
 }
-if (captured.body.selector !== 'does-not-exist') {
-  console.error(`FAIL: expected selector 'does-not-exist', got ${captured.body.selector}`)
+if (captured.body.selector !== '#does-not-exist') {
+  console.error(`FAIL: expected selector '#does-not-exist', got ${captured.body.selector}`)
+  process.exit(1)
+}
+if (captured.body.testName !== 'sample.spec.ts > fails on purpose so the fixture captures the DOM') {
+  console.error(`FAIL: expected testName 'sample.spec.ts > fails on purpose so the fixture captures the DOM', got ${captured.body.testName}`)
+  process.exit(1)
+}
+if (!captured.body.testFile || !captured.body.testFile.endsWith('sample.spec.ts')) {
+  console.error(`FAIL: expected testFile to end with sample.spec.ts, got ${captured.body.testFile}`)
   process.exit(1)
 }
 if (!captured.body.context || !captured.body.context.includes('real-button')) {
@@ -983,6 +1000,7 @@ git commit -m "feat(test-runner): add HealifyReporter, verified end-to-end again
 
 **Files:**
 - Create: `test-runner/src/index.ts`
+- Modify: `test-runner/package.json` (add `exports` map — see Step 1b, added after review found the package otherwise unusable via its documented reporter-registration pattern)
 
 - [ ] **Step 1: Create the barrel export**
 
@@ -993,6 +1011,25 @@ export { test, expect } from './fixture'
 export { default as HealifyReporter } from './reporter'
 ```
 
+- [ ] **Step 1b: Add an `exports` map to `test-runner/package.json`**
+
+Playwright's `reporter` config array entries must be a string module specifier (Playwright's `loadReporter` calls `path.resolve()` on the value, which throws if it's not a string) — a consumer cannot pass the imported `HealifyReporter` class value directly. Add this field to the existing `test-runner/package.json` (keep everything else in the file as-is):
+
+```json
+"exports": {
+  ".": {
+    "types": "./dist/index.d.ts",
+    "default": "./dist/index.js"
+  },
+  "./reporter": {
+    "types": "./dist/reporter.d.ts",
+    "default": "./dist/reporter.js"
+  }
+}
+```
+
+This lets a consumer write `reporter: [['list'], ['@healify/test-runner/reporter']]` — a real string Playwright can resolve — while `import { test } from '@healify/test-runner'` keeps working via the `"."` entry.
+
 - [ ] **Step 2: Build the package**
 
 Run (from `test-runner/`): `npm run build`
@@ -1001,7 +1038,7 @@ Expected: `dist/index.js`, `dist/index.d.ts`, `dist/fixture.js`, `dist/reporter.
 - [ ] **Step 3: Commit**
 
 ```bash
-git add test-runner/src/index.ts
+git add test-runner/src/index.ts test-runner/package.json
 git commit -m "feat(test-runner): add barrel export"
 ```
 
@@ -1015,6 +1052,7 @@ git commit -m "feat(test-runner): add barrel export"
 - Create: `cypress-plugin/tests/cypress/e2e/sample.cy.ts`
 - Create: `cypress-plugin/tests/fake-server.mjs`
 - Create: `cypress-plugin/tests/verify-plugin-post.mjs`
+- Create: `cypress-plugin/tests/tsconfig.json` (needed in practice — Cypress's TS preprocessor finds the *nearest ancestor* `tsconfig.json` to a spec file, and `cypress-plugin/tsconfig.json`'s `rootDir: "src"` rejects anything under `tests/`. A scoped tsconfig covering `**/*.ts` + `../src/**/*.ts`, with no `rootDir` restriction, fixes this without touching the package's build tsconfig.)
 
 Cypress has no per-test hook with browser access from the plugin process (unlike Playwright's fixture), so `context` stays empty in v1 unless the spec attaches HTML itself — this matches the documented limitation in the design spec, §4.
 
@@ -1022,29 +1060,31 @@ Cypress has no per-test hook with browser access from the plugin process (unlike
 
 Create `cypress-plugin/src/plugin.ts`:
 
+**Note (found during implementation):** `PluginEvents`/`PluginConfigOptions` are NOT named exports of the `"cypress"` module — Cypress only exposes them via the ambient global `Cypress` namespace. Importing them as shown further below originally broke `tsc` (Cypress's own test runner transpiles without type-checking, so this only surfaced when actually building the package in Task 10/review). Use `Cypress.PluginEvents`/`Cypress.PluginConfigOptions` directly (no import needed), and add `"types": ["cypress"]` to `cypress-plugin/tsconfig.json`'s `compilerOptions` so the ambient namespace is visible to `tsc`. The corrected version:
+
 ```ts
-import type { PluginEvents, PluginConfigOptions } from 'cypress'
 import { resolveConfig, reportFailure, extractSelectorFromError } from '@healify/reporter-core'
 
 export function HealifyCypressPlugin(
-  on: PluginEvents,
-  config: PluginConfigOptions
-): PluginConfigOptions {
+  on: Cypress.PluginEvents,
+  config: Cypress.PluginConfigOptions
+): Cypress.PluginConfigOptions {
   const healifyConfig = resolveConfig()
   if (!healifyConfig) return config
 
-  on('after:spec', (spec, results) => {
-    for (const test of results.tests ?? []) {
-      if (test.state !== 'failed') continue
-
-      const errorMessage = test.displayError ?? 'Unknown error'
-      void reportFailure(healifyConfig, {
-        testName: test.title.join(' > '),
-        testFile: spec.relative,
-        selector: extractSelectorFromError(errorMessage),
-        error: errorMessage,
+  on('after:spec', async (spec, results) => {
+    const reports = (results.tests ?? [])
+      .filter((test) => test.state === 'failed')
+      .map((test) => {
+        const errorMessage = test.displayError ?? 'Unknown error'
+        return reportFailure(healifyConfig, {
+          testName: test.title.join(' > '),
+          testFile: spec.relative,
+          selector: extractSelectorFromError(errorMessage),
+          error: errorMessage,
+        })
       })
-    }
+    await Promise.allSettled(reports)
   })
 
   return config
@@ -1134,8 +1174,8 @@ if (captured.headers['x-api-key'] !== 'hf_live_faketest') {
   console.error(`FAIL: expected x-api-key hf_live_faketest, got ${captured.headers['x-api-key']}`)
   process.exit(1)
 }
-if (captured.body.selector !== 'does-not-exist') {
-  console.error(`FAIL: expected selector 'does-not-exist', got ${captured.body.selector}`)
+if (captured.body.selector !== '#does-not-exist') {
+  console.error(`FAIL: expected selector '#does-not-exist', got ${captured.body.selector}`)
   process.exit(1)
 }
 
@@ -1199,6 +1239,8 @@ git commit -m "feat(cypress-plugin): add barrel export"
 
 This confirms the built `test-runner` package works against the **real** `/api/v1/report` endpoint and the real AI engine, using the `Healify` project already connected in the dashboard (`mescobar996/Healify`, created during this session's manual testing) and its real project API key.
 
+**Re-scoped during execution — real finding:** the steps below originally simulated an external customer installing `@healify/test-runner` via `npm install <local-path>` in a scratch project outside the monorepo. This failed: `reporter-core` is `"private": true` and its compiled output is never bundled into `test-runner/dist` (plain `tsc`, no bundler), so `require("@healify/reporter-core")` only resolves inside the npm workspace. **This is a real, currently-unaddressed gap — neither `test-runner` nor `cypress-plugin` can actually be installed and run standalone outside this monorepo yet.** However, the design spec (§7) explicitly scopes v1 to "se valida localmente vía workspace antes de publicar nada" — full external-install validation was never actually promised for this plan. Task 11 was re-scoped to validate from *inside* the monorepo (same pattern as Tasks 6/7/9's own fixtures) against the real running server and real AI, which is what the spec's stated v1 bar actually requires. The bundling gap is tracked as a pre-publish blocker, not something this task needed to fix.
+
 - [ ] **Step 1: Get the project's real API key**
 
 In the running dashboard (`http://localhost:3000/dashboard/projects`), open the `Healify` project's settings and copy its API key (starts with `hf_`). If the project doesn't have one yet, the settings page has a "generate API key" action.
@@ -1233,12 +1275,13 @@ Create `/tmp/healify-reporter-smoketest/playwright.config.ts`:
 
 ```ts
 import { defineConfig } from '@playwright/test'
-import { HealifyReporter } from '@healify/test-runner'
 
 export default defineConfig({
-  reporter: [['list'], [HealifyReporter, {}]],
+  reporter: [['list'], ['@healify/test-runner/reporter']],
 })
 ```
+
+(Note: Playwright's `reporter` config array entries must be a string module specifier that Playwright itself resolves and imports — passing the imported `HealifyReporter` class value directly does not work, Playwright's `loadReporter` calls `path.resolve()` on it expecting a string. This is why `test-runner/package.json` needs an `exports` map exposing `./reporter` as a subpath — see Task 8.)
 
 - [ ] **Step 5: Run it against the real local dashboard**
 

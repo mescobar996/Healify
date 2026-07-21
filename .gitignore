@@ -70,3 +70,6 @@ cypress-plugin/dist
 cypress-plugin/node_modules
 cypress-plugin/tests/cypress/screenshots
 cypress-plugin/tests/cypress/videos
+
+# Superpowers brainstorming companion artifacts (ephemeral, not project content)
+.superpowers/
