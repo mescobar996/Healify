@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { tryOpenAutoPR } from '@/lib/github/auto-pr';
 import { db } from '@/lib/db';
-import Anthropic from '@anthropic-ai/sdk';
+import { generateText } from '@/lib/ai/local-llm-client';
 import { SelectorType, HealingStatus } from '@/lib/enums';
 import { notificationService } from '@/lib/notification-service';
 import { getSessionUser } from '@/lib/auth/session';
@@ -88,18 +88,14 @@ export async function POST(
     });
 
     try {
-      let message: Anthropic.Messages.Message | null = null;
+      let responseContent: string | null = null;
       let retries = 0;
       const maxRetries = 3;
 
-      while (retries < maxRetries) {
-        try {
-          const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
-
-          let imageContext = '';
-          const userMessages: Anthropic.MessageParam[] = [];
-
-          const analysisPrompt = `You are a test healing expert analyzing a failed test. Your job is to determine if this is a flaky test, a real bug, or a selector change that can be auto-fixed.
+      // Nota: el screenshot (screenshotBefore/After) ya no se envía al modelo —
+      // el LLM local (Ollama) usado hoy no tiene soporte multimodal. El análisis
+      // se basa en el DOM snapshot (texto), que cubre el caso de uso principal.
+      const analysisPrompt = `You are a test healing expert analyzing a failed test. Your job is to determine if this is a flaky test, a real bug, or a selector change that can be auto-fixed.
 
 **Test Information:**
 - Test Name: ${testName}
@@ -128,42 +124,20 @@ Respond ONLY with valid JSON (no markdown):
   "recommendedAction": "<AUTO_FIX|SUGGEST|BUG_REPORT|IGNORE>"
 }`;
 
-          userMessages.push({ role: 'user', content: [{ type: 'text', text: analysisPrompt }] });
-
-          // Multimodal: If Base64 image is provided, pass it to Claude visually.
-          if (screenshotBefore && screenshotBefore.startsWith('data:image/')) {
-            const base64Data = screenshotBefore.split(',')[1];
-            let mediaType = 'image/png';
-            if (screenshotBefore.includes('jpeg') || screenshotBefore.includes('jpg')) mediaType = 'image/jpeg';
-            if (screenshotBefore.includes('webp')) mediaType = 'image/webp';
-
-            if (base64Data) {
-              userMessages.push({
-                role: 'user',
-                content: [
-                  {
-                    type: 'image',
-                    source: { type: 'base64', media_type: mediaType as 'image/png' | 'image/jpeg' | 'image/webp' | 'image/gif', data: base64Data }
-                  },
-                  { type: 'text', text: 'Evaluate this visual capture of the failure scene as well.' }
-                ]
-              });
-            }
-          }
-
-          message = await anthropic.messages.create({
-            model: 'claude-sonnet-4-20250514',
-            max_tokens: 512,
-            temperature: 0.3,
+      while (retries < maxRetries) {
+        try {
+          responseContent = await generateText({
             system: 'You are a test healing expert. Always respond with valid JSON only, no markdown.',
-            messages: userMessages,
+            prompt: analysisPrompt,
+            temperature: 0.3,
+            maxTokens: 512,
           });
 
           break; // success, break out of retry loop
-        } catch (err: any) {
+        } catch (err) {
           retries++;
-          if (err?.status === 429 || retries < maxRetries) {
-            console.warn(`[Heal API] Rate limit hit or AI failed. Retrying ${retries}/${maxRetries} in ${retries * 1500}ms`);
+          if (retries < maxRetries) {
+            console.warn(`[Heal API] LLM local falló. Reintentando ${retries}/${maxRetries} en ${retries * 1500}ms`);
             await new Promise(r => setTimeout(r, retries * 1500)); // Exponential-ish backoff
           } else {
             throw err;
@@ -171,12 +145,9 @@ Respond ONLY with valid JSON (no markdown):
         }
       }
 
-      if (!message) {
+      if (!responseContent) {
         throw new Error('Failed to retrieve analysis from AI after retries.');
       }
-
-      const responseBlock = message.content[0];
-      const responseContent = responseBlock?.type === 'text' ? responseBlock.text : null;
 
       if (responseContent) {
         // Parse AI response
