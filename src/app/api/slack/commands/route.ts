@@ -146,7 +146,7 @@ async function handleHeal(userId: string, projectQuery: string) {
     blocks: [
       { type: 'header', text: { type: 'plain_text', text: `🪄 Healing: ${project.name}`, emoji: true } },
       { type: 'section', text: { type: 'mrkdwn', text: eventLines.join('\n') } },
-      { type: 'context', elements: [{ type: 'mrkdwn', text: `<https://healify-sigma.vercel.app/dashboard/healing|Ver todos los healing events>` }] },
+      { type: 'context', elements: [{ type: 'mrkdwn', text: `<https://healify-sigma.vercel.app/dashboard|Ver dashboard>` }] },
     ],
   }
 }

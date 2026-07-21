@@ -231,7 +231,7 @@ Respond ONLY with valid JSON (no markdown):
                 type: 'info',
                 title: 'analytics_event:onboarding_step_3_first_healing',
                 message: JSON.stringify({ testRunId: id, healingEventId: updatedEvent.id }),
-                link: '/dashboard/healing',
+                link: '/dashboard',
               },
             }).catch(() => { })
           }

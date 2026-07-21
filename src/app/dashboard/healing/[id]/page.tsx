@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
+import { HealingStatusBadge } from "@/components/dashboard/StatusBadge";
 
 // ============================================
 // TYPES
@@ -52,21 +53,6 @@ interface HealingDiffData {
 // ============================================
 // LINEAR STYLE COMPONENTS
 // ============================================
-
-function StatusBadge({ status }: { status: string }) {
-  const config: Record<string, { bg: string; text: string; icon: React.ElementType; label: string }> = {
-    curado: { bg: "bg-violet-500/10", text: "text-violet-400", icon: CheckCircle2, label: "Curado" },
-    fallido: { bg: "bg-red-500/10", text: "text-red-400", icon: XCircle, label: "Fallido" },
-    pendiente: { bg: "bg-amber-500/10", text: "text-amber-400", icon: Clock, label: "Pendiente" },
-  };
-  const { bg, text, icon: Icon, label } = config[status] || config.pendiente;
-  return (
-    <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium", bg, text)}>
-      <Icon className="w-3.5 h-3.5" />
-      {label}
-    </span>
-  );
-}
 
 function ConfidenceMeter({ confidence }: { confidence: number }) {
   return (
@@ -215,7 +201,7 @@ export default function HealingDetailPage() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-lg font-semibold text-white">{data.testName}</h1>
-                <StatusBadge status={data.status} />
+                <HealingStatusBadge status={data.status} />
               </div>
               <p className="text-xs text-gray-500">{data.testFile}</p>
             </div>

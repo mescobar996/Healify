@@ -162,7 +162,7 @@ export class NotificationService {
         const title   = `Test autocurado: ${testName}`
         const message = `Healify autocuró "${testName}" en "${project.name}". Nuevo selector: ${newSelector}`
 
-        await this.sendInApp(project.userId, 'success', `✨ ${title}`, message, '/dashboard/healing')
+        await this.sendInApp(project.userId, 'success', `✨ ${title}`, message, '/dashboard')
         if (project.user.email)           await this.sendEmail(project.user.email, `✨ ${title}`, message)
         if (project.user.slackWebhookUrl) await this.sendSlack(project.user.slackWebhookUrl, message, title, 'success')
     }

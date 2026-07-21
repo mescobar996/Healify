@@ -101,13 +101,15 @@ Done. Next time a test breaks, Healify handles it.
 
 | Layer | Technology |
 |---|---|
-| Frontend | Next.js 16, TypeScript, Tailwind CSS, Framer Motion |
-| Auth | NextAuth v4 (GitHub OAuth) |
-| Database | PostgreSQL (Neon) + Prisma ORM |
+| Frontend | Next.js 16, React 19, TypeScript 5, Tailwind CSS 4, Framer Motion, shadcn/ui |
+| Auth | NextAuth v4 (GitHub + Google OAuth) |
+| Database | PostgreSQL (Neon) + Prisma ORM (15+ models) |
+| AI Engine | Ollama local LLM (qwen2.5-coder:7b) + deterministic fallback |
 | Queue | BullMQ + Redis |
-| Worker | Railway — clones repo, runs tests, triggers healing |
-| Payments | MercadoPago (Subscriptions + Webhooks) |
-| Email | Resend |
+| Worker | Railway (Docker) — clones repo, runs Playwright, triggers healing, opens PRs |
+| Payments | MercadoPago (ARS), Lemon Squeezy (USD), Stripe (legacy) |
+| SDK Packages | @healify/test-runner (Playwright), @healify/cypress-plugin (Cypress) |
+| Monitoring | Sentry (errors), Vercel Analytics |
 | Deploy | Vercel (app) + Railway (worker) |
 
 ---
@@ -155,17 +157,36 @@ Optional variables for payments, email, and cron are documented in `.env.example
 ```
 src/
 ├── app/
-│   ├── api/            # 32 API routes
-│   ├── dashboard/      # Protected user dashboard
-│   ├── docs/           # SDK documentation
-│   └── pricing/        # Plans & pricing
-├── components/         # Reusable UI components
+│   ├── api/                # 65+ API routes (healing, projects, tests, billing, webhooks, cron)
+│   ├── auth/               # Sign-in / error pages
+│   ├── dashboard/          # Protected dashboard (overview, projects, tests, healing, settings, team)
+│   ├── docs/               # SDK documentation
+│   ├── pricing/            # Plans & pricing (temporarily disabled)
+│   ├── privacy/            # Privacy policy
+│   ├── terms/              # Terms of service
+│   ├── refund/             # Refund policy
+│   └── support/            # Support page
+├── components/
+│   ├── dashboard/          # Dashboard-specific (MetricCard, StatusBadge, charts, ROI)
+│   ├── landing/            # Landing page sections (hero, features, how-it-works, CTA)
+│   └── ui/                 # shadcn/ui primitives (button, dialog, tabs, sheet, etc.)
+├── hooks/                  # Custom React hooks
 ├── lib/
-│   ├── ai/             # AI healing engine
-│   ├── engine/         # Core healing logic
-│   └── github/         # Webhooks & Pull Request automation
+│   ├── ai/                 # AI healing engine (Ollama LLM + deterministic fallback)
+│   ├── auth/               # Session management
+│   ├── engine/             # Deterministic healing engine (pattern analysis)
+│   ├── github/             # Webhook & Pull Request automation
+│   └── payment/            # MercadoPago integration
+├── types/                  # TypeScript type definitions
 └── workers/
-    └── railway-worker.ts   # clone → test → heal → PR
+    ├── lib/                # Worker utilities (git-ops, playwright-runner, event-bus)
+    └── railway-worker.ts   # Background worker: clone → test → heal → PR
+
+# Monorepo workspace packages
+reporter-core/              # Shared HTTP client, config, selector extraction
+test-runner/                # @healify/test-runner (Playwright reporter + DOM capture)
+cypress-plugin/             # @healify/cypress-plugin (Cypress integration)
+cli/                        # CLI tool (scaffolded)
 ```
 
 ---

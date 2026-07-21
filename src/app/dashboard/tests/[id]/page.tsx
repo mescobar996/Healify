@@ -32,6 +32,7 @@ import { TestRunsSkeleton } from "@/components/ui/skeletons";
 import { TestDetailSheet } from "@/components/TestDetailSheet";
 import { JobProgressCard } from "@/components/JobProgressCard";
 import { LiveConsole } from "@/components/LiveConsole";
+import { TestRunStatusBadge, HealingStatusBadge } from "@/components/dashboard/StatusBadge";
 import type { TestRun, TestRunStatus, HealingStatus, HealingHistoryItem } from "@/types";
 
 type TeardownEvent = HealingHistoryItem & {
@@ -45,45 +46,6 @@ type TeardownEvent = HealingHistoryItem & {
 // ============================================
 // LINEAR STYLE COMPONENTS
 // ============================================
-
-function StatusBadge({ status }: { status: TestRunStatus }) {
-  const config: Record<TestRunStatus, { bg: string; text: string; icon: React.ElementType; label: string }> = {
-    PASSED: { bg: "bg-green-500/10", text: "text-green-400", icon: CheckCircle2, label: "Pasado" },
-    FAILED: { bg: "bg-red-500/10", text: "text-red-400", icon: XCircle, label: "Fallido" },
-    HEALED: { bg: "bg-violet-500/10", text: "text-violet-400", icon: Zap, label: "Curado" },
-    RUNNING: { bg: "bg-white/10", text: "text-white", icon: RefreshCw, label: "Ejecutando" },
-    PENDING: { bg: "bg-white/10", text: "text-white", icon: Clock, label: "Pendiente" },
-    CANCELLED: { bg: "bg-gray-500/10", text: "text-gray-400", icon: XCircle, label: "Cancelado" },
-    PARTIAL: {
-      bg: "bg-white/10",
-      text: "text-white",
-      icon: AlertTriangle,
-      label: "Parcial",
-    },
-  };
-  const { bg, text, icon: Icon, label } = config[status] || config.PENDING;
-  return (
-    <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium", bg, text)}>
-      <Icon className={cn("w-3.5 h-3.5", status === "RUNNING" && "animate-spin")} />
-      {label}
-    </span>
-  );
-}
-
-function HealingStatusBadge({ status }: { status: HealingStatus }) {
-  const config: Record<HealingStatus, { bg: string; text: string; icon: React.ElementType; label: string }> = {
-    curado: { bg: "bg-violet-500/10", text: "text-violet-400", icon: CheckCircle2, label: "Curado" },
-    fallido: { bg: "bg-red-500/10", text: "text-red-400", icon: XCircle, label: "Fallido" },
-    pendiente: { bg: "bg-white/10", text: "text-white", icon: Clock, label: "Pendiente" },
-  };
-  const { bg, text, icon: Icon, label } = config[status] || config.pendiente;
-  return (
-    <span className={cn("inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium", bg, text)}>
-      <Icon className="w-3 h-3" />
-      {label}
-    </span>
-  );
-}
 
 function ConfidenceBar({ confidence }: { confidence: number }) {
   return (
@@ -287,7 +249,7 @@ export default function TestRunDetailPage() {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-lg font-semibold text-white">{testRun.project?.name}</h1>
-                  <StatusBadge status={testRun.status} />
+                  <TestRunStatusBadge status={testRun.status} />
                 </div>
                 <p className="text-xs text-gray-500 flex items-center gap-2 mt-0.5">
                   {testRun.branch && <><GitBranch className="w-3 h-3" />{testRun.branch}</>}

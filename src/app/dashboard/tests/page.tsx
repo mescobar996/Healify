@@ -24,78 +24,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { api, formatRelativeTime } from "@/lib/api";
 import { TestRunsSkeleton } from "@/components/ui/skeletons";
+import { TestRunStatusBadge } from "@/components/dashboard/StatusBadge";
 import { toast } from "sonner";
 import type { TestRun, TestRunStatus } from "@/types";
-
-// ============================================
-// LINEAR STYLE COMPONENTS
-// ============================================
-
-function StatusBadge({ status }: { status: TestRunStatus }) {
-  const variants: Record<TestRunStatus, { bg: string; text: string; icon: React.ElementType }> = {
-    PASSED: {
-      bg: "bg-green-500/10",
-      text: "text-green-400",
-      icon: CheckCircle2,
-    },
-    FAILED: {
-      bg: "bg-red-500/10",
-      text: "text-red-400",
-      icon: XCircle,
-    },
-    HEALED: {
-      bg: "bg-violet-500/10",
-      text: "text-violet-400",
-      icon: Zap,
-    },
-    RUNNING: {
-      bg: "bg-white/10",
-      text: "text-white",
-      icon: RefreshCw,
-    },
-    PENDING: {
-      bg: "bg-white/10",
-      text: "text-white",
-      icon: Clock,
-    },
-    CANCELLED: {
-      bg: "bg-gray-500/10",
-      text: "text-gray-400",
-      icon: XCircle,
-    },
-    PARTIAL: {
-      bg: "bg-white/10",
-      text: "text-white",
-      icon: AlertTriangle,
-    },
-  };
-
-  const variant = variants[status] || variants.PENDING;
-  const Icon = variant.icon;
-
-  const labelMap: Record<TestRunStatus, string> = {
-    PASSED: "Pasado",
-    FAILED: "Fallido",
-    HEALED: "Curado",
-    RUNNING: "Ejecutando",
-    PENDING: "Pendiente",
-    CANCELLED: "Cancelado",
-    PARTIAL: "Parcial",
-  };
-
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium",
-        variant.bg,
-        variant.text
-      )}
-    >
-      <Icon className={cn("w-3 h-3", status === "RUNNING" && "animate-spin")} />
-      {labelMap[status]}
-    </span>
-  );
-}
 
 function StatCard({
   label,
@@ -679,7 +610,7 @@ function TestsContent() {
 
                 {/* Status */}
                 <div className="col-span-1 flex items-center">
-                  <StatusBadge status={run.status} />
+                  <TestRunStatusBadge status={run.status} />
                 </div>
 
                 {/* Total Tests */}
@@ -761,7 +692,7 @@ function TestsContent() {
                         )}
                       </div>
                     </div>
-                    <StatusBadge status={run.status} />
+                    <TestRunStatusBadge status={run.status} />
                   </div>
                   <div className="flex items-center gap-3 text-[11px] text-[var(--text-tertiary)] pl-6">
                     <span className="text-green-400 font-medium">{run.passedTests}✓</span>

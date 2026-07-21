@@ -84,9 +84,7 @@ export function getTestQueue(): Queue | null {
   return testQueueInstance
 }
 
-// Solo para backward compatibility — NO usar en código nuevo
-// En runtime de Vercel puede ser null si el módulo se cacheó durante build
-export const testQueue = isBuildTime ? null : null // deprecated: usar getTestQueue()
+
 
 export interface TestJobData {
   projectId: string
