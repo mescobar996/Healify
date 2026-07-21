@@ -1,3 +1,6 @@
+const ANSI_RE = /\x1B\[[0-9;]*m/g
+const stripAnsi = (s: string): string => s.replace(ANSI_RE, '')
+
 const SELECTOR_PATTERNS = [
   /Waiting for selector ["']([^"']+)["']/,
   /Element not found: (\S+)/,
@@ -16,8 +19,9 @@ const SELECTOR_PATTERNS = [
  * playwright-runner.ts never needs since it only parses Playwright output.
  */
 export function extractSelectorFromError(errorMessage: string): string {
+  const clean = stripAnsi(errorMessage)
   for (const pattern of SELECTOR_PATTERNS) {
-    const match = errorMessage.match(pattern)
+    const match = clean.match(pattern)
     if (match) return match[1]
   }
   return 'Unknown selector'

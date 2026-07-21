@@ -1,8 +1,7 @@
 import { test as base } from '@playwright/test'
-import { resolveConfig } from '@healify/reporter-core'
+import { resolveConfig, ATTACHMENT_NAME } from '@healify/reporter-core'
 
 const MAX_DOM_CHARS = 8000
-const ATTACHMENT_NAME = 'healify-dom'
 
 /**
  * Drop-in replacement for `test` from '@playwright/test'. Captures the

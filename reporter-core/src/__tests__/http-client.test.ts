@@ -91,7 +91,18 @@ describe('reportFailure', () => {
     expect(warnSpy).toHaveBeenCalledTimes(1)
   })
 
-  it('aborts the request after 3000ms and treats it as a failure', async () => {
+  it('strips ANSI codes from the error field before sending', async () => {
+    mockFetch.mockResolvedValue({ ok: true, status: 200 })
+    const ansiError = '\x1B[2mWaiting for selector \x1B[22m\x1B[36m\'#btn\'\x1B[39m failed'
+
+    await reportFailure(config, { ...basePayload, error: ansiError })
+
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body)
+    expect(body.error).toBe("Waiting for selector '#btn' failed")
+    expect(body.error).not.toContain('\x1B')
+  })
+
+  it('aborts the request after 60000ms and treats it as a failure', async () => {
     vi.useFakeTimers()
     try {
       mockFetch.mockImplementation((_url: string, init: RequestInit) => {
@@ -101,7 +112,7 @@ describe('reportFailure', () => {
       })
 
       const promise = reportFailure(config, basePayload)
-      await vi.advanceTimersByTimeAsync(3000)
+      await vi.advanceTimersByTimeAsync(60000)
       await promise
 
       expect(warnSpy).toHaveBeenCalledTimes(1)

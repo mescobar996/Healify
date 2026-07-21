@@ -11,11 +11,17 @@ export interface ReportPayload {
   commitSha?: string
 }
 
-const TIMEOUT_MS = 3000
+const TIMEOUT_MS = 60_000
 const MAX_CONTEXT_CHARS = 8000
+
+/** Attachment name used by fixtures to store captured DOM for the reporter to read. */
+export const ATTACHMENT_NAME = 'healify-dom'
 
 // Module-level flag: warn at most once per process (one process = one test run).
 let hasWarned = false
+
+const ANSI_RE = /\x1B\[[0-9;]*m/g
+const stripAnsi = (s: string): string => s.replace(ANSI_RE, '')
 
 /**
  * Reports a test failure to Healify. Never throws — a failure here must
@@ -25,6 +31,7 @@ let hasWarned = false
 export async function reportFailure(config: HealifyConfig, payload: ReportPayload): Promise<void> {
   const body: ReportPayload = {
     ...payload,
+    error: stripAnsi(payload.error),
     context: payload.context?.slice(0, MAX_CONTEXT_CHARS),
     branch: payload.branch ?? config.branch,
     commitSha: payload.commitSha ?? config.commitSha,

@@ -1,7 +1,5 @@
 import type { Reporter, TestCase, TestResult } from '@playwright/test/reporter'
-import { resolveConfig, reportFailure, extractSelectorFromError, type HealifyConfig } from '@healify/reporter-core'
-
-const ATTACHMENT_NAME = 'healify-dom'
+import { resolveConfig, reportFailure, extractSelectorFromError, ATTACHMENT_NAME, type HealifyConfig } from '@healify/reporter-core'
 
 export default class HealifyReporter implements Reporter {
   private config: HealifyConfig | null
@@ -14,7 +12,7 @@ export default class HealifyReporter implements Reporter {
     if (!this.config) return
     if (result.status !== 'failed' && result.status !== 'timedOut') return
 
-    const errorMessage = result.error?.message ?? result.errors[0]?.message ?? 'Unknown error'
+    const errorMessage = result.error?.message ?? result.errors[0]?.message ?? result.error?.value ?? result.errors[0]?.value ?? 'Unknown error'
     const domAttachment = result.attachments.find((a) => a.name === ATTACHMENT_NAME)
     const context = domAttachment?.body?.toString('utf-8')
 

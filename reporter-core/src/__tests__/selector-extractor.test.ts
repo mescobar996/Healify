@@ -28,6 +28,11 @@ describe('extractSelectorFromError', () => {
     )).toBe('#does-not-exist')
   })
 
+  it('limpia codigos ANSI antes de extraer', () => {
+    const ansiError = '\x1B[2mWaiting for selector \x1B[22m\x1B[36m\'#login-btn\'\x1B[39m\x1B[2m failed\x1B[22m'
+    expect(extractSelectorFromError(ansiError)).toBe('#login-btn')
+  })
+
   it('devuelve "Unknown selector" cuando no hay match', () => {
     expect(extractSelectorFromError('Generic random error without selector info')).toBe('Unknown selector')
     expect(extractSelectorFromError('')).toBe('Unknown selector')

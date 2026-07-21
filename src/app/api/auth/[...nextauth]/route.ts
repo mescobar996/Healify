@@ -19,6 +19,7 @@ const providers: NextAuthOptions['providers'] = [
   GitHubProvider({
     clientId: GITHUB_ID,
     clientSecret: GITHUB_SECRET,
+    authorization: { params: { scope: 'repo read:user user:email' } },
     profile(profile) {
       return {
         id: String(profile.id),

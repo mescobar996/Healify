@@ -16,16 +16,24 @@
   },
   "files": ["dist"],
   "scripts": {
-    "build": "tsc -p tsconfig.json"
+    "build": "tsc --emitDeclarationOnly && esbuild src/index.ts src/reporter.ts --bundle --platform=node --outdir=dist --format=cjs --external:@playwright/test"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "peerDependencies": {
-    "@playwright/test": ">=1.40.0"
-  },
-  "dependencies": {
+    "@playwright/test": ">=1.40.0",
     "@healify/reporter-core": "*"
+  },
+  "peerDependenciesMeta": {
+    "@healify/reporter-core": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
-    "typescript": "^5.4.0"
+    "esbuild": "^0.27.3",
+    "typescript": "^5.4.0",
+    "vitest": "^4.0.18"
   }
 }
