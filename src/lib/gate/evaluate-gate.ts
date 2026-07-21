@@ -57,7 +57,11 @@ export function evaluateGate(input: GateInput): GateResult {
 function countSimpleSelectorMatches(selector: string, html: string): number | null {
   const idMatch = selector.match(/^#([A-Za-z0-9_-]+)$/)
   if (idMatch) {
-    const re = new RegExp(`\\bid=["']${escapeRegExp(idMatch[1])}["']`, 'g')
+    // (?<![\w-]) instead of \b: \b would also match inside "data-id=" (the
+    // hyphen->"i" transition is itself a word boundary), wrongly counting
+    // unrelated attributes that merely end in "id". Requires the char right
+    // before "id=" to not be a word char or hyphen (or start-of-string).
+    const re = new RegExp(`(?<![\\w-])id=["']${escapeRegExp(idMatch[1])}["']`, 'g')
     return (html.match(re) ?? []).length
   }
 
@@ -75,7 +79,10 @@ function countSimpleSelectorMatches(selector: string, html: string): number | nu
   const attrMatch = selector.match(/^\[((?:data|aria)-[A-Za-z0-9_-]+)=["']([^"']+)["']\]$/)
   if (attrMatch) {
     const [, attrName, attrValue] = attrMatch
-    const re = new RegExp(`\\b${escapeRegExp(attrName)}=["']${escapeRegExp(attrValue)}["']`, 'g')
+    // Same (?<![\w-]) fix as above: \b would let a shorter attribute name
+    // match as a suffix of a longer, unrelated one sharing the same tail
+    // (e.g. a hypothetical "data-x-testid" satisfying "data-testid=").
+    const re = new RegExp(`(?<![\\w-])${escapeRegExp(attrName)}=["']${escapeRegExp(attrValue)}["']`, 'g')
     return (html.match(re) ?? []).length
   }
 

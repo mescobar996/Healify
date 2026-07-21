@@ -135,6 +135,35 @@ describe('evaluateGate — not_unique', () => {
     expect(result.pass).toBe(false)
     expect(result.blockedBy).toContainEqual({ code: 'not_unique', matches: 2 })
   })
+
+  it('no cuenta un atributo no relacionado cuyo sufijo coincide (data-id vs id, aria-data-testid vs data-testid)', () => {
+    // Regresión: \b antes del nombre de atributo también matchea justo después
+    // de un "-", así que buscar "id=" encontraba "data-id=", y buscar
+    // "data-testid=" encontraba "aria-data-testid=". El fix usa (?<![\w-])
+    // para exigir que no haya un char de palabra ni un guion inmediatamente
+    // antes del nombre de atributo real.
+    const htmlId = '<button id="login-btn">A</button><input data-id="login-btn" />'
+    const resultId = evaluateGate({
+      confidence: 1.0,
+      selector: '#login-btn',
+      selectorType: 'CSS',
+      threshold: 0.85,
+      domSnapshot: htmlId,
+    })
+    expect(resultId.pass).toBe(true)
+    expect(resultId.blockedBy.find(r => r.code === 'not_unique')).toBeUndefined()
+
+    const htmlAttr = '<button data-testid="submit-btn">A</button><div aria-data-testid="submit-btn">B</div>'
+    const resultAttr = evaluateGate({
+      confidence: 1.0,
+      selector: '[data-testid="submit-btn"]',
+      selectorType: 'TESTID',
+      threshold: 0.85,
+      domSnapshot: htmlAttr,
+    })
+    expect(resultAttr.pass).toBe(true)
+    expect(resultAttr.blockedBy.find(r => r.code === 'not_unique')).toBeUndefined()
+  })
 })
 
 describe('evaluateGate — múltiples razones simultáneas', () => {
