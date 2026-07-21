@@ -19,7 +19,7 @@ export default function CTASection() {
             ¿Listo para dejar de reparar tests rotos?
           </h2>
           <p className="text-lg text-[#EDEDED]/60 mb-8 max-w-lg mx-auto">
-            Más de 500 equipos confían en Healify para mantener sus tests funcionando.
+            Conectá tu repo y dejá que la IA se encargue de los selectores rotos.
           </p>
           <Button
             size="lg"

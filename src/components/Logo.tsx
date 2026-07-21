@@ -18,7 +18,7 @@ export function Logo({ className, size = "md", withText = false, ...props }: Log
 
     const svgIcon = (
         <svg
-            xmlns="http://www. কণ্ঠেw3.org/2000/svg"
+            xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 100 115"
             fill="none"
             className={cn("shrink-0 text-white", sizeClasses[size], className)}

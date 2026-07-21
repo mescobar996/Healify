@@ -12,8 +12,11 @@ function Stat({ value, label, delay = 0 }: { value: string; label: string; delay
   const [count, setCount] = useState(0)
   const numericValue = parseInt(value.replace(/[^0-9]/g, ''))
   const suffix = value.replace(/[0-9]/g, '')
+  const isNumeric = !Number.isNaN(numericValue) && value.replace(/[0-9]/g, '') !== value
 
   useEffect(() => {
+    if (!isNumeric) return
+
     const duration = 2000
     const steps = 60
     const increment = numericValue / steps
@@ -33,7 +36,7 @@ function Stat({ value, label, delay = 0 }: { value: string; label: string; delay
     }, delay * 1000)
 
     return () => clearTimeout(timer)
-  }, [numericValue, delay])
+  }, [numericValue, delay, isNumeric])
 
   return (
     <motion.div
@@ -44,7 +47,7 @@ function Stat({ value, label, delay = 0 }: { value: string; label: string; delay
       className="text-center"
     >
       <div className="text-4xl font-bold text-gradient font-heading mb-2">
-        {count}{suffix}
+        {isNumeric ? `${count}${suffix}` : value}
       </div>
       <div className="text-xs text-[#EDEDED]/60 uppercase tracking-wider">{label}</div>
     </motion.div>
@@ -127,12 +130,11 @@ export default function LandingHero() {
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.6 }}
-            className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-8 pt-10 sm:pt-16 border-t border-white/10 mt-16"
+            className="grid grid-cols-3 gap-4 sm:gap-8 pt-10 sm:pt-16 border-t border-white/10 mt-16"
           >
-            <Stat value="500+" label="Equipos" delay={0.7} />
-            <Stat value="10K+" label="Tests curados" delay={0.8} />
-            <Stat value="98%" label="Precisión" delay={0.9} />
-            <Stat value="90%" label="Tiempo ahorrado" delay={1.0} />
+            <Stat value="Ollama" label="Motor de IA local" delay={0.7} />
+            <Stat value="GitHub" label="Auto-PR automático" delay={0.8} />
+            <Stat value="2" label="SDKs: Playwright y Cypress" delay={0.9} />
           </motion.div>
 
           <div className="pt-10 sm:pt-14" id="demo-section">

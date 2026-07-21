@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button'
 import { HealifyLogo } from '@/components/HealifyLogo'
 import LandingHero from '@/components/landing/LandingHero'
 import CompatibleToolsSection from '@/components/landing/CompatibleToolsSection'
-import VideoDemoSection from '@/components/landing/VideoDemoSection'
 import FeaturesSection from '@/components/landing/FeaturesSection'
 import HowItWorksSection from '@/components/landing/HowItWorksSection'
 import CTASection from '@/components/landing/CTASection'
@@ -72,7 +71,6 @@ export default function LandingPage() {
       <main id="main-content">
         <LandingHero />
         <CompatibleToolsSection />
-        <VideoDemoSection />
         <FeaturesSection />
         <HowItWorksSection />
         <CTASection />
