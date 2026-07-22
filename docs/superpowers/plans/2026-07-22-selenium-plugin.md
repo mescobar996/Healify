@@ -116,6 +116,7 @@ selenium-plugin/node_modules
   },
   "devDependencies": {
     "@healify/reporter-core": "*",
+    "@types/selenium-webdriver": "^4.35.6",
     "esbuild": "^0.27.3",
     "selenium-webdriver": "^4.27.0",
     "typescript": "^5.4.0",
@@ -124,9 +125,11 @@ selenium-plugin/node_modules
 }
 ```
 
+**Corrección (encontrada durante Task 4):** el paquete `selenium-webdriver` instalado (4.46.0) no incluye ningún archivo `.d.ts` — no tiene campo `"types"` en su `package.json` ni declaraciones ambientales. La afirmación original de este plan ("ships its own TypeScript types") era incorrecta, nunca se verificó directamente, solo se verificó el código fuente JS real. La corrección es agregar `@types/selenium-webdriver` (paquete de DefinitelyTyped) como devDependency — ya reflejado arriba.
+
 - [ ] **Step 4: Create `selenium-plugin/tsconfig.json`**
 
-Same pattern as `cypress-plugin/tsconfig.json` and `test-runner/tsconfig.json` (no `"types"` override needed here — unlike `cypress-plugin`, which needs `"types": ["cypress", "node"]` for Cypress's ambient globals, `selenium-webdriver` ships its own TypeScript types as regular module exports, nothing ambient to declare):
+Same pattern as `cypress-plugin/tsconfig.json` and `test-runner/tsconfig.json` — no `"types"` override needed in `compilerOptions` (unlike `cypress-plugin`, which needs `"types": ["cypress", "node"]` for Cypress's ambient globals): `@types/selenium-webdriver` is a regular non-ambient `@types` package, TypeScript picks it up automatically via `node_modules/@types` without listing it.
 
 ```json
 {
