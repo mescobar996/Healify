@@ -33,9 +33,9 @@ Healify fix — healify-report.json
 
 ## Qué toca y qué no
 
-Solo aplica casos con **confianza ≥90%** (`status: 'healed'` en el reporte) — el mismo
-umbral que ya usa `reporter-core` para decidir "esto es lo bastante confiable para no
-pedir revisión". Los casos `review`/`unresolved` nunca se tocan: quedan para que los
+Solo aplica casos con confianza ≥90% (`status: 'healed'` en el reporte). Es el mismo
+umbral que ya usa `reporter-core` para decidir si algo es lo bastante confiable como para
+no pedir revisión. Los casos `review`/`unresolved` nunca se tocan: quedan para que los
 revises a mano en `healify-report.html`.
 
 Conservador a propósito, nunca adivina:
@@ -43,9 +43,9 @@ Conservador a propósito, nunca adivina:
 | Situación | Qué hace |
 |---|---|
 | El selector aparece 0 veces en el archivo | Salta, avisa "ya no se encontró" |
-| El selector aparece 2+ veces | Salta, avisa "ambiguo" — no elige cuál |
+| El selector aparece 2+ veces | Salta, avisa "ambiguo", no elige cuál |
 | El archivo tiene cambios sin commitear en git | Salta, avisa (a menos que uses `--force` o `--dry-run`) |
-| La sugerencia es tipo `role('button', { name: 'X' })` | Salta — es texto legible para el reporte, no un valor de selector pegable; aplicarlo tal cual corrompería el archivo |
+| La sugerencia es tipo `role('button', { name: 'X' })` | Salta: es texto legible para el reporte, no un valor de selector pegable; aplicarlo tal cual corrompería el archivo |
 
 ## Licencia
 
