@@ -115,20 +115,48 @@ await driver.findElement(By.css('#add-to-cart-btn')).click()  // se cura solo si
 export function locatorToSelector(locator: By): string | null
 ```
 
-| `By` | Conversión | Nota |
-|---|---|---|
-| `By.css(s)` | `s` tal cual | ya es lo que el motor espera |
-| `By.xpath(s)` | `s` tal cual | el motor reconoce el prefijo `//` |
-| `By.id(s)` | `#${s}` | |
-| `By.className(s)` | `.${s}` | |
-| `By.name(s)` | `[name="${s}"]` | matchea la regla `ATTRIBUTE`/`name` ya existente |
-| `By.linkText`/`By.partialLinkText`/`By.tagName` | `null` | no convertible, sin heurística nueva para esto |
+**Verificado contra el código fuente real de `selenium-webdriver@4.27.0`
+(`lib/by.js`), no asumido:** `By.id()`, `By.className()` y `By.name()` NO son
+estrategias propias a nivel de protocolo — internamente delegan a `By.css()` antes de
+que el wrapper reciba el objeto:
 
-`selenium-webdriver` no expone el tipo interno de un `By` de forma pública y estable —
-`locatorToSelector` inspecciona `locator.constructor.name` y las propiedades internas
-conocidas (`value`, `using`) que la librería sí expone en tiempo de ejecución. Si el
+```js
+// lib/by.js real, selenium-webdriver@4.27.0
+static id(id)        { return By.css('*[id="' + escapeCss(id) + '"]') }
+static className(nm) { return By.css('.' + escapeCss(nm)) }
+static name(nm)       { return By.css('*[name="' + escapeCss(nm) + '"]') }
+static css(selector)  { return new By('css selector', selector) }
+static xpath(xpath)    { return new By('xpath', xpath) }
+```
+
+Es decir: para cuando `findElement(locator)` llega al wrapper, `By.id('x')` y
+`By.css('*[id="x"]')` son **indistinguibles** — ambos son `{ using: 'css selector',
+value: '*[id="x"]' }`. No hay forma de detectar "esto vino de `By.id()`" en runtime, así
+que `locatorToSelector` no necesita (ni puede) tener un caso por separado para
+id/className/name — todos caen en el mismo caso `using === 'css selector'`.
+
+| `locator.using` | Conversión | Nota |
+|---|---|---|
+| `'css selector'`, `value` matchea `^\*\[id="(.*)"\]$` | `#${grupo 1}` | Solo este caso necesita reescritura: `analyzeSelector()` en `healing-engine.ts` clasifica por `startsWith('#')` para activar la regla de "ID dinámico → clase estable". Sin esta reescritura, `By.id('user-1234')` llegaría como `*[id="user-1234"]`, que no matchea ningún patrón específico y degrada a la rama genérica `CSS`, perdiendo la regla más específica que ya existe para este caso exacto. |
+| `'css selector'`, cualquier otro `value` | `value` tal cual | Cubre `By.css()` directo, `By.className()` (`.nombre`, ya empieza con `.` → matchea la regla CLASS) y `By.name()` (`*[name="x"]`, ya contiene el substring `[name=` → matchea la regla ATTRIBUTE/name). Ninguno de estos dos necesita reescritura, el motor ya los reconoce tal cual salen de Selenium. |
+| `'xpath'` | `value` tal cual | el motor reconoce el prefijo `//` |
+| cualquier otro (`'link text'`, `'partial link text'`, `'tag name'`) | `null` | no convertible, sin heurística nueva para esto |
+
+`locatorToSelector` inspecciona `locator.using`/`locator.value` — las dos propiedades
+públicas que expone el constructor de `By` (`lib/by.js`, verificado arriba). Si el
 formato interno cambia entre versiones de `selenium-webdriver`, la función degrada a
 `null` (no convertible) en vez de tirar, y el `peerDependency` fija `^4.0.0`.
+
+**Detección del error "elemento no encontrado" (`src/wrap.ts`):** verificado también
+contra el código fuente real (`lib/error.js`) — `selenium-webdriver` exporta un
+namespace público `error` con las clases de error del protocolo:
+
+```typescript
+import { error } from 'selenium-webdriver'
+function isNoSuchElementError(e: unknown): boolean {
+  return e instanceof error.NoSuchElementError
+}
+```
 
 ## 4. Flujo de curado (`src/wrap.ts`)
 
