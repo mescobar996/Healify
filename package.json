@@ -6,7 +6,8 @@
     "reporter-core",
     "test-runner",
     "cypress-plugin",
-    "cli"
+    "cli",
+    "selenium-plugin"
   ],
   "scripts": {
     "build": "npm run build --workspaces",

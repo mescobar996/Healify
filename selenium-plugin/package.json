@@ -1,0 +1,31 @@
+{
+  "name": "@healify/selenium-plugin",
+  "version": "0.1.0",
+  "description": "Self-healing wrapper for Selenium WebDriver — heuristic, local-first, no AI, no server.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc --emitDeclarationOnly && esbuild src/index.ts --bundle --platform=node --outdir=dist --format=cjs --external:selenium-webdriver",
+    "test": "vitest run"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "peerDependencies": {
+    "selenium-webdriver": "^4.0.0"
+  },
+  "devDependencies": {
+    "@healify/reporter-core": "*",
+    "esbuild": "^0.27.3",
+    "selenium-webdriver": "^4.27.0",
+    "typescript": "^5.4.0",
+    "vitest": "^4.0.18"
+  }
+}

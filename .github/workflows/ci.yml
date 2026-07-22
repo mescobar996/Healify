@@ -45,6 +45,9 @@ jobs:
       - name: Type check cli
         run: npx tsc --noEmit -p cli/tsconfig.json
 
+      - name: Type check selenium-plugin
+        run: npx tsc --noEmit -p selenium-plugin/tsconfig.json
+
   # ─── Unit Tests ───────────────────────────────────────────────────────────
   test:
     name: Unit Tests
