@@ -62,6 +62,11 @@ interface HealingStrategy {
   technicalReason: string
 }
 
+// Atributos volátiles: generados por build tools (css-in-js, hashing) o por IDs con timestamp/hash —
+// no sirven como base de un selector alternativo porque van a cambiar en el próximo build.
+const VOLATILE_CLASS_RE = /^(css-|sc-|x[0-9a-f]{4,}|[a-z]{2,}_[a-z0-9]{5,})/i
+const VOLATILE_ID_RE = /_\d{4,}$|-[a-f0-9]{6,}$/i
+
 function analyzeSelector(selector: string): SelectorAnalysis {
   const analysis: SelectorAnalysis = {
     type: 'CSS',
@@ -83,14 +88,14 @@ function analyzeSelector(selector: string): SelectorAnalysis {
   if (selector.startsWith('#')) {
     analysis.type = 'ID'
     analysis.issues.push('ID selectors are brittle and can change')
-    if (/\d+/.test(selector) || /-[a-f0-9]{6,}/i.test(selector)) {
+    if (/\d+/.test(selector) || /-[a-f0-9]{6,}/i.test(selector) || VOLATILE_ID_RE.test(selector)) {
       analysis.isDynamic = true
       analysis.issues.push('Dynamic ID detected - will break on next build')
     }
   } else if (selector.startsWith('.')) {
     analysis.type = 'CLASS'
     analysis.issues.push('Class names can change during refactoring')
-    if (/_[a-z]+_[a-z0-9]+/.test(selector) || /sc-[a-z]+/.test(selector)) {
+    if (/_[a-z]+_[a-z0-9]+/.test(selector) || /sc-[a-z]+/.test(selector) || VOLATILE_CLASS_RE.test(selector.slice(1))) {
       analysis.isDynamic = true
       analysis.issues.push('Generated CSS class detected - unstable')
     }
@@ -183,6 +188,14 @@ function extractBaseClass(selector: string): string {
     .replace(/[-_]?\d+/g, '')
     .replace(/[-_][a-f0-9]{6,}/gi, '')
     .toLowerCase()
+}
+
+/** No proponer una clase como alternativa si sigue viéndose volátil tras limpiarla, o si el selector
+ * original tiene demasiados fragmentos tipo hash/número — la "base" ya no es una base estable real. */
+function isUnstableClassCandidate(selector: string, candidate: string): boolean {
+  if (VOLATILE_CLASS_RE.test(candidate)) return true
+  const volatileFragments = selector.match(/[a-f0-9]{4,}|\d{2,}/gi) ?? []
+  return volatileFragments.length > 3
 }
 
 function generateHealingStrategies(selector: string, analysis: SelectorAnalysis): HealingStrategy[] {
@@ -296,14 +309,17 @@ function generateHealingStrategies(selector: string, analysis: SelectorAnalysis)
   }
 
   if (analysis.isDynamic && analysis.type === 'ID') {
-    strategies.push({
-      selector: `.${extractBaseClass(selector)}`,
-      type: 'CSS',
-      confidence: 0.78,
-      explanation: `Se detectó un ID dinámico con hash o número aleatorio. Se propuso una clase estable como alternativa.`,
-      robustnessGain: 38,
-      technicalReason: 'Dynamic IDs change between builds; stable classes are preferred',
-    })
+    const baseClass = extractBaseClass(selector)
+    if (!isUnstableClassCandidate(selector, baseClass)) {
+      strategies.push({
+        selector: `.${baseClass}`,
+        type: 'CSS',
+        confidence: 0.78,
+        explanation: `Se detectó un ID dinámico con hash o número aleatorio. Se propuso una clase estable como alternativa.`,
+        robustnessGain: 38,
+        technicalReason: 'Dynamic IDs change between builds; stable classes are preferred',
+      })
+    }
   }
 
   if (strategies.length === 0) {
