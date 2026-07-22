@@ -47,6 +47,10 @@ interface SelectorAnalysis {
   action: string
   isDynamic: boolean
   isFragile: boolean
+  /** Ya es un locator moderno de Playwright (getByRole/getByText/...) — no proponer downgrade. */
+  isAlreadyModernLocator?: boolean
+  /** Qué atributo genérico disparó el tipo ATTRIBUTE, para elegir la estrategia correcta. */
+  attributeKind?: 'name' | 'aria-label'
 }
 
 interface HealingStrategy {
@@ -68,6 +72,14 @@ function analyzeSelector(selector: string): SelectorAnalysis {
     isFragile: false,
   }
 
+  const modernLocatorMatch = selector.match(/^getBy(Role|Text|Label|Placeholder|TestId)\(/)
+  if (modernLocatorMatch) {
+    analysis.isAlreadyModernLocator = true
+    const kind = modernLocatorMatch[1]
+    analysis.type = kind === 'Role' ? 'ROLE' : kind === 'Text' ? 'TEXT' : kind === 'TestId' ? 'TESTID' : 'CSS'
+    return analysis
+  }
+
   if (selector.startsWith('#')) {
     analysis.type = 'ID'
     analysis.issues.push('ID selectors are brittle and can change')
@@ -82,7 +94,7 @@ function analyzeSelector(selector: string): SelectorAnalysis {
       analysis.isDynamic = true
       analysis.issues.push('Generated CSS class detected - unstable')
     }
-  } else if (selector.includes('[data-testid=')) {
+  } else if (selector.includes('[data-testid=') || selector.includes('[data-cy=')) {
     analysis.type = 'TESTID'
   } else if (selector.startsWith('//')) {
     analysis.type = 'XPATH'
@@ -93,6 +105,13 @@ function analyzeSelector(selector: string): SelectorAnalysis {
   } else if (selector.includes('text=') || selector.includes('has-text')) {
     analysis.type = 'TEXT'
     analysis.issues.push('Text content can change with copy updates')
+  } else if (selector.includes('[aria-label=')) {
+    analysis.type = 'ATTRIBUTE'
+    analysis.attributeKind = 'aria-label'
+  } else if (selector.includes('[name=')) {
+    analysis.type = 'ATTRIBUTE'
+    analysis.attributeKind = 'name'
+    analysis.issues.push('The name attribute may not be unique')
   }
 
   if (/button|btn/i.test(selector)) {
@@ -130,11 +149,23 @@ const ACTIONS: Record<string, string> = {
   remove: 'Remove', search: 'Search', send: 'Send', confirm: 'Confirm', accept: 'Accept',
   reject: 'Reject', next: 'Next', previous: 'Previous', back: 'Back', continue: 'Continue',
   finish: 'Finish', start: 'Start', stop: 'Stop', play: 'Play', pause: 'Pause',
+  // Español — para que el selector generado matchee UI real en español
+  iniciar: 'Iniciar Sesión', ingresar: 'Ingresar', guardar: 'Guardar', cancelar: 'Cancelar',
+  eliminar: 'Eliminar', borrar: 'Eliminar', editar: 'Editar', actualizar: 'Actualizar',
+  crear: 'Crear', agregar: 'Agregar', quitar: 'Quitar', buscar: 'Buscar', enviar: 'Enviar',
+  confirmar: 'Confirmar', aceptar: 'Aceptar', rechazar: 'Rechazar', siguiente: 'Siguiente',
+  anterior: 'Anterior', volver: 'Volver', continuar: 'Continuar', finalizar: 'Finalizar',
+  comenzar: 'Comenzar', detener: 'Detener', reproducir: 'Reproducir', pausar: 'Pausar',
 }
 
 const FIELDS: Record<string, string> = {
   email: 'Email', password: 'Password', username: 'Username', name: 'Name', phone: 'Phone',
   address: 'Address', search: 'Search', date: 'Date', title: 'Title', description: 'Description',
+  // Español
+  correo: 'Correo', contraseña: 'Contraseña', clave: 'Contraseña', usuario: 'Usuario',
+  nombre: 'Nombre', telefono: 'Teléfono', teléfono: 'Teléfono', direccion: 'Dirección',
+  dirección: 'Dirección', fecha: 'Fecha', titulo: 'Título', título: 'Título',
+  descripcion: 'Descripción', descripción: 'Descripción',
 }
 
 function extractActionFromSelector(selector: string): string {
@@ -152,8 +183,13 @@ function extractFieldName(selector: string): string {
 }
 
 function extractTestid(selector: string): string {
-  const match = selector.match(/data-testid=['"]([^'"]+)['"]/)
+  const match = selector.match(/data-(?:testid|cy)=['"]([^'"]+)['"]/)
   return match ? match[1] : 'element'
+}
+
+/** Cypress usa `data-cy` en vez de `data-testid` — reescribir al otro atributo rompería el selector. */
+function testidAttributeName(selector: string): 'data-testid' | 'data-cy' {
+  return selector.includes('[data-cy=') ? 'data-cy' : 'data-testid'
 }
 
 function extractBaseClass(selector: string): string {
@@ -165,7 +201,40 @@ function extractBaseClass(selector: string): string {
 }
 
 function generateHealingStrategies(selector: string, analysis: SelectorAnalysis): HealingStrategy[] {
+  if (analysis.isAlreadyModernLocator) {
+    return [{
+      selector,
+      type: analysis.type as HealResponse['selectorType'],
+      confidence: 0.80,
+      explanation: 'El selector ya usa un locator moderno de Playwright (getBy*), que es la práctica recomendada. No se propone downgrade — sin acceso al DOM real no se puede saber por qué dejó de encontrar el elemento; puede ser un cambio genuino de la UI que amerita revisión manual.',
+      robustnessGain: 0,
+      technicalReason: 'Modern Playwright locators are already best practice; the failure likely reflects a real UI change, not a selector quality issue',
+    }]
+  }
+
   const strategies: HealingStrategy[] = []
+
+  if (analysis.attributeKind === 'aria-label') {
+    strategies.push({
+      selector,
+      type: 'ROLE',
+      confidence: 0.93,
+      explanation: `El selector ya usa aria-label, un atributo de accesibilidad estable. Se conserva tal cual.`,
+      robustnessGain: 0,
+      technicalReason: 'aria-label is an accessibility attribute purpose-built for stable identification',
+    })
+  }
+
+  if (analysis.attributeKind === 'name') {
+    strategies.push({
+      selector,
+      type: 'CSS',
+      confidence: 0.85,
+      explanation: `El selector ya usa el atributo name, razonablemente estable aunque puede no ser único. Se conserva tal cual.`,
+      robustnessGain: 0,
+      technicalReason: 'The name attribute is usually stable but may not be unique across the page',
+    })
+  }
 
   if (analysis.element === 'button') {
     const action = extractActionFromSelector(selector)
@@ -219,13 +288,14 @@ function generateHealingStrategies(selector: string, analysis: SelectorAnalysis)
   }
 
   if (analysis.type === 'TESTID') {
+    const attr = testidAttributeName(selector)
     strategies.push({
-      selector: `[data-testid='${extractTestid(selector)}']`,
+      selector: `[${attr}='${extractTestid(selector)}']`,
       type: 'TESTID',
       confidence: 0.95,
-      explanation: `El testid se mantiene pero se normaliza la sintaxis. Los data-testid son la opción más estable cuando están disponibles.`,
+      explanation: `El testid se mantiene pero se normaliza la sintaxis. Los atributos ${attr} son la opción más estable cuando están disponibles.`,
       robustnessGain: 50,
-      technicalReason: 'data-testid attributes are purpose-built for testing stability',
+      technicalReason: `${attr} attributes are purpose-built for testing stability`,
     })
   }
 

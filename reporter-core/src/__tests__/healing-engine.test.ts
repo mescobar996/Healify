@@ -22,7 +22,11 @@ describe('analyzeAndHeal', () => {
   })
 
   it('keeps confidence within the documented 0.75–0.98 band', () => {
-    for (const selector of ['#a', '.b', '//c', "[data-testid='d']", '[role=button]', 'text=Hola']) {
+    const selectors = [
+      '#a', '.b', '//c', "[data-testid='d']", '[role=button]', 'text=Hola',
+      "getByRole('button', { name: 'Login' })", "[data-cy='e']", "[name='f']", "[aria-label='g']",
+    ]
+    for (const selector of selectors) {
       const result = analyzeAndHeal({ selector })
       expect(result.confidence).toBeGreaterThanOrEqual(0.75)
       expect(result.confidence).toBeLessThanOrEqual(0.98)
@@ -41,5 +45,46 @@ describe('analyzeAndHeal', () => {
     const result = analyzeAndHeal({ selector: '#thing-a3f9c1e0' })
     expect(result.explanation).toContain('ID dinámico')
     expect(result.selectorType).toBe('CSS')
+  })
+
+  it('recognizes Spanish action words for buttons (bilingual ACTIONS dictionary)', () => {
+    const result = analyzeAndHeal({ selector: '#btn-guardar' })
+    expect(result.selectorType).toBe('ROLE')
+    expect(result.fixedSelector).toContain('Guardar')
+  })
+
+  it('recognizes Spanish field words for inputs (bilingual FIELDS dictionary)', () => {
+    const result = analyzeAndHeal({ selector: 'input.campo-correo' })
+    expect(result.fixedSelector).toContain('Correo')
+  })
+
+  it('does not downgrade a selector that already uses a modern Playwright locator', () => {
+    const original = "getByRole('button', { name: 'Login' })"
+    const result = analyzeAndHeal({ selector: original })
+    expect(result.fixedSelector).toBe(original)
+    expect(result.selectorType).toBe('ROLE')
+    expect(result.robustnessImprovement).toBe(0)
+  })
+
+  it('preserves data-cy syntax instead of rewriting it to data-testid', () => {
+    const result = analyzeAndHeal({ selector: "[data-cy='add-to-cart']" })
+    expect(result.selectorType).toBe('TESTID')
+    expect(result.fixedSelector).toBe("[data-cy='add-to-cart']")
+    expect(result.fixedSelector).not.toContain('data-testid')
+  })
+
+  it('preserves a [name=] attribute selector with moderate confidence', () => {
+    const result = analyzeAndHeal({ selector: "[name='email']" })
+    expect(result.selectorType).toBe('CSS')
+    expect(result.fixedSelector).toBe("[name='email']")
+    expect(result.confidence).toBeGreaterThanOrEqual(0.75)
+    expect(result.confidence).toBeLessThan(0.95)
+  })
+
+  it('preserves an [aria-label=] attribute selector with high confidence', () => {
+    const result = analyzeAndHeal({ selector: "[aria-label='Cerrar']" })
+    expect(result.selectorType).toBe('ROLE')
+    expect(result.fixedSelector).toBe("[aria-label='Cerrar']")
+    expect(result.confidence).toBeGreaterThanOrEqual(0.85)
   })
 })

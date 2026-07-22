@@ -37,4 +37,26 @@ describe('extractSelectorFromError', () => {
     expect(extractSelectorFromError('Generic random error without selector info')).toBe('Unknown selector')
     expect(extractSelectorFromError('')).toBe('Unknown selector')
   })
+
+  it('extrae un locator moderno de Playwright (getByRole) de un mensaje real multilínea', () => {
+    const msg = "page.click: Timeout 5000ms exceeded.\nCall log:\n  - waiting for getByRole('button', { name: 'Login' })"
+    expect(extractSelectorFromError(msg)).toBe("getByRole('button', { name: 'Login' })")
+  })
+
+  it('extrae getByText, getByLabel, getByPlaceholder y getByTestId', () => {
+    expect(extractSelectorFromError("waiting for getByText('Aplicar cupón')")).toBe("getByText('Aplicar cupón')")
+    expect(extractSelectorFromError("waiting for getByLabel('Correo')")).toBe("getByLabel('Correo')")
+    expect(extractSelectorFromError("waiting for getByPlaceholder('Buscar...')")).toBe("getByPlaceholder('Buscar...')")
+    expect(extractSelectorFromError("waiting for getByTestId('add-to-cart')")).toBe("getByTestId('add-to-cart')")
+  })
+
+  it('extrae selectores descendientes con espacios (regresión del fix (\\S+) → (.+))', () => {
+    expect(extractSelectorFromError('Element not found: .card .title')).toBe('.card .title')
+    expect(extractSelectorFromError('Unable to locate element: .modal .close-btn')).toBe('.modal .close-btn')
+  })
+
+  it('extrae y envuelve como text= el texto citado de un .contains() de Cypress', () => {
+    const msg = "Timed out retrying after 4000ms: Expected to find content: 'Aplicar cupón' within the element: <body> but never did."
+    expect(extractSelectorFromError(msg)).toBe('text=Aplicar cupón')
+  })
 })

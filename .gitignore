@@ -73,3 +73,4 @@ cypress-plugin/tests/cypress/videos
 
 # Superpowers brainstorming companion artifacts (ephemeral, not project content)
 .superpowers/
+CONTEXT_HANDOFF.md
