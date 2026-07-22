@@ -1,6 +1,6 @@
 {
   "name": "@healify/cypress-plugin",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Healify reporter for Cypress — reports broken selectors without requiring GitHub repo access.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -12,7 +12,8 @@
   },
   "files": ["dist"],
   "scripts": {
-    "build": "tsc --emitDeclarationOnly && esbuild src/index.ts --bundle --platform=node --outdir=dist --format=cjs --external:cypress"
+    "build": "tsc --emitDeclarationOnly && esbuild src/index.ts --bundle --platform=node --outdir=dist --format=cjs --external:cypress",
+    "test": "vitest run"
   },
   "publishConfig": {
     "access": "public"
@@ -24,6 +25,7 @@
     "@types/node": "^25.5.0",
     "cypress": "^15.4.0",
     "esbuild": "^0.27.3",
-    "typescript": "^5.4.0"
+    "typescript": "^5.4.0",
+    "vitest": "^4.0.18"
   }
 }
