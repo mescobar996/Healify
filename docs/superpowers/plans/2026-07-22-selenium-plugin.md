@@ -456,15 +456,19 @@ describe('wrapDriver', () => {
     expect(mockAnalyzeAndHeal).not.toHaveBeenCalled()
   })
 
-  it('un error interno de analyzeAndHeal no rompe el test del usuario — lanza el error original', async () => {
+  it('un error interno de analyzeAndHeal no rompe el test del usuario — lanza el error original y reporta el detalle', async () => {
     const originalErr = NO_SUCH_ELEMENT()
     const findElement = vi.fn().mockRejectedValueOnce(originalErr)
     mockAnalyzeAndHeal.mockImplementation(() => {
       throw new Error('boom interno de la heurística')
     })
-    const wrapped = wrapDriver(makeDriver(findElement))
+    const onEvent = vi.fn()
+    const wrapped = wrapDriver(makeDriver(findElement), { onEvent })
 
     await expect(wrapped.findElement(By.css('#old'))).rejects.toBe(originalErr)
+    expect(onEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'error', originalSelector: '#old', explanation: 'boom interno de la heurística' })
+    )
   })
 
   it('dryRun=true emite el evento healed pero lanza el error original, sin aplicar el fix', async () => {
@@ -598,8 +602,9 @@ export function wrapDriver(driver: WebDriver, options: HealifySeleniumOptions = 
       let result: ReturnType<typeof analyzeAndHeal>
       try {
         result = analyzeAndHeal({ selector })
-      } catch {
-        emit({ type: 'error', originalSelector: selector, latencyMs: Date.now() - start })
+      } catch (healErr) {
+        const message = healErr instanceof Error ? healErr.message : String(healErr)
+        emit({ type: 'error', originalSelector: selector, explanation: message, latencyMs: Date.now() - start })
         throw originalErr
       }
 
