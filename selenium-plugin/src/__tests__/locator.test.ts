@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { By } from 'selenium-webdriver'
-import { locatorToSelector } from '../locator'
+import { locatorToSelector, isSeleniumCssCompatible } from '../locator'
 
 describe('locatorToSelector', () => {
   it('convierte By.css tal cual', () => {
@@ -41,5 +41,29 @@ describe('locatorToSelector', () => {
 
   it('devuelve null para un locator malformado en vez de tirar excepción', () => {
     expect(locatorToSelector({} as unknown as By)).toBeNull()
+  })
+})
+
+describe('isSeleniumCssCompatible', () => {
+  it('rechaza sugerencias tipo role(...) — sintaxis de Playwright, no CSS', () => {
+    expect(isSeleniumCssCompatible("role('button', { name: 'Add' })")).toBe(false)
+  })
+
+  it('rechaza sugerencias con :has-text(...) — pseudo-clase de Playwright, no CSS nativo', () => {
+    expect(isSeleniumCssCompatible("button:has-text('Add')")).toBe(false)
+  })
+
+  it('rechaza el fallback visible=... — prefijo de Playwright, no CSS', () => {
+    expect(isSeleniumCssCompatible('visible=oldselector')).toBe(false)
+  })
+
+  it('rechaza sugerencias tipo getByRole(...) — locator moderno de Playwright, no CSS', () => {
+    expect(isSeleniumCssCompatible("getByRole('button', { name: 'Add' })")).toBe(false)
+  })
+
+  it('acepta selectores CSS reales', () => {
+    expect(isSeleniumCssCompatible('[data-testid="add-to-cart"]')).toBe(true)
+    expect(isSeleniumCssCompatible('.stable-class')).toBe(true)
+    expect(isSeleniumCssCompatible('#stable-id')).toBe(true)
   })
 })

@@ -59,6 +59,14 @@ deja pasar el error de Selenium tal cual.
 - **`findElements` (plural)**: pasa directo al driver real, sin intentar curar — Selenium
   devuelve `[]` cuando no hay matches, en vez de lanzar un error, así que no hay nada
   concreto que curar ahí.
+- **Sugerencias tipo `role(...)`/`:has-text(...)`/`visible=...`**: `analyzeAndHeal()`
+  devuelve esa sintaxis para varias de sus estrategias (pensada originalmente para
+  Playwright/Cypress). No es CSS nativo, así que `By.css()` de Selenium no puede
+  ejecutarla — estos casos se reportan como `'no-suggestion'` en vez de intentar un
+  retry que fallaría siempre. En la práctica, esto significa que selectores de
+  botones/links/inputs (donde el motor suele proponer una estrategia por rol o texto)
+  tienen menor tasa de curado real en Selenium que en Playwright/Cypress — el motor
+  compartido no distingue el runtime de destino al generar sugerencias.
 
 ## Licencia
 

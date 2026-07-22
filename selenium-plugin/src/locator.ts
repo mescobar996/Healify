@@ -31,3 +31,20 @@ export function locatorToSelector(locator: By): string | null {
 
   return null
 }
+
+/**
+ * analyzeAndHeal() devuelve algunas sugerencias en sintaxis específica de Playwright
+ * (role('button', {...}), button:has-text('X'), o el fallback visible=selector) — ninguna
+ * es CSS nativo válido para By.css(), que llama directo al motor CSS del browser
+ * (querySelectorAll). Mismo problema ya resuelto para @healify/cli fix
+ * (cli/src/fix.ts, isSubstitutable) — acá el alcance es más amplio porque Selenium no
+ * tiene el motor de Playwright para interpretarlas.
+ */
+export function isSeleniumCssCompatible(selector: string): boolean {
+  return (
+    !/^role\(/.test(selector) &&
+    !selector.includes(':has-text(') &&
+    !/^visible=/.test(selector) &&
+    !/^getBy[A-Z]/.test(selector)
+  )
+}

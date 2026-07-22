@@ -1,7 +1,7 @@
 import type { WebDriver, WebElement, By } from 'selenium-webdriver'
 import { By as SeleniumBy, error } from 'selenium-webdriver'
 import { analyzeAndHeal } from '@healify/reporter-core'
-import { locatorToSelector } from './locator'
+import { locatorToSelector, isSeleniumCssCompatible } from './locator'
 import { DEFAULT_CONFIDENCE_THRESHOLD, type HealifySeleniumOptions, type HealingEvent } from './types'
 
 function isNoSuchElementError(err: unknown): boolean {
@@ -52,6 +52,17 @@ export function wrapDriver(driver: WebDriver, options: HealifySeleniumOptions = 
         emit({
           type: 'no-suggestion',
           originalSelector: selector,
+          confidence: result.confidence,
+          latencyMs: Date.now() - start,
+        })
+        throw originalErr
+      }
+
+      if (!isSeleniumCssCompatible(result.fixedSelector)) {
+        emit({
+          type: 'no-suggestion',
+          originalSelector: selector,
+          fixedSelector: result.fixedSelector,
           confidence: result.confidence,
           latencyMs: Date.now() - start,
         })

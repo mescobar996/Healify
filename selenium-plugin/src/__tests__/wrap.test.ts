@@ -186,4 +186,27 @@ describe('wrapDriver', () => {
 
     expect(result).toBe(healedEl)
   })
+
+  it('sugerencia en sintaxis de Playwright (role/has-text/visible=) se trata como sin sugerencia — nunca intenta el retry', async () => {
+    const originalErr = NO_SUCH_ELEMENT()
+    const findElement = vi.fn().mockRejectedValueOnce(originalErr)
+    mockAnalyzeAndHeal.mockReturnValue({
+      fixedSelector: "role('button', { name: 'Add' })",
+      confidence: 0.92,
+      explanation: 'x',
+      selectorType: 'ROLE',
+    })
+    const onEvent = vi.fn()
+    const wrapped = wrapDriver(makeDriver(findElement), { onEvent })
+
+    await expect(wrapped.findElement(By.css('#old'))).rejects.toBe(originalErr)
+    expect(findElement).toHaveBeenCalledTimes(1)
+    expect(onEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'no-suggestion',
+        originalSelector: '#old',
+        fixedSelector: "role('button', { name: 'Add' })",
+      })
+    )
+  })
 })
