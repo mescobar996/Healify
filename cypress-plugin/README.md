@@ -33,22 +33,17 @@ Corré tus tests normalmente (`npx cypress run`). Sin nada más que configurar: 
 falla por un selector roto, al terminar la corrida aparece `healify-report.html` en el
 directorio desde el que corriste Cypress. Nada sale de tu máquina.
 
-## Modo nube (opcional)
-
-Si además querés mandar los reportes a un servidor propio en vez de solo generar el HTML
-local, seteá estas variables de entorno (en tu CI/CD o `cypress.env.json`):
-
-| Env var | Requerida | Descripción |
-|---|---|---|
-| `HEALIFY_API_KEY` | Sí | Activa el modo nube. Sin esto, el plugin siempre corre en modo local |
-| `HEALIFY_API_URL` | No | URL base de tu servidor (default: `https://healify-sigma.vercel.app`) |
-| `HEALIFY_BRANCH` | No | Rama de git a incluir en los reportes |
-| `HEALIFY_COMMIT_SHA` | No | Commit SHA a incluir en los reportes |
-
 ## Cómo funciona
 
-- **Modo local** (sin `HEALIFY_API_KEY`): tras cada spec (`after:spec`) se corre la
-  heurística para cada test fallido; al terminar la corrida (`after:run`) se escribe el
-  HTML/JSON.
-- **Modo nube** (con `HEALIFY_API_KEY`): tras cada spec se extrae el selector del error y se
-  postea el reporte a tu servidor. Fire-and-forget — nunca bloquea ni hace fallar la corrida.
+Tras cada spec (`after:spec`) se corre la heurística (`analyzeAndHeal()` de
+`@healify/reporter-core`) para cada test fallido, sin red; al terminar la corrida
+(`after:run`) se escribe `healify-report.html`/`.json` con todos los casos acumulados.
+Heurística de pattern-matching sobre el texto del selector y del error — no es IA, no
+analiza el DOM en tiempo real.
+
+## Siguiente paso
+
+Cuando tengas `healify-report.json`, `npx @healify/cli fix` aplica automáticamente las
+sugerencias de mayor confianza directo en tus archivos de test (conservador: nunca toca
+selectores ambiguos ni archivos con cambios sin commitear). Ver
+[`@healify/cli`](../cli/README.md).
