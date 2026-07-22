@@ -1,0 +1,16 @@
+{
+  "ACTIONS": {
+    "iniciar": "Iniciar Sesión", "ingresar": "Ingresar", "guardar": "Guardar", "cancelar": "Cancelar",
+    "eliminar": "Eliminar", "borrar": "Eliminar", "editar": "Editar", "actualizar": "Actualizar",
+    "crear": "Crear", "agregar": "Agregar", "quitar": "Quitar", "buscar": "Buscar", "enviar": "Enviar",
+    "confirmar": "Confirmar", "aceptar": "Aceptar", "rechazar": "Rechazar", "siguiente": "Siguiente",
+    "anterior": "Anterior", "volver": "Volver", "continuar": "Continuar", "finalizar": "Finalizar",
+    "comenzar": "Comenzar", "detener": "Detener", "reproducir": "Reproducir", "pausar": "Pausar"
+  },
+  "FIELDS": {
+    "correo": "Correo", "contraseña": "Contraseña", "clave": "Contraseña", "usuario": "Usuario",
+    "nombre": "Nombre", "telefono": "Teléfono", "teléfono": "Teléfono", "direccion": "Dirección",
+    "dirección": "Dirección", "fecha": "Fecha", "titulo": "Título", "título": "Título",
+    "descripcion": "Descripción", "descripción": "Descripción"
+  }
+}

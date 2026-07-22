@@ -143,30 +143,15 @@ function deterministicAdjustment(selector: string): number {
   return ((Math.abs(hash) % 100) / 1000) - 0.05
 }
 
-const ACTIONS: Record<string, string> = {
-  login: 'Login', signin: 'Sign In', submit: 'Submit', save: 'Save', cancel: 'Cancel',
-  delete: 'Delete', edit: 'Edit', update: 'Update', create: 'Create', add: 'Add',
-  remove: 'Remove', search: 'Search', send: 'Send', confirm: 'Confirm', accept: 'Accept',
-  reject: 'Reject', next: 'Next', previous: 'Previous', back: 'Back', continue: 'Continue',
-  finish: 'Finish', start: 'Start', stop: 'Stop', play: 'Play', pause: 'Pause',
-  // Español — para que el selector generado matchee UI real en español
-  iniciar: 'Iniciar Sesión', ingresar: 'Ingresar', guardar: 'Guardar', cancelar: 'Cancelar',
-  eliminar: 'Eliminar', borrar: 'Eliminar', editar: 'Editar', actualizar: 'Actualizar',
-  crear: 'Crear', agregar: 'Agregar', quitar: 'Quitar', buscar: 'Buscar', enviar: 'Enviar',
-  confirmar: 'Confirmar', aceptar: 'Aceptar', rechazar: 'Rechazar', siguiente: 'Siguiente',
-  anterior: 'Anterior', volver: 'Volver', continuar: 'Continuar', finalizar: 'Finalizar',
-  comenzar: 'Comenzar', detener: 'Detener', reproducir: 'Reproducir', pausar: 'Pausar',
-}
+// Diccionarios EN/ES en reporter-core/src/dictionaries/ — editables sin leer el motor entero.
+import enDictionary from './dictionaries/en.json'
+import esDictionary from './dictionaries/es.json'
 
-const FIELDS: Record<string, string> = {
-  email: 'Email', password: 'Password', username: 'Username', name: 'Name', phone: 'Phone',
-  address: 'Address', search: 'Search', date: 'Date', title: 'Title', description: 'Description',
-  // Español
-  correo: 'Correo', contraseña: 'Contraseña', clave: 'Contraseña', usuario: 'Usuario',
-  nombre: 'Nombre', telefono: 'Teléfono', teléfono: 'Teléfono', direccion: 'Dirección',
-  dirección: 'Dirección', fecha: 'Fecha', titulo: 'Título', título: 'Título',
-  descripcion: 'Descripción', descripción: 'Descripción',
-}
+// Palabra de acción (login, guardar, submit...) → texto visible del botón/rol a buscar.
+const ACTIONS: Record<string, string> = { ...enDictionary.ACTIONS, ...esDictionary.ACTIONS }
+
+// Nombre de campo (email, contraseña, phone...) → label/placeholder visible a buscar.
+const FIELDS: Record<string, string> = { ...enDictionary.FIELDS, ...esDictionary.FIELDS }
 
 function extractActionFromSelector(selector: string): string {
   for (const [key, value] of Object.entries(ACTIONS)) {

@@ -1,0 +1,13 @@
+{
+  "ACTIONS": {
+    "login": "Login", "signin": "Sign In", "submit": "Submit", "save": "Save", "cancel": "Cancel",
+    "delete": "Delete", "edit": "Edit", "update": "Update", "create": "Create", "add": "Add",
+    "remove": "Remove", "search": "Search", "send": "Send", "confirm": "Confirm", "accept": "Accept",
+    "reject": "Reject", "next": "Next", "previous": "Previous", "back": "Back", "continue": "Continue",
+    "finish": "Finish", "start": "Start", "stop": "Stop", "play": "Play", "pause": "Pause"
+  },
+  "FIELDS": {
+    "email": "Email", "password": "Password", "username": "Username", "name": "Name", "phone": "Phone",
+    "address": "Address", "search": "Search", "date": "Date", "title": "Title", "description": "Description"
+  }
+}
