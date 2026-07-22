@@ -4,43 +4,18 @@ Internal shared library for Healify's test reporter packages. Not published stan
 
 ## API
 
-### `resolveConfig(): HealifyConfig | null`
-
-Reads configuration from environment variables. Returns `null` when `HEALIFY_API_KEY` is not set (callers treat this as "reporter disabled").
-
-| Env var | Required | Default |
-|---|---|---|
-| `HEALIFY_API_KEY` | Yes | — |
-| `HEALIFY_API_URL` | No | `https://healify-sigma.vercel.app` |
-| `HEALIFY_BRANCH` | No | — |
-| `HEALIFY_COMMIT_SHA` | No | — |
-
 ### `extractSelectorFromError(errorMessage: string): string`
 
 Parses a Playwright/Cypress error message and extracts the failing selector. Returns `'Unknown selector'` if no pattern matches. Handles ANSI escape codes.
 
-### `reportFailure(config: HealifyConfig, payload: ReportPayload): Promise<void>`
+### `analyzeAndHeal(request: HealRequest): HealResponse`
 
-POSTs a broken-selector report to the Healify API. Never throws — failures are logged once via `console.warn` and swallowed.
+Runs the local heuristic (pattern-matching, no network, no AI) against a broken selector and proposes an alternative.
 
-### Interfaces
+### `runLocalHealing(input: LocalCaseInput): LocalCaseResult`
 
-```ts
-interface HealifyConfig {
-  apiKey: string
-  apiUrl: string
-  branch?: string
-  commitSha?: string
-}
+Extracts the selector from an error message and runs `analyzeAndHeal` on it, returning a result with a `'healed' | 'review' | 'unresolved'` status based on confidence.
 
-interface ReportPayload {
-  testName: string
-  testFile?: string
-  selector: string
-  error: string
-  context?: string
-  selectorType?: 'CSS' | 'XPATH' | 'TESTID' | 'ROLE' | 'TEXT' | 'UNKNOWN'
-  branch?: string
-  commitSha?: string
-}
-```
+### `renderLocalReportHtml(run: LocalRun): string` / `renderLocalReportJson(run: LocalRun): string`
+
+Renders the accumulated `LocalCaseResult[]` from a test run into `healify-report.html` / `.json`.

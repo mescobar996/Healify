@@ -1,6 +1,4 @@
-export { resolveConfig, type HealifyConfig } from './config'
 export { extractSelectorFromError } from './selector-extractor'
-export { reportFailure, type ReportPayload, ATTACHMENT_NAME } from './http-client'
 export { analyzeAndHeal, type HealRequest, type HealResponse, type SelectorType } from './healing-engine'
-export { isLocalMode, runLocalHealing, type LocalCaseInput, type LocalCaseResult, type LocalCaseStatus } from './local-mode'
+export { runLocalHealing, type LocalCaseInput, type LocalCaseResult, type LocalCaseStatus } from './local-mode'
 export { renderLocalReportHtml, renderLocalReportJson, type LocalRun } from './local-report'

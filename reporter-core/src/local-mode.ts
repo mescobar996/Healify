@@ -1,11 +1,6 @@
 import { analyzeAndHeal } from './healing-engine'
 import { extractSelectorFromError } from './selector-extractor'
 
-/** Sin HEALIFY_API_KEY: no hay cuenta ni servidor — el reporter corre en modo local. */
-export function isLocalMode(): boolean {
-  return !process.env.HEALIFY_API_KEY
-}
-
 export interface LocalCaseInput {
   testName: string
   testFile?: string

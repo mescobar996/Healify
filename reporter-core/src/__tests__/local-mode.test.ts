@@ -1,24 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { isLocalMode, runLocalHealing } from '../local-mode'
-
-describe('isLocalMode', () => {
-  const original = process.env.HEALIFY_API_KEY
-
-  afterEach(() => {
-    if (original === undefined) delete process.env.HEALIFY_API_KEY
-    else process.env.HEALIFY_API_KEY = original
-  })
-
-  it('is true when HEALIFY_API_KEY is unset', () => {
-    delete process.env.HEALIFY_API_KEY
-    expect(isLocalMode()).toBe(true)
-  })
-
-  it('is false when HEALIFY_API_KEY is set', () => {
-    process.env.HEALIFY_API_KEY = 'hf_live_test'
-    expect(isLocalMode()).toBe(false)
-  })
-})
+import { describe, it, expect } from 'vitest'
+import { runLocalHealing } from '../local-mode'
 
 describe('runLocalHealing', () => {
   it('extracts the selector from the error message and runs the heuristic', () => {

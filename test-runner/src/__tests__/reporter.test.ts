@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { mockReportFailure, mockRunLocalHealing, getMockConfig, setMockConfig } = vi.hoisted(() => {
-  const mockReportFailure = vi.fn()
+const { mockRunLocalHealing } = vi.hoisted(() => {
   const mockRunLocalHealing = vi.fn((input: { testName: string; testFile?: string; errorMessage: string }) => ({
     testName: input.testName,
     testFile: input.testFile,
@@ -13,23 +12,10 @@ const { mockReportFailure, mockRunLocalHealing, getMockConfig, setMockConfig } =
     explanation: '',
     selectorType: 'UNKNOWN',
   }))
-  let mockConfig: unknown = { apiKey: 'test', apiUrl: 'http://localhost:3000' }
-  return {
-    mockReportFailure,
-    mockRunLocalHealing,
-    getMockConfig: () => mockConfig,
-    setMockConfig: (v: unknown) => { mockConfig = v },
-  }
+  return { mockRunLocalHealing }
 })
 
 vi.mock('@healify/reporter-core', () => ({
-  resolveConfig: vi.fn(() => getMockConfig()),
-  reportFailure: mockReportFailure,
-  extractSelectorFromError: vi.fn((msg: string) => {
-    const m = msg.match(/['"`]([^'"`]+)['"`]/)
-    return m ? m[1] : 'Unknown selector'
-  }),
-  ATTACHMENT_NAME: 'healify-dom',
   runLocalHealing: mockRunLocalHealing,
   renderLocalReportHtml: vi.fn(() => '<html></html>'),
   renderLocalReportJson: vi.fn(() => '{}'),
@@ -58,21 +44,6 @@ function makeResult(overrides?: Record<string, unknown>) {
 describe('HealifyReporter', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    setMockConfig({ apiKey: 'test', apiUrl: 'http://localhost:3000' })
-  })
-
-  it('runs local healing instead of reporting to the cloud when config is disabled (HEALIFY_API_KEY not set)', () => {
-    setMockConfig(null)
-    const reporter = new HealifyReporter()
-
-    reporter.onTestEnd(makeTest(), makeResult())
-
-    expect(mockReportFailure).not.toHaveBeenCalled()
-    expect(mockRunLocalHealing).toHaveBeenCalledTimes(1)
-    expect(mockRunLocalHealing.mock.calls[0][0]).toMatchObject({
-      testName: 'root > should log in',
-      testFile: 'tests/login.spec.ts',
-    })
   })
 
   it('does nothing when the test passed', () => {
@@ -80,10 +51,10 @@ describe('HealifyReporter', () => {
 
     reporter.onTestEnd(makeTest(), makeResult({ status: 'passed' }))
 
-    expect(mockReportFailure).not.toHaveBeenCalled()
+    expect(mockRunLocalHealing).not.toHaveBeenCalled()
   })
 
-  it('reports when the test timed out', () => {
+  it('corre la heurística local cuando el test timeoutea', () => {
     const reporter = new HealifyReporter()
     const result = makeResult({
       status: 'timedOut',
@@ -92,60 +63,36 @@ describe('HealifyReporter', () => {
 
     reporter.onTestEnd(makeTest(), result)
 
-    expect(mockReportFailure).toHaveBeenCalledTimes(1)
-    const payload = mockReportFailure.mock.calls[0][1]
+    expect(mockRunLocalHealing).toHaveBeenCalledTimes(1)
+    const payload = mockRunLocalHealing.mock.calls[0][0]
     expect(payload.testName).toBe('root > should log in')
     expect(payload.testFile).toBe('tests/login.spec.ts')
-    expect(payload.selector).toBe('button.submit')
-    expect(payload.error).toContain('Timed out waiting')
+    expect(payload.errorMessage).toContain('Timed out waiting')
   })
 
-  it('sends the selector, error and test metadata for a failed test', () => {
+  it('corre la heurística local para un test fallido', () => {
     const reporter = new HealifyReporter()
 
     reporter.onTestEnd(makeTest(), makeResult())
 
-    expect(mockReportFailure).toHaveBeenCalledTimes(1)
-    const payload = mockReportFailure.mock.calls[0][1]
-    expect(payload.selector).toBe('#login-btn')
+    expect(mockRunLocalHealing).toHaveBeenCalledTimes(1)
+    const payload = mockRunLocalHealing.mock.calls[0][0]
     expect(payload.testName).toBe('root > should log in')
     expect(payload.testFile).toBe('tests/login.spec.ts')
-    expect(payload.error).toContain("Waiting for selector '#login-btn'")
-  })
-
-  it('includes DOM context when healify-dom attachment is present', () => {
-    const reporter = new HealifyReporter()
-    const domHtml = '<html><body><button id="login-btn">Login</button></body></html>'
-    const result = makeResult({
-      attachments: [{ name: 'healify-dom', body: Buffer.from(domHtml, 'utf-8'), contentType: 'text/html' }],
-    })
-
-    reporter.onTestEnd(makeTest(), result)
-
-    const payload = mockReportFailure.mock.calls[0][1]
-    expect(payload.context).toBe(domHtml)
-  })
-
-  it('sets context to undefined when healify-dom attachment is missing', () => {
-    const reporter = new HealifyReporter()
-
-    reporter.onTestEnd(makeTest(), makeResult())
-
-    const payload = mockReportFailure.mock.calls[0][1]
-    expect(payload.context).toBeUndefined()
+    expect(payload.errorMessage).toContain("Waiting for selector '#login-btn'")
   })
 
   it('falls back to result.errors[0] when result.error is null', () => {
     const reporter = new HealifyReporter()
     const result = makeResult({
       error: null,
-      errors: [{ message: "Element not found: .missing-class" }],
+      errors: [{ message: 'Element not found: .missing-class' }],
     })
 
     reporter.onTestEnd(makeTest(), result)
 
-    const payload = mockReportFailure.mock.calls[0][1]
-    expect(payload.error).toBe("Element not found: .missing-class")
+    const payload = mockRunLocalHealing.mock.calls[0][0]
+    expect(payload.errorMessage).toBe('Element not found: .missing-class')
   })
 
   it('falls back to error.value when error.message is null and error.value is set', () => {
@@ -157,8 +104,8 @@ describe('HealifyReporter', () => {
 
     reporter.onTestEnd(makeTest(), result)
 
-    const payload = mockReportFailure.mock.calls[0][1]
-    expect(payload.error).toBe('element .btn was not found')
+    const payload = mockRunLocalHealing.mock.calls[0][0]
+    expect(payload.errorMessage).toBe('element .btn was not found')
   })
 
   it('uses "Unknown error" when both error and errors are empty', () => {
@@ -167,17 +114,21 @@ describe('HealifyReporter', () => {
 
     reporter.onTestEnd(makeTest(), result)
 
-    const payload = mockReportFailure.mock.calls[0][1]
-    expect(payload.error).toBe('Unknown error')
+    const payload = mockRunLocalHealing.mock.calls[0][0]
+    expect(payload.errorMessage).toBe('Unknown error')
   })
 
-  it('reports "Unknown selector" when the error message has no recognizable selector', () => {
+  it('no rompe la corrida si runLocalHealing lanza una excepción', () => {
+    mockRunLocalHealing.mockImplementationOnce(() => {
+      throw new Error('boom')
+    })
     const reporter = new HealifyReporter()
-    const result = makeResult({ error: { message: 'Something went wrong' } })
 
-    reporter.onTestEnd(makeTest(), result)
+    expect(() => reporter.onTestEnd(makeTest(), makeResult())).not.toThrow()
+  })
 
-    const payload = mockReportFailure.mock.calls[0][1]
-    expect(payload.selector).toBe('Unknown selector')
+  it('onEnd no escribe nada si no hubo casos', () => {
+    const reporter = new HealifyReporter()
+    expect(() => reporter.onEnd()).not.toThrow()
   })
 })

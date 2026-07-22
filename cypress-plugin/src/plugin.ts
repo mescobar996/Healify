@@ -1,44 +1,15 @@
 import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import {
-  resolveConfig,
-  reportFailure,
-  extractSelectorFromError,
-  runLocalHealing,
-  renderLocalReportHtml,
-  renderLocalReportJson,
-  type LocalCaseResult,
-} from '@healify/reporter-core'
+import { runLocalHealing, renderLocalReportHtml, renderLocalReportJson, type LocalCaseResult } from '@healify/reporter-core'
 
 /**
- * Sin HEALIFY_API_KEY no hay cuenta ni servidor — en vez de quedar en no-op,
- * el plugin corre la heurística local (sin red) y al final de la corrida
- * escribe healify-report.html/json en el directorio de trabajo.
+ * Corre la heurística local (sin red) sobre cada test fallido y al final de
+ * la corrida escribe healify-report.html/json en el directorio de trabajo.
  */
 export function HealifyCypressPlugin(
   on: Cypress.PluginEvents,
   config: Cypress.PluginConfigOptions
 ): Cypress.PluginConfigOptions {
-  const healifyConfig = resolveConfig()
-
-  if (healifyConfig) {
-    on('after:spec', async (spec, results) => {
-      const reports = (results.tests ?? [])
-        .filter((test) => test.state === 'failed')
-        .map((test) => {
-          const errorMessage = test.displayError ?? 'Unknown error'
-          return reportFailure(healifyConfig, {
-            testName: test.title.join(' > '),
-            testFile: spec.relative,
-            selector: extractSelectorFromError(errorMessage),
-            error: errorMessage,
-          })
-        })
-      await Promise.allSettled(reports)
-    })
-    return config
-  }
-
   const localResults: LocalCaseResult[] = []
 
   on('after:spec', (spec, results) => {
