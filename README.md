@@ -75,6 +75,7 @@ test-runner/       # @healify/test-runner — reporter de Playwright
 cypress-plugin/    # @healify/cypress-plugin — plugin de Cypress
 src/               # Next.js — landing + /api/v1/report (modo nube opcional)
 e2e/               # Tests E2E del propio endpoint (Playwright)
+docs/              # Historial de planificación del modo local (plan + spec + log de ejecución)
 ```
 
 ## 🧪 Correr los tests
