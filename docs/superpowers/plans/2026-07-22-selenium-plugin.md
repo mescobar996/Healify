@@ -993,6 +993,149 @@ Update `CONTEXT_HANDOFF.md` (not committed — it's gitignored, personal) with a
 
 ---
 
+### Task 9 (found during the final whole-branch review): filter non-CSS suggestions before retrying
+
+**Files:**
+- Modify: `selenium-plugin/src/locator.ts`
+- Modify: `selenium-plugin/src/wrap.ts`
+- Modify: `selenium-plugin/src/__tests__/locator.test.ts`
+- Modify: `selenium-plugin/src/__tests__/wrap.test.ts`
+- Modify: `selenium-plugin/README.md`
+
+The final review ran a real ChromeDriver session against the spec's own flagship example (`#add-to-cart-btn`) and found `analyzeAndHeal()` returning `role('button', { name: 'Add' })` at confidence 0.92 — a Playwright pseudo-syntax string, not valid CSS. `By.css()` sends this straight to the browser's native `querySelectorAll`, which cannot parse it, so the retry always fails for any selector whose element-type detection matches `button`/`link`/`input` (a large share of realistic locators). This never surfaced in `wrap.test.ts` because every mocked `fixedSelector` in that file happens to be CSS-shaped. The same class of problem was already found and fixed for `@healify/cli fix` (`cli/src/fix.ts`'s `isSubstitutable`, which skips `role(...)` suggestions rather than corrupt a file) — this is the same issue, broader in scope because Selenium's `By.css()` uses the browser's native CSS engine instead of Playwright's, so `:has-text(...)` and the `visible=` fallback prefix are equally unusable here (both work fine for Playwright/Cypress, neither is valid native CSS).
+
+- [ ] **Step 1: Write the failing test**
+
+Add to `selenium-plugin/src/__tests__/locator.test.ts`, a new `describe` block:
+
+```ts
+describe('isSeleniumCssCompatible', () => {
+  it('rechaza sugerencias tipo role(...) — sintaxis de Playwright, no CSS', () => {
+    expect(isSeleniumCssCompatible("role('button', { name: 'Add' })")).toBe(false)
+  })
+
+  it('rechaza sugerencias con :has-text(...) — pseudo-clase de Playwright, no CSS nativo', () => {
+    expect(isSeleniumCssCompatible("button:has-text('Add')")).toBe(false)
+  })
+
+  it('rechaza el fallback visible=... — prefijo de Playwright, no CSS', () => {
+    expect(isSeleniumCssCompatible('visible=oldselector')).toBe(false)
+  })
+
+  it('acepta selectores CSS reales', () => {
+    expect(isSeleniumCssCompatible('[data-testid="add-to-cart"]')).toBe(true)
+    expect(isSeleniumCssCompatible('.stable-class')).toBe(true)
+    expect(isSeleniumCssCompatible('#stable-id')).toBe(true)
+  })
+})
+```
+
+Add to `selenium-plugin/src/__tests__/wrap.test.ts`, a new test:
+
+```ts
+  it('sugerencia en sintaxis de Playwright (role/has-text/visible=) se trata como sin sugerencia — nunca intenta el retry', async () => {
+    const originalErr = NO_SUCH_ELEMENT()
+    const findElement = vi.fn().mockRejectedValueOnce(originalErr)
+    mockAnalyzeAndHeal.mockReturnValue({
+      fixedSelector: "role('button', { name: 'Add' })",
+      confidence: 0.92,
+      explanation: 'x',
+      selectorType: 'ROLE',
+    })
+    const onEvent = vi.fn()
+    const wrapped = wrapDriver(makeDriver(findElement), { onEvent })
+
+    await expect(wrapped.findElement(By.css('#old'))).rejects.toBe(originalErr)
+    expect(findElement).toHaveBeenCalledTimes(1)
+    expect(onEvent).toHaveBeenCalledWith(expect.objectContaining({ type: 'no-suggestion', originalSelector: '#old' }))
+  })
+```
+
+- [ ] **Step 2: Run the tests to verify they fail**
+
+Run (from `selenium-plugin/`): `npx vitest run`
+Expected: FAIL — `isSeleniumCssCompatible` not exported from `../locator`, and the new `wrap.test.ts` case fails because `wrap.ts` doesn't filter yet (it will attempt the retry and emit `'failed'` instead of `'no-suggestion'`).
+
+- [ ] **Step 3: Implement the filter**
+
+Add to `selenium-plugin/src/locator.ts` (alongside `locatorToSelector`):
+
+```ts
+/**
+ * analyzeAndHeal() devuelve algunas sugerencias en sintaxis específica de Playwright
+ * (role('button', {...}), button:has-text('X'), o el fallback visible=selector) — ninguna
+ * es CSS nativo válido para By.css(), que llama directo al motor CSS del browser
+ * (querySelectorAll). Mismo problema ya resuelto para @healify/cli fix
+ * (cli/src/fix.ts, isSubstitutable) — acá el alcance es más amplio porque Selenium no
+ * tiene el motor de Playwright para interpretarlas.
+ */
+export function isSeleniumCssCompatible(selector: string): boolean {
+  return !/^role\(/.test(selector) && !selector.includes(':has-text(') && !/^visible=/.test(selector)
+}
+```
+
+Modify `selenium-plugin/src/wrap.ts` — add the check right after the confidence-threshold check and before the `dryRun` check:
+
+```ts
+      if (result.confidence < threshold) {
+        emit({
+          type: 'no-suggestion',
+          originalSelector: selector,
+          confidence: result.confidence,
+          latencyMs: Date.now() - start,
+        })
+        throw originalErr
+      }
+
+      if (!isSeleniumCssCompatible(result.fixedSelector)) {
+        emit({
+          type: 'no-suggestion',
+          originalSelector: selector,
+          confidence: result.confidence,
+          latencyMs: Date.now() - start,
+        })
+        throw originalErr
+      }
+
+      if (options.dryRun) {
+```
+
+Add `isSeleniumCssCompatible` to the existing `import { locatorToSelector } from './locator'` line (`import { locatorToSelector, isSeleniumCssCompatible } from './locator'`).
+
+- [ ] **Step 4: Run the tests to verify they pass**
+
+Run: `npx vitest run`
+Expected: all tests pass — `locator.test.ts` now 14 (10 + 4 new), `wrap.test.ts` now 11 (10 + 1 new), `plugin.test.ts` unchanged at 3. Total for the package: 28.
+
+- [ ] **Step 5: Update the README's "Fuera de alcance" section**
+
+In `selenium-plugin/README.md`, add a new bullet to "Fuera de alcance (a propósito, en esta versión)":
+
+```markdown
+- **Sugerencias tipo `role(...)`/`:has-text(...)`/`visible=...`**: `analyzeAndHeal()`
+  devuelve esa sintaxis para varias de sus estrategias (pensada originalmente para
+  Playwright/Cypress). No es CSS nativo, así que `By.css()` de Selenium no puede
+  ejecutarla — estos casos se reportan como `'no-suggestion'` en vez de intentar un
+  retry que fallaría siempre. En la práctica, esto significa que selectores de
+  botones/links/inputs (donde el motor suele proponer una estrategia por rol o texto)
+  tienen menor tasa de curado real en Selenium que en Playwright/Cypress — el motor
+  compartido no distingue el runtime de destino al generar sugerencias.
+```
+
+- [ ] **Step 6: Rebuild and re-verify**
+
+Run (from `selenium-plugin/`): `npm run build && npx vitest run && npx tsc --noEmit`
+Expected: build succeeds, 28/28 tests pass, clean typecheck.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add selenium-plugin/src/locator.ts selenium-plugin/src/wrap.ts selenium-plugin/src/__tests__/locator.test.ts selenium-plugin/src/__tests__/wrap.test.ts selenium-plugin/README.md
+git commit -m "fix(selenium-plugin): skip retry for Playwright-only suggestion syntax (role/has-text/visible=)"
+```
+
+---
+
 ## Notes for whoever picks this up
 
 - Do **not** add a cloud mode, a report generator, or a `history-sibling`/selector-memory feature as part of this plan — all three are explicitly out of scope per the spec (§1, "Fuera de alcance").

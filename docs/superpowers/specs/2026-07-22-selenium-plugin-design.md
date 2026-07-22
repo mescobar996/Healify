@@ -117,6 +117,9 @@ await driver.findElement(By.css('#add-to-cart-btn')).click()  // se cura solo si
 
 ```typescript
 export function locatorToSelector(locator: By): string | null
+
+/** Ver "Corrección" en la sección 4 — filtra sugerencias de analyzeAndHeal() que son sintaxis de Playwright, no CSS nativo ejecutable vía By.css(). */
+export function isSeleniumCssCompatible(selector: string): boolean
 ```
 
 **Verificado contra el código fuente real de `selenium-webdriver@4.27.0`
@@ -183,6 +186,11 @@ wrappedDriver.findElement(locator)
   │     if (result.confidence < options.confidenceThreshold) {
   │       emit('no-suggestion', latencyMs); throw err
   │     }
+  │     if (!isSeleniumCssCompatible(result.fixedSelector)) {
+  │       emit('no-suggestion', latencyMs); throw err        // sugerencia en sintaxis de
+  │     }                                                     // Playwright (role(...),
+  │                                                            // :has-text(...), visible=...),
+  │                                                            // no ejecutable vía By.css()
   │     if (options.dryRun) {
   │       emit('healed', latencyMs, dryRun: true); throw err
   │     }
@@ -202,6 +210,23 @@ wrappedDriver.findElement(locator)
 - Si el retry con la sugerencia también falla, se lanza el error **original** — nunca uno
   sintético o de Healify.
 - Un locator no convertible (`By.linkText` y similares) no intenta curar, pasa directo.
+
+**Corrección (encontrada en la revisión final de la Fase 5, verificado contra ChromeDriver
+real, no en teoría):** `analyzeAndHeal()` devuelve sugerencias en sintaxis específica de
+Playwright para varias de sus estrategias — `role('button', { name: 'X' })` (tipo `ROLE`),
+`button:has-text('X')` (tipo `TEXT`), y el fallback genérico `visible=selector` (etiquetado
+como tipo `CSS`, mal etiquetado para este propósito). Ninguna de las tres es CSS nativo
+válido — `By.css()` de Selenium llama directo al motor CSS del browser
+(`querySelectorAll`), que no entiende esa sintaxis. Este mismo problema ya se había
+encontrado y resuelto para `@healify/cli fix` (`cli/src/fix.ts`, función `isSubstitutable`,
+que descarta sugerencias `role(...)` porque corrompían el archivo al aplicarlas
+literalmente) — acá el alcance es más amplio porque Selenium usa CSS nativo del browser en
+vez del motor de Playwright, así que `:has-text()` y `visible=` tampoco sirven, aunque para
+Playwright/Cypress sí son ejecutables. `locator.ts` agrega
+`isSeleniumCssCompatible(selector): boolean`, que devuelve `false` para las tres sintaxis
+conocidas — cuando devuelve `false`, el wrapper trata el caso como `'no-suggestion'` (no
+intenta el retry, que de todos modos fallaría siempre) en vez de gastar un retry destinado
+a fallar y emitir `'failed'` de forma engañosa.
 
 `findElements` (plural) del proxy llama directo al método real sin interceptar: Selenium
 plural devuelve `[]` en vez de lanzar cuando no hay matches, así que no hay una excepción
