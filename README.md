@@ -31,18 +31,16 @@ tests, y listo.
 | [`@healify/cli`](cli/README.md) | Aplica las sugerencias de un `healify-report.json` directo en tus archivos de test | [![npm](https://img.shields.io/npm/v/%40healify%2Fcli)](https://www.npmjs.com/package/@healify/cli) |
 | `reporter-core` | Motor heurístico + tipos compartidos. Privado, no se publica solo | — |
 
-Los 4 paquetes están publicados y sincronizados con este repo (`0.2.0`, `selenium-plugin`
-en `0.1.0` por ser su primera versión).
+Los 4 paquetes están publicados en npm y ya se pueden instalar hoy — no hace falta
+clonar el repo ni compilar nada para usarlos. Elegí el que corresponda a tu framework:
 
-## 🚀 Uso rápido
+### Playwright — `@healify/test-runner`
 
 ```bash
-npm install --save-dev @healify/test-runner      # Playwright
-# o
-npm install --save-dev @healify/cypress-plugin   # Cypress
+npm install --save-dev @healify/test-runner
 ```
 
-**Playwright** (`playwright.config.ts`):
+`playwright.config.ts`:
 ```ts
 import { defineConfig } from '@playwright/test'
 
@@ -51,7 +49,17 @@ export default defineConfig({
 })
 ```
 
-**Cypress** (`cypress.config.ts`):
+Corré tus tests normalmente (`npx playwright test`). Al terminar la corrida, si algún
+test falló por un selector roto, aparece `healify-report.html` en el directorio desde el
+que corriste Playwright.
+
+### Cypress — `@healify/cypress-plugin`
+
+```bash
+npm install --save-dev @healify/cypress-plugin
+```
+
+`cypress.config.ts`:
 ```ts
 import { defineConfig } from 'cypress'
 import { HealifyCypressPlugin } from '@healify/cypress-plugin'
@@ -61,15 +69,46 @@ export default defineConfig({
 })
 ```
 
-Corré tus tests normalmente (`npx playwright test` / `npx cypress run`). Al terminar la
-corrida, si algún test falló por un selector roto, aparece `healify-report.html` en el
-directorio desde el que corriste los tests. Nada sale de tu máquina.
+Corré tus tests normalmente (`npx cypress run`). Mismo resultado: `healify-report.html`
+al terminar la corrida si hubo algún selector roto.
 
-Para Selenium (`WebDriver`) y para aplicar las sugerencias automáticamente en tus
-archivos, ver [`@healify/selenium-plugin`](selenium-plugin/README.md) y
-[`@healify/cli`](cli/README.md) — cada uno con su propio README detallado. Para un
-recorrido completo de punta a punta (instalación, cómo funciona el motor, troubleshooting),
-ver [`docs/guide/`](docs/guide/).
+### Selenium — `@healify/selenium-plugin`
+
+```bash
+npm install --save-dev @healify/selenium-plugin selenium-webdriver
+```
+
+```ts
+import { Builder, By } from 'selenium-webdriver'
+import { HealifySeleniumPlugin } from '@healify/selenium-plugin'
+
+const raw = await new Builder().forBrowser('chrome').build()
+const driver = new HealifySeleniumPlugin({ onEvent: console.log }).wrap(raw)
+
+// Si '#add-to-cart-btn' se rompió, el plugin intenta un selector alternativo
+// antes de dejar que el error se propague.
+await driver.findElement(By.css('#add-to-cart-btn')).click()
+```
+
+A diferencia de los otros dos, cura en vivo y no genera reporte (Selenium no tiene un
+hook de "fin de corrida" nativo). Ver [su README](selenium-plugin/README.md) para el
+alcance completo y las limitaciones.
+
+### Aplicar las sugerencias automáticamente — `@healify/cli`
+
+Con un `healify-report.json` ya generado (por `test-runner` o `cypress-plugin`):
+
+```bash
+npm install --save-dev @healify/cli
+npx healify fix              # aplica los casos de mayor confianza en tus archivos
+npx healify fix --dry-run     # muestra qué haría, sin escribir nada
+```
+
+Ver [su README](cli/README.md) para el detalle de qué toca y qué no.
+
+En todos los casos: nada sale de tu máquina, no hace falta cuenta ni conexión a
+internet. Para un recorrido completo de punta a punta (cómo funciona el motor por
+dentro, troubleshooting), ver [`docs/guide/`](docs/guide/).
 
 ## 🗂 Estructura del repo
 
@@ -111,10 +150,6 @@ PC" — no lo necesitaba: hoy `main` es exactamente los paquetes de arriba, sin 
 Ese código anterior sigue existiendo, intacto, en la rama
 [`archive/saas-full`](../../tree/archive/saas-full), por si algún día se retoma la versión
 equipo (dashboard, PR automático, etc.).
-
-## 🤝 Contributing
-
-PRs son bienvenidos. Para cambios grandes, abrí un issue primero.
 
 ## 📄 License
 
