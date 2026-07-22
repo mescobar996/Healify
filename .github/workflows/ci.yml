@@ -1,0 +1,114 @@
+name: CI
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ─── Type Check ───────────────────────────────────────────────────────────
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check reporter-core
+        run: npx tsc --noEmit -p reporter-core/tsconfig.json
+
+      - name: Type check test-runner
+        run: npx tsc --noEmit -p test-runner/tsconfig.json
+
+      - name: Type check cypress-plugin
+        run: npx tsc --noEmit -p cypress-plugin/tsconfig.json
+
+      - name: Type check cli
+        run: npx tsc --noEmit -p cli/tsconfig.json
+
+  # ─── Unit Tests ───────────────────────────────────────────────────────────
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests (all workspaces)
+        run: npm test
+
+  # ─── Build ────────────────────────────────────────────────────────────────
+  build:
+    name: Build packages
+    runs-on: ubuntu-latest
+    needs: [typecheck, test]
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build all packages
+        run: npm run build
+
+  # ─── Security (SCA) ────────────────────────────────────────────────────────
+  security-sca:
+    name: Security SCA (npm audit)
+    runs-on: ubuntu-latest
+    needs: [typecheck]
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit production deps (fail on critical)
+        run: npm audit --omit=dev --audit-level=critical
