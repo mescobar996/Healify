@@ -1,9 +1,0 @@
-{
-  "version": 2,
-  "regions": ["iad1"],
-  "functions": {
-    "src/app/api/v1/report/route.ts": {
-      "maxDuration": 60
-    }
-  }
-}

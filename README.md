@@ -1,13 +1,13 @@
 <div align="center">
-  <img src="public/icon.png" alt="Healify Logo" width="72" />
-
   <h1>Healify</h1>
 
   <p><strong>Cuando un selector se rompe, Healify te dice cómo arreglarlo — sin salir de tu máquina.</strong></p>
 
-  <img src="https://img.shields.io/badge/Next.js-16-black?logo=next.js" />
   <img src="https://img.shields.io/badge/TypeScript-5-blue?logo=typescript" />
   <img src="https://img.shields.io/badge/Playwright-1.58-green?logo=playwright" />
+  <img src="https://img.shields.io/badge/Cypress-15-green?logo=cypress" />
+  <img src="https://img.shields.io/npm/v/%40healify%2Ftest-runner?label=%40healify%2Ftest-runner" />
+  <img src="https://img.shields.io/npm/v/%40healify%2Fcypress-plugin?label=%40healify%2Fcypress-plugin" />
 </div>
 
 ---
@@ -49,23 +49,9 @@ export default defineConfig({
 })
 ```
 
-Corré tus tests normalmente (`npx playwright test` / `npx cypress run`). Sin
-`HEALIFY_API_KEY` seteada, el reporter corre en **modo local**: nada sale de tu máquina, y
-al final de la corrida aparece `healify-report.html` en el directorio desde el que corriste
-los tests.
-
-## 🌐 Modo nube (opcional)
-
-Si además de generar el reporte local querés mandar los fixes a un servidor propio, seteá:
-
-```env
-HEALIFY_API_KEY=tu-clave
-HEALIFY_API_URL=https://tu-instancia.example.com
-```
-
-Este mismo repo incluye ese servidor: un único endpoint (`/api/v1/report`), sin base de
-datos, que corre la misma heurística y valida la key contra la variable de entorno
-`HEALIFY_API_KEY` del lado del servidor. Se levanta con `npm run dev` / `npm run build`.
+Corré tus tests normalmente (`npx playwright test` / `npx cypress run`). Al terminar la
+corrida, si algún test falló por un selector roto, aparece `healify-report.html` en el
+directorio desde el que corriste los tests. Nada sale de tu máquina.
 
 ## 🗂 Estructura del repo
 
@@ -73,19 +59,14 @@ datos, que corre la misma heurística y valida la key contra la variable de ento
 reporter-core/     # Motor heurístico + config compartida (privado, no se publica solo)
 test-runner/       # @healify/test-runner — reporter de Playwright
 cypress-plugin/    # @healify/cypress-plugin — plugin de Cypress
-src/               # Next.js — landing + /api/v1/report (modo nube opcional)
-e2e/               # Tests E2E del propio endpoint (Playwright)
-docs/              # Historial de planificación del modo local (plan + spec + log de ejecución)
+docs/              # Historial de planificación (plan + spec + log de ejecución)
 ```
 
 ## 🧪 Correr los tests
 
 ```bash
-npm test              # Unit tests de la app (Vitest)
-npm run test:e2e      # E2E contra la app Next.js
-
-cd reporter-core && npm test    # 33 tests del motor + config
-cd test-runner && npx vitest run
+npm test              # Corre los tests de los 3 paquetes (workspaces)
+npm run build          # Compila los 3 paquetes
 ```
 
 ## ⚙️ Local setup
@@ -94,19 +75,20 @@ cd test-runner && npx vitest run
 git clone https://github.com/mescobar996/Healify.git
 cd Healify
 npm install
-npm run dev            # → http://localhost:3000 (landing + endpoint opcional)
+npm run build
 ```
 
-No hace falta base de datos ni cuenta para nada de esto — el modo local de los paquetes
-tampoco la necesita.
+No hace falta base de datos, cuenta, ni servidor para nada de esto.
 
 ## 📜 Historia
 
 Este repo tuvo antes un SaaS completo: dashboard, auth, billing, worker con cola, PR
-automático a GitHub, 65+ rutas de API. Se recortó a lo de arriba porque el caso de uso real
-— "un tester quiere esto en su PC" — no lo necesitaba. Ese código sigue existiendo, intacto,
-en la rama [`archive/saas-full`](../../tree/archive/saas-full), por si algún día se retoma
-la versión equipo.
+automático a GitHub, 65+ rutas de API, y hasta un endpoint propio para un modo nube
+opcional. Se recortó todo eso porque el caso de uso real — "un tester quiere esto en su
+PC" — no lo necesitaba: hoy `main` es exactamente los 3 paquetes de arriba, sin nada más.
+Ese código anterior sigue existiendo, intacto, en la rama
+[`archive/saas-full`](../../tree/archive/saas-full), por si algún día se retoma la versión
+equipo (dashboard, PR automático, etc.).
 
 ## 🤝 Contributing
 
