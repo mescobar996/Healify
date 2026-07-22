@@ -1,0 +1,25 @@
+{
+  "name": "@healify/cli",
+  "version": "0.2.0",
+  "description": "Aplica las sugerencias de un healify-report.json directo en tus archivos de test.",
+  "bin": {
+    "healify": "dist/index.js"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc --emitDeclarationOnly && esbuild src/index.ts --bundle --platform=node --outdir=dist --format=cjs",
+    "test": "vitest run"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@healify/reporter-core": "*",
+    "@types/node": "^25.5.0",
+    "esbuild": "^0.27.3",
+    "typescript": "^5.4.0",
+    "vitest": "^4.0.18"
+  }
+}

@@ -69,6 +69,8 @@ test-runner/tests/test-results
 cypress-plugin/dist
 cypress-plugin/node_modules
 cypress-plugin/tests/cypress/screenshots
+cli/dist
+cli/node_modules
 cypress-plugin/tests/cypress/videos
 
 # Superpowers brainstorming companion artifacts (ephemeral, not project content)
