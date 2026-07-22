@@ -19,6 +19,7 @@ vi.mock('@healify/reporter-core', () => ({
   runLocalHealing: mockRunLocalHealing,
   renderLocalReportHtml: vi.fn(() => '<html></html>'),
   renderLocalReportJson: vi.fn(() => '{}'),
+  printSummary: vi.fn(),
 }))
 
 import HealifyReporter from '../reporter'

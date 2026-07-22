@@ -7,6 +7,12 @@ export interface LocalRun {
   cases: LocalCaseResult[]
 }
 
+/** Resumen de 1 línea a stdout, para no obligar a abrir el HTML en CI. */
+export function printSummary(cases: LocalCaseResult[]): void {
+  const count = (status: LocalCaseResult['status']) => cases.filter((c) => c.status === status).length
+  console.log(`Healed: ${count('healed')} | Review: ${count('review')} | Unresolved: ${count('unresolved')}`)
+}
+
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, '&amp;')

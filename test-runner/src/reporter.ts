@@ -1,7 +1,7 @@
 import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Reporter, TestCase, TestResult } from '@playwright/test/reporter'
-import { runLocalHealing, renderLocalReportHtml, renderLocalReportJson, type LocalCaseResult } from '@healify/reporter-core'
+import { runLocalHealing, renderLocalReportHtml, renderLocalReportJson, printSummary, type LocalCaseResult } from '@healify/reporter-core'
 
 /**
  * Corre la heurística local (sin red) sobre cada test fallido y al final de
@@ -34,5 +34,6 @@ export default class HealifyReporter implements Reporter {
     } catch {
       // Fire-and-forget: el reporte local nunca debe romper la corrida.
     }
+    printSummary(this.localResults)
   }
 }
