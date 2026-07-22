@@ -27,15 +27,12 @@ tests, y listo.
 |---|---|---|
 | [`@healify/test-runner`](test-runner/README.md) | Playwright — genera `healify-report.html`/`.json` al final de la corrida | [![npm](https://img.shields.io/npm/v/%40healify%2Ftest-runner)](https://www.npmjs.com/package/@healify/test-runner) |
 | [`@healify/cypress-plugin`](cypress-plugin/README.md) | Cypress — mismo reporte, vía `setupNodeEvents` | [![npm](https://img.shields.io/npm/v/%40healify%2Fcypress-plugin)](https://www.npmjs.com/package/@healify/cypress-plugin) |
-| [`@healify/selenium-plugin`](selenium-plugin/README.md) | Selenium `WebDriver` — cura selectores **en vivo**, sin reporte (ver su README para el alcance) | no publicado todavía |
-| [`@healify/cli`](cli/README.md) | Aplica las sugerencias de un `healify-report.json` directo en tus archivos de test | no publicado todavía |
+| [`@healify/selenium-plugin`](selenium-plugin/README.md) | Selenium `WebDriver` — cura selectores en vivo, sin reporte (ver su README para el alcance) | [![npm](https://img.shields.io/npm/v/%40healify%2Fselenium-plugin)](https://www.npmjs.com/package/@healify/selenium-plugin) |
+| [`@healify/cli`](cli/README.md) | Aplica las sugerencias de un `healify-report.json` directo en tus archivos de test | [![npm](https://img.shields.io/npm/v/%40healify%2Fcli)](https://www.npmjs.com/package/@healify/cli) |
 | `reporter-core` | Motor heurístico + tipos compartidos. Privado, no se publica solo | — |
 
-> ⚠️ **Los paquetes publicados en npm (`test-runner`/`cypress-plugin`) están en `0.1.0`,
-> desactualizados respecto a este repo (`0.2.0`)** — no tienen las mejoras del motor
-> (diccionarios ES/EN, reconocimiento de `getBy*`, atributos genéricos). `cli` y
-> `selenium-plugin` todavía no se publicaron. Para usar la versión actual, instalá desde
-> este repo (ver "Local setup" abajo) hasta la próxima publicación.
+Los 4 paquetes están publicados y sincronizados con este repo (`0.2.0`, `selenium-plugin`
+en `0.1.0` por ser su primera versión).
 
 ## 🚀 Uso rápido
 

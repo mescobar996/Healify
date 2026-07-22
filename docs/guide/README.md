@@ -147,10 +147,6 @@ texto claro de acción), no tiene de dónde sacar una sugerencia confiable. Esto
 esperado, no un bug. Agregar `data-testid` a los elementos que testeás es la forma más
 confiable de subir la tasa de curado.
 
-**"Instalé el paquete de npm y no tiene las mejoras que vi en el repo."** Los paquetes
-publicados (`test-runner`/`cypress-plugin`) están en `0.1.0`, atrás del `0.2.0` de este
-repo. Ver el aviso en el [README raíz](../../README.md#-paquetes).
-
 **"El reporte menciona `Modo nube` / `HEALIFY_API_KEY` en versiones viejas de un
 README."** Ese modo existió, pero el servidor que recibía esos reportes ya no existe en
 este repo (se sacó junto con el SaaS completo, ver la sección "Historia" del README
