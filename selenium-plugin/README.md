@@ -15,7 +15,7 @@ npm install --save-dev @healify/selenium-plugin selenium-webdriver
 ## Uso
 
 ```typescript
-import { Builder } from 'selenium-webdriver'
+import { Builder, By } from 'selenium-webdriver'
 import { HealifySeleniumPlugin } from '@healify/selenium-plugin'
 
 const raw = await new Builder().forBrowser('chrome').build()
