@@ -60,6 +60,9 @@ interface HealingStrategy {
   explanation: string
   robustnessGain: number
   technicalReason: string
+  /** Escalera de atributos estables: 1=testid, 3=name, 4=aria-label/role, 5=texto visible, 6=clase.
+   * (2="id estable" no tiene candidato propio hoy — no existe ese caso en el motor.) */
+  priority: number
 }
 
 // Atributos volátiles: generados por build tools (css-in-js, hashing) o por IDs con timestamp/hash —
@@ -207,6 +210,7 @@ function generateHealingStrategies(selector: string, analysis: SelectorAnalysis)
       explanation: 'El selector ya usa un locator moderno de Playwright (getBy*), que es la práctica recomendada. No se propone downgrade — sin acceso al DOM real no se puede saber por qué dejó de encontrar el elemento; puede ser un cambio genuino de la UI que amerita revisión manual.',
       robustnessGain: 0,
       technicalReason: 'Modern Playwright locators are already best practice; the failure likely reflects a real UI change, not a selector quality issue',
+      priority: 4,
     }]
   }
 
@@ -220,6 +224,7 @@ function generateHealingStrategies(selector: string, analysis: SelectorAnalysis)
       explanation: `El selector ya usa aria-label, un atributo de accesibilidad estable. Se conserva tal cual.`,
       robustnessGain: 0,
       technicalReason: 'aria-label is an accessibility attribute purpose-built for stable identification',
+      priority: 4,
     })
   }
 
@@ -231,6 +236,7 @@ function generateHealingStrategies(selector: string, analysis: SelectorAnalysis)
       explanation: `El selector ya usa el atributo name, razonablemente estable aunque puede no ser único. Se conserva tal cual.`,
       robustnessGain: 0,
       technicalReason: 'The name attribute is usually stable but may not be unique across the page',
+      priority: 3,
     })
   }
 
@@ -243,6 +249,7 @@ function generateHealingStrategies(selector: string, analysis: SelectorAnalysis)
       explanation: `Se detectó un ${analysis.type} inestable; se cambió por un selector basado en accesibilidad (ARIA role) para mayor robustez.`,
       robustnessGain: 45,
       technicalReason: 'ARIA roles are stable across refactors and DOM restructures',
+      priority: 4,
     })
     strategies.push({
       selector: `button:has-text('${action}')`,
@@ -251,6 +258,7 @@ function generateHealingStrategies(selector: string, analysis: SelectorAnalysis)
       explanation: `Selector basado en texto visible del botón. Es menos estable que el rol pero más intuitivo para debugging.`,
       robustnessGain: 30,
       technicalReason: 'Text-based selectors work well for user-facing elements',
+      priority: 5,
     })
   }
 
@@ -263,6 +271,7 @@ function generateHealingStrategies(selector: string, analysis: SelectorAnalysis)
       explanation: `Selector basado en el placeholder del campo. Los placeholders son más estables que los IDs generados automáticamente.`,
       robustnessGain: 35,
       technicalReason: 'Placeholder attributes are typically stable and semantic',
+      priority: 5,
     })
     strategies.push({
       selector: `label:has-text('${fieldName}') + input`,
@@ -271,6 +280,7 @@ function generateHealingStrategies(selector: string, analysis: SelectorAnalysis)
       explanation: `Selector basado en la relación semántica entre label e input. Altamente resiliente a cambios de estructura.`,
       robustnessGain: 40,
       technicalReason: 'Label-input relationships are semantically meaningful',
+      priority: 5,
     })
   }
 
@@ -282,6 +292,7 @@ function generateHealingStrategies(selector: string, analysis: SelectorAnalysis)
       explanation: `Selector por rol de enlace con texto. Muy estable y accesible.`,
       robustnessGain: 42,
       technicalReason: 'Link roles with names are the gold standard for navigation',
+      priority: 4,
     })
   }
 
@@ -294,6 +305,7 @@ function generateHealingStrategies(selector: string, analysis: SelectorAnalysis)
       explanation: `El testid se mantiene pero se normaliza la sintaxis. Los atributos ${attr} son la opción más estable cuando están disponibles.`,
       robustnessGain: 50,
       technicalReason: `${attr} attributes are purpose-built for testing stability`,
+      priority: 1,
     })
   }
 
@@ -305,6 +317,7 @@ function generateHealingStrategies(selector: string, analysis: SelectorAnalysis)
       explanation: `Se reemplazó el XPath frágil por un selector de rol. Los XPath dependen de la estructura exacta del DOM que cambia frecuentemente.`,
       robustnessGain: 55,
       technicalReason: 'XPath is the most fragile selector type; ARIA roles are preferred',
+      priority: 4,
     })
   }
 
@@ -318,6 +331,7 @@ function generateHealingStrategies(selector: string, analysis: SelectorAnalysis)
         explanation: `Se detectó un ID dinámico con hash o número aleatorio. Se propuso una clase estable como alternativa.`,
         robustnessGain: 38,
         technicalReason: 'Dynamic IDs change between builds; stable classes are preferred',
+        priority: 6,
       })
     }
   }
@@ -330,10 +344,12 @@ function generateHealingStrategies(selector: string, analysis: SelectorAnalysis)
       explanation: `Selector compuesto con filtro de visibilidad. Mayor robustez contra elementos ocultos.`,
       robustnessGain: 25,
       technicalReason: 'Visibility filters prevent interaction with hidden elements',
+      priority: 5,
     })
   }
 
-  return strategies.sort((a, b) => b.confidence - a.confidence)
+  // Escalera de estabilidad primero (prioridad, menor = mejor), confidence como desempate dentro del mismo nivel.
+  return strategies.sort((a, b) => a.priority - b.priority || b.confidence - a.confidence)
 }
 
 /** Analiza un selector fallido y propone una heurística de sanado — sin red, sin verificar contra DOM real. */
@@ -349,6 +365,7 @@ export function analyzeAndHeal(request: HealRequest): HealResponse {
     explanation: 'Unable to generate a reliable selector. Manual review required.',
     robustnessGain: 0,
     technicalReason: 'No suitable pattern found',
+    priority: 9,
   }
 
   const adjustedConfidence = Math.max(
