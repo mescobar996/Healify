@@ -39,6 +39,13 @@ Sin nada más que configurar: si algún test falla por un selector roto, al term
 corrida aparece `healify-report.html` en el directorio desde el que corriste Playwright,
 con cada caso (selector original, sugerencia, nivel de confianza). Nada sale de tu máquina.
 
+Además, al final de la corrida se imprime un resumen de una línea en stdout — útil en CI,
+sin tener que abrir el HTML:
+
+```
+Healed: 3 | Review: 1 | Unresolved: 0
+```
+
 ## Cómo funciona
 
 `HealifyReporter.onTestEnd` corre la heurística (`analyzeAndHeal()` de

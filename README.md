@@ -23,13 +23,13 @@ tests, y listo.
 
 ## 📦 Paquetes
 
-| Paquete | Para | npm |
-|---|---|---|
-| [`@healify/test-runner`](test-runner/README.md) | Playwright — genera `healify-report.html`/`.json` al final de la corrida | [![npm](https://img.shields.io/npm/v/%40healify%2Ftest-runner)](https://www.npmjs.com/package/@healify/test-runner) |
-| [`@healify/cypress-plugin`](cypress-plugin/README.md) | Cypress — mismo reporte, vía `setupNodeEvents` | [![npm](https://img.shields.io/npm/v/%40healify%2Fcypress-plugin)](https://www.npmjs.com/package/@healify/cypress-plugin) |
-| [`@healify/selenium-plugin`](selenium-plugin/README.md) | Selenium `WebDriver` — cura selectores en vivo, sin reporte (ver su README para el alcance) | [![npm](https://img.shields.io/npm/v/%40healify%2Fselenium-plugin)](https://www.npmjs.com/package/@healify/selenium-plugin) |
-| [`@healify/cli`](cli/README.md) | Aplica las sugerencias de un `healify-report.json` directo en tus archivos de test | [![npm](https://img.shields.io/npm/v/%40healify%2Fcli)](https://www.npmjs.com/package/@healify/cli) |
-| `reporter-core` | Motor heurístico + tipos compartidos. Privado, no se publica solo | — |
+| Paquete | Versión | Para | npm |
+|---|---|---|---|
+| [`@healify/test-runner`](test-runner/README.md) | 0.3.0 | Playwright — genera `healify-report.html`/`.json` al final de la corrida | [![npm](https://img.shields.io/npm/v/%40healify%2Ftest-runner)](https://www.npmjs.com/package/@healify/test-runner) |
+| [`@healify/cypress-plugin`](cypress-plugin/README.md) | 0.3.0 | Cypress — mismo reporte, vía `setupNodeEvents` | [![npm](https://img.shields.io/npm/v/%40healify%2Fcypress-plugin)](https://www.npmjs.com/package/@healify/cypress-plugin) |
+| [`@healify/selenium-plugin`](selenium-plugin/README.md) | 0.1.0 | Selenium `WebDriver` — cura selectores en vivo, sin reporte (ver su README para el alcance) | [![npm](https://img.shields.io/npm/v/%40healify%2Fselenium-plugin)](https://www.npmjs.com/package/@healify/selenium-plugin) |
+| [`@healify/cli`](cli/README.md) | 0.3.0 | Aplica las sugerencias de un `healify-report.json` directo en tus archivos de test | [![npm](https://img.shields.io/npm/v/%40healify%2Fcli)](https://www.npmjs.com/package/@healify/cli) |
+| `reporter-core` | 0.3.0 | Motor heurístico + tipos compartidos. Privado, no se publica solo | — |
 
 Los 4 paquetes están publicados en npm y ya se pueden instalar hoy — no hace falta
 clonar el repo ni compilar nada para usarlos. Elegí el que corresponda a tu framework:
@@ -128,7 +128,16 @@ docs/
 ```bash
 npm test          # Corre los tests de los 5 paquetes (workspaces)
 npm run build      # Compila los 5 paquetes
+npm run verify     # build + test de los 5 paquetes, resumen de una línea (87 tests)
 ```
+
+`npm run verify` corre `scripts/verify.sh`: compila y testea los 5 workspaces y termina con
+un resumen tipo `✅ reporter-core (30) / ✅ test-runner (8) / ✅ cypress-plugin (7) / ✅ cli
+(13) / ✅ selenium-plugin (29)` en vez del output completo de cada framework de tests.
+
+Además, `test-runner` y `cypress-plugin` imprimen un resumen de una línea al final de cada
+corrida real de tus tests (`Healed: 3 | Review: 1 | Unresolved: 0`), para no tener que abrir
+`healify-report.html` en CI. Ver el detalle en el README de cada paquete.
 
 ## ⚙️ Local setup
 
