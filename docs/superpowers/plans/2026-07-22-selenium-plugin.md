@@ -193,11 +193,11 @@ No test file for this task — it's pure type/constant declarations, nothing to 
 - [ ] **Step 1: Create `selenium-plugin/src/types.ts`**
 
 ```ts
-/** Piso de confianza por default — igual al umbral REVIEW_THRESHOLD de reporter-core/src/local-mode.ts, mismo criterio en todo Healify. */
-export const DEFAULT_CONFIDENCE_THRESHOLD = 0.8
+/** Piso de confianza por default — igual al umbral HEALED_THRESHOLD (auto-aplicado sin revisión) de reporter-core/src/local-mode.ts, no al de "a revisar" (0.8): acá no hay paso de revisión humana, así que el piso para actuar solo debe ser el más alto que el motor ya define. */
+export const DEFAULT_CONFIDENCE_THRESHOLD = 0.9
 
 export interface HealifySeleniumOptions {
-  /** Confianza mínima (0-1) de analyzeAndHeal() para probar la sugerencia. Default: 0.8. */
+  /** Confianza mínima (0-1) de analyzeAndHeal() para probar la sugerencia. Default: 0.9. */
   confidenceThreshold?: number
   /** Si es true, cura pero nunca aplica el fix — solo emite el evento 'healed' con dryRun implícito y lanza el error original. Default: false. */
   dryRun?: boolean
@@ -865,7 +865,7 @@ await driver.findElement(By.css('#add-to-cart-btn')).click()
 
 ```typescript
 new HealifySeleniumPlugin({
-  confidenceThreshold: 0.8, // default — mismo piso que reporter-core (REVIEW_THRESHOLD)
+  confidenceThreshold: 0.9, // default — mismo piso que reporter-core (HEALED_THRESHOLD, auto-aplicado sin revisión)
   dryRun: false,             // default — true: cura pero nunca aplica el fix, solo emite el evento
   onEvent: (e) => {},        // opcional — se llama en cada intento de curado
 })
