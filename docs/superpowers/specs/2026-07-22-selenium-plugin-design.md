@@ -64,8 +64,12 @@ independiente `@healify/selenium-plugin`, peer dependency de `selenium-webdriver
 ```typescript
 // src/types.ts
 export interface HealifySeleniumOptions {
-  confidenceThreshold?: number        // default 0.8 — mismo piso que REVIEW_THRESHOLD
-                                       // en reporter-core/src/local-mode.ts
+  confidenceThreshold?: number        // default 0.9 — mismo piso que HEALED_THRESHOLD
+                                       // en reporter-core/src/local-mode.ts (el umbral de
+                                       // auto-aplicado sin revisión humana, no el de "a
+                                       // revisar" — acá no hay paso de revisión, así que
+                                       // el piso correcto es el más alto que ya define el
+                                       // motor, no el intermedio)
   dryRun?: boolean                    // default false — cura pero no aplica, solo emite evento
   onEvent?: (e: HealingEvent) => void // hook opcional, para logging/tests del usuario
 }

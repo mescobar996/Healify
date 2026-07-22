@@ -116,6 +116,7 @@ selenium-plugin/node_modules
   },
   "devDependencies": {
     "@healify/reporter-core": "*",
+    "@types/selenium-webdriver": "^4.35.6",
     "esbuild": "^0.27.3",
     "selenium-webdriver": "^4.27.0",
     "typescript": "^5.4.0",
@@ -124,9 +125,11 @@ selenium-plugin/node_modules
 }
 ```
 
+**Corrección (encontrada durante Task 4):** el paquete `selenium-webdriver` instalado (4.46.0) no incluye ningún archivo `.d.ts` — no tiene campo `"types"` en su `package.json` ni declaraciones ambientales. La afirmación original de este plan ("ships its own TypeScript types") era incorrecta, nunca se verificó directamente, solo se verificó el código fuente JS real. La corrección es agregar `@types/selenium-webdriver` (paquete de DefinitelyTyped) como devDependency — ya reflejado arriba.
+
 - [ ] **Step 4: Create `selenium-plugin/tsconfig.json`**
 
-Same pattern as `cypress-plugin/tsconfig.json` and `test-runner/tsconfig.json` (no `"types"` override needed here — unlike `cypress-plugin`, which needs `"types": ["cypress", "node"]` for Cypress's ambient globals, `selenium-webdriver` ships its own TypeScript types as regular module exports, nothing ambient to declare):
+Same pattern as `cypress-plugin/tsconfig.json` and `test-runner/tsconfig.json` — no `"types"` override needed in `compilerOptions` (unlike `cypress-plugin`, which needs `"types": ["cypress", "node"]` for Cypress's ambient globals): `@types/selenium-webdriver` is a regular non-ambient `@types` package, TypeScript picks it up automatically via `node_modules/@types` without listing it.
 
 ```json
 {
@@ -193,11 +196,11 @@ No test file for this task — it's pure type/constant declarations, nothing to 
 - [ ] **Step 1: Create `selenium-plugin/src/types.ts`**
 
 ```ts
-/** Piso de confianza por default — igual al umbral REVIEW_THRESHOLD de reporter-core/src/local-mode.ts, mismo criterio en todo Healify. */
-export const DEFAULT_CONFIDENCE_THRESHOLD = 0.8
+/** Piso de confianza por default — igual al umbral HEALED_THRESHOLD (auto-aplicado sin revisión) de reporter-core/src/local-mode.ts, no al de "a revisar" (0.8): acá no hay paso de revisión humana, así que el piso para actuar solo debe ser el más alto que el motor ya define. */
+export const DEFAULT_CONFIDENCE_THRESHOLD = 0.9
 
 export interface HealifySeleniumOptions {
-  /** Confianza mínima (0-1) de analyzeAndHeal() para probar la sugerencia. Default: 0.8. */
+  /** Confianza mínima (0-1) de analyzeAndHeal() para probar la sugerencia. Default: 0.9. */
   confidenceThreshold?: number
   /** Si es true, cura pero nunca aplica el fix — solo emite el evento 'healed' con dryRun implícito y lanza el error original. Default: false. */
   dryRun?: boolean
@@ -456,15 +459,19 @@ describe('wrapDriver', () => {
     expect(mockAnalyzeAndHeal).not.toHaveBeenCalled()
   })
 
-  it('un error interno de analyzeAndHeal no rompe el test del usuario — lanza el error original', async () => {
+  it('un error interno de analyzeAndHeal no rompe el test del usuario — lanza el error original y reporta el detalle', async () => {
     const originalErr = NO_SUCH_ELEMENT()
     const findElement = vi.fn().mockRejectedValueOnce(originalErr)
     mockAnalyzeAndHeal.mockImplementation(() => {
       throw new Error('boom interno de la heurística')
     })
-    const wrapped = wrapDriver(makeDriver(findElement))
+    const onEvent = vi.fn()
+    const wrapped = wrapDriver(makeDriver(findElement), { onEvent })
 
     await expect(wrapped.findElement(By.css('#old'))).rejects.toBe(originalErr)
+    expect(onEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'error', originalSelector: '#old', explanation: 'boom interno de la heurística' })
+    )
   })
 
   it('dryRun=true emite el evento healed pero lanza el error original, sin aplicar el fix', async () => {
@@ -598,8 +605,9 @@ export function wrapDriver(driver: WebDriver, options: HealifySeleniumOptions = 
       let result: ReturnType<typeof analyzeAndHeal>
       try {
         result = analyzeAndHeal({ selector })
-      } catch {
-        emit({ type: 'error', originalSelector: selector, latencyMs: Date.now() - start })
+      } catch (healErr) {
+        const message = healErr instanceof Error ? healErr.message : String(healErr)
+        emit({ type: 'error', originalSelector: selector, explanation: message, latencyMs: Date.now() - start })
         throw originalErr
       }
 
@@ -865,7 +873,7 @@ await driver.findElement(By.css('#add-to-cart-btn')).click()
 
 ```typescript
 new HealifySeleniumPlugin({
-  confidenceThreshold: 0.8, // default — mismo piso que reporter-core (REVIEW_THRESHOLD)
+  confidenceThreshold: 0.9, // default — mismo piso que reporter-core (HEALED_THRESHOLD, auto-aplicado sin revisión)
   dryRun: false,             // default — true: cura pero nunca aplica el fix, solo emite el evento
   onEvent: (e) => {},        // opcional — se llama en cada intento de curado
 })
