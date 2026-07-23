@@ -86,11 +86,19 @@ Esto:
 > Healify cure tiene que ser uno de tu propia app, no uno inventado. Detalle de los 3 casos
 > en el [README del CLI](cli/README.md).
 
-**Paso 4: Escribí tu primer test real y corré tus tests como siempre**
+**Paso 4: Levantá tu app y corré tu primer test real**
 
-Si todavía no tenés ningún test e2e, escribí uno simple contra una pantalla real de tu app
-(un login, un botón que ya exista) en `e2e/` (Playwright) o `cypress/e2e/` (Cypress). El
-reporter ya está conectado, no hace falta tocar nada más de la config.
+Un test e2e abre un navegador de verdad y navega a una URL real. Antes de escribir o
+correr nada, levantá tu app en una terminal aparte y dejala corriendo:
+
+```bash
+npm run dev
+```
+
+Confirmá que responde abriendo esa URL a mano en el navegador. Recién ahí, si todavía no
+tenés ningún test e2e, escribí uno simple contra una pantalla real de tu app (un login, un
+botón que ya exista) en `e2e/` (Playwright) o `cypress/e2e/` (Cypress). El reporter ya está
+conectado, no hace falta tocar nada más de la config.
 
 ```bash
 npx playwright test
@@ -99,6 +107,17 @@ npx cypress run
 ```
 
 Al terminar, si algo falló por selector roto, se crea `healify-report.html` y `healify-report.json` en la raíz.
+
+> **¿El test falla apenas arranca, con algo que no tiene nada que ver con tu app (una
+> página en blanco, contenido de otra herramienta)?** Puede que otro programa esté usando
+> el mismo puerto que tu `baseURL`. Confirmá quién responde ahí antes de sospechar de
+> Healify o de tu selector:
+> ```powershell
+> Get-NetTCPConnection -LocalPort 3000 -State Listen | Select-Object LocalAddress, OwningProcess
+> ```
+> Si aparece un proceso que no es el de tu app, corré tu `dev` en otro puerto (ajustando
+> `baseURL` en `playwright.config.ts`/`cypress.config.*` a mano, o cambiando el puerto en
+> tu script `dev` de forma permanente si el conflicto se repite siempre).
 
 **Paso 5: Ver el reporte y aplicar el fix**
 

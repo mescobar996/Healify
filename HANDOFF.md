@@ -16,25 +16,20 @@ Público objetivo: QA sin experiencia en código.
 Repo: `C:\Proyectos\QA\Healify` — remoto `https://github.com/mescobar996/Healify.git`,
 rama `main`. Monorepo npm workspaces.
 
-## 2. Estado de versiones (0.6.0 en código, pendiente de publicar)
+## 2. Estado de versiones — TODO PUBLICADO Y PUSHEADO
 
-| Paquete | Versión en código (0.6.0) | Versión en npm | Privado |
-|---|---|---|---|
-| `@healify/cli` | 0.6.0 | 0.5.1 (desactualizado) | no |
-| `@healify/test-runner` (Playwright) | 0.6.0 | 0.5.0 (desactualizado) | no |
-| `@healify/cypress-plugin` | 0.6.0 | 0.5.0 (desactualizado) | no |
-| `@healify/selenium-plugin` | 0.6.0 | 0.1.0 (desactualizado) | no |
-| `reporter-core` | 0.6.0 | — | sí, bundleado dentro de los otros 4 |
+| Paquete | Versión (código y npm, confirmado contra el registro real) | Privado |
+|---|---|---|
+| `@healify/cli` | 0.6.0 | no |
+| `@healify/test-runner` (Playwright) | 0.6.0 | no |
+| `@healify/cypress-plugin` | 0.6.0 | no |
+| `@healify/selenium-plugin` | 0.6.0 | no |
+| `reporter-core` | 0.6.0 | sí, bundleado dentro de los otros 4 |
 
-**IMPORTANTE — falta publicar 0.6.0.** Los 5 paquetes bundlean `reporter-core` (el fix del
-Bug A de esta sesión vive ahí) — hay que republicar los 5, no solo `cli`. Comandos:
-```bash
-cd C:\Proyectos\QA\Healify
-npm publish --workspace=@healify/test-runner
-npm publish --workspace=@healify/cypress-plugin
-npm publish --workspace=@healify/selenium-plugin
-npm publish --workspace=@healify/cli
-```
+Los 4 se publicaron (el usuario corrió `npm login` de nuevo porque la sesión vieja había
+vencido, después los 4 `npm publish --workspace=...`). `git push` de `main` también hecho.
+Repo remoto al día con el código local.
+
 **Yo (la IA) nunca corro `npm publish`** — el usuario lo hace desde su propia terminal.
 
 ## 3. Arquitectura — archivos clave
@@ -62,9 +57,14 @@ cli/src/
 
 CHANGELOG.md            # historial completo — 0.5.0/0.5.1 (init universal + 2 bugs) y
                          # 0.6.0 (sacar demos + 2 bugs de auditoría)
+docs/audit-0.4.1.md      # auditoría de la sesión de doctor/--help
 docs/audit-0.5.0.md      # auditoría de la sesión de init universal
 CONTEXT_HANDOFF.md       # bitácora local (gitignored, NO está en git) — cronología completa
 ```
+
+`PROMPT_SIGUIENTE_SESION.md` (que existió durante esta sesión) se borró: era un prompt de
+una sola vez para retomar el trabajo, ya cumplió su función y quedó reemplazado por este
+mismo archivo.
 
 ## 4. `init` — CÓMO ES HOY (0.6.0): configura, NUNCA genera tests
 
@@ -132,39 +132,43 @@ tareas/visitas técnicas/novedades). Login vive en `/login`, con OAuth de Google
 (`src/pages/Login.tsx`) — el botón real dice "Ingresar con Google", sin `data-testid`.
 
 Archivos que Healify dejó ahí, todos **reales** (ya no quedan demos):
-- `playwright.config.ts` — config real, `baseURL: 'http://localhost:3000'` (matchea el
-  script `dev` real: `"dev": "vite --port=3000 --host=0.0.0.0"`)
+- `playwright.config.ts` — config real, `baseURL: 'http://localhost:4000'`
 - `healify.selenium.example.ts` — documentación de referencia (nunca se ejecuta)
-- `e2e/login.spec.ts` — **el primer test e2e real de la app**, verificado pasando de
-  verdad: `expect(page.getByRole('button', { name: /ingresar con google/i })).toBeVisible()`
+- `e2e/login.spec.ts` — **el primer y único test e2e real de la app hoy**, verificado
+  pasando de verdad: `expect(page.getByRole('button', { name: /ingresar con google/i })).toBeVisible()`
 
-Se demostró la cura real (sin dejar ningún test roto permanente): un test temporal con
-`page.click('#btn-ingresar')` (un ID plausible que un QA podría probar antes de tener
+Se demostró la cura real también (sin dejar ningún test roto permanente): un test temporal
+con `page.click('#btn-ingresar')` (un ID plausible que un QA podría probar antes de tener
 `data-testid`, no existe en el componente real) falló de verdad y Healify propuso
 `role('button', { name: 'Ingresar' })` (confidence 0.89, status `review`) — matchea el
 botón real por texto (Playwright hace substring match en `name`). El diccionario bilingüe
 (`ingresar` → `Ingresar`) hizo el trabajo. Test temporal borrado después de confirmar.
 
-`doctor` da 4/5 ✅ — el único ❌ es "healify-report.json existe", **esperado y correcto**:
-el test real pasa, así que no hay reporte todavía (recién se genera si algo falla). No es
-un problema, es el estado sano de un proyecto sin selectores rotos.
+`doctor` da 5/5 ✅ (con el reporte viejo de esa prueba temporal ya borrado — si vuelve a
+aparecer un `healify-report.json` desactualizado confundiendo, es solo un archivo viejo,
+borrarlo sin miedo, se regenera solo en la próxima corrida con fallos).
 
-**Conflicto de entorno encontrado (no es un bug de Healify):** en esta máquina, Obsidian
-tiene un listener propio en `127.0.0.1:3000` que compite con el `vite --port=3000` real de
-`sgo-pzbp` — Windows prioriza el bind específico (127.0.0.1) de Obsidian sobre el bind
-wildcard (0.0.0.0) de vite, así que las requests a `localhost:3000`/`127.0.0.1:3000` a
-veces caen en Obsidian en vez del dev server real. Si el usuario corre `npx playwright
-test` y el test falla con contenido rarísimo en la página, **antes de asumir que es un bug
-de la app, verificar quién responde en el puerto**:
+**Conflicto de puerto con Obsidian — RESUELTO DE FORMA PERMANENTE, no ir para atrás en
+esto.** En esta máquina, Obsidian tiene su propio listener fijo en `127.0.0.1:3000`.
+Windows prioriza ese bind específico sobre el bind wildcard (`0.0.0.0`) de vite, así que
+cualquier request a `localhost:3000`/`127.0.0.1:3000` caía en Obsidian, no en el dev
+server real de `sgo-pzbp` — confirmado con captura de pantalla del usuario mostrando
+literalmente "Open Presentation Preview in Obsidian first!" en `localhost:3000`. Se
+cambió el script `dev` de `sgo-pzbp/package.json` de `--port=3000` a `--port=4000`
+(edit real, permanente, no algo a revertir) y `playwright.config.ts` a
+`baseURL: 'http://localhost:4000'`. Verificado real después del cambio: `npm run dev` en
+4000 limpio, `npx playwright test` → `1 passed`. Si en el futuro 4000 también queda
+ocupado (por ejemplo por un `npm run dev` mío que quedó corriendo de una sesión anterior),
+Vite avisa "Port X is in use, trying another one" y sube solo a 4001 — si eso pasa, matar
+el proceso viejo en 4000 antes de confundirse, no es un problema de Healify:
 ```powershell
-Get-NetTCPConnection -LocalPort 3000 -State Listen | Select-Object LocalAddress, OwningProcess
+Get-NetTCPConnection -LocalPort 4000 -State Listen | Select-Object OwningProcess
 ```
-Si Obsidian aparece ahí, cerrar Obsidian o correr `sgo-pzbp` en otro puerto (`vite
---port=3005`, ajustando `playwright.config.ts` a mano para esa corrida) antes de testear.
 
-Estado de `git status` en `sgo-pzbp` (además de lo de arriba): `package.json`/
-`package-lock.json` modificados por cambios previos AJENOS del usuario (no tocar), y
-`migrations/015_notifications_update_policy.sql` sin trackear, también ajeno.
+Estado de `git status` en `sgo-pzbp` (además de lo de arriba): `package.json`
+(modificado por el cambio de puerto, real e intencional, más cambios previos AJENOS del
+usuario)/`package-lock.json` (ajeno), y `migrations/015_notifications_update_policy.sql`
+sin trackear, también ajeno — no tocar ninguno de los dos ajenos.
 
 ## 8. Reglas/contexto de la sesión (para que la próxima IA no las rompa)
 
@@ -180,11 +184,17 @@ Estado de `git status` en `sgo-pzbp` (además de lo de arriba): `package.json`/
 
 ## 9. Qué falta / próximos pasos posibles
 
-- **Publicar 0.6.0** (los 5 paquetes, en el orden de la sección 2) — pendiente del OK del
-  usuario.
-- `git push` de Healify — pendiente (commiteado en local, no pusheado todavía a menos que
-  se pida explícitamente).
-- `sgo-pzbp` tiene ahora 1 test e2e real (login). Buen próximo paso: agregar más tests
-  reales de otras pantallas (tareas, visitas técnicas) cuando el usuario quiera.
+- Nada pendiente de publicar ni de pushear: 0.6.0 está en npm real y en `origin/main`.
+- README raíz y `cli/README.md` pasados por el skill `anthropic-skills:humanizer`
+  (sacadas rayas al medio y emojis decorativos de títulos en la prosa; se dejaron intactos
+  los bloques que reproducen salida real capturada del CLI, y los íconos ✅/❌/⚠ que son
+  parte de esa salida real). Números de badge/tests actualizados a 164.
+- README raíz, Paso 4: ahora dice explícito que hay que levantar la app (`npm run dev`)
+  ANTES de escribir o correr cualquier test e2e, con una nota de troubleshooting genérica
+  sobre conflictos de puerto (`Get-NetTCPConnection`) — antes esto se daba por sentado y
+  no debería, era un hueco real de la documentación.
+- `sgo-pzbp` tiene 1 test e2e real (login), verificado pasando de verdad en el puerto 4000
+  ya sin conflicto. Buen próximo paso: agregar más tests reales de otras pantallas
+  (tareas, visitas técnicas) cuando el usuario quiera.
 - Nada más pendiente del lado del código de Healify: build limpio, 164 tests verdes, 0
   vulnerabilidades.
