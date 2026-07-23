@@ -10,6 +10,33 @@ Aplica las sugerencias de un `healify-report.json` (generado por `@healify/test-
 npm install --save-dev @healify/cli
 ```
 
+## Para QA sin experiencia
+
+Si nunca tocaste la configuración de Playwright/Cypress/Selenium, no hace falta editar
+nada a mano. Tres comandos:
+
+```bash
+npx healify init      # detecta tu framework, instala el paquete correcto y configura todo
+npx healify doctor     # revisa que esté todo bien instalado y configurado, con ✅/❌
+npx healify fix        # corré esto después de tus tests, para aplicar los fixes sugeridos
+```
+
+**`npx healify init`** — lee tu `package.json` y tus archivos de config para detectar si
+usás Playwright, Cypress o Selenium (podés tener más de uno). Instala automáticamente el
+paquete de Healify que corresponda (`@healify/test-runner`, `@healify/cypress-plugin` o
+`@healify/selenium-plugin`) si todavía no lo tenés, y edita tu `playwright.config.*` o
+`cypress.config.*` para dejarlo wireado. Es seguro correrlo más de una vez: si algo ya
+está instalado o configurado, no lo toca de nuevo. Si no detecta ningún framework
+soportado, te lo dice en vez de romper algo.
+
+**`npx healify doctor`** — no modifica nada, solo revisa: ¿hay un framework soportado?,
+¿está instalado el paquete de Healify?, ¿el config lo tiene wireado?, ¿ya generaste un
+`healify-report.json` corriendo tus tests? Cada check en rojo viene con la línea exacta
+para arreglarlo.
+
+**`npx healify fix`** — una vez que corriste tus tests y tenés `healify-report.json`,
+aplica las sugerencias de mayor confianza directo en tus archivos (ver detalle abajo).
+
 ## Uso
 
 ```bash
