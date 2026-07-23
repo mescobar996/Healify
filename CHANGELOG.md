@@ -1,6 +1,27 @@
 # Changelog
 
-## Sin publicar (post-0.7.0)
+## 0.8.0 — Feature #8: historial de curaciones (MVP)
+
+`healify fix` (sin `--dry-run`) ahora graba cada caso de la corrida en
+`.healify/history.jsonl`. Nuevo comando `healify history` muestra en terminal los
+selectores más recurrentes y los que se rompieron de nuevo después de haber sido curados.
+
+Sin sistema de config, sin export HTML/JSON, sin retención automática — MVP acotado tras
+corregir el spec original contra el código real (asumía `cli/src/commands/fix.ts` y
+`cli/src/config.ts`, que no existen). Detalle completo en
+`docs/superpowers/specs/2026-07-23-feature8-historical-report-design.md`, plan de
+implementación en `docs/superpowers/plans/2026-07-23-feature8-history-mvp-plan.md`
+(ejecutado con subagent-driven development: implementador + 2 revisores por task).
+
+`--dry-run` nunca graba (evita ensuciar el historial con las corridas del gh-action en
+cada PR). "Re-roto" es una aproximación documentada: se basa en si la primera aparición
+del selector fue `status: 'healed'` Y hubo al menos una aparición posterior no-healed —
+un bug real de esta última condición (dos curaciones seguidas del mismo selector se
+contaban como re-roto) se encontró y arregló durante la implementación, no en el diseño.
+
++14 tests (5 storage, 7 trends, 2 comando combinado) → 121 en `cli`. `cli` bump a 0.8.0.
+
+## Sin publicar (post-0.7.0, incluida en 0.8.0)
 
 Auditoría de lectura de las features #1-#6 (documentadas en 0.7.0 más abajo) — no
 confiar en que "tests en verde" significa "comportamiento real correcto" cuando los
@@ -30,6 +51,8 @@ reales, ninguno cubierto por los tests originales:
   gh-action).
 
 Verificación real tras los 4 fixes: `npm run verify` completo (231 tests en los 6
+workspaces del monorepo en ese momento, antes de la Feature #8 — 238 con Feature #8 ya
+incluida, ver sección de arriba)
 workspaces del monorepo) + `npm test` en `gh-action` (22, standalone) + `npm audit` (0
 vulnerabilidades). Nota de entorno: `npm run verify` vía PowerShell en Windows resuelve
 `bash` a WSL (`C:\WINDOWS\system32\bash.exe`), un filesystem distinto al del repo —

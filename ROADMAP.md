@@ -85,12 +85,23 @@ selector CSS válido y `fix` normal ya lo aplica bien), se sacó ese camino muer
 quedó bundleado en el build inicial (25kb → 12MB), arreglado externalizándolo (queda en
 31.4kb). +10 tests (→ 104 en cli), verificado real con el binario compilado.
 
-### 8. Reporte histórico (no solo el último run)
+### 8. Reporte histórico (no solo el último run) ✅
 Hoy `healify-report.html`/`.json` se pisa en cada corrida. Guardar un historial (¿cuántos
 selectores se rompieron por semana? ¿cuáles se repiten?) daría una métrica real de salud
 de los tests a lo largo del tiempo. Cambia el modelo de "reporte de una corrida" a
 "reporte acumulado". Hay que pensar bien el formato de almacenamiento antes de escribir
 código (¿un archivo por corrida? ¿un JSON que crece? ¿SQLite local?).
+
+**Implementado (MVP)**: `.healify/history.jsonl` append-only + comando `healify history`
+(top recurrentes, re-rotos). Sin config subsystem, sin export HTML/JSON, sin retención —
+el spec original tenía supuestos falsos sobre el código real (asumía `cli/src/commands/
+fix.ts` y `cli/src/config.ts`, que no existen), corregido y recortado tras brainstorming.
+`--dry-run` nunca graba (evita ruido del gh-action en cada PR). "Re-roto" es aproximado,
+documentado como tal. Ejecutado con subagent-driven development (6 tasks, implementador +
+2 revisores cada una) — un revisor encontró un bug real en `computeRebroken` (dos
+curaciones seguidas del mismo selector se contaban como re-roto) antes de mergear. +14
+tests (→ 121 en cli). Ver `docs/superpowers/specs/2026-07-23-feature8-historical-report-
+design.md` y `docs/superpowers/plans/2026-07-23-feature8-history-mvp-plan.md`.
 
 ### 9. Extensión de VSCode ❌ CANCELADA
 Mostrar el `healify-report.html` inline en el editor, o un comando rápido "Healify: fix
