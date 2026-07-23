@@ -24,7 +24,9 @@ rama `main`. Monorepo npm workspaces.
 | `@healify/test-runner` (Playwright) | 0.6.0 | no |
 | `@healify/cypress-plugin` | 0.6.0 | no |
 | `@healify/selenium-plugin` | 0.6.0 | no |
-| `reporter-core` | 0.6.0 | sí, bundleado dentro de los otros 4 |
+| `@healify/webdriverio-plugin` | 0.6.0 | no (nuevo, no publicado aún) |
+| `reporter-core` | 0.6.0 | sí, bundleado dentro de los otros 5 |
+| `@healify/gh-action` | 0.6.0 | sí, standalone (no es workspace) |
 
 Los 4 se publicaron (el usuario corrió `npm login` de nuevo porque la sesión vieja había
 vencido, después los 4 `npm publish --workspace=...`). `git push` de `main` también hecho.
@@ -45,15 +47,26 @@ reporter-core/src/
 test-runner/src/reporter.ts      # integración Playwright (Reporter API)
 cypress-plugin/src/plugin.ts     # integración Cypress (after:spec/after:run)
 selenium-plugin/src/wrap.ts      # integración Selenium (Proxy sobre WebDriver, cura en vivo)
+webdriverio-plugin/src/
+  wrap.ts                  # Proxy sobre browser WDIO, cura en vivo (patrón idéntico a selenium)
+  plugin.ts                # clase HealifyWebdriverIOPlugin con flush()
+  locator.ts               # wdioSelectorToSelector + isWdioCssCompatible
+  types.ts                 # HealingEvent, HealifyWebdriverIOOptions
 
 cli/src/
   commands/init.ts    # detecta/configura (3 casos, ver sección 4) — YA NO genera tests
-  commands/doctor.ts  # diagnóstico read-only
+  commands/doctor.ts  # diagnóstico read-only (incluye semver caret gotcha + webdriverio)
   scaffold.ts          # templates de config real (sin ningún test)
-  detect.ts             # detección de framework/baseURL/TS-JS/module type
+  detect.ts             # detección de framework/baseURL/TS-JS/module type (incluye webdriverio)
   prompt.ts             # prompt sync sin dependencias nuevas
   fix.ts                 # aplica sugerencias healed directo en archivos de test
   index.ts               # entrypoint del binario (bin: healify)
+
+gh-action/
+  action.yml            # GitHub Action metadata (healify/apply-fixes@v1)
+  run.js                # Node script: doctor + fix --dry-run → PR comment
+  run.test.js           # 20 tests (formatDoctor, formatFixOutput, buildComment, PR API)
+  package.json          # standalone, no es workspace
 
 CHANGELOG.md            # historial completo — 0.5.0/0.5.1 (init universal + 2 bugs) y
                          # 0.6.0 (sacar demos + 2 bugs de auditoría)
@@ -122,8 +135,8 @@ real, no solo tests)
    sin cambiar nada funcional. Arreglado: los comentarios (línea completa `//` y bloques
    `/* */`) se enmascaran antes de contar/ubicar el reemplazo.
 
-Total: **164 tests** verdes (38 reporter-core + 8 test-runner + 7 cypress-plugin + 82 cli
-+ 29 selenium-plugin), 5 workspaces, `npm audit` → 0 vulnerabilidades.
+Total: **231 tests** verdes (44 reporter-core + 8 test-runner + 7 cypress-plugin + 94 cli
++ 35 selenium-plugin + 23 webdriverio-plugin + 20 gh-action), 6 workspaces + 1 standalone, `npm audit` → 0 vulnerabilidades.
 
 ## 7. `sgo-pzbp` — estado real actual (proyecto del usuario, NO de Healify)
 
@@ -184,11 +197,14 @@ sin trackear, también ajeno — no tocar ninguno de los dos ajenos.
 
 ## 9. Qué falta / próximos pasos posibles
 
-- Nada pendiente de publicar ni de pushear: 0.6.0 está en npm real y en `origin/main`.
+- **Pendiente de publicar**: `@healify/webdriverio-plugin` (nuevo, código completo + tests, no
+  publicado en npm ni pusheado). Publicar con `npm publish --workspace=webdriverio-plugin`.
+- **Pendiente de pushear**: Feature #5 (WebdriverIO) y Feature #6 (GitHub Action) están en
+  código local pero no en `origin/main`. Hacer `git push` cuando el usuario lo pida.
 - README raíz y `cli/README.md` pasados por el skill `anthropic-skills:humanizer`
   (sacadas rayas al medio y emojis decorativos de títulos en la prosa; se dejaron intactos
   los bloques que reproducen salida real capturada del CLI, y los íconos ✅/❌/⚠ que son
-  parte de esa salida real). Números de badge/tests actualizados a 164.
+  parte de esa salida real). Números de badge/tests actualizados a 231.
 - README raíz, Paso 4: ahora dice explícito que hay que levantar la app (`npm run dev`)
   ANTES de escribir o correr cualquier test e2e, con una nota de troubleshooting genérica
   sobre conflictos de puerto (`Get-NetTCPConnection`) — antes esto se daba por sentado y
@@ -196,5 +212,5 @@ sin trackear, también ajeno — no tocar ninguno de los dos ajenos.
 - `sgo-pzbp` tiene 1 test e2e real (login), verificado pasando de verdad en el puerto 4000
   ya sin conflicto. Buen próximo paso: agregar más tests reales de otras pantallas
   (tareas, visitas técnicas) cuando el usuario quiera.
-- Nada más pendiente del lado del código de Healify: build limpio, 164 tests verdes, 0
-  vulnerabilidades.
+- Features del ROADMAP pendientes: #7 (fix con reescritura AST), #8 (reporte histórico),
+  #9 (extensión VSCode).

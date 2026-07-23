@@ -20,6 +20,8 @@ export interface HealRequest {
   htmlContext?: string
   testName?: string
   errorMessage?: string
+  /** Sinónimos adicionales del proyecto — se mergean con los built-in EN/ES. */
+  customSynonyms?: { actions?: Record<string, string>; fields?: Record<string, string> }
 }
 
 export type SelectorType = 'CSS' | 'XPATH' | 'TESTID' | 'ROLE' | 'TEXT' | 'MIXED'
@@ -175,15 +177,15 @@ const ACTIONS: Record<string, string> = { ...enDictionary.ACTIONS, ...esDictiona
 // Nombre de campo (email, contraseña, phone...) → label/placeholder visible a buscar.
 const FIELDS: Record<string, string> = { ...enDictionary.FIELDS, ...esDictionary.FIELDS }
 
-function extractActionFromSelector(selector: string): string {
-  for (const [key, value] of Object.entries(ACTIONS)) {
+function extractActionFromSelector(selector: string, actions: Record<string, string>): string {
+  for (const [key, value] of Object.entries(actions)) {
     if (selector.toLowerCase().includes(key)) return value
   }
   return 'Submit'
 }
 
-function extractFieldName(selector: string): string {
-  for (const [key, value] of Object.entries(FIELDS)) {
+function extractFieldName(selector: string, fields: Record<string, string>): string {
+  for (const [key, value] of Object.entries(fields)) {
     if (selector.toLowerCase().includes(key)) return value
   }
   return 'Field'
@@ -215,7 +217,7 @@ function isUnstableClassCandidate(selector: string, candidate: string): boolean 
   return volatileFragments.length > 3
 }
 
-function generateHealingStrategies(selector: string, analysis: SelectorAnalysis): HealingStrategy[] {
+function generateHealingStrategies(selector: string, analysis: SelectorAnalysis, actions: Record<string, string>, fields: Record<string, string>): HealingStrategy[] {
   if (analysis.isAlreadyModernLocator) {
     return [{
       selector,
@@ -255,7 +257,7 @@ function generateHealingStrategies(selector: string, analysis: SelectorAnalysis)
   }
 
   if (analysis.element === 'button') {
-    const action = extractActionFromSelector(selector)
+    const action = extractActionFromSelector(selector, actions)
     strategies.push({
       selector: `role('button', { name: '${action}' })`,
       type: 'ROLE',
@@ -277,7 +279,7 @@ function generateHealingStrategies(selector: string, analysis: SelectorAnalysis)
   }
 
   if (analysis.element === 'input') {
-    const fieldName = extractFieldName(selector)
+    const fieldName = extractFieldName(selector, fields)
     strategies.push({
       selector: `input[placeholder*='${fieldName}']`,
       type: 'CSS',
@@ -300,7 +302,7 @@ function generateHealingStrategies(selector: string, analysis: SelectorAnalysis)
 
   if (analysis.element === 'link') {
     strategies.push({
-      selector: `role('link', { name: '${extractActionFromSelector(selector)}' })`,
+      selector: `role('link', { name: '${extractActionFromSelector(selector, actions)}' })`,
       type: 'ROLE',
       confidence: 0.91,
       explanation: `Selector por rol de enlace con texto. Muy estable y accesible.`,
@@ -393,9 +395,14 @@ function generateHealingStrategies(selector: string, analysis: SelectorAnalysis)
 
 /** Analiza un selector fallido y propone una heurística de sanado — sin red, sin verificar contra DOM real. */
 export function analyzeAndHeal(request: HealRequest): HealResponse {
-  const { selector } = request
+  const { selector, customSynonyms } = request
   const analysis = analyzeSelector(selector)
-  const strategies = generateHealingStrategies(selector, analysis)
+
+  // Merge built-in dictionaries with project-level custom synonyms.
+  const actions = { ...ACTIONS, ...customSynonyms?.actions }
+  const fields = { ...FIELDS, ...customSynonyms?.fields }
+
+  const strategies = generateHealingStrategies(selector, analysis, actions, fields)
 
   const bestStrategy = strategies[0] ?? {
     selector: 'body',

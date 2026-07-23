@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { execSync } from 'node:child_process'
+import { createConnection } from 'node:net'
 import { dirname, join } from 'node:path'
 import {
   detectFramework,
@@ -30,11 +31,15 @@ export interface InitReport {
   results: FrameworkInitResult[]
   /** true si no se detectó ningún framework y se eligió uno interactivamente (CASO A). */
   prompted: boolean
+  /** Advertencia sobre el puerto detectado en baseURL — si algo ya responde ahí. */
+  portWarning?: string
 }
 
 export interface InitOptions {
   /** Inyectable para tests — evita el prompt real de stdin. */
   chooseFramework?: (defaultFramework: Framework) => Framework
+  /** Inyectable para tests — evita el chequeo real de puerto. */
+  checkPort?: (port: number) => boolean
 }
 
 function isInstalled(cwd: string, pkg: string): boolean {
@@ -93,7 +98,7 @@ function initFramework(cwd: string, framework: Framework, packageManager: Return
   const pkg = healifyPackageFor(framework)
   const installed = installPackage(cwd, packageManager, pkg)
 
-  if (framework === 'selenium') {
+  if (framework === 'selenium' || framework === 'webdriverio') {
     const scaffoldedFiles = writeScaffoldFiles(cwd, scaffoldFilesFor(cwd, framework))
     return { framework, package: pkg, installed, config: 'scaffolded', scaffoldedFiles }
   }
@@ -121,12 +126,39 @@ function initFramework(cwd: string, framework: Framework, packageManager: Return
 export function init(cwd: string = process.cwd(), options: InitOptions = {}): InitReport {
   const { frameworks, packageManager } = detectFramework(cwd)
 
+  let report: InitReport
+
   if (frameworks.length === 0) {
     const chooseFramework = options.chooseFramework ?? promptFrameworkChoice
     const chosen = chooseFramework('playwright')
-    return { frameworks: [chosen], results: [initFramework(cwd, chosen, packageManager)], prompted: true }
+    report = { frameworks: [chosen], results: [initFramework(cwd, chosen, packageManager)], prompted: true }
+  } else {
+    const results = frameworks.map((framework) => initFramework(cwd, framework, packageManager))
+    report = { frameworks, results, prompted: false }
   }
 
-  const results = frameworks.map((framework) => initFramework(cwd, framework, packageManager))
-  return { frameworks, results, prompted: false }
+  // Chequeo de puerto: solo informativo, no bloquea nada.
+  const baseUrl = detectBaseUrl(cwd)
+  const portMatch = baseUrl.match(/:(\d+)/)
+  if (portMatch) {
+    const port = parseInt(portMatch[1], 10)
+    const portInUse = options.checkPort ? options.checkPort(port) : defaultCheckPort(port)
+    if (portInUse) {
+      report.portWarning = `Algo ya responde en el puerto ${port} — puede ser tu app u otro proceso (ej. Obsidian en 3000). Si tu app no está levantada, acordate de correr npm run dev antes de escribir tests e2e.`
+    }
+  }
+
+  return report
+}
+
+function defaultCheckPort(port: number): boolean {
+  try {
+    execSync(`powershell -Command "Test-NetConnection -ComputerName localhost -Port ${port} -WarningAction SilentlyContinue | Select-Object -ExpandProperty TcpTestSucceeded"`, {
+      timeout: 2000,
+      stdio: 'pipe',
+    })
+    return true
+  } catch {
+    return false
+  }
 }

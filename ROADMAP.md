@@ -10,50 +10,59 @@ perder contexto.
 
 ## Ajustes chicos (bajo riesgo, 1 sesión o menos)
 
-### 1. `doctor` detecta el gotcha de semver caret que ya mordió dos veces
+### 1. `doctor` detecta el gotcha de semver caret que ya mordió dos veces ✅
 En esta sesión, `npm install --save-dev @healify/cli` no trajo la versión nueva porque
 `package.json` tenía `^0.4.1` (el caret en paquetes `0.x` te encierra en ese minor).
 `doctor` podría comparar la versión instalada en `node_modules` contra el rango declarado
 en `package.json` y avisar explícito: *"tenés ^0.4.1 declarado, un `npm install` sin
 versión no te va a subir de minor, usá `@latest` a mano"*. No necesita red, es comparar
 dos strings que ya tiene disponibles.
+**Implementado**: `checkSemverCaret()` en doctor.ts. +7 tests (→ 18 en cli doctor).
 
-### 2. Selenium: método `flush()` para generar reporte
+### 2. Selenium: método `flush()` para generar reporte ✅
 Ya está anotado como pendiente en `selenium-plugin/README.md` ("se evalúa agregar un
 método `flush()` en una versión futura"). Hoy Selenium solo cura en vivo, no deja un
 `healify-report.json` acumulado como Playwright/Cypress. Un `flush()` opcional que el
 usuario llame al final de su suite podría escribir el mismo formato de reporte a partir
 de los eventos que ya emite `onEvent`.
+**Implementado**: `flush()` en plugin.ts + eventos internos. +6 tests (→ 35 en selenium-plugin).
 
-### 3. `init` detecta conflictos de puerto antes de escribir el config
+### 3. `init` detecta conflictos de puerto antes de escribir el config ✅
 El bug real de esta sesión (Obsidian compitiendo por el puerto 3000 de `sgo-pzbp`) se
 encontró recién corriendo el test, no en `init`. `init` podría, después de detectar el
 `baseURL`, hacer un chequeo liviano (una request HTTP corta) y avisar si algo ya responde
 ahí de forma sospechosa (o simplemente confirmar "nadie responde en el puerto todavía,
 acordate de levantar tu app"). No bloquea nada, es solo una advertencia útil.
+**Implementado**: `checkPortConflict()` en init.ts. +5 tests (→ 23 en cli init).
 
 ---
 
 ## Features medianas (una feature bien acotada, con su propio diseño)
 
-### 4. Diccionario de sinónimos configurable por proyecto
+### 4. Diccionario de sinónimos configurable por proyecto ✅
 Hoy `ACTIONS`/`FIELDS` (los mapeos como `"ingresar" → "Ingresar"`) están fijos en
 `reporter-core/src/dictionaries/*.json`, dentro del propio paquete. Un proyecto con
 vocabulario propio (términos navales, de gestión, etc.) no puede extenderlo sin tocar el
 código de Healify. Una opción: un `healify.config.json` opcional en la raíz del proyecto
 consumidor, con un objeto de sinónimos adicionales que se mergean con los dictionaries
 built-in antes de correr `analyzeAndHeal()`.
+**Implementado**: `customSynonyms` en `HealRequest` se mergean con los built-in en
+`healing-engine.ts`. +6 tests (→ 44 en reporter-core).
 
-### 5. Soporte para más frameworks (WebdriverIO, Puppeteer, TestCafe)
+### 5. Soporte para más frameworks (WebdriverIO, Puppeteer, TestCafe) ✅
 Mismo patrón que `selenium-plugin` (wrap del driver real, sin tocar el motor
 compartido). Cada uno es un paquete nuevo relativamente chico una vez que existe el
 patrón de `selenium-plugin` como referencia. Prioridad sugerida: WebdriverIO primero (es
 el más pedido en la comunidad de QA automation).
+**Implementado**: `webdriverio-plugin/` — wrap Proxy sobre `browser.$()`, plugin con
+`flush()`, locator con wdioSelectorToSelector. +23 tests. No publicado en npm aún.
 
-### 6. GitHub Action empaquetada
+### 6. GitHub Action empaquetada ✅
 Una action que corra `doctor` y `fix --dry-run` en cada PR y comente el resultado
 (selectores rotos detectados, sugerencias, sin aplicar nada solo). Reduce fricción para
 equipos que ya tienen CI armado, hoy el usuario tiene que armar los steps a mano.
+**Implementado en `gh-action/`** — action.yml + run.js + 20 tests. Usa `@octokit/action`
+para postear/actualizar un comment sticky en el PR (keyed por `<!-- healify-report -->`).
 
 ---
 

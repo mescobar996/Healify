@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-export type Framework = 'playwright' | 'cypress' | 'selenium'
+export type Framework = 'playwright' | 'cypress' | 'selenium' | 'webdriverio'
 export type PackageManager = 'npm' | 'yarn' | 'pnpm'
 export type ModuleType = 'esm' | 'cjs'
 
@@ -12,12 +12,13 @@ export interface DetectResult {
   packageManager: PackageManager
 }
 
-const CONFIG_CANDIDATES: Record<'playwright' | 'cypress', string[]> = {
+const CONFIG_CANDIDATES: Record<'playwright' | 'cypress' | 'webdriverio', string[]> = {
   playwright: ['playwright.config.ts', 'playwright.config.js', 'playwright.config.mjs', 'playwright.config.cjs'],
   cypress: ['cypress.config.ts', 'cypress.config.js', 'cypress.config.mjs', 'cypress.config.cjs'],
+  webdriverio: ['wdio.conf.ts', 'wdio.conf.js', 'wdio.conf.mjs', 'wdio.conf.cjs'],
 }
 
-function findConfig(cwd: string, framework: 'playwright' | 'cypress'): string | null {
+function findConfig(cwd: string, framework: 'playwright' | 'cypress' | 'webdriverio'): string | null {
   for (const name of CONFIG_CANDIDATES[framework]) {
     const path = join(cwd, name)
     if (existsSync(path)) return path
@@ -48,6 +49,7 @@ export function detectFramework(cwd: string = process.cwd()): DetectResult {
   if ('@playwright/test' in deps || findConfig(cwd, 'playwright')) frameworks.push('playwright')
   if ('cypress' in deps || findConfig(cwd, 'cypress')) frameworks.push('cypress')
   if ('selenium-webdriver' in deps) frameworks.push('selenium')
+  if ('webdriverio' in deps || findConfig(cwd, 'webdriverio')) frameworks.push('webdriverio')
 
   const configPath =
     (frameworks.includes('playwright') ? findConfig(cwd, 'playwright') : null) ??
@@ -56,10 +58,11 @@ export function detectFramework(cwd: string = process.cwd()): DetectResult {
   return { frameworks, configPath, packageManager: detectPackageManager(cwd) }
 }
 
-/** Config de un framework puntual — usado cuando hay más de un framework detectado y el configPath único de detectFramework() no alcanza. Selenium no tiene convención de config: siempre null. */
+/** Config de un framework puntual — usado cuando hay más de un framework detectado y el configPath único de detectFramework() no alcanza. Selenium y WebdriverIO no tienen convención de config editada por Healify: Selenium wirea a mano, WebdriverIO tiene wdio.conf. */
 export function findConfigForFramework(cwd: string, framework: Framework): string | null {
   if (framework === 'playwright') return findConfig(cwd, 'playwright')
   if (framework === 'cypress') return findConfig(cwd, 'cypress')
+  if (framework === 'webdriverio') return findConfig(cwd, 'webdriverio')
   return null
 }
 
@@ -67,6 +70,7 @@ const HEALIFY_PACKAGE: Record<Framework, string> = {
   playwright: '@healify/test-runner',
   cypress: '@healify/cypress-plugin',
   selenium: '@healify/selenium-plugin',
+  webdriverio: '@healify/webdriverio-plugin',
 }
 
 /** Qué paquete de Healify corresponde a cada framework. */

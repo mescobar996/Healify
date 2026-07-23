@@ -102,4 +102,52 @@ describe('analyzeAndHeal', () => {
       expect(result.fixedSelector).not.toMatch(/^visible=/)
     })
   })
+
+  describe('custom synonyms (healify.config.json)', () => {
+    it('usa un sinónimo de acción custom para generar la sugerencia', () => {
+      const result = analyzeAndHeal({
+        selector: '#btn-inspeccionar',
+        customSynonyms: { actions: { inspeccionar: 'Inspeccionar' } },
+      })
+      expect(result.fixedSelector).toContain('Inspeccionar')
+    })
+
+    it('usa un sinónimo de campo custom para generar la sugerencia', () => {
+      const result = analyzeAndHeal({
+        selector: 'input.campo-matricula',
+        customSynonyms: { fields: { matricula: 'Matrícula' } },
+      })
+      expect(result.fixedSelector).toContain('Matrícula')
+    })
+
+    it('los sinónimos custom no pisan los built-in (español sigue funcionando)', () => {
+      const result = analyzeAndHeal({
+        selector: '#btn-guardar',
+        customSynonyms: { actions: { otro: 'Otro' } },
+      })
+      expect(result.fixedSelector).toContain('Guardar')
+    })
+
+    it('los sinónimos custom sí pisan built-in si tienen la misma key', () => {
+      const result = analyzeAndHeal({
+        selector: '#btn-guardar',
+        customSynonyms: { actions: { guardar: 'Save (custom)' } },
+      })
+      expect(result.fixedSelector).toContain('Save (custom)')
+    })
+
+    it('sin customSynonyms: comportamiento idéntico al actual', () => {
+      const without = analyzeAndHeal({ selector: '#btn-guardar' })
+      const withEmpty = analyzeAndHeal({ selector: '#btn-guardar', customSynonyms: {} })
+      expect(without.fixedSelector).toBe(withEmpty.fixedSelector)
+    })
+
+    it('custom synonyms vacíos no rompen nada', () => {
+      const result = analyzeAndHeal({
+        selector: '#btn-guardar',
+        customSynonyms: { actions: {}, fields: {} },
+      })
+      expect(result.fixedSelector).toContain('Guardar')
+    })
+  })
 })

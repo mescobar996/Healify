@@ -1,0 +1,12 @@
+name: 'Healify — Check broken selectors'
+description: 'Runs Healify doctor + fix --dry-run and posts a PR comment with broken selectors and suggestions. Never modifies files.'
+branding:
+  icon: 'search'
+  color: 'green'
+inputs:
+  github-token:
+    description: 'GitHub token for posting PR comments'
+    default: ${{ github.token }}
+runs:
+  using: 'node20'
+  main: 'run.js'

@@ -1,0 +1,33 @@
+{
+  "name": "@healify/webdriverio-plugin",
+  "version": "0.6.0",
+  "description": "Self-healing wrapper for WebdriverIO — heuristic, local-first, no AI, no server.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc --emitDeclarationOnly && esbuild src/index.ts --bundle --platform=node --outdir=dist --format=cjs --external:webdriverio",
+    "test": "vitest run"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "peerDependencies": {
+    "webdriverio": "^8.0.0 || ^9.0.0"
+  },
+  "devDependencies": {
+    "@healify/reporter-core": "*",
+    "esbuild": "^0.28.1",
+    "typescript": "^5.4.0",
+    "vitest": "^4.0.18",
+    "webdriverio": "^9.0.0"
+  }
+}

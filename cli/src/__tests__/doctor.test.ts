@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { mkdtempSync, writeFileSync, readFileSync, rmSync } from 'node:fs'
+import { mkdtempSync, writeFileSync, readFileSync, rmSync, mkdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { doctor } from '../commands/doctor'
@@ -16,6 +16,12 @@ afterEach(() => {
 
 function writePkg(devDeps: Record<string, string> = {}) {
   writeFileSync(join(dir, 'package.json'), JSON.stringify({ devDependencies: devDeps }))
+}
+
+function writeInstalledPkg(pkg: string, version: string) {
+  const pkgDir = join(dir, 'node_modules', pkg)
+  mkdirSync(pkgDir, { recursive: true })
+  writeFileSync(join(pkgDir, 'package.json'), JSON.stringify({ version }))
 }
 
 describe('doctor', () => {
@@ -94,7 +100,7 @@ describe('doctor', () => {
 
     expect(report.checks.some((c) => c.label.includes('healify-report.json existe'))).toBe(false)
     const infoCheck = report.checks.find((c) => c.info)
-    expect(infoCheck).toMatchObject({ label: 'Selenium cura en vivo, no genera reporte', ok: true, info: true })
+    expect(infoCheck).toMatchObject({ label: 'Selenium/WebdriverIO curan en vivo, no generan reporte', ok: true, info: true })
   })
 
   it('selenium-only: todos los checks quedan en ok (incluido el informativo)', () => {
@@ -125,5 +131,93 @@ describe('doctor', () => {
     doctor(dir)
 
     expect(readFileSync(configPath, 'utf-8')).toBe(original)
+  })
+
+  describe('semver caret gotcha', () => {
+    it('avisa cuando ^0.x.y está declarado y la versión instalada es la misma (minor encerrado)', () => {
+      writePkg({ '@healify/cli': '^0.4.1', '@playwright/test': '^1.58.0' })
+      writeInstalledPkg('@healify/cli', '0.4.1')
+      writeFileSync(join(dir, 'playwright.config.ts'), `export default defineConfig({\n  reporter: [['@healify/test-runner/reporter']],\n})\n`)
+
+      const report = doctor(dir)
+
+      const caretCheck = report.checks.find((c) => c.label.includes('Semver caret gotcha en @healify/cli'))
+      expect(caretCheck).toBeDefined()
+      expect(caretCheck?.ok).toBe(true)
+      expect(caretCheck?.info).toBe(true)
+      expect(caretCheck?.fix).toContain('^0.4.1')
+      expect(caretCheck?.fix).toContain('@latest')
+    })
+
+    it('no avisa cuando ^0.x.y está declarado pero la versión instalada ya es más nueva', () => {
+      writePkg({ '@healify/cli': '^0.4.1', '@playwright/test': '^1.58.0' })
+      writeInstalledPkg('@healify/cli', '0.6.0')
+      writeFileSync(join(dir, 'playwright.config.ts'), `export default defineConfig({\n  reporter: [['@healify/test-runner/reporter']],\n})\n`)
+
+      const report = doctor(dir)
+
+      const caretCheck = report.checks.find((c) => c.label.includes('Semver caret gotcha'))
+      expect(caretCheck).toBeUndefined()
+    })
+
+    it('no avisa para ^1.x.y (caret en paquetes 1.x+ sí sube minor)', () => {
+      writePkg({ '@healify/cli': '^1.5.0', '@playwright/test': '^1.58.0' })
+      writeInstalledPkg('@healify/cli', '1.5.0')
+      writeFileSync(join(dir, 'playwright.config.ts'), `export default defineConfig({\n  reporter: [['@healify/test-runner/reporter']],\n})\n`)
+
+      const report = doctor(dir)
+
+      const caretCheck = report.checks.find((c) => c.label.includes('Semver caret gotcha'))
+      expect(caretCheck).toBeUndefined()
+    })
+
+    it('no avisa para ~0.4.1 (tilde es diferente, solo patch)', () => {
+      writePkg({ '@healify/cli': '~0.4.1', '@playwright/test': '^1.58.0' })
+      writeInstalledPkg('@healify/cli', '0.4.1')
+      writeFileSync(join(dir, 'playwright.config.ts'), `export default defineConfig({\n  reporter: [['@healify/test-runner/reporter']],\n})\n`)
+
+      const report = doctor(dir)
+
+      const caretCheck = report.checks.find((c) => c.label.includes('Semver caret gotcha'))
+      expect(caretCheck).toBeUndefined()
+    })
+
+    it('no avisa para 0.4.1 sin rango (sin caret, npm instala exacto)', () => {
+      writePkg({ '@healify/cli': '0.4.1', '@playwright/test': '^1.58.0' })
+      writeInstalledPkg('@healify/cli', '0.4.1')
+      writeFileSync(join(dir, 'playwright.config.ts'), `export default defineConfig({\n  reporter: [['@healify/test-runner/reporter']],\n})\n`)
+
+      const report = doctor(dir)
+
+      const caretCheck = report.checks.find((c) => c.label.includes('Semver caret gotcha'))
+      expect(caretCheck).toBeUndefined()
+    })
+
+    it('no avisa si el paquete no está en node_modules', () => {
+      writePkg({ '@healify/cli': '^0.4.1', '@playwright/test': '^1.58.0' })
+      writeFileSync(join(dir, 'playwright.config.ts'), `export default defineConfig({\n  reporter: [['@healify/test-runner/reporter']],\n})\n`)
+
+      const report = doctor(dir)
+
+      const caretCheck = report.checks.find((c) => c.label.includes('Semver caret gotcha'))
+      expect(caretCheck).toBeUndefined()
+    })
+
+    it('chequea todos los paquetes @healify/* declarados con ^0.x', () => {
+      writePkg({
+        '@healify/cli': '^0.4.1',
+        '@healify/test-runner': '^0.5.2',
+        '@playwright/test': '^1.58.0',
+      })
+      writeInstalledPkg('@healify/cli', '0.4.1')
+      writeInstalledPkg('@healify/test-runner', '0.5.2')
+      writeFileSync(join(dir, 'playwright.config.ts'), `export default defineConfig({\n  reporter: [['@healify/test-runner/reporter']],\n})\n`)
+
+      const report = doctor(dir)
+
+      const caretChecks = report.checks.filter((c) => c.label.includes('Semver caret gotcha'))
+      expect(caretChecks).toHaveLength(2)
+      expect(caretChecks.every((c) => c.ok && c.info)).toBe(true)
+    })
   })
 })

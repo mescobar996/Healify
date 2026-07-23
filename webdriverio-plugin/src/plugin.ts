@@ -1,15 +1,14 @@
-import type { WebDriver } from 'selenium-webdriver'
 import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { renderLocalReportJson, type LocalRun, type LocalCaseResult } from '@healify/reporter-core'
-import { wrapDriver } from './wrap'
-import type { HealifySeleniumOptions, HealingEvent } from './types'
+import { wrapBrowser } from './wrap'
+import type { HealifyWebdriverIOOptions, HealingEvent } from './types'
 
-export class HealifySeleniumPlugin {
-  private readonly options: HealifySeleniumOptions
+export class HealifyWebdriverIOPlugin {
+  private readonly options: HealifyWebdriverIOOptions
   private readonly events: HealingEvent[] = []
 
-  constructor(options: HealifySeleniumOptions = {}) {
+  constructor(options: HealifyWebdriverIOOptions = {}) {
     this.options = {
       ...options,
       onEvent: (event: HealingEvent) => {
@@ -19,14 +18,14 @@ export class HealifySeleniumPlugin {
     }
   }
 
-  /** Devuelve un proxy sobre el driver — el original nunca se muta. */
-  wrap(driver: WebDriver): WebDriver {
-    return wrapDriver(driver, this.options)
+  /** Devuelve un proxy sobre el browser — el original nunca se muta. */
+  wrap(browser: ReturnType<typeof wrapBrowser> extends infer T ? Record<string, unknown> : never): Record<string, unknown> {
+    return wrapBrowser(browser as any, this.options) as unknown as Record<string, unknown>
   }
 
   /**
-   * Escribe healify-report.json con todos los eventos acumulados desde la última llamada
-   * (o desde el inicio si nunca se llamó). Mismo formato que Playwright/Cypress.
+   * Escribe healify-report.json con todos los eventos acumulados desde la última llamada.
+   * Mismo formato que Playwright/Cypress/Selenium.
    * Devuelve la cantidad de casos escritos.
    */
   flush(cwd: string = process.cwd()): number {
@@ -44,8 +43,8 @@ export class HealifySeleniumPlugin {
     }))
 
     const run: LocalRun = {
-      project: this.options.projectName ?? 'selenium-project',
-      framework: 'Selenium',
+      project: this.options.projectName ?? 'webdriverio-project',
+      framework: 'WebdriverIO',
       generatedAt: new Date(),
       cases,
     }

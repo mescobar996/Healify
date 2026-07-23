@@ -41,7 +41,7 @@ describe('init — CASO C (config existente, falta wirear)', () => {
     writePkg({ '@playwright/test': '^1.58.0', '@healify/test-runner': '^0.3.0' })
     writeFileSync(join(dir, 'playwright.config.ts'), `export default defineConfig({\n  use: {},\n})\n`)
 
-    const report = init(dir)
+    const report = init(dir, { checkPort: () => false })
 
     expect(mockExecSync).not.toHaveBeenCalled()
     expect(report.results[0].installed).toBe('already-installed')
@@ -238,5 +238,67 @@ describe('init — idempotencia del scaffold', () => {
     // marcador de Healify ya está, así que solo confirma already-wired, nunca reescribe.
     expect(second.results[0].config).toBe('already-wired')
     expect(readFileSync(configPath, 'utf-8')).toBe(editedByUser)
+  })
+})
+
+describe('init — detección de puerto', () => {
+  it('no agrega portWarning cuando el puerto está libre', () => {
+    writeFileSync(join(dir, 'package.json'), JSON.stringify({
+      devDependencies: { '@playwright/test': '^1.58.0' },
+      scripts: { dev: 'vite --port=3000' },
+    }))
+    writeFileSync(join(dir, 'playwright.config.ts'), `export default defineConfig({\n  use: {},\n})\n`)
+    const checkPort = vi.fn().mockReturnValue(false)
+
+    const report = init(dir, { checkPort })
+
+    expect(report.portWarning).toBeUndefined()
+    expect(checkPort).toHaveBeenCalledWith(3000)
+  })
+
+  it('agrega portWarning cuando algo ya responde en el puerto detectado', () => {
+    writeFileSync(join(dir, 'package.json'), JSON.stringify({
+      devDependencies: { '@playwright/test': '^1.58.0' },
+      scripts: { dev: 'vite --port=3000' },
+    }))
+    writeFileSync(join(dir, 'playwright.config.ts'), `export default defineConfig({\n  use: {},\n})\n`)
+    const checkPort = vi.fn().mockReturnValue(true)
+
+    const report = init(dir, { checkPort })
+
+    expect(report.portWarning).toContain('3000')
+    expect(report.portWarning).toContain('Algo ya responde')
+  })
+
+  it('usa el puerto del script dev (--port=4000) para el chequeo', () => {
+    writeFileSync(join(dir, 'package.json'), JSON.stringify({
+      devDependencies: { '@playwright/test': '^1.58.0' },
+      scripts: { dev: 'vite --port=4000' },
+    }))
+    writeFileSync(join(dir, 'playwright.config.ts'), `export default defineConfig({\n  use: {},\n})\n`)
+    const checkPort = vi.fn().mockReturnValue(true)
+
+    const report = init(dir, { checkPort })
+
+    expect(checkPort).toHaveBeenCalledWith(4000)
+    expect(report.portWarning).toContain('4000')
+  })
+
+  it('default 5173 cuando no hay pista de puerto', () => {
+    writePkg()
+    const checkPort = vi.fn().mockReturnValue(false)
+
+    init(dir, { chooseFramework: () => 'playwright', checkPort })
+
+    expect(checkPort).toHaveBeenCalledWith(5173)
+  })
+
+  it('sin checkPort inyectado: no tira error (usa defaultCheckPort)', () => {
+    writePkg({ '@playwright/test': '^1.58.0' })
+    writeFileSync(join(dir, 'playwright.config.ts'), `export default defineConfig({\n  use: {},\n})\n`)
+
+    // No debe tirar excepción — defaultCheckPort falla silenciosamente en CI
+    const report = init(dir)
+    expect(report.results).toHaveLength(1)
   })
 })

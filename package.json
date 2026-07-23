@@ -7,7 +7,8 @@
     "test-runner",
     "cypress-plugin",
     "cli",
-    "selenium-plugin"
+    "selenium-plugin",
+    "webdriverio-plugin"
   ],
   "scripts": {
     "build": "npm run build --workspaces",

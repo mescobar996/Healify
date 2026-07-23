@@ -1,0 +1,13 @@
+{
+  "name": "@healify/gh-action",
+  "version": "0.6.0",
+  "private": true,
+  "type": "module",
+  "main": "run.js",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.10"
+  }
+}
