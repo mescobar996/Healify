@@ -90,6 +90,7 @@ export function computeTopRecurrent(entries: HistoryEntry[], limit: number = 10)
 
 export interface RebrokenSelector {
   selector: string
+  /** Apariciones totales en el historial, no re-roturas confirmadas — ver el comentario de computeRebroken(). */
   count: number
   firstHealedAt: string
 }
