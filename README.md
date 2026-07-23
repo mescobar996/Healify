@@ -25,11 +25,11 @@ tests, y listo.
 
 | Paquete | Versión | Para | npm |
 |---|---|---|---|
-| [`@healify/test-runner`](test-runner/README.md) | 0.3.0 | Playwright — genera `healify-report.html`/`.json` al final de la corrida | [![npm](https://img.shields.io/npm/v/%40healify%2Ftest-runner)](https://www.npmjs.com/package/@healify/test-runner) |
-| [`@healify/cypress-plugin`](cypress-plugin/README.md) | 0.3.0 | Cypress — mismo reporte, vía `setupNodeEvents` | [![npm](https://img.shields.io/npm/v/%40healify%2Fcypress-plugin)](https://www.npmjs.com/package/@healify/cypress-plugin) |
+| [`@healify/test-runner`](test-runner/README.md) | 0.4.0 | Playwright — genera `healify-report.html`/`.json` al final de la corrida | [![npm](https://img.shields.io/npm/v/%40healify%2Ftest-runner)](https://www.npmjs.com/package/@healify/test-runner) |
+| [`@healify/cypress-plugin`](cypress-plugin/README.md) | 0.4.0 | Cypress — mismo reporte, vía `setupNodeEvents` | [![npm](https://img.shields.io/npm/v/%40healify%2Fcypress-plugin)](https://www.npmjs.com/package/@healify/cypress-plugin) |
 | [`@healify/selenium-plugin`](selenium-plugin/README.md) | 0.1.0 | Selenium `WebDriver` — cura selectores en vivo, sin reporte (ver su README para el alcance) | [![npm](https://img.shields.io/npm/v/%40healify%2Fselenium-plugin)](https://www.npmjs.com/package/@healify/selenium-plugin) |
-| [`@healify/cli`](cli/README.md) | 0.3.0 | Aplica las sugerencias de un `healify-report.json` directo en tus archivos de test | [![npm](https://img.shields.io/npm/v/%40healify%2Fcli)](https://www.npmjs.com/package/@healify/cli) |
-| `reporter-core` | 0.3.0 | Motor heurístico + tipos compartidos. Privado, no se publica solo | — |
+| [`@healify/cli`](cli/README.md) | 0.4.0 | `init`/`doctor`/`fix` — auto-detecta tu framework, configura Healify y aplica sugerencias en tus archivos de test | [![npm](https://img.shields.io/npm/v/%40healify%2Fcli)](https://www.npmjs.com/package/@healify/cli) |
+| `reporter-core` | 0.4.0 | Motor heurístico + tipos compartidos. Privado, no se publica solo | — |
 
 Los 4 paquetes están publicados en npm y ya se pueden instalar hoy — no hace falta
 clonar el repo ni compilar nada para usarlos. Elegí el que corresponda a tu framework:

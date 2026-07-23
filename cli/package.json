@@ -1,6 +1,6 @@
 {
   "name": "@healify/cli",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Aplica las sugerencias de un healify-report.json directo en tus archivos de test.",
   "bin": {
     "healify": "dist/index.js"

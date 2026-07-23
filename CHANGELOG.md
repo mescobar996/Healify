@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.0 - 2026-07-22
+
+- feat: `@healify/cli init` — detecta el framework (Playwright/Cypress/Selenium) por `package.json` y archivos de config, instala el paquete de Healify que falte y wirea el `reporter`/plugin en el config automáticamente. Idempotente: no duplica si ya está instalado o configurado
+- feat: `@healify/cli doctor` — checklist con ✅/❌ y fix sugerido: framework detectado, paquete instalado, config wireado, `healify-report.json` generado. No modifica nada
+- feat: `healify` sin argumentos o con comando desconocido imprime help listando `init`/`doctor`/`fix`
+- fix: instalación en Windows fallaba silenciosamente (`ENOENT`/`EINVAL` con `execFileSync` + `npm`/`.cmd`) — encontrado corriendo el binario real, corregido con `execSync`
+- docs: sección "Para QA sin experiencia" en `cli/README.md` con los 3 comandos
+- 61 tests nuevos en `cli` (135 totales en el monorepo)
+
 ## 0.3.1 - 2026-07-22
 
 - fix: filtro de atributos volátiles (`css-`, `sc-`, hash largo) — el motor ya no propone una `.class` inestable como alternativa cuando el candidato sigue viéndose volátil o el selector original tiene más de 3 fragmentos tipo hash/número (`1998642`)
