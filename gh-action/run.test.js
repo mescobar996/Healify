@@ -1,5 +1,13 @@
-import { describe, it, expect } from 'vitest'
-import { formatDoctor, formatFixOutput, buildComment, findOrCreateComment, postComment } from './run.js'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+
+const { mockExecSync } = vi.hoisted(() => ({ mockExecSync: vi.fn() }))
+vi.mock('node:child_process', () => ({ execSync: mockExecSync }))
+
+const { formatDoctor, formatFixOutput, buildComment, findOrCreateComment, postComment, run } = await import('./run.js')
+
+beforeEach(() => {
+  mockExecSync.mockReset()
+})
 
 describe('formatDoctor', () => {
   it('parses a passing doctor report', () => {
@@ -109,7 +117,7 @@ describe('buildComment', () => {
       '✅ @healify/cli instalado',
     ].join('\n')
 
-    const comment = buildComment(doctorOutput, '', '.')
+    const comment = buildComment(doctorOutput, '')
     expect(comment).toContain('All Clear')
     expect(comment).toContain('<!-- healify-report -->')
   })
@@ -121,7 +129,7 @@ describe('buildComment', () => {
       '   fix: npm install --save-dev @healify/test-runner',
     ].join('\n')
 
-    const comment = buildComment(doctorOutput, '', '.')
+    const comment = buildComment(doctorOutput, '')
     expect(comment).toContain('Issues Detected')
     expect(comment).toContain('@healify/test-runner instalado')
     expect(comment).toContain('npm install --save-dev @healify/test-runner')
@@ -131,7 +139,7 @@ describe('buildComment', () => {
     const doctorOutput = '✅ Framework detectado: playwright'
     const fixOutput = '✓ e2e/login.spec.ts — #old → [data-testid="new"]'
 
-    const comment = buildComment(doctorOutput, fixOutput, '.')
+    const comment = buildComment(doctorOutput, fixOutput)
     expect(comment).toContain('Suggested Fixes')
     expect(comment).toContain('#old')
     expect(comment).toContain('[data-testid="new"]')
@@ -141,7 +149,7 @@ describe('buildComment', () => {
     const doctorOutput = '✅ Framework detectado: playwright'
     const fixOutput = '⚠ e2e/home.spec.ts — saltado: ambiguo'
 
-    const comment = buildComment(doctorOutput, fixOutput, '.')
+    const comment = buildComment(doctorOutput, fixOutput)
     expect(comment).toContain('Needs Review')
     expect(comment).toContain('ambiguo')
   })
@@ -152,19 +160,19 @@ describe('buildComment', () => {
       'ℹ️ Selenium/WebdriverIO curan en vivo, no generan reporte',
     ].join('\n')
 
-    const comment = buildComment(doctorOutput, '', '.')
+    const comment = buildComment(doctorOutput, '')
     expect(comment).toContain('Notes')
     expect(comment).toContain('Selenium/WebdriverIO curan en vivo')
   })
 
   it('includes local fix command hint', () => {
     const doctorOutput = '❌ Framework de test detectado'
-    const comment = buildComment(doctorOutput, '', '.')
+    const comment = buildComment(doctorOutput, '')
     expect(comment).toContain('npx @healify/cli fix')
   })
 
   it('handles empty inputs gracefully', () => {
-    const comment = buildComment('', '', '.')
+    const comment = buildComment('', '')
     expect(comment).toContain('<!-- healify-report -->')
     expect(comment).toContain('All Clear')
   })
@@ -244,5 +252,29 @@ describe('postComment', () => {
     expect(updated).toHaveLength(1)
     expect(updated[0].comment_id).toBe(42)
     expect(updated[0].body).toBe('body')
+  })
+})
+
+describe('run', () => {
+  it('pasa el project-path como cwd real del comando (no queda sin efecto)', () => {
+    mockExecSync.mockReturnValue('✅ ok')
+
+    run('npx @healify/cli doctor', 'packages/app')
+
+    expect(mockExecSync).toHaveBeenCalledWith(
+      'npx @healify/cli doctor',
+      expect.objectContaining({ cwd: 'packages/app' })
+    )
+  })
+
+  it('usa "." como cwd por defecto cuando no se pasa project-path', () => {
+    mockExecSync.mockReturnValue('✅ ok')
+
+    run('npx @healify/cli doctor')
+
+    expect(mockExecSync).toHaveBeenCalledWith(
+      'npx @healify/cli doctor',
+      expect.objectContaining({ cwd: '.' })
+    )
   })
 })

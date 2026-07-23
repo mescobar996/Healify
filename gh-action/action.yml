@@ -7,6 +7,9 @@ inputs:
   github-token:
     description: 'GitHub token for posting PR comments'
     default: ${{ github.token }}
+  project-path:
+    description: 'Directory to run Healify in (for monorepos where the test project is not at the repo root)'
+    default: '.'
 runs:
   using: 'node20'
   main: 'run.js'

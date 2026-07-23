@@ -1,4 +1,4 @@
-import { type HealifyWebdriverIOOptions, type HealingEvent } from './types';
+import { type HealifyWebdriverIOOptions } from './types';
 interface WdioBrowser {
     $(selector: string): unknown;
     [key: string]: unknown;
@@ -12,6 +12,4 @@ interface WdioBrowser {
  * (click, setValue, getText, etc.) para capturar el error en el momento correcto.
  */
 export declare function wrapBrowser(browser: WdioBrowser, options?: HealifyWebdriverIOOptions): WdioBrowser;
-/** Devuelve los eventos acumulados — para testing o para flush manual. */
-export declare function getEvents(_browser: WdioBrowser): HealingEvent[];
 export {};

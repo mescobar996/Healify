@@ -137,10 +137,3 @@ export function wrapBrowser(browser: WdioBrowser, options: HealifyWebdriverIOOpt
     },
   })
 }
-
-/** Devuelve los eventos acumulados — para testing o para flush manual. */
-export function getEvents(_browser: WdioBrowser): HealingEvent[] {
-  // Los eventos se almacenan en el closure de wrapBrowser.
-  // Esta función es para testing; en uso real, el plugin los maneja.
-  return []
-}

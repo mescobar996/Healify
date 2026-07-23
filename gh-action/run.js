@@ -3,9 +3,9 @@ import { readFileSync } from 'node:fs'
 
 const MARKER = '<!-- healify-report -->'
 
-function run(cmd) {
+export function run(cmd, cwd = '.') {
   try {
-    return execSync(cmd, { encoding: 'utf-8', timeout: 60_000, stdio: ['pipe', 'pipe', 'pipe'] }).trim()
+    return execSync(cmd, { encoding: 'utf-8', timeout: 60_000, stdio: ['pipe', 'pipe', 'pipe'], cwd }).trim()
   } catch (err) {
     const stderr = err.stderr?.toString() || ''
     const stdout = err.stdout?.toString() || ''
@@ -42,7 +42,7 @@ export function formatFixOutput(output) {
   return { applied, skipped }
 }
 
-export function buildComment(doctorOutput, fixOutput, projectPath) {
+export function buildComment(doctorOutput, fixOutput) {
   const checks = formatDoctor(doctorOutput)
   const { applied, skipped } = formatFixOutput(fixOutput)
 
@@ -157,14 +157,14 @@ async function main() {
   const [owner, repo] = repoFull.split('/')
 
   // Run Healify
-  console.log('Running Healify doctor...')
-  const doctorOutput = run(`npx @healify/cli doctor`)
+  console.log(`Running Healify doctor in '${projectPath}'...`)
+  const doctorOutput = run(`npx @healify/cli doctor`, projectPath)
 
-  console.log('Running Healify fix --dry-run...')
-  const fixOutput = run(`npx @healify/cli fix --dry-run`)
+  console.log(`Running Healify fix --dry-run in '${projectPath}'...`)
+  const fixOutput = run(`npx @healify/cli fix --dry-run`, projectPath)
 
   // Build comment
-  const comment = buildComment(doctorOutput, fixOutput, projectPath)
+  const comment = buildComment(doctorOutput, fixOutput)
 
   // Dynamic import of @octokit/action (bundled with the action runtime)
   const { Octokit } = await import('@octokit/action')

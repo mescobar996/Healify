@@ -1,5 +1,40 @@
 # Changelog
 
+## Sin publicar (post-0.7.0)
+
+Auditoría de lectura de las features #1-#6 (documentadas en 0.7.0 más abajo) — no
+confiar en que "tests en verde" significa "comportamiento real correcto" cuando los
+tests solo ejercitan el camino inyectado/mockeado. Se encontraron y arreglaron 4 huecos
+reales, ninguno cubierto por los tests originales:
+
+- **`cli/src/commands/init.ts` — `defaultCheckPort` estaba efectivamente invertido.**
+  Corría `Test-NetConnection` por PowerShell pero nunca parseaba el stdout ("True"/
+  "False"), solo miraba si el comando tiraba excepción — cosa que casi nunca pasa. En la
+  práctica esto devolvía "puerto ocupado" en la gran mayoría de los casos, exista o no
+  algo corriendo ahí. Arreglado parseando el stdout real. +2 tests que mockean
+  `execSync` con "True"/"False" y verifican `portWarning` en consecuencia (→ 106 tests
+  en cli). También se sacó un import muerto (`createConnection` de `node:net`, resto de
+  una implementación anterior nunca usada).
+- **`webdriverio-plugin/src/wrap.ts` — `getEvents()` era un stub que siempre devolvía
+  `[]`.** No estaba exportado desde `index.ts`, no lo usaba `plugin.ts` (que ya captura
+  eventos correctamente vía `onEvent`), y no tenía test. Eliminado por ser código muerto
+  que podía confundir a quien lo llamara esperando eventos reales.
+- **`gh-action/` — `@octokit/action` se importaba dinámicamente sin estar declarado
+  como dependency.** En un run real de GitHub Actions esto rompía con "Cannot find
+  module". Agregado a `package.json` y verificado que resuelve en runtime.
+- **`gh-action/` — el input `project-path` no tenía ningún efecto.** Se leía de
+  `INPUT_PROJECT_PATH` pero nunca se pasaba como `cwd` a los comandos de Healify, ni
+  estaba declarado en `action.yml`. Arreglado: `run()` ahora acepta `cwd` y lo usa de
+  verdad al correr `doctor`/`fix --dry-run`; `project-path` se declaró como input en
+  `action.yml`. +2 tests que verifican que `run()` pasa el `cwd` correcto (→ 22 tests en
+  gh-action).
+
+Verificación real tras los 4 fixes: `npm run verify` completo (231 tests en los 6
+workspaces del monorepo) + `npm test` en `gh-action` (22, standalone) + `npm audit` (0
+vulnerabilidades). Nota de entorno: `npm run verify` vía PowerShell en Windows resuelve
+`bash` a WSL (`C:\WINDOWS\system32\bash.exe`), un filesystem distinto al del repo —
+correr con Git Bash real, no con el `bash` que resuelve PowerShell por defecto.
+
 ## 0.7.0 - 2026-07-23
 
 Features #1 a #7 del `ROADMAP.md`, en dos sesiones. #1-#6 se implementaron primero (231

@@ -301,4 +301,24 @@ describe('init — detección de puerto', () => {
     const report = init(dir)
     expect(report.results).toHaveLength(1)
   })
+
+  it('defaultCheckPort parsea el stdout real de Test-NetConnection (True → portWarning)', () => {
+    writePkg({ '@playwright/test': '^1.58.0' })
+    writeFileSync(join(dir, 'playwright.config.ts'), `export default defineConfig({\n  use: {},\n})\n`)
+    mockExecSync.mockReturnValue('True\r\n')
+
+    const report = init(dir)
+
+    expect(report.portWarning).toContain('5173')
+  })
+
+  it('defaultCheckPort parsea el stdout real de Test-NetConnection (False → sin portWarning)', () => {
+    writePkg({ '@playwright/test': '^1.58.0' })
+    writeFileSync(join(dir, 'playwright.config.ts'), `export default defineConfig({\n  use: {},\n})\n`)
+    mockExecSync.mockReturnValue('False\r\n')
+
+    const report = init(dir)
+
+    expect(report.portWarning).toBeUndefined()
+  })
 })

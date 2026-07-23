@@ -7,6 +7,9 @@
   "scripts": {
     "test": "vitest run"
   },
+  "dependencies": {
+    "@octokit/action": "^7.0.0"
+  },
   "devDependencies": {
     "vitest": "^4.1.10"
   }

@@ -1,6 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { execSync } from 'node:child_process'
-import { createConnection } from 'node:net'
 import { dirname, join } from 'node:path'
 import {
   detectFramework,
@@ -153,11 +152,11 @@ export function init(cwd: string = process.cwd(), options: InitOptions = {}): In
 
 function defaultCheckPort(port: number): boolean {
   try {
-    execSync(`powershell -Command "Test-NetConnection -ComputerName localhost -Port ${port} -WarningAction SilentlyContinue | Select-Object -ExpandProperty TcpTestSucceeded"`, {
-      timeout: 2000,
-      stdio: 'pipe',
-    })
-    return true
+    const out = execSync(
+      `powershell -Command "Test-NetConnection -ComputerName localhost -Port ${port} -WarningAction SilentlyContinue | Select-Object -ExpandProperty TcpTestSucceeded"`,
+      { timeout: 2000, stdio: 'pipe' },
+    )
+    return out.toString().trim() === 'True'
   } catch {
     return false
   }
