@@ -147,10 +147,17 @@ function seleniumDemoTestContent(): string {
 
   return `/**
  * Demo ejecutable (no es un test de ningún framework — Selenium no tiene config para
- * wirear, así que esto es un script standalone). Corré con \`npx tsx e2e/selenium.demo.test.ts\`
- * (o compilá con tsc y usá \`node\`). Requiere ChromeDriver instalado — no requiere tu app
- * corriendo, navega a una página mínima autocontenida (data: URL) para no depender del DOM
- * real de tu proyecto. Borralo cuando ya viste la cura una vez.
+ * wirear, así que esto es un script standalone). A propósito NO vive en e2e/ ni termina
+ * en ".spec.ts" o ".test.ts": un archivo con ese sufijo dentro del testDir de Playwright
+ * (e2e/ por default) matchea su patrón de descubrimiento de tests — Playwright lo
+ * cargaría como si fuera un test suyo y, como este script corre código apenas se importa
+ * (\`main()\` al final del archivo), lo ejecutaría como efecto secundario de un
+ * \`npx playwright test\` cualquiera (confirmado real: abrió una sesión de Chrome de más y
+ * mezcló su log con el del test de Playwright).
+ * Corré este demo con \`npx tsx healify.selenium.demo.ts\` (o compilá con tsc y usá
+ * \`node\`). Requiere ChromeDriver instalado — no requiere tu app corriendo, navega a una
+ * página mínima autocontenida (data: URL) para no depender del DOM real de tu proyecto.
+ * Borralo cuando ya viste la cura una vez.
  *
  * confidenceThreshold bajado SOLO para este demo: el selector elegido produce confidence
  * 0.82 (por debajo del 0.9 default de producción), a propósito, para no auto-aplicar curas
@@ -198,10 +205,11 @@ export function scaffoldCypress(baseUrl: string, ext: 'ts' | 'js', moduleType: M
 }
 
 // Selenium no navega al baseURL real en el demo (ver comentario en seleniumDemoTestContent) —
-// no toma baseUrl a propósito, a diferencia de scaffoldPlaywright/scaffoldCypress.
+// no toma baseUrl a propósito, a diferencia de scaffoldPlaywright/scaffoldCypress. Tampoco
+// vive en e2e/ ni usa sufijo .test./.spec. — ver comentario dentro del contenido generado.
 export function scaffoldSelenium(ext: 'ts' | 'js'): ScaffoldFile[] {
   return [
     { path: `healify.selenium.example.${ext}`, content: seleniumExampleContent() },
-    { path: `e2e/selenium.demo.test.${ext}`, content: seleniumDemoTestContent() },
+    { path: `healify.selenium.demo.${ext}`, content: seleniumDemoTestContent() },
   ]
 }

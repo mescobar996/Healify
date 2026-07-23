@@ -2,7 +2,7 @@
 import { readFileSync } from 'node:fs'
 import type { LocalRun } from '@healify/reporter-core'
 import { fix, type FixOutcome } from './fix'
-import { init, type InitReport } from './commands/init'
+import { init, type InitReport, type FrameworkInitResult } from './commands/init'
 import { doctor, type DoctorReport } from './commands/doctor'
 
 function reasonText(outcome: Extract<FixOutcome, { status: 'skipped' }>): string {
@@ -61,7 +61,13 @@ function runFix(args: string[]): void {
 const RUN_COMMAND: Record<string, string> = {
   playwright: 'npx playwright test',
   cypress: 'npx cypress open',
-  selenium: 'npx tsx e2e/selenium.demo.test.ts',
+}
+
+/** Selenium no tiene un comando fijo: el nombre del demo depende de si el proyecto es TS o JS. */
+function runCommandFor(r: FrameworkInitResult): string {
+  if (r.framework !== 'selenium') return RUN_COMMAND[r.framework]
+  const demoFile = r.scaffoldedFiles?.find((f) => f.startsWith('healify.selenium.demo.'))
+  return `npx tsx ${demoFile ?? 'healify.selenium.demo.ts'}`
 }
 
 function printInitReport(report: InitReport): void {
@@ -93,7 +99,7 @@ function printInitReport(report: InitReport): void {
       console.log(`⚠ el config tiene una forma que no reconocemos — agregá Healify a mano, ver README`)
     }
 
-    console.log(`\n✅ Listo. Corré ${RUN_COMMAND[r.framework]}`)
+    console.log(`\n✅ Listo. Corré ${runCommandFor(r)}`)
   }
 }
 

@@ -94,15 +94,21 @@ Healify init
 ✅ @healify/selenium-plugin instalado
 ✅ archivos creados:
    - healify.selenium.example.ts
-   - e2e/selenium.demo.test.ts
+   - healify.selenium.demo.ts
 
-✅ Listo. Corré npx tsx e2e/selenium.demo.test.ts
+✅ Listo. Corré npx tsx healify.selenium.demo.ts
 ```
 
 Selenium no tiene config para wirear (se envuelve el `WebDriver` a mano, ver
-`healify.selenium.example.ts`). El demo (`e2e/selenium.demo.test.ts`) es un script
+`healify.selenium.example.ts`). El demo (`healify.selenium.demo.ts`) es un script
 ejecutable que no depende de tu app — navega a una página mínima autocontenida, así que
 podés correrlo sin levantar nada. Requiere ChromeDriver instalado.
+
+> Vive en la raíz, no en `e2e/`, y a propósito no usa sufijo `.test.`/`.spec.`: si tenés
+> Playwright o Cypress en el mismo proyecto, un archivo así dentro de `e2e/` matchea el
+> patrón de descubrimiento de tests de Playwright — lo cargaría como si fuera un test
+> suyo y, como este script corre código apenas se importa, lo ejecutaría como efecto
+> secundario de cualquier `npx playwright test` (bug real, encontrado y arreglado).
 </details>
 
 **baseURL automático (Playwright/Cypress):** `init` busca el puerto real de tu app en este

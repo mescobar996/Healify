@@ -122,9 +122,9 @@ describe('init — CASO B (framework instalado, sin config)', () => {
 
     expect(report.results[0].framework).toBe('selenium')
     expect(report.results[0].config).toBe('scaffolded')
-    expect(report.results[0].scaffoldedFiles).toEqual(['healify.selenium.example.js', 'e2e/selenium.demo.test.js'])
+    expect(report.results[0].scaffoldedFiles).toEqual(['healify.selenium.example.js', 'healify.selenium.demo.js'])
     expect(existsSync(join(dir, 'healify.selenium.example.js'))).toBe(true)
-    expect(existsSync(join(dir, 'e2e', 'selenium.demo.test.js'))).toBe(true)
+    expect(existsSync(join(dir, 'healify.selenium.demo.js'))).toBe(true)
   })
 })
 

@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.5.1 - 2026-07-23
+
+**Fix crítico encontrado probando 0.5.0 en producción real (`sgo-pzbp`), no en tests:**
+un `npx playwright test` (sin especificar archivo) escaneó todo `e2e/` y encontró
+`e2e/selenium.demo.test.ts` — matchea el patrón de descubrimiento de tests por defecto de
+Playwright (`*.test.ts` dentro del `testDir`). Playwright lo cargó como si fuera un test
+suyo y, como el script corre `main()` apenas se importa (no espera a que lo invoquen),
+se disparó como efecto secundario: abrió una sesión de Chrome de más (vía ChromeDriver) y
+mezcló su log de curado con la salida del test real de Playwright. Confirmado real,
+copia exacta del output del usuario.
+
+**Fix:** el demo de Selenium (`scaffoldSelenium` en `cli/src/scaffold.ts`) ya no vive en
+`e2e/` ni usa sufijo `.spec.`/`.test.` — se mueve a la raíz como `healify.selenium.demo.ts`
+(al lado de `healify.selenium.example.ts`). `cli/src/index.ts` ajustado para armar el
+comando de "Listo. Corré..." leyendo el nombre real generado (TS o JS) en vez de asumir
+`.ts` a mano. Verificado real: `npx playwright test` en `sgo-pzbp` ya no dispara Chrome de
+más, y `npx tsx healify.selenium.demo.ts` sigue curando y clickeando bien por separado.
+
+**Bug secundario encontrado en el propio mensaje del demo:** el comentario JSDoc explicando
+por qué el archivo no debía llamarse `.test.ts` contenía literalmente `*.spec.*/*.test.*`
+— ese `*/` cerraba el comentario `/** ... */` antes de tiempo, dejando el resto del texto
+como código real y rompiendo el parseo (`esbuild` tiraba `Unexpected "*"` al intentar
+correr el demo con `npx tsx`). Reescrito sin la secuencia `*/` literal. Test de regresión
+nuevo: los 3 templates (Playwright/Cypress/Selenium) ahora se validan parseando con
+`esbuild.transformSync` en vez de solo revisar substrings — así un futuro comentario mal
+escrito rompe el test en vez de llegar a producción.
+
+162 tests (antes 160). `cli` a `0.5.1` — único paquete tocado, `test-runner`/
+`cypress-plugin`/`reporter-core` sin cambios desde 0.5.0.
+
 ## 0.5.0 - 2026-07-23
 
 **Fix crítico (`reporter-core`, republicado vía `test-runner`/`cypress-plugin`):**
