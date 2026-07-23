@@ -139,6 +139,14 @@ describe('computeRebroken', () => {
     expect(computeRebroken(entries)).toEqual([])
   })
 
+  it('no marca un selector curado dos veces seguidas sin volver a romperse en el medio', () => {
+    const entries = [
+      makeEntry({ selector: '#a', status: 'healed', timestamp: '2026-07-01T00:00:00.000Z' }),
+      makeEntry({ selector: '#a', status: 'healed', timestamp: '2026-07-08T00:00:00.000Z' }),
+    ]
+    expect(computeRebroken(entries)).toEqual([])
+  })
+
   it('no marca un selector cuya primera aparición nunca fue healed', () => {
     const entries = [
       makeEntry({ selector: '#a', status: 'review', timestamp: '2026-07-01T00:00:00.000Z' }),
