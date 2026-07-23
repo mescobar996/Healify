@@ -1,5 +1,51 @@
 # Changelog
 
+## 0.6.0 - 2026-07-23
+
+**Cambio de comportamiento pedido explícitamente por el usuario, probando 0.5.1 en
+producción real:** `init` ya NO genera ningún archivo de test. En 0.5.0/0.5.1, para cada
+framework `init` creaba un test con un selector inventado a propósito
+(`demo-boton-roto-healify`, `boton-viejo-12345678`) solo para mostrar un primer
+`healify-report.html`. Probándolo en un proyecto real, sintió que se le mostraba algo
+falso como si fuera una prueba genuina de la herramienta. Decisión: nada de demos, nunca
+más — `init` deja la config real conectada y nada más; el primer selector roto que
+Healify cure tiene que ser uno de verdad, escrito por el QA sobre su propia app.
+
+- `cli/src/scaffold.ts`: sacadas las constantes `DEMO_*` y las funciones que generaban
+  `e2e/healify.demo.spec.*`, `cypress/e2e/healify.demo.cy.*` y `healify.selenium.demo.*`.
+  `scaffoldPlaywright` ahora devuelve solo `playwright.config.*`. `scaffoldCypress`
+  devuelve config + `cypress/support/e2e.*` (ese sí es real: Cypress lo exige para e2e
+  testing, no es un extra de Healify). `scaffoldSelenium` devuelve solo
+  `healify.selenium.example.ts` (documentación de referencia que nunca se ejecuta, se
+  mantiene sin cambios).
+- `cli/src/index.ts`: el mensaje final de `init` ya no dice "Corré `npx playwright test`"
+  (implicaba que ya había algo armado para correr) — ahora dice honestamente que hay que
+  escribir el primer test real. Sacados `RUN_COMMAND`/`runCommandFor`.
+- `cli/README.md` y `README.md` raíz actualizados: sin ningún bloque mostrando un demo,
+  con la aclaración explícita de que `init` no genera tests.
+- 2 bugs reales encontrados en una auditoría completa del motor, no relacionados con los
+  demos — ver detalle abajo.
+
+**Bug real — `healing-engine.ts`: selectores CSS-in-JS compuestos no se detectaban como
+volátiles.** `analyzeSelector` solo entraba a la rama de clase volátil si el selector
+completo empezaba con `.` — un selector real como `.btn.css-1a2b3c4d5e` (clase semántica +
+hash de CSS-in-JS pegados, muy común con styled-components) o con combinador
+(`.container > .css-1a2b3c4d`) nunca se detectaba como dinámico, y caía al fallback
+genérico en vez de proponer una alternativa estable. Arreglado: la detección ahora busca
+el patrón volátil en cualquier posición del selector, no solo desde el inicio del string.
+
+**Bug real — `cli/src/fix.ts`: podía reemplazar un selector dentro de un comentario en vez
+del código real.** El conteo de ocurrencias no distinguía código de comentarios — si el
+selector roto quedaba mencionado solo en un comentario (`// TODO: reemplazar '#btn-x'`) y
+ya no existía en el código real, `fix` lo reemplazaba ahí igual y reportaba `applied` con
+confianza total, sin cambiar nada funcional. Arreglado: las líneas de comentario se
+filtran antes de contar ocurrencias; si la única mención real está en un comentario, se
+trata como `not-found`.
+
+`reporter-core`/`test-runner`/`cypress-plugin`/`cli`/`selenium-plugin` a `0.6.0` — los 4
+paquetes publicables bundlean `reporter-core`, así que el fix de `healing-engine.ts`
+necesita republicar los 5, no solo `cli`.
+
 ## 0.5.1 - 2026-07-23
 
 **Fix crítico encontrado probando 0.5.0 en producción real (`sgo-pzbp`), no en tests:**

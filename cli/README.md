@@ -21,16 +21,15 @@ npx @healify/cli doctor   # revisa que esté todo bien instalado y configurado, 
 npx @healify/cli fix      # corré esto después de tus tests, para aplicar los fixes sugeridos
 ```
 
-**`npx @healify/cli init`** funciona en cualquier estado de tu proyecto:
+**`npx @healify/cli init`** funciona en cualquier estado de tu proyecto — y **no genera
+ningún test**, nunca. Solo deja la config real conectada:
 
 - **No tenés ningún framework de e2e todavía** → te pregunta cuál armar (Playwright,
-  Cypress o Selenium — default Playwright si apretás Enter) y arma todo desde cero: instala
-  el paquete, crea el config con el reporter/plugin de Healify ya wireado, y un test demo
-  con un selector roto a propósito para que veas el primer `healify-report.html` sin
-  escribir nada a mano.
+  Cypress o Selenium — default Playwright si apretás Enter), instala el paquete y crea el
+  config con el reporter/plugin de Healify ya wireado.
 - **Ya tenés el framework instalado pero sin config** (típico en un proyecto Vite/Next que
-  nunca llegó a tener `playwright.config.*`) → lo scaffoldea igual que en el caso anterior,
-  sin preguntarte nada — el framework ya está decidido.
+  nunca llegó a tener `playwright.config.*`) → lo crea igual que en el caso anterior, sin
+  preguntarte nada — el framework ya está decidido.
 - **Ya tenés config pero sin Healify** → solo inyecta el reporter/plugin, no toca el resto
   de tu config.
 
@@ -49,15 +48,14 @@ Healify init
 ✅ @healify/test-runner instalado
 ✅ archivos creados:
    - playwright.config.ts
-   - e2e/healify.demo.spec.ts
-   - e2e/.gitkeep
 
-✅ Listo. Corré npx playwright test
+✅ Config lista. Escribí tu primer test en e2e/ y corré tus tests — cuando un selector se
+   rompa vas a tener healify-report.html.
 ```
 
-`e2e/healify.demo.spec.ts` falla a propósito (selector `[data-testid="demo-boton-roto-healify"]`
-que no existe) — corré `npx playwright test` con tu app levantada (`npm run dev`) y vas a ver
-`healify-report.html` con esa cura ya clasificada como `healed`. Borrá el demo cuando lo viste.
+`init` no crea ningún test — el primer selector roto que Healify cura tiene que ser uno de
+tu propia app, no uno inventado. Escribí tu test en `e2e/` como harías normalmente con
+Playwright; el reporter ya está conectado.
 </details>
 
 <details>
@@ -72,14 +70,15 @@ Healify init
 ✅ @healify/cypress-plugin instalado
 ✅ archivos creados:
    - cypress.config.ts
-   - cypress/e2e/healify.demo.cy.ts
    - cypress/support/e2e.ts
 
-✅ Listo. Corré npx cypress open
+✅ Config lista. Escribí tu primer test en cypress/e2e/ y corré tus tests — cuando un
+   selector se rompa vas a tener healify-report.html.
 ```
 
-Mismo selector demo, mismo resultado: corré `npx cypress run` (o `open`) con tu app
-levantada y vas a ver el mismo `healed` en el reporte.
+`cypress/support/e2e.ts` es el archivo de soporte que Cypress exige para e2e testing (no
+es nada de Healify) — queda vacío, listo para lo que necesites. Ningún test se genera acá
+tampoco.
 </details>
 
 <details>
@@ -94,21 +93,14 @@ Healify init
 ✅ @healify/selenium-plugin instalado
 ✅ archivos creados:
    - healify.selenium.example.ts
-   - healify.selenium.demo.ts
 
-✅ Listo. Corré npx tsx healify.selenium.demo.ts
+✅ Instalado. Ver healify.selenium.example.ts para el patrón de wrap() — copialo a tu
+   código real, no hay nada que ejecutar acá.
 ```
 
-Selenium no tiene config para wirear (se envuelve el `WebDriver` a mano, ver
-`healify.selenium.example.ts`). El demo (`healify.selenium.demo.ts`) es un script
-ejecutable que no depende de tu app — navega a una página mínima autocontenida, así que
-podés correrlo sin levantar nada. Requiere ChromeDriver instalado.
-
-> Vive en la raíz, no en `e2e/`, y a propósito no usa sufijo `.test.`/`.spec.`: si tenés
-> Playwright o Cypress en el mismo proyecto, un archivo así dentro de `e2e/` matchea el
-> patrón de descubrimiento de tests de Playwright — lo cargaría como si fuera un test
-> suyo y, como este script corre código apenas se importa, lo ejecutaría como efecto
-> secundario de cualquier `npx playwright test` (bug real, encontrado y arreglado).
+Selenium no tiene config para wirear (se envuelve el `WebDriver` a mano). El archivo que
+`init` deja es solo documentación de referencia — nunca se ejecuta ni simula ningún
+resultado — mostrando cómo envolver tu `WebDriver` real con `HealifySeleniumPlugin`.
 </details>
 
 **baseURL automático (Playwright/Cypress):** `init` busca el puerto real de tu app en este

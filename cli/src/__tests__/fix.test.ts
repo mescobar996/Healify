@@ -170,4 +170,36 @@ describe('fix', () => {
     const outcomes = fix(makeRun([makeCase({ testFile: undefined })]))
     expect(outcomes).toEqual([])
   })
+
+  it('bug real: no reemplaza dentro de un comentario cuando esa es la única mención (el código real ya cambió)', () => {
+    const file = join(dir, 'a.spec.ts')
+    const original = `// TODO: reemplazar '#old' por el testid nuevo\npage.click('#new-real-selector')`
+    writeFileSync(file, original)
+
+    const outcomes = fix(makeRun([makeCase({ testFile: file })]))
+
+    expect(outcomes).toEqual([{ testFile: file, selector: '#old', status: 'skipped', reason: 'not-found' }])
+    expect(readFileSync(file, 'utf-8')).toBe(original)
+  })
+
+  it('sí reemplaza cuando el selector real está en código y también aparece mencionado en un comentario aparte', () => {
+    const file = join(dir, 'a.spec.ts')
+    writeFileSync(file, `// visto en el reporte: '#old'\npage.click('#old')`)
+
+    const outcomes = fix(makeRun([makeCase({ testFile: file })]))
+
+    expect(outcomes[0].status).toBe('applied')
+    expect(readFileSync(file, 'utf-8')).toBe(`// visto en el reporte: '#old'\npage.click('[data-testid='new']')`)
+  })
+
+  it('bloque de comentario /* ... */ tampoco cuenta como ocurrencia real', () => {
+    const file = join(dir, 'a.spec.ts')
+    const original = `/*\n * viejo selector: '#old'\n */\npage.click('#new-real-selector')`
+    writeFileSync(file, original)
+
+    const outcomes = fix(makeRun([makeCase({ testFile: file })]))
+
+    expect(outcomes).toEqual([{ testFile: file, selector: '#old', status: 'skipped', reason: 'not-found' }])
+    expect(readFileSync(file, 'utf-8')).toBe(original)
+  })
 })

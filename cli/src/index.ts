@@ -58,16 +58,13 @@ function runFix(args: string[]): void {
   printOutcomes(outcomes, run)
 }
 
-const RUN_COMMAND: Record<string, string> = {
-  playwright: 'npx playwright test',
-  cypress: 'npx cypress open',
-}
-
-/** Selenium no tiene un comando fijo: el nombre del demo depende de si el proyecto es TS o JS. */
-function runCommandFor(r: FrameworkInitResult): string {
-  if (r.framework !== 'selenium') return RUN_COMMAND[r.framework]
-  const demoFile = r.scaffoldedFiles?.find((f) => f.startsWith('healify.selenium.demo.'))
-  return `npx tsx ${demoFile ?? 'healify.selenium.demo.ts'}`
+/** Mensaje final por framework — ninguno asume que ya hay algo para "correr": init no genera tests. */
+function nextStepFor(framework: FrameworkInitResult['framework']): string {
+  if (framework === 'selenium') {
+    return '✅ Instalado. Ver healify.selenium.example.ts para el patrón de wrap() — copialo a tu código real, no hay nada que ejecutar acá.'
+  }
+  const testDir = framework === 'playwright' ? 'e2e/' : 'cypress/e2e/'
+  return `✅ Config lista. Escribí tu primer test en ${testDir} y corré tus tests — cuando un selector se rompa vas a tener healify-report.html.`
 }
 
 function printInitReport(report: InitReport): void {
@@ -99,7 +96,7 @@ function printInitReport(report: InitReport): void {
       console.log(`⚠ el config tiene una forma que no reconocemos — agregá Healify a mano, ver README`)
     }
 
-    console.log(`\n✅ Listo. Corré ${runCommandFor(r)}`)
+    console.log(`\n${nextStepFor(r.framework)}`)
   }
 }
 
@@ -120,7 +117,7 @@ function printHelp(): void {
   console.log(`Uso: healify <comando>
 
 Comandos:
-  init                                       Detecta tu framework (o te pregunta cuál armar si no hay ninguno), instala lo que falte y scaffoldea config + demo
+  init                                       Detecta tu framework (o te pregunta cuál armar si no hay ninguno), instala lo que falte y configura el reporter/plugin (sin generar tests)
   doctor                                     Verifica que Healify esté instalado y bien configurado
   fix [reporte.json] [--dry-run] [--force]   Aplica las sugerencias de mayor confianza directo en tus archivos de test`)
 }

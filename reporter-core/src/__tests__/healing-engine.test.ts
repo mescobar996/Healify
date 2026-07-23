@@ -87,4 +87,19 @@ describe('analyzeAndHeal', () => {
     expect(result.fixedSelector).toBe("[aria-label='Cerrar']")
     expect(result.confidence).toBeGreaterThanOrEqual(0.85)
   })
+
+  describe('bug real: clase CSS-in-JS pegada a una clase semántica estable', () => {
+    it('multi-clase pegada (.wrapper.css-hash) propone conservar solo la parte estable, no cae al fallback genérico', () => {
+      const result = analyzeAndHeal({ selector: '.wrapper.css-1a2b3c4d5e' })
+      expect(result.fixedSelector).toBe('.wrapper')
+      expect(result.explanation).toContain('CSS-in-JS')
+      expect(result.fixedSelector).not.toMatch(/^visible=/)
+    })
+
+    it('combinador antes de la clase volátil (.container > .css-hash) también se detecta', () => {
+      const result = analyzeAndHeal({ selector: '.container > .css-1a2b3c4d' })
+      expect(result.fixedSelector).toBe('.container')
+      expect(result.fixedSelector).not.toMatch(/^visible=/)
+    })
+  })
 })

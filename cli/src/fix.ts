@@ -39,10 +39,24 @@ function countOccurrences(haystack: string, needle: string): number {
   return count
 }
 
-function replaceOnce(haystack: string, needle: string, replacement: string): string {
-  const idx = haystack.indexOf(needle)
-  if (idx === -1) return haystack
-  return haystack.slice(0, idx) + replacement + haystack.slice(idx + needle.length)
+/**
+ * Bug real encontrado en auditoría: si el selector roto quedó mencionado solo en un
+ * comentario (ej. `// TODO: reemplazar '#btn-a1b2c3'`) y ya no existe en el código real,
+ * `countOccurrences` sobre el texto crudo lo contaba igual — `fix` lo reemplazaba ahí y
+ * reportaba `applied` con confianza total, sin cambiar nada funcional. Se enmascaran los
+ * comentarios (mismo largo, reemplazados por espacios, para no correr los índices) antes
+ * de contar/ubicar el reemplazo real — así una mención solo en un comentario cuenta como
+ * "no encontrado", nunca se reemplaza ahí. Bloques `/* ... *\/` completos, y líneas que
+ * (tras trim) arrancan con `//` — no intenta parsear si el `//` está dentro de un string
+ * real (ej. una URL), a propósito: conservador, prefiere no enmascarar de más antes que
+ * arriesgarse a ocultar una ocurrencia de código real.
+ */
+function maskComments(content: string): string {
+  const noBlockComments = content.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '))
+  return noBlockComments
+    .split('\n')
+    .map((line) => (/^\s*\/\//.test(line) ? line.replace(/[^\n]/g, ' ') : line))
+    .join('\n')
 }
 
 /**
@@ -85,7 +99,11 @@ export function fix(run: LocalRun, options: FixOptions = {}): FixOutcome[] {
         outcomes.push({ testFile, selector: c.selector, status: 'skipped', reason: 'not-substitutable' })
         continue
       }
-      const occurrences = countOccurrences(content, c.selector)
+      // codeOnly tiene el mismo largo que content (comentarios enmascarados con espacios,
+      // preservando offsets) — así una mención solo en un comentario nunca cuenta ni se
+      // reemplaza, y el índice encontrado sigue siendo válido para el content real.
+      const codeOnly = maskComments(content)
+      const occurrences = countOccurrences(codeOnly, c.selector)
       if (occurrences === 0) {
         outcomes.push({ testFile, selector: c.selector, status: 'skipped', reason: 'not-found' })
         continue
@@ -94,7 +112,8 @@ export function fix(run: LocalRun, options: FixOptions = {}): FixOutcome[] {
         outcomes.push({ testFile, selector: c.selector, status: 'skipped', reason: 'ambiguous' })
         continue
       }
-      content = replaceOnce(content, c.selector, c.fixedSelector)
+      const idx = codeOnly.indexOf(c.selector)
+      content = content.slice(0, idx) + c.fixedSelector + content.slice(idx + c.selector.length)
       changed = true
       outcomes.push({ testFile, selector: c.selector, fixedSelector: c.fixedSelector, status: 'applied' })
     }

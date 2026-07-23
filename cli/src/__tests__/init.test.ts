@@ -104,32 +104,29 @@ describe('init — CASO B (framework instalado, sin config)', () => {
     expect(readFileSync(join(dir, 'playwright.config.js'), 'utf-8')).toContain('@healify/test-runner/reporter')
   })
 
-  it('cypress instalado sin config -> scaffoldea config + demo + support', () => {
+  it('cypress instalado sin config -> scaffoldea config + support (sin ningún test)', () => {
     writePkg({ cypress: '^13.0.0', '@healify/cypress-plugin': '*' })
 
     const report = init(dir)
 
-    expect(report.results[0].scaffoldedFiles).toEqual(
-      expect.arrayContaining(['cypress.config.js', 'cypress/e2e/healify.demo.cy.js', 'cypress/support/e2e.js'])
-    )
-    expect(existsSync(join(dir, 'cypress', 'e2e', 'healify.demo.cy.js'))).toBe(true)
+    expect(report.results[0].scaffoldedFiles).toEqual(['cypress.config.js', 'cypress/support/e2e.js'])
+    expect(existsSync(join(dir, 'cypress', 'e2e'))).toBe(false)
   })
 
-  it('selenium: scaffoldea el ejemplo y el demo (no hay config que editar)', () => {
+  it('selenium: scaffoldea solo el ejemplo de referencia (no hay config que editar, ningún demo ejecutable)', () => {
     writePkg({ 'selenium-webdriver': '^4.46.0', '@healify/selenium-plugin': '*' })
 
     const report = init(dir)
 
     expect(report.results[0].framework).toBe('selenium')
     expect(report.results[0].config).toBe('scaffolded')
-    expect(report.results[0].scaffoldedFiles).toEqual(['healify.selenium.example.js', 'healify.selenium.demo.js'])
+    expect(report.results[0].scaffoldedFiles).toEqual(['healify.selenium.example.js'])
     expect(existsSync(join(dir, 'healify.selenium.example.js'))).toBe(true)
-    expect(existsSync(join(dir, 'healify.selenium.demo.js'))).toBe(true)
   })
 })
 
 describe('init — CASO A (nada detectado, elige framework)', () => {
-  it('proyecto vacío -> playwright: instala, scaffoldea config + demo + .gitkeep', () => {
+  it('proyecto vacío -> playwright: instala, scaffoldea solo el config (ningún test)', () => {
     writePkg()
 
     const report = init(dir, { chooseFramework: () => 'playwright' })
@@ -140,13 +137,11 @@ describe('init — CASO A (nada detectado, elige framework)', () => {
       'npm install --save-dev @healify/test-runner',
       expect.objectContaining({ cwd: dir })
     )
-    expect(report.results[0].scaffoldedFiles).toEqual(
-      expect.arrayContaining(['playwright.config.js', 'e2e/healify.demo.spec.js', 'e2e/.gitkeep'])
-    )
-    expect(existsSync(join(dir, 'e2e', 'healify.demo.spec.js'))).toBe(true)
+    expect(report.results[0].scaffoldedFiles).toEqual(['playwright.config.js'])
+    expect(existsSync(join(dir, 'e2e'))).toBe(false)
   })
 
-  it('proyecto vacío -> cypress: instala, scaffoldea config + demo + support', () => {
+  it('proyecto vacío -> cypress: instala, scaffoldea config + support (ningún test)', () => {
     writePkg()
 
     const report = init(dir, { chooseFramework: () => 'cypress' })
@@ -154,9 +149,10 @@ describe('init — CASO A (nada detectado, elige framework)', () => {
     expect(report.frameworks).toEqual(['cypress'])
     expect(existsSync(join(dir, 'cypress.config.js'))).toBe(true)
     expect(existsSync(join(dir, 'cypress', 'support', 'e2e.js'))).toBe(true)
+    expect(existsSync(join(dir, 'cypress', 'e2e'))).toBe(false)
   })
 
-  it('proyecto vacío -> selenium: instala, scaffoldea ejemplo + demo ejecutable', () => {
+  it('proyecto vacío -> selenium: instala, scaffoldea solo el ejemplo de referencia', () => {
     writePkg()
 
     const report = init(dir, { chooseFramework: () => 'selenium' })
@@ -166,7 +162,7 @@ describe('init — CASO A (nada detectado, elige framework)', () => {
       'npm install --save-dev @healify/selenium-plugin',
       expect.objectContaining({ cwd: dir })
     )
-    expect(existsSync(join(dir, 'healify.selenium.example.js'))).toBe(true)
+    expect(report.results[0].scaffoldedFiles).toEqual(['healify.selenium.example.js'])
   })
 
   it('sin chooseFramework inyectado y stdin sin TTY: no cuelga, usa el default playwright', () => {

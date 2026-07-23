@@ -70,6 +70,20 @@ interface HealingStrategy {
 const VOLATILE_CLASS_RE = /^(css-|sc-|x[0-9a-f]{4,}|[a-z]{2,}_[a-z0-9]{5,})/i
 const VOLATILE_ID_RE = /_\d{4,}$|-[a-f0-9]{6,}$/i
 
+/**
+ * `VOLATILE_CLASS_RE` está anclada al inicio de un nombre de clase individual — necesaria
+ * para no confundir una clase semántica real que solo CONTIENE "css" en el medio. Pero un
+ * selector real con multi-clase pegada (`.btn.css-1a2b3c4d5e`, común cuando
+ * styled-components agrega su hash junto a una clase semántica) o con combinador
+ * (`.container > .css-1a2b3c4d`) tiene el fragmento volátil en cualquier posición del
+ * selector completo, no solo al principio. Se buscan todos los tokens de clase
+ * (`.algo`) del selector y se testea cada uno individualmente.
+ */
+function hasVolatileClassToken(selector: string): boolean {
+  const classTokens = selector.match(/\.[a-zA-Z0-9_-]+/g) ?? []
+  return classTokens.some((token) => VOLATILE_CLASS_RE.test(token.slice(1)))
+}
+
 function analyzeSelector(selector: string): SelectorAnalysis {
   const analysis: SelectorAnalysis = {
     type: 'CSS',
@@ -98,7 +112,7 @@ function analyzeSelector(selector: string): SelectorAnalysis {
   } else if (selector.startsWith('.')) {
     analysis.type = 'CLASS'
     analysis.issues.push('Class names can change during refactoring')
-    if (/_[a-z]+_[a-z0-9]+/.test(selector) || /sc-[a-z]+/.test(selector) || VOLATILE_CLASS_RE.test(selector.slice(1))) {
+    if (/_[a-z]+_[a-z0-9]+/.test(selector) || /sc-[a-z]+/.test(selector) || hasVolatileClassToken(selector)) {
       analysis.isDynamic = true
       analysis.issues.push('Generated CSS class detected - unstable')
     }
@@ -319,6 +333,31 @@ function generateHealingStrategies(selector: string, analysis: SelectorAnalysis)
       technicalReason: 'XPath is the most fragile selector type; ARIA roles are preferred',
       priority: 4,
     })
+  }
+
+  // Clase compuesta con un token volátil pegado a uno semántico estable (ej.
+  // `.btn.css-1a2b3c4d5e`, común con CSS-in-JS) — se propone conservar solo los tokens
+  // estables. Sin esto, un selector así sin keyword de acción reconocible caía
+  // silenciosamente al fallback genérico de abajo pese a que el motor ya detectaba el
+  // fragmento volátil (bug real: isDynamic quedaba en true pero nada lo consumía para CLASS).
+  if (analysis.isDynamic && analysis.type === 'CLASS') {
+    const stableTokens = (selector.match(/\.[a-zA-Z0-9_-]+/g) ?? []).filter(
+      (token) => !VOLATILE_CLASS_RE.test(token.slice(1))
+    )
+    if (stableTokens.length > 0) {
+      const candidate = stableTokens.join('')
+      if (!isUnstableClassCandidate(selector, candidate.slice(1))) {
+        strategies.push({
+          selector: candidate,
+          type: 'CSS',
+          confidence: 0.80,
+          explanation: `Se detectó una clase generada (CSS-in-JS) pegada a una clase semántica estable. Se propone conservar solo la parte estable.`,
+          robustnessGain: 35,
+          technicalReason: 'Generated CSS-in-JS classes change between builds; the semantic class alongside it is preferred',
+          priority: 6,
+        })
+      }
+    }
   }
 
   if (analysis.isDynamic && analysis.type === 'ID') {
