@@ -1,199 +1,182 @@
-# Feature #8 — Historical Report with Trends
+# Feature #8 — Historial de curaciones (MVP)
 
 ## Status: APPROVED — Ready for Implementation Plan
 
----
-
-## Problem
-
-Today each `healify fix` run is ephemeral. Teams can't answer:
-- "Which selectors break repeatedly?"
-- "Is our healing rate improving?"
-- "Which selector types are most reliable?"
+*Reemplaza la versión anterior de este documento (mismo archivo). La versión original
+asumía código que no existe en el repo real (`cli/src/commands/fix.ts`, `cli/src/config.ts`)
+y proponía un alcance mucho mayor al que pedía `ROADMAP.md` #8 (config subsystem, 3
+formatos de salida, 5 trends, `gitCommit` por línea). Esta versión corrige esos supuestos
+contra el código real y recorta el alcance a un MVP, decidido explícitamente con el
+usuario tras una ronda de brainstorming.*
 
 ---
 
-## Solution: Local JSONL History + `healify history` Command
+## Problema
 
-### Storage: `.healify/history.jsonl` (per project)
+Hoy cada corrida de `healify fix` es efímera: no hay forma de responder "¿qué selectores
+se rompen repetidamente?" o "¿este selector ya se rompió antes?". `healify-report.json` se
+pisa en cada corrida, no queda ningún rastro entre corridas.
 
-```
-project-root/
-├── .healify/
-│   └── history.jsonl      ← append-only, one line per healed case
-├── healify-report.json    ← current run
-└── tests/
-```
+---
 
-**Schema per line:**
+## Qué NO incluye este MVP (y por qué)
+
+- **Sin sistema de config** (`healify config set ...`). No existe hoy ningún `config.ts`
+  ni comando `config` en el CLI real — construirlo sería una feature aparte, no algo que
+  ya está ahí para "tocar".
+- **Sin `gitCommit` por línea**. Solo existe `isGitDirty()` (mira si hay cambios sin
+  commitear), no hay captura de hash de commit en ningún lado del código actual.
+- **Sin `runId`, `fixMethod`, `project`, `framework` por línea**. No aportan nada sin un
+  sistema de retención/config detrás, que no existe en este MVP.
+- **Sin export HTML/JSON, sin `--since`, sin retención/poda automática**. A ~300
+  bytes/línea (estimado en la versión anterior de este spec), el archivo tarda en volverse
+  un problema real. Se agrega si el uso real lo pide, no antes.
+
+Todo esto queda anotado en `ROADMAP.md` como posible ampliación futura de #8, no se pierde
+la idea, solo no se construye todavía.
+
+---
+
+## Almacenamiento
+
+`.healify/history.jsonl` en la raíz del proyecto consumidor. Append-only, una línea JSON
+por cada caso (`LocalCaseResult`) de cada corrida real de `fix`. Se recomienda agregar
+`.healify/` al `.gitignore` del proyecto consumidor (historial local de esa máquina, mismo
+criterio que ya se usa con `test-results/`).
+
+**Esquema por línea:**
 ```json
 {
-  "timestamp": "2026-07-23T14:32:11.000Z",
-  "runId": "abc123",
-  "framework": "Playwright",
-  "project": "my-app",
-  "testFile": "tests/checkout.spec.ts",
-  "testName": "user can checkout",
-  "selector": "#btn-submit",
-  "fixedSelector": "role('button', { name: 'Submit' })",
+  "timestamp": "2026-07-23T18:50:00.000Z",
+  "testFile": "e2e/login.spec.ts",
+  "testName": "user can login",
+  "selector": "#btn-old",
+  "status": "healed",
+  "fixedSelector": "role('button', { name: 'Login' })",
   "selectorType": "ROLE",
-  "confidence": 0.92,
-  "status": "applied",
-  "fixMethod": "ast",
-  "outcome": "applied",
-  "gitCommit": "a1b2c3d"
+  "confidence": 0.92
 }
 ```
 
-**Size estimate:** ~300 bytes/case → ~50 KB/week for active project.
+Campos tomados 1:1 de `LocalCaseResult` (`reporter-core/src/local-mode.ts`) — no hace
+falta inventar ni derivar nada nuevo, salvo el `timestamp` de captura.
 
 ---
 
-## Trends Computed by `healify history`
+## Cuándo se graba
 
-| Trend | Query | Use Case |
-|-------|-------|----------|
-| **Top 10 recurrent broken selectors** | `GROUP BY selector ORDER BY count DESC LIMIT 10` | Prioritize adding testids |
-| **Re-broken selectors** | `WHERE selector IN (SELECT selector FROM history WHERE outcome='applied') AND outcome='healed' GROUP BY selector` | Detect flaky fixes |
-| **Healing rate by week** | `GROUP BY date_trunc('week', timestamp), framework` | Track team adoption |
-| **Confidence by selectorType** | `AVG(confidence) GROUP BY selectorType` | Trust ROLE > CSS > XPATH |
-| **Time-to-fix** | `MIN(timestamp) WHERE outcome='applied' GROUP BY selector` | SLA for flaky tests |
+Se engancha en `runFix()` (`cli/src/index.ts`), el único punto real que ya parsea un
+`LocalRun` completo desde `report.json`. Justo después de leerlo, **si `!dryRun`**, se
+graban **todos** los `run.cases` — healed, review y unresolved, no solo lo que `fix()`
+pudo aplicar automáticamente. Así "selector recurrente" refleja selectores rotos reales,
+no solo los auto-aplicables.
 
----
+`--dry-run` **nunca** graba. El `gh-action` corre `fix --dry-run` en cada PR (potencialmente
+varias veces por PR) — si eso grabara, el historial se llenaría de ruido de CI no
+representativo de corridas reales de un dev. `--force` no cambia este comportamiento
+(sigue grabando igual que sin `--force`).
 
-## CLI Integration
-
-### Auto-append on `fix`
-```bash
-healify fix report.json           # writes history.jsonl automatically
-healify fix --ast report.json     # records fixMethod: "ast"
-healify fix --dry-run report.json # records outcome: "dry-run"
-```
-
-### New Command: `healify history`
-```bash
-healify history                           # last 30 days, terminal table
-healify history --since 7d                # last 7 days
-healify history --format json             # machine-readable
-healify history --format html --out report.html  # shareable report
-healify history --trend rebroken          # only re-broken selectors
-healify history --trend confidence        # confidence by type
-healify history --no-auto                 # don't auto-append (CI mode)
-```
+Si escribir el archivo falla (permisos, disco lleno), se loguea un warning y `fix` sigue
+funcionando normal — el historial es un complemento, nunca debe bloquear el flujo
+principal de `fix`.
 
 ---
 
-## Retention & Config
+## Comando `healify history`
 
-| Setting | Default | Config Key |
-|---------|---------|------------|
-| Enabled | `true` | `history.enabled` |
-| Retention | 90 days | `history.retentionDays` |
-| Auto-append | `true` | `history.autoAppend` |
+Sin flags para este MVP. Lee `.healify/history.jsonl`, calcula 2 vistas, imprime tablas en
+terminal (mismo estilo que `printOutcomes`/`printInitReport` en `index.ts`).
 
-```bash
-healify config set history.retentionDays 180
-healify config set history.enabled false
-```
+**Top recurrentes**: agrupa por `selector` (string exacto), cuenta apariciones en todo el
+historial, ordena desc, muestra top 10. Selectores candidatos obvios para agregarles un
+`data-testid` estable.
 
----
+**Re-rotos**: selectores con más de una aparición en el historial, donde la aparición más
+antigua tiene `status: 'healed'`. Esto es una **aproximación**, no una medición exacta:
+el historial no sabe si `fix()` realmente aplicó ese selector al archivo (podría haber
+sido saltado por `ambiguous`/`dirty-git`/`not-substitutable`) — solo sabe que el motor lo
+curó con confianza suficiente. Se documenta así en el código y en el output del comando,
+no se presenta como más preciso de lo que es.
 
-## Architecture
-
-### New Files
-```
-cli/src/history/
-├── index.ts           # Storage (append, read, prune)
-├── trends.ts          # Aggregation queries
-├── render.ts          # Terminal/HTML/JSON output
-└── commands/
-    └── history.ts     # CLI command
-```
-
-### Modified Files
-| File | Change |
-|------|--------|
-| `cli/src/commands/fix.ts` | Import `appendHistory()`, call after `fix()`/`fixAst()` |
-| `cli/src/config.ts` | Add history settings |
-| `cli/package.json` | No new deps (pure Node fs + date-fns if needed) |
+Si `.healify/history.jsonl` no existe todavía (nunca se corrió `fix` sin `--dry-run`), el
+comando lo informa explícitamente en vez de fallar con un error de archivo no encontrado.
 
 ---
 
-## Data Flow
+## Arquitectura
+
+### Archivos nuevos
+```
+cli/src/history.ts              # appendHistory(run, cwd), readHistory(cwd),
+                                 # computeTopRecurrent(entries), computeRebroken(entries)
+cli/src/commands/history.ts     # comando CLI: lee, calcula, imprime
+cli/src/__tests__/history.test.ts
+cli/src/__tests__/history-command.test.ts
+```
+Un solo archivo para la lógica (no una carpeta `history/` con 4 archivos como proponía la
+versión anterior) — el alcance recortado no lo justifica. Sigue el mismo patrón que
+`commands/init.ts`/`commands/doctor.ts` ya establecido en el repo.
+
+### Archivos modificados
+| Archivo | Cambio |
+|---|---|
+| `cli/src/index.ts` | `runFix()`: llama `appendHistory(run, cwd)` si `!dryRun`, después de leer el reporte. Nuevo dispatch para el comando `history` en `main()`. `printHelp()` documenta `history`. |
+
+---
+
+## Flujo de datos
 
 ```
-test run → healify-report.json
+test run → healify-report.json (LocalRun)
     ↓
-healify fix [--ast] report.json
+healify fix [--ast] report.json     (sin --dry-run)
     ↓
-FixOutcome[] + run metadata
+runFix() parsea el LocalRun
     ↓
-appendHistory(outcomes, run)  ← NEW
+appendHistory(run, cwd)  ← NUEVO, antes de fix()/fixAst()
     ↓
-.healify/history.jsonl (append)
+.healify/history.jsonl (append, 1 línea por run.cases[i])
     ↓
-healify history [--trend X]   ← reads, aggregates, renders
+healify history   ← lee, agrupa, imprime top recurrentes + re-rotos
 ```
 
 ---
 
-## Testing Strategy
+## Testing
 
-| Test | Count |
-|------|-------|
-| Unit: `history/index.ts` (append, read, prune) | ~8 |
-| Unit: `history/trends.ts` (each aggregation) | ~6 |
-| Integration: `healify history` CLI | ~5 |
-| Integration: `fix` auto-append | ~3 |
+| Test | Aprox. |
+|---|---|
+| `appendHistory`: escribe N líneas, no pisa lo existente, no falla si `.healify/` no existe (lo crea), no revienta `fix` si falla la escritura | ~5 |
+| `readHistory`: lee líneas válidas, ignora líneas corruptas sin reventar, vacío si el archivo no existe | ~3 |
+| `computeTopRecurrent`: cuenta y ordena bien, top 10, empates | ~3 |
+| `computeRebroken`: detecta el caso simple, no marca selectores que solo aparecen una vez, no marca los que nunca fueron `healed` en su primera aparición | ~3 |
+| `runFix()`: graba en corrida real, NO graba en `--dry-run`, sigue funcionando si `appendHistory` falla | ~3 |
+| Comando `history`: tabla con datos, mensaje cuando no hay historial todavía | ~2 |
 
----
-
-## Rollout
-
-| Version | Change |
-|---------|--------|
-| v0.7.0 | History enabled by default, `healify history` command |
-| v0.8.0 | HTML report output, config options |
-| v1.0.0 | Optional: GitHub Action to publish history as artifact |
+Total aproximado: ~19 tests nuevos.
 
 ---
 
-## Risks & Mitigations
+## Riesgos y mitigaciones
 
-| Risk | Mitigation |
-|------|------------|
-| File grows unbounded | Auto-prune on read (configurable retention) |
-| Sensitive data in selectors | Only selector strings stored; no DOM, no secrets |
-| Concurrent writes corrupt JSONL | Single-process CLI; append is atomic on POSIX/Win |
-| Team doesn't want tracking | `healify config set history.enabled false` |
-
----
-
-## Files to Create/Modify
-
-| File | Action |
-|------|--------|
-| `cli/src/history/index.ts` | **NEW** — JSONL storage |
-| `cli/src/history/trends.ts` | **NEW** — Aggregations |
-| `cli/src/history/render.ts` | **NEW** — Output formats |
-| `cli/src/history/commands/history.ts` | **NEW** — CLI command |
-| `cli/src/commands/fix.ts` | **MODIFY** — Auto-append |
-| `cli/src/config.ts` | **MODIFY** — History settings |
-| `cli/src/__tests__/history/` | **NEW** — Test files |
+| Riesgo | Mitigación |
+|---|---|
+| Archivo crece sin límite | No mitigado en este MVP — a ~300 bytes/línea no es un problema real todavía. Si lo fuera, se agrega retención después, con datos reales de cuánto crece. |
+| Escritura concurrente corrompe el JSONL | Mismo supuesto que ya usa el resto del CLI: proceso único, sin considerar multi-proceso concurrente. |
+| Selectores con datos sensibles | Solo se guardan strings de selector — mismo dato que ya vive en `healify-report.json`, no es información nueva expuesta. |
+| `--dry-run` del gh-action ensucia el historial | Resuelto por diseño: `--dry-run` nunca graba. |
 
 ---
 
-## Acceptance Criteria
+## Criterios de aceptación
 
-- [ ] `healify fix report.json` appends to `.healify/history.jsonl`
-- [ ] `healify history` shows terminal table (last 30 days)
-- [ ] `healify history --format html --out report.html` generates shareable report
-- [ ] Trends work: top recurrent, re-broken, confidence by type, healing rate
-- [ ] Retention prunes old entries on read
-- [ ] Config disables history completely
-- [ ] 0 vulnerabilities, build passes, lint passes
+- [ ] `healify fix report.json` (sin `--dry-run`) graba todos los `run.cases` en `.healify/history.jsonl`
+- [ ] `healify fix --dry-run report.json` NO graba nada
+- [ ] `healify history` muestra top 10 recurrentes y re-rotos en tabla de terminal
+- [ ] `healify history` sin historial previo informa el estado en vez de fallar
+- [ ] Build + verify completos en verde, `npm audit` en 0 vulnerabilidades
 
 ---
 
-*Approved: 2026-07-23*  
-*Next: Invoke writing-plans for both features*
+*Corregido y recortado a MVP: 2026-07-23, tras brainstorming con el usuario.*
+*Siguiente paso: invocar writing-plans para el plan de implementación.*
