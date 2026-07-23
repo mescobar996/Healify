@@ -16,21 +16,30 @@ Público objetivo: QA sin experiencia en código.
 Repo: `C:\Proyectos\QA\Healify` — remoto `https://github.com/mescobar996/Healify.git`,
 rama `main`. Monorepo npm workspaces.
 
-## 2. Estado de versiones — TODO PUBLICADO Y PUSHEADO
+## 2. Estado de versiones — CÓDIGO en 0.7.0, FALTA PUBLICAR (npm sigue en 0.6.0)
 
-| Paquete | Versión (código y npm, confirmado contra el registro real) | Privado |
-|---|---|---|
-| `@healify/cli` | 0.6.0 | no |
-| `@healify/test-runner` (Playwright) | 0.6.0 | no |
-| `@healify/cypress-plugin` | 0.6.0 | no |
-| `@healify/selenium-plugin` | 0.6.0 | no |
-| `@healify/webdriverio-plugin` | 0.6.0 | no (nuevo, no publicado aún) |
-| `reporter-core` | 0.6.0 | sí, bundleado dentro de los otros 5 |
-| `@healify/gh-action` | 0.6.0 | sí, standalone (no es workspace) |
+| Paquete | Versión en código | Versión en npm | Privado |
+|---|---|---|---|
+| `@healify/cli` | 0.7.0 | 0.6.0 (desactualizado) | no |
+| `@healify/test-runner` (Playwright) | 0.7.0 | 0.6.0 (desactualizado) | no |
+| `@healify/cypress-plugin` | 0.7.0 | 0.6.0 (desactualizado) | no |
+| `@healify/selenium-plugin` | 0.7.0 | 0.6.0 (desactualizado) | no |
+| `@healify/webdriverio-plugin` | 0.6.0 | — | no (nuevo, nunca publicado) |
+| `reporter-core` | 0.7.0 | — | sí, bundleado dentro de los otros 4 |
+| `@healify/gh-action` | 0.6.0 | — | sí, standalone (no es workspace de npm, se usa directo del repo vía GitHub Actions) |
 
-Los 4 se publicaron (el usuario corrió `npm login` de nuevo porque la sesión vieja había
-vencido, después los 4 `npm publish --workspace=...`). `git push` de `main` también hecho.
-Repo remoto al día con el código local.
+**IMPORTANTE — falta publicar 0.7.0.** Comandos, cuando el usuario lo pida:
+```bash
+cd C:\Proyectos\QA\Healify
+npm publish --workspace=@healify/test-runner
+npm publish --workspace=@healify/cypress-plugin
+npm publish --workspace=@healify/selenium-plugin
+npm publish --workspace=@healify/cli
+npm publish --workspace=@healify/webdriverio-plugin   # primera vez, decidir si ya está listo
+```
+`gh-action` no se publica a npm (se referencia desde otro repo como
+`uses: mescobar996/Healify/gh-action@main` o similar, una vez que se decida cómo
+distribuirlo).
 
 **Yo (la IA) nunca corro `npm publish`** — el usuario lo hace desde su propia terminal.
 
@@ -197,20 +206,21 @@ sin trackear, también ajeno — no tocar ninguno de los dos ajenos.
 
 ## 9. Qué falta / próximos pasos posibles
 
-- **Pendiente de publicar**: `@healify/webdriverio-plugin` (nuevo, código completo + tests, no
-  publicado en npm ni pusheado). Publicar con `npm publish --workspace=webdriverio-plugin`.
-- **Pendiente de pushear**: Feature #5 (WebdriverIO) y Feature #6 (GitHub Action) están en
-  código local pero no en `origin/main`. Hacer `git push` cuando el usuario lo pida.
-- README raíz y `cli/README.md` pasados por el skill `anthropic-skills:humanizer`
-  (sacadas rayas al medio y emojis decorativos de títulos en la prosa; se dejaron intactos
-  los bloques que reproducen salida real capturada del CLI, y los íconos ✅/❌/⚠ que son
-  parte de esa salida real). Números de badge/tests actualizados a 231.
-- README raíz, Paso 4: ahora dice explícito que hay que levantar la app (`npm run dev`)
-  ANTES de escribir o correr cualquier test e2e, con una nota de troubleshooting genérica
-  sobre conflictos de puerto (`Get-NetTCPConnection`) — antes esto se daba por sentado y
-  no debería, era un hueco real de la documentación.
+- **Pendiente de publicar**: 0.7.0 completo (ver tabla sección 2) — nadie publicó todavía
+  después del bump. `@healify/webdriverio-plugin` nunca se publicó (ni en 0.6.0 ni ahora).
+- **Pendiente de pushear**: hay commits locales en `main` que no están en `origin/main`
+  todavía (features #1-#7 del ROADMAP + este bump a 0.7.0). Hacer `git push` cuando el
+  usuario lo pida explícitamente, no antes.
+- README raíz y `cli/README.md` pasados por el skill `anthropic-skills:humanizer` en una
+  sesión anterior (sacadas rayas al medio y emojis decorativos de títulos en la prosa; se
+  dejaron intactos los bloques que reproducen salida real capturada del CLI). La nueva
+  sección de `--ast` en `cli/README.md` se escribió siguiendo el mismo criterio (sin
+  rayas al medio en prosa nueva).
+- Todas las features "chicas" y "medianas" del `ROADMAP.md` (#1 a #7) están
+  **implementadas y verificadas** (241 tests, build real probado, `fix --ast` probado con
+  el binario compilado). Solo queda **#8** (reporte histórico, todavía sin empezar — hay
+  un spec en `docs/superpowers/specs/2026-07-23-feature8-historical-report-design.md`
+  pero ningún plan ni código) y **#9 cancelada** (extensión VSCode, decisión del usuario).
 - `sgo-pzbp` tiene 1 test e2e real (login), verificado pasando de verdad en el puerto 4000
   ya sin conflicto. Buen próximo paso: agregar más tests reales de otras pantallas
   (tareas, visitas técnicas) cuando el usuario quiera.
-- Features del ROADMAP pendientes: #7 (fix con reescritura AST), #8 (reporte histórico),
-  #9 (extensión VSCode).

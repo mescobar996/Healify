@@ -68,7 +68,7 @@ para postear/actualizar un comment sticky en el PR (keyed por `<!-- healify-repo
 
 ## Features grandes (cambio de arquitectura o alcance, requieren diseño propio)
 
-### 7. `fix` con reescritura estructural para sugerencias ROLE/TEXT
+### 7. `fix` con reescritura estructural para sugerencias ROLE/TEXT ✅
 Hoy, cualquier sugerencia tipo `role('button', { name: 'X' })` se salta con
 `not-substitutable` porque no es un valor de selector pegable. Está documentado a
 propósito en la tabla "Qué toca y qué no" de `cli/README.md`. Para aplicar esas
@@ -78,6 +78,12 @@ estructural, no textual. Requeriría parsear el archivo con un AST real (ej. `ts
 en vez de reemplazo de texto, mucho más riesgo de romper código real si no se hace con
 cuidado. Sería el cambio de mayor impacto en cuánto puede aplicar `fix` solo, pero
 también el de mayor riesgo.
+**Implementado**: `cli/src/fix-ast.ts` + flag `--ast` en `fix`, aditivo al `fix` normal.
+Solo maneja `role(...)` de verdad: el plan original asumía un formato TEXT
+(`text('X')`) que el motor real nunca genera (es `button:has-text('X')`, que ya es un
+selector CSS válido y `fix` normal ya lo aplica bien), se sacó ese camino muerto. `ts-morph`
+quedó bundleado en el build inicial (25kb → 12MB), arreglado externalizándolo (queda en
+31.4kb). +10 tests (→ 104 en cli), verificado real con el binario compilado.
 
 ### 8. Reporte histórico (no solo el último run)
 Hoy `healify-report.html`/`.json` se pisa en cada corrida. Guardar un historial (¿cuántos
@@ -86,12 +92,12 @@ de los tests a lo largo del tiempo. Cambia el modelo de "reporte de una corrida"
 "reporte acumulado". Hay que pensar bien el formato de almacenamiento antes de escribir
 código (¿un archivo por corrida? ¿un JSON que crece? ¿SQLite local?).
 
-### 9. Extensión de VSCode
+### 9. Extensión de VSCode ❌ CANCELADA
 Mostrar el `healify-report.html` inline en el editor, o un comando rápido "Healify: fix
 this file" sin salir a la terminal. Baja el piso de entrada para QA que preferiría no
 tocar la terminal en absoluto, coherente con el público objetivo (QA sin experiencia en
 código), pero es un proyecto aparte con su propio ciclo de publicación (VSCode
-Marketplace).
+Marketplace). **Cancelado por el usuario: no es prioridad ahora.**
 
 ---
 

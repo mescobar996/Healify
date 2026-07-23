@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Build + test los 5 workspaces, imprime un resumen de una línea por paquete.
+# Build + test los workspaces, imprime un resumen de una línea por paquete.
 set -uo pipefail
 
-packages=(reporter-core test-runner cypress-plugin cli selenium-plugin)
+packages=(reporter-core test-runner cypress-plugin cli selenium-plugin webdriverio-plugin)
 results=()
 failed=0
 

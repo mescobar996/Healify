@@ -1,5 +1,67 @@
 # Changelog
 
+## 0.7.0 - 2026-07-23
+
+Features #1 a #7 del `ROADMAP.md`, en dos sesiones. #1-#6 se implementaron primero (231
+tests); #7 se agregó después, con 2 correcciones reales al diseño original antes de
+implementar (ver detalle abajo). #9 (extensión de VSCode) quedó cancelada por decisión
+del usuario, marcada así en el `ROADMAP.md`, no se tocó código.
+
+**#1 — `doctor` detecta el gotcha de semver caret.** Compara la versión instalada contra
+el rango declarado en `package.json` y avisa si un `^0.x.y` viejo va a bloquear que
+`npm install` sin versión explícita traiga una versión nueva (el mismo problema real que
+mordió al usuario dos veces en sesiones anteriores).
+
+**#2 — `flush()` en `@healify/selenium-plugin`.** Selenium ahora puede generar
+`healify-report.html`/`.json` acumulando los eventos de cura en vivo, igual que
+Playwright/Cypress — antes solo curaba sin dejar reporte.
+
+**#3 — `init` detecta conflictos de puerto antes de escribir el config.** Chequeo liviano
+del `baseURL` detectado antes de confirmar la config, para adelantarse a casos como el de
+Obsidian compitiendo por el puerto 3000 en `sgo-pzbp`.
+
+**#4 — diccionario de sinónimos configurable (`customSynonyms`).** `healing-engine.ts`
+ahora acepta sinónimos adicionales sin tener que tocar los `dictionaries/*.json` del
+propio paquete — útil para vocabulario propio de cada proyecto.
+
+**#5 — paquete nuevo `@healify/webdriverio-plugin`.** Mismo patrón que
+`selenium-plugin` (wrap del driver real, cura en vivo), para WebdriverIO.
+
+**#6 — `gh-action/`.** GitHub Action empaquetada que corre `doctor` + `fix --dry-run` en
+cada PR y comenta el resultado. Paquete privado (no se publica a npm, se usa directo del
+repo).
+
+**#7 — `healify fix --ast` (experimental).** Las sugerencias `role('button', { name: 'X'
+})` no son un valor de selector pegable — antes se saltaban siempre como
+`not-substitutable`. `--ast` usa `ts-morph` para reescribir la llamada completa
+(`page.click('#x')` → `page.getByRole('button', { name: 'X' }).click()`), un cambio
+estructural real, no reemplazo de texto. Es aditivo: primero corre el `fix` normal
+(TESTID/CSS/TEXT, que ya son pegables tal cual), y solo reintenta con AST lo que quedó
+sin aplicar. El plan original de esta feature tenía 2 errores reales corregidos antes de
+implementar:
+- Asumía que las sugerencias TEXT usaban el formato `text('X')` — el motor real nunca
+  genera eso, usa `button:has-text('X')` (confirmado leyendo `healing-engine.ts`), que
+  además **ya es un selector CSS válido** que el `fix` normal aplica bien tal cual sin
+  necesitar AST — se sacó ese camino entero en vez de dejar código muerto.
+- Estaba escrito asumiendo `commander.js` y un archivo `cli/src/commands/fix.ts` que no
+  existen en este código — se adaptó al dispatch real (`cli/src/index.ts` + `cli/src/fix.ts`).
+
+Bug real encontrado en la primera build: `ts-morph` (que carga el compilador de
+TypeScript completo) quedó bundleado dentro de `dist/index.js`, inflándolo de 25kb a
+**12MB**. Arreglado externalizándolo del bundle (`--external:ts-morph`, mismo patrón que
+`@playwright/test`/`cypress`/`selenium-webdriver` en los otros paquetes) — queda en
+31.4kb. Verificado real con el binario compilado: `fix --ast` reescribió
+`page.click('#btn-submit')` a `page.getByRole('button', { name: 'Submit' }).click()`
+de verdad, sin y con `--force`/`--dry-run`.
+
+241 tests (antes 164): 44 reporter-core + 8 test-runner + 7 cypress-plugin + 104 cli + 35
+selenium-plugin + 23 webdriverio-plugin + 20 gh-action. `npm audit` → 0 vulnerabilidades.
+
+`reporter-core`/`test-runner`/`cypress-plugin`/`selenium-plugin`/`cli` a `0.7.0` (todos
+bundlean o son afectados por `reporter-core`, que cambió con `customSynonyms`).
+`@healify/webdriverio-plugin` nace en `0.6.0` (primera versión, no publicada todavía).
+`gh-action` es privado, no se publica.
+
 ## 0.6.0 - 2026-07-23
 
 **Cambio de comportamiento pedido explícitamente por el usuario, probando 0.5.1 en

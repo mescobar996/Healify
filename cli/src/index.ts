@@ -2,10 +2,11 @@
 import { readFileSync } from 'node:fs'
 import type { LocalRun } from '@healify/reporter-core'
 import { fix, type FixOutcome } from './fix'
+import { fixAst } from './fix-ast'
 import { init, type InitReport, type FrameworkInitResult } from './commands/init'
 import { doctor, type DoctorReport } from './commands/doctor'
 
-function reasonText(outcome: Extract<FixOutcome, { status: 'skipped' }>): string {
+function reasonText(outcome: Extract<FixOutcome, { status: 'skipped' }>, astUsed: boolean): string {
   switch (outcome.reason) {
     case 'ambiguous':
       return `'${outcome.selector}' aparece más de una vez, ambiguo`
@@ -14,11 +15,13 @@ function reasonText(outcome: Extract<FixOutcome, { status: 'skipped' }>): string
     case 'not-found':
       return 'ya no se encontró en el archivo'
     case 'not-substitutable':
-      return 'la sugerencia no es un valor de selector sustituible directamente (formato de rol legible) — revisar y aplicar a mano'
+      return astUsed
+        ? 'la sugerencia no es un rol reescribible (método sin mapeo, o no es una llamada de page/locator) — revisar y aplicar a mano'
+        : 'la sugerencia no es un valor de selector sustituible directamente (formato de rol legible) — probá --ast (experimental) o revisá y aplicá a mano'
   }
 }
 
-function printOutcomes(outcomes: FixOutcome[], run: LocalRun): void {
+function printOutcomes(outcomes: FixOutcome[], run: LocalRun, astUsed: boolean): void {
   let applied = 0
   let skipped = 0
 
@@ -28,7 +31,7 @@ function printOutcomes(outcomes: FixOutcome[], run: LocalRun): void {
       console.log(`✓ ${outcome.testFile} — ${outcome.selector} → ${outcome.fixedSelector}`)
     } else {
       skipped++
-      console.log(`⚠ ${outcome.testFile} — saltado: ${reasonText(outcome)}`)
+      console.log(`⚠ ${outcome.testFile} — saltado: ${reasonText(outcome, astUsed)}`)
     }
   }
 
@@ -43,6 +46,7 @@ function printOutcomes(outcomes: FixOutcome[], run: LocalRun): void {
 function runFix(args: string[]): void {
   const dryRun = args.includes('--dry-run')
   const force = args.includes('--force')
+  const ast = args.includes('--ast')
   const reportPath = args.slice(1).find((a) => !a.startsWith('--')) ?? 'healify-report.json'
 
   let run: LocalRun
@@ -53,9 +57,31 @@ function runFix(args: string[]): void {
     process.exit(1)
   }
 
-  console.log(`Healify fix — ${reportPath}\n`)
+  console.log(`Healify fix — ${reportPath}${ast ? ' (--ast)' : ''}\n`)
+
+  // --ast es aditivo, no reemplaza a fix(): primero corre el reemplazo de texto normal
+  // (cubre TESTID/CSS/TEXT, que ya son valores de selector pegables tal cual), y solo
+  // reintenta con reescritura AST los casos que ese primer paso saltó como
+  // 'not-substitutable' (los role(...), que fix() nunca puede aplicar). Si --ast
+  // reemplazara a fix() en vez de complementarlo, los casos TEXT/CSS quedarían sin
+  // procesar en silencio.
   const outcomes = fix(run, { dryRun, force })
-  printOutcomes(outcomes, run)
+  if (ast) {
+    const notSubstitutableKeys = new Set(
+      outcomes
+        .filter((o): o is Extract<FixOutcome, { status: 'skipped' }> => o.status === 'skipped' && o.reason === 'not-substitutable')
+        .map((o) => `${o.testFile}::${o.selector}`)
+    )
+    const astRun: LocalRun = { ...run, cases: run.cases.filter((c) => notSubstitutableKeys.has(`${c.testFile}::${c.selector}`)) }
+    const astByKey = new Map(fixAst(astRun, { dryRun, force }).map((o) => [`${o.testFile}::${o.selector}`, o]))
+    for (let i = 0; i < outcomes.length; i++) {
+      const key = `${outcomes[i].testFile}::${outcomes[i].selector}`
+      const astOutcome = astByKey.get(key)
+      if (astOutcome) outcomes[i] = astOutcome
+    }
+  }
+
+  printOutcomes(outcomes, run, ast)
 }
 
 /** Mensaje final por framework — ninguno asume que ya hay algo para "correr": init no genera tests. */
@@ -119,7 +145,8 @@ function printHelp(): void {
 Comandos:
   init                                       Detecta tu framework (o te pregunta cuál armar si no hay ninguno), instala lo que falte y configura el reporter/plugin (sin generar tests)
   doctor                                     Verifica que Healify esté instalado y bien configurado
-  fix [reporte.json] [--dry-run] [--force]   Aplica las sugerencias de mayor confianza directo en tus archivos de test`)
+  fix [reporte.json] [--dry-run] [--force] [--ast]   Aplica las sugerencias de mayor confianza directo en tus archivos de test
+                                                       --ast (experimental) también reescribe sugerencias role(...) vía AST`)
 }
 
 function main(): void {

@@ -26,7 +26,7 @@ function isSubstitutable(fixedSelector: string): boolean {
   return !/^role\(/.test(fixedSelector)
 }
 
-function countOccurrences(haystack: string, needle: string): number {
+export function countOccurrences(haystack: string, needle: string): number {
   if (!needle) return 0
   let count = 0
   let idx = 0
@@ -51,7 +51,7 @@ function countOccurrences(haystack: string, needle: string): number {
  * real (ej. una URL), a propósito: conservador, prefiere no enmascarar de más antes que
  * arriesgarse a ocultar una ocurrencia de código real.
  */
-function maskComments(content: string): string {
+export function maskComments(content: string): string {
   const noBlockComments = content.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '))
   return noBlockComments
     .split('\n')

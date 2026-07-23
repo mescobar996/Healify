@@ -1,6 +1,6 @@
 {
   "name": "@healify/cli",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Aplica las sugerencias de un healify-report.json directo en tus archivos de test.",
   "bin": {
     "healify": "dist/index.js"
@@ -11,11 +11,14 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc --emitDeclarationOnly && esbuild src/index.ts --bundle --platform=node --outdir=dist --format=cjs",
+    "build": "tsc --emitDeclarationOnly && esbuild src/index.ts --bundle --platform=node --outdir=dist --format=cjs --external:ts-morph",
     "test": "vitest run"
   },
   "publishConfig": {
     "access": "public"
+  },
+  "dependencies": {
+    "ts-morph": "^21.0.0"
   },
   "devDependencies": {
     "@healify/reporter-core": "*",
