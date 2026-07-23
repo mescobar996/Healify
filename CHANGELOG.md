@@ -1,5 +1,41 @@
 # Changelog
 
+## 0.7.1 (test-runner) — bug crítico real: Playwright timeouts nunca curaban
+
+Encontrado probando de verdad contra el paquete publicado (`@healify/test-runner@0.7.0`
+instalado desde npm, no desde el workspace local), con un test real que rompe un botón
+real en un navegador real. No es un caso hipotético: es el fallo más común en cualquier
+suite de Playwright real (un `click()`/`fill()` que nunca encuentra el elemento y hace
+timeoutear el test entero).
+
+**El bug**: cuando el test entero timeoutea (no una excepción explícita del propio
+`click()`), Playwright reporta el fallo en DOS entradas de `result.errors`: la primera es
+el mensaje genérico `"Test timeout of 30000ms exceeded."` (sin selector), y la segunda
+tiene el detalle real (`page.click: ... Call log: - waiting for locator('#x')`).
+`test-runner/src/reporter.ts` solo miraba `result.error`/`result.errors[0]`, que en este
+caso concreto (probablemente el más frecuente en la práctica) es siempre el mensaje corto
+sin selector. Resultado: el caso quedaba `unresolved` con `"Unknown selector"`, aunque el
+motor heurístico hubiera podido curarlo sin problema si hubiera recibido el mensaje
+correcto.
+
+Ninguno de los tests existentes lo detectó porque todos fabricaban un `result` sintético
+donde el mensaje útil ya estaba en el primer lugar que el código miraba, nunca
+reproduciendo la forma real del objeto que devuelve Playwright.
+
+**Fix**: `reporter.ts` ahora concatena todos los mensajes de `result.errors[]` (no solo
+el primero) antes de pasarlos a `extractSelectorFromError`, así encuentra el selector sin
+importar en cuál entrada esté. +1 test que reproduce el shape real (dos errores, selector
+en el segundo) → 9 tests en test-runner. Verificado con una corrida real de Playwright
+contra un selector roto de verdad, antes y después del fix.
+
+Cypress-plugin se probó en paralelo con el mismo método (instalación real desde npm,
+selector roto real, navegador real) y no tiene este problema: `test.displayError` de
+Cypress ya trae el mensaje completo en un solo campo, así que la extracción funciona
+desde la primera versión. `selenium-plugin`/`webdriverio-plugin`/`cli` no se probaron con
+este mismo nivel de rigor en esta pasada (sí tienen sus propios tests unitarios y, en el
+caso de `cli`, verificación con el binario real compilado, pero no una instalación real
+desde npm contra un browser real como se hizo acá).
+
 ## 0.8.0 — Feature #8: historial de curaciones (MVP)
 
 `healify fix` (sin `--dry-run`) ahora graba cada caso de la corrida en

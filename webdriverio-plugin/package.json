@@ -1,7 +1,7 @@
 {
   "name": "@healify/webdriverio-plugin",
   "version": "0.6.0",
-  "description": "Self-healing wrapper for WebdriverIO — heuristic, local-first, no AI, no server.",
+  "description": "Self-healing wrapper for WebdriverIO: heuristic, local-first, no AI, no server.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {

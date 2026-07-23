@@ -1,7 +1,7 @@
 {
   "name": "@healify/test-runner",
-  "version": "0.7.0",
-  "description": "Healify reporter for Playwright — reports broken selectors without requiring GitHub repo access.",
+  "version": "0.7.1",
+  "description": "Healify reporter for Playwright: reports broken selectors without requiring GitHub repo access.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {

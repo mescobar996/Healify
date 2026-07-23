@@ -1,7 +1,7 @@
 {
   "name": "@healify/cypress-plugin",
   "version": "0.7.0",
-  "description": "Healify reporter for Cypress — reports broken selectors without requiring GitHub repo access.",
+  "description": "Healify reporter for Cypress: reports broken selectors without requiring GitHub repo access.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {

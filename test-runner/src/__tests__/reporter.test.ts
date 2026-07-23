@@ -83,6 +83,27 @@ describe('HealifyReporter', () => {
     expect(payload.errorMessage).toContain("Waiting for selector '#login-btn'")
   })
 
+  it('encuentra el selector en errors[1] cuando errors[0]/error no lo tienen (timeout real de Playwright)', () => {
+    // Reproduce el shape real que devuelve Playwright cuando page.click() nunca resuelve:
+    // el TEST timeoutea entero, error/errors[0] es el mensaje genérico sin selector, y el
+    // selector real vive en errors[1] (Call log del action timeout). Verificado corriendo
+    // Playwright de verdad contra un selector roto, no un caso inventado.
+    const reporter = new HealifyReporter()
+    const result = makeResult({
+      status: 'timedOut',
+      error: { message: 'Test timeout of 30000ms exceeded.' },
+      errors: [
+        { message: 'Test timeout of 30000ms exceeded.' },
+        { message: "Error: page.click: Test timeout of 30000ms exceeded.\nCall log:\n  - waiting for locator('#old-add-to-cart-btn')" },
+      ],
+    })
+
+    reporter.onTestEnd(makeTest(), result)
+
+    const payload = mockRunLocalHealing.mock.calls[0][0]
+    expect(payload.errorMessage).toContain("locator('#old-add-to-cart-btn')")
+  })
+
   it('falls back to result.errors[0] when result.error is null', () => {
     const reporter = new HealifyReporter()
     const result = makeResult({
