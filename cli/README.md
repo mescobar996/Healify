@@ -21,15 +21,15 @@ npx @healify/cli doctor   # revisa que esté todo bien instalado y configurado, 
 npx @healify/cli fix      # corré esto después de tus tests, para aplicar los fixes sugeridos
 ```
 
-**`npx @healify/cli init`** funciona en cualquier estado de tu proyecto — y **no genera
+**`npx @healify/cli init`** funciona en cualquier estado de tu proyecto y **no genera
 ningún test**, nunca. Solo deja la config real conectada:
 
 - **No tenés ningún framework de e2e todavía** → te pregunta cuál armar (Playwright,
-  Cypress o Selenium — default Playwright si apretás Enter), instala el paquete y crea el
+  Cypress o Selenium, default Playwright si apretás Enter), instala el paquete y crea el
   config con el reporter/plugin de Healify ya wireado.
 - **Ya tenés el framework instalado pero sin config** (típico en un proyecto Vite/Next que
   nunca llegó a tener `playwright.config.*`) → lo crea igual que en el caso anterior, sin
-  preguntarte nada — el framework ya está decidido.
+  preguntarte nada: el framework ya está decidido.
 - **Ya tenés config pero sin Healify** → solo inyecta el reporter/plugin, no toca el resto
   de tu config.
 
@@ -37,7 +37,7 @@ Es seguro correrlo más de una vez: si algo ya está instalado o configurado, no
 nuevo (nunca pisa un archivo que ya generaste vos).
 
 <details>
-<summary><b>Playwright — de cero</b></summary>
+<summary><b>Playwright, de cero</b></summary>
 
 ```
 $ npx @healify/cli init
@@ -53,13 +53,13 @@ Healify init
    rompa vas a tener healify-report.html.
 ```
 
-`init` no crea ningún test — el primer selector roto que Healify cura tiene que ser uno de
+`init` no crea ningún test. El primer selector roto que Healify cura tiene que ser uno de
 tu propia app, no uno inventado. Escribí tu test en `e2e/` como harías normalmente con
 Playwright; el reporter ya está conectado.
 </details>
 
 <details>
-<summary><b>Cypress — de cero</b></summary>
+<summary><b>Cypress, de cero</b></summary>
 
 ```
 $ npx @healify/cli init
@@ -77,12 +77,12 @@ Healify init
 ```
 
 `cypress/support/e2e.ts` es el archivo de soporte que Cypress exige para e2e testing (no
-es nada de Healify) — queda vacío, listo para lo que necesites. Ningún test se genera acá
+es nada de Healify). Queda vacío, listo para lo que necesites. Ningún test se genera acá
 tampoco.
 </details>
 
 <details>
-<summary><b>Selenium — de cero</b></summary>
+<summary><b>Selenium, de cero</b></summary>
 
 ```
 $ npx @healify/cli init
@@ -99,23 +99,23 @@ Healify init
 ```
 
 Selenium no tiene config para wirear (se envuelve el `WebDriver` a mano). El archivo que
-`init` deja es solo documentación de referencia — nunca se ejecuta ni simula ningún
-resultado — mostrando cómo envolver tu `WebDriver` real con `HealifySeleniumPlugin`.
+`init` deja es solo documentación de referencia, nunca se ejecuta ni simula ningún
+resultado: muestra cómo envolver tu `WebDriver` real con `HealifySeleniumPlugin`.
 </details>
 
 **baseURL automático (Playwright/Cypress):** `init` busca el puerto real de tu app en este
-orden — script `"dev"` de tu `package.json` (ej. `vite --port=3000` → `http://localhost:3000`,
-el caso más común en proyectos Vite reales, donde el puerto casi nunca está en
-`vite.config.*`), después `server.port` dentro de `vite.config.*`/`next.config.*` si existe,
-y si no encuentra ninguna pista: `5173` (default de Vite) o `3000` (default de Next). TS o
-JS también se detecta solo (según haya `tsconfig.json`).
+orden: primero el script `"dev"` de tu `package.json` (ej. `vite --port=3000` da
+`http://localhost:3000`, el caso más común en proyectos Vite reales, donde el puerto casi
+nunca está en `vite.config.*`), después `server.port` dentro de `vite.config.*`/
+`next.config.*` si existe, y si no encuentra ninguna pista: `5173` (default de Vite) o
+`3000` (default de Next). TS o JS también se detecta solo (según haya `tsconfig.json`).
 
-**`npx @healify/cli doctor`** — no modifica nada, solo revisa: ¿hay un framework soportado?,
+**`npx @healify/cli doctor`** no modifica nada, solo revisa: ¿hay un framework soportado?,
 ¿está instalado el paquete de Healify?, ¿el config lo tiene wireado?, ¿ya generaste un
 `healify-report.json` corriendo tus tests? Cada check en rojo viene con la línea exacta
 para arreglarlo.
 
-**`npx @healify/cli fix`** — una vez que corriste tus tests y tenés `healify-report.json`,
+**`npx @healify/cli fix`**, una vez que corriste tus tests y tenés `healify-report.json`,
 aplica las sugerencias de mayor confianza directo en tus archivos (ver detalle abajo).
 
 ## Uso

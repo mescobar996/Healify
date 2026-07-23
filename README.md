@@ -1,12 +1,12 @@
 <div align="center">
   <h1>Healify</h1>
-  <p><strong>Cuando un selector se rompe, Healify te dice cómo arreglarlo — sin salir de tu máquina.</strong></p>
+  <p><strong>Cuando un selector se rompe, Healify te dice cómo arreglarlo, sin salir de tu máquina.</strong></p>
 
   <img src="https://img.shields.io/badge/TypeScript-5-blue?logo=typescript" />
   <img src="https://img.shields.io/badge/Playwright-1.58-green?logo=playwright" />
   <img src="https://img.shields.io/badge/Cypress-15-green?logo=cypress" />
   <img src="https://img.shields.io/badge/Selenium-4-green?logo=selenium" />
-  <img src="https://img.shields.io/badge/tests-138%20verdes-brightgreen" />
+  <img src="https://img.shields.io/badge/tests-164%20verdes-brightgreen" />
 </div>
 
 ---
@@ -25,7 +25,7 @@ No necesitás saber programar, no necesitás cuenta, API key, ni internet. Heali
 
 ---
 
-## 🚀 Empiezo de cero (Recomendado para QA)
+## Empiezo de cero (recomendado para QA)
 
 Si nunca usaste Healify, hacé esto. Te toma 2 minutos.
 
@@ -62,7 +62,7 @@ Healify doctor
    fix: Corré tus tests al menos una vez con algún selector roto para generar el reporte.
 ```
 
-`doctor` no te pregunta nada ni instala nada por vos — solo diagnostica. Cada `fix:` es el
+`doctor` no te pregunta nada ni instala nada por vos: solo diagnostica. Cada `fix:` es el
 comando exacto para arreglar ese punto. Si usás Selenium en vez de Playwright/Cypress, el
 check de `healify-report.json` no aparece (Selenium cura en vivo, no genera reporte).
 
@@ -80,16 +80,16 @@ Esto:
   cero si todavía no existían)
 - No duplica nada si ya lo tenías
 
-> **¿Ni siquiera tenés Playwright/Cypress/Selenium instalado?** No hace falta el Paso 2 —
+> **¿Ni siquiera tenés Playwright/Cypress/Selenium instalado?** No hace falta el Paso 2:
 > corré directamente `npx @healify/cli init`. Te pregunta qué framework armar, lo instala y
-> te deja el config conectado. **No genera ningún test** — el primer selector roto que
+> te deja el config conectado. **No genera ningún test**: el primer selector roto que
 > Healify cure tiene que ser uno de tu propia app, no uno inventado. Detalle de los 3 casos
 > en el [README del CLI](cli/README.md).
 
 **Paso 4: Escribí tu primer test real y corré tus tests como siempre**
 
 Si todavía no tenés ningún test e2e, escribí uno simple contra una pantalla real de tu app
-(un login, un botón que ya exista) en `e2e/` (Playwright) o `cypress/e2e/` (Cypress) — el
+(un login, un botón que ya exista) en `e2e/` (Playwright) o `cypress/e2e/` (Cypress). El
 reporter ya está conectado, no hace falta tocar nada más de la config.
 
 ```bash
@@ -116,7 +116,7 @@ Listo.
 
 ---
 
-## 📦 Paquetes
+## Paquetes
 
 | Paquete | Versión | Para qué | Comando |
 |---|---|---|---|
@@ -185,7 +185,7 @@ Cura en vivo, no genera reporte. Ver su README para limitaciones.
 
 ---
 
-## 🛠️ Comandos del CLI - Explicados para QA
+## Comandos del CLI, explicados para QA
 
 | Comando | Qué hace | Cuándo usarlo |
 |---|---|---|
@@ -197,14 +197,14 @@ Cura en vivo, no genera reporte. Ver su README para limitaciones.
 **Si te da error `ENOENT: healify-report.json`:** es porque no corriste los tests todavía. Corré `doctor` primero, después tus tests, recién después `fix`.
 
 **Si ya tenías Healify instalado de antes y `init`/`doctor` no muestran lo nuevo de esta
-versión:** revisá qué versión tenés instalada de verdad —
+versión:** revisá qué versión tenés instalada de verdad.
 
 ```bash
 npx @healify/cli --help   # la primera línea de ayuda no dice versión; mirá node_modules
 cat node_modules/@healify/cli/package.json | grep version
 ```
 
-Todos los paquetes de Healify son `0.x` — con semver, `^0.4.1` en tu `package.json`
+Todos los paquetes de Healify son `0.x`. Con semver, `^0.4.1` en tu `package.json`
 significa "cualquier `0.4.x`", **no** te deja subir a `0.5.0` con un `npm install` sin
 versión explícita. Si ya tenías Healify de una versión anterior, actualizalo pidiendo la
 versión a mano:
@@ -215,11 +215,11 @@ npm install --save-dev @healify/cli@latest @healify/test-runner@latest
 ```
 
 Esto no pasa la primera vez que instalás Healify en un proyecto nuevo (ahí no hay ningún
-`^0.x.y` viejo frenándote) — solo al actualizar una instalación existente.
+`^0.x.y` viejo frenándote), solo al actualizar una instalación existente.
 
 ---
 
-## 📊 Cómo leer el reporte
+## Cómo leer el reporte
 
 `healify-report.html` tiene 3 estados:
 
@@ -231,17 +231,17 @@ El `printSummary` al final de la corrida en consola te muestra lo mismo: `Healed
 
 ---
 
-## 🧪 Para Devs / Contribuidores
+## Para devs y contribuidores
 
 ```bash
 git clone https://github.com/mescobar996/Healify.git
 cd Healify
 npm install
 npm run build
-npm run verify   # 162 tests en verde
+npm run verify   # 164 tests en verde
 ```
 
-## 🗂 Estructura
+## Estructura
 
 ```
 reporter-core/     # Motor heurístico (privado)
@@ -252,10 +252,10 @@ cli/               # @healify/cli 0.6.0 - init configura sin generar tests + doc
 docs/guide/        # Manual detallado
 ```
 
-## 📜 Historia
+## Historia
 
 Antes fue un SaaS completo con dashboard, auth, billing. Se recortó a solo paquetes locales porque el QA lo quiere en su PC. El código viejo está en `archive/saas-full`.
 
-## 📄 License
+## License
 
 MIT © 2026 Healify
