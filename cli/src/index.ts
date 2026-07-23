@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import type { LocalRun } from '@healify/reporter-core'
 import { fix, type FixOutcome } from './fix'
 import { fixAst } from './fix-ast'
+import { appendHistory } from './history'
 import { init, type InitReport, type FrameworkInitResult } from './commands/init'
 import { doctor, type DoctorReport } from './commands/doctor'
 
@@ -58,6 +59,13 @@ function runFix(args: string[]): void {
   }
 
   console.log(`Healify fix — ${reportPath}${ast ? ' (--ast)' : ''}\n`)
+
+  // Se graba ANTES de aplicar los fixes, con el estado real del reporte (todos los casos,
+  // no solo lo que fix() termina aplicando) — así "recurrente"/"re-roto" reflejan selectores
+  // rotos de verdad, no solo los auto-aplicables. --dry-run nunca graba: el gh-action corre
+  // `fix --dry-run` en cada PR, y si eso grabara el historial se llenaría de ruido de CI que
+  // no representa corridas reales de un dev.
+  if (!dryRun) appendHistory(run, process.cwd())
 
   // --ast es aditivo, no reemplaza a fix(): primero corre el reemplazo de texto normal
   // (cubre TESTID/CSS/TEXT, que ya son valores de selector pegables tal cual), y solo
