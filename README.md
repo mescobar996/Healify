@@ -1,78 +1,151 @@
 <div align="center">
   <h1>Healify</h1>
-
   <p><strong>Cuando un selector se rompe, Healify te dice cómo arreglarlo — sin salir de tu máquina.</strong></p>
 
   <img src="https://img.shields.io/badge/TypeScript-5-blue?logo=typescript" />
   <img src="https://img.shields.io/badge/Playwright-1.58-green?logo=playwright" />
   <img src="https://img.shields.io/badge/Cypress-15-green?logo=cypress" />
   <img src="https://img.shields.io/badge/Selenium-4-green?logo=selenium" />
+  <img src="https://img.shields.io/badge/tests-135%20verdes-brightgreen" />
 </div>
 
 ---
 
-## 🩺 Qué hace
+## Para quién es esto
 
-Un test de Playwright, Cypress o Selenium falla porque un selector ya no existe en el
-DOM. Healify detecta la falla, corre una heurística local (sin red, sin cuenta, sin
-servidor — pattern-matching sobre el texto del selector, **no es IA**) y te propone un
-selector alternativo más estable.
+**Si sos QA Manual, QA Automation o QC Engineer y se te rompe un test porque cambió un ID, una clase o un texto, esto es para vos.**
 
-**No hace falta cuenta, API key, ni conexión a internet.** Instalás el paquete, corrés tus
-tests, y listo.
+No necesitás saber programar, no necesitás cuenta, API key, ni internet. Healify corre 100% local.
+
+- **QA Manual:** Te avisa qué selector se rompió y te propone uno más estable.
+- **QA Automation:** Te genera un reporte HTML + JSON y te deja aplicar el fix con un comando.
+- **QC Engineer:** Te asegura que los selectores que queden sean los más estables (`data-testid` > `id` > `name` > `aria` > texto).
+
+> **Qué NO es:** No es IA, no es un servicio en la nube, no manda tu código a ningún lado. Es pattern-matching local sobre el DOM.
+
+---
+
+## 🚀 Empiezo de cero (Recomendado para QA)
+
+Si nunca usaste Healify, hacé esto. Te toma 2 minutos.
+
+**Paso 1: Instalar la herramienta de diagnóstico**
+
+```bash
+npm install --save-dev @healify/cli
+```
+
+**Paso 2: Diagnosticar tu proyecto**
+
+```bash
+npx @healify/cli doctor
+```
+
+Te va a decir:
+
+- Qué framework usás (Playwright / Cypress / Selenium)
+- Si tenés instalado lo necesario
+- Si tu config está lista
+- Si ya generaste un reporte
+
+Ejemplo:
+
+```
+🔍 Detectado: Playwright (playwright.config.ts)
+✅ @healify/test-runner 0.4.0 instalado
+❌ Reporter no configurado
+→ ¿Querés que lo agregue? [y/n]
+```
+
+**Paso 3: Arreglar la config automáticamente**
+
+```bash
+npx @healify/cli init
+```
+
+Esto:
+
+- Te instala el paquete correcto (`test-runner` para Playwright, `cypress-plugin` para Cypress)
+- Te edita el `playwright.config.ts` o `cypress.config.ts` automáticamente
+- No duplica nada si ya lo tenías
+
+**Paso 4: Correr tus tests como siempre**
+
+```bash
+npx playwright test
+# o
+npx cypress run
+```
+
+Al terminar, si algo falló por selector roto, se crea `healify-report.html` y `healify-report.json` en la raíz.
+
+**Paso 5: Ver el reporte y aplicar el fix**
+
+```bash
+# Ver qué haría sin tocar nada
+npx @healify/cli fix --dry-run
+
+# Aplicar los fixes de mayor confianza en tus archivos
+npx @healify/cli fix
+```
+
+Abrí `healify-report.html` en el navegador para ver: `Healed: 1 | Review: 1 | Unresolved: 2`
+
+Listo.
+
+---
 
 ## 📦 Paquetes
 
-| Paquete | Versión | Para | npm |
+| Paquete | Versión | Para qué | Comando |
 |---|---|---|---|
-| [`@healify/test-runner`](test-runner/README.md) | 0.4.0 | Playwright — genera `healify-report.html`/`.json` al final de la corrida | [![npm](https://img.shields.io/npm/v/%40healify%2Ftest-runner)](https://www.npmjs.com/package/@healify/test-runner) |
-| [`@healify/cypress-plugin`](cypress-plugin/README.md) | 0.4.0 | Cypress — mismo reporte, vía `setupNodeEvents` | [![npm](https://img.shields.io/npm/v/%40healify%2Fcypress-plugin)](https://www.npmjs.com/package/@healify/cypress-plugin) |
-| [`@healify/selenium-plugin`](selenium-plugin/README.md) | 0.1.0 | Selenium `WebDriver` — cura selectores en vivo, sin reporte (ver su README para el alcance) | [![npm](https://img.shields.io/npm/v/%40healify%2Fselenium-plugin)](https://www.npmjs.com/package/@healify/selenium-plugin) |
-| [`@healify/cli`](cli/README.md) | 0.4.0 | `init`/`doctor`/`fix` — auto-detecta tu framework, configura Healify y aplica sugerencias en tus archivos de test | [![npm](https://img.shields.io/npm/v/%40healify%2Fcli)](https://www.npmjs.com/package/@healify/cli) |
-| `reporter-core` | 0.4.0 | Motor heurístico + tipos compartidos. Privado, no se publica solo | — |
+| [`@healify/test-runner`](test-runner/README.md) | 0.4.0 | Playwright - genera reporte al final | `npm i -D @healify/test-runner` |
+| [`@healify/cypress-plugin`](cypress-plugin/README.md) | 0.4.0 | Cypress - mismo reporte | `npm i -D @healify/cypress-plugin` |
+| [`@healify/selenium-plugin`](selenium-plugin/README.md) | 0.1.0 | Selenium - cura en vivo, sin reporte | `npm i -D @healify/selenium-plugin` |
+| [`@healify/cli`](cli/README.md) | 0.4.0 | CLI - diagnostica, inicializa y aplica fixes | `npm i -D @healify/cli` |
+| `reporter-core` | 0.4.0 | Motor heurístico - privado, bundleado | — |
 
-Los 4 paquetes están publicados en npm y ya se pueden instalar hoy — no hace falta
-clonar el repo ni compilar nada para usarlos. Elegí el que corresponda a tu framework:
+### Instalación manual (si no querés usar `init`)
 
-### Playwright — `@healify/test-runner`
+<details>
+<summary><strong>Playwright</strong></summary>
 
 ```bash
 npm install --save-dev @healify/test-runner
 ```
 
 `playwright.config.ts`:
+
 ```ts
 import { defineConfig } from '@playwright/test'
-
 export default defineConfig({
   reporter: [['list'], ['@healify/test-runner/reporter']],
 })
 ```
 
-Corré tus tests normalmente (`npx playwright test`). Al terminar la corrida, si algún
-test falló por un selector roto, aparece `healify-report.html` en el directorio desde el
-que corriste Playwright.
+</details>
 
-### Cypress — `@healify/cypress-plugin`
+<details>
+<summary><strong>Cypress</strong></summary>
 
 ```bash
 npm install --save-dev @healify/cypress-plugin
 ```
 
 `cypress.config.ts`:
+
 ```ts
 import { defineConfig } from 'cypress'
 import { HealifyCypressPlugin } from '@healify/cypress-plugin'
-
 export default defineConfig({
   e2e: { setupNodeEvents: (on, config) => HealifyCypressPlugin(on, config) },
 })
 ```
 
-Corré tus tests normalmente (`npx cypress run`). Mismo resultado: `healify-report.html`
-al terminar la corrida si hubo algún selector roto.
+</details>
 
-### Selenium — `@healify/selenium-plugin`
+<details>
+<summary><strong>Selenium</strong></summary>
 
 ```bash
 npm install --save-dev @healify/selenium-plugin selenium-webdriver
@@ -81,84 +154,65 @@ npm install --save-dev @healify/selenium-plugin selenium-webdriver
 ```ts
 import { Builder, By } from 'selenium-webdriver'
 import { HealifySeleniumPlugin } from '@healify/selenium-plugin'
-
 const raw = await new Builder().forBrowser('chrome').build()
 const driver = new HealifySeleniumPlugin({ onEvent: console.log }).wrap(raw)
-
-// Si '#add-to-cart-btn' se rompió, el plugin intenta un selector alternativo
-// antes de dejar que el error se propague.
 await driver.findElement(By.css('#add-to-cart-btn')).click()
 ```
 
-A diferencia de los otros dos, cura en vivo y no genera reporte (Selenium no tiene un
-hook de "fin de corrida" nativo). Ver [su README](selenium-plugin/README.md) para el
-alcance completo y las limitaciones.
+Cura en vivo, no genera reporte. Ver su README para limitaciones.
+</details>
 
-### Aplicar las sugerencias automáticamente — `@healify/cli`
+---
 
-Con un `healify-report.json` ya generado (por `test-runner` o `cypress-plugin`):
+## 🛠️ Comandos del CLI - Explicados para QA
 
-```bash
-npm install --save-dev @healify/cli
-npx healify fix              # aplica los casos de mayor confianza en tus archivos
-npx healify fix --dry-run     # muestra qué haría, sin escribir nada
-```
+| Comando | Qué hace | Cuándo usarlo |
+|---|---|---|
+| `npx @healify/cli doctor` | Revisa tu proyecto y te dice qué falta | Siempre primero. Si algo no anda, corrés esto. |
+| `npx @healify/cli init` | Detecta tu framework e instala/configura todo | La primera vez que usás Healify en un proyecto. |
+| `npx @healify/cli fix --dry-run` | Te muestra qué archivos tocaría, sin tocar nada | Para revisar antes de aplicar. |
+| `npx @healify/cli fix` | Aplica los selectores curados en tus archivos de test | Después de ver el reporte. |
 
-Ver [su README](cli/README.md) para el detalle de qué toca y qué no.
+**Si te da error `ENOENT: healify-report.json`:** es porque no corriste los tests todavía. Corré `doctor` primero, después tus tests, recién después `fix`.
 
-En todos los casos: nada sale de tu máquina, no hace falta cuenta ni conexión a
-internet. Para un recorrido completo de punta a punta (cómo funciona el motor por
-dentro, troubleshooting), ver [`docs/guide/`](docs/guide/).
+---
 
-## 🗂 Estructura del repo
+## 📊 Cómo leer el reporte
 
-```
-reporter-core/     # Motor heurístico + tipos compartidos (privado, no se publica solo)
-test-runner/       # @healify/test-runner — reporter de Playwright
-cypress-plugin/    # @healify/cypress-plugin — plugin de Cypress
-selenium-plugin/   # @healify/selenium-plugin — wrapper de Selenium WebDriver (curado en vivo)
-cli/               # @healify/cli — aplica sugerencias de un reporte directo en los archivos
-docs/
-  guide/           # Manual de usuario (instalación, uso, troubleshooting)
-  superpowers/     # Historial de planificación real (specs, plans, no basura)
-```
+`healify-report.html` tiene 3 estados:
 
-## 🧪 Correr los tests
+- **Healed (Verde):** Encontró un selector estable y confiable. Ej: `data-testid="add-to-cart"`. `fix` lo puede aplicar solo.
+- **Review (Amarillo):** Encontró algo, pero necesita que lo mires. Ej: propone cambiar de `.css-123` a texto `Add to cart`. Revisalo.
+- **Unresolved (Rojo):** No encontró alternativa estable. Tenés que arreglarlo a mano.
 
-```bash
-npm test          # Corre los tests de los 5 paquetes (workspaces)
-npm run build      # Compila los 5 paquetes
-npm run verify     # build + test de los 5 paquetes, resumen de una línea (87 tests)
-```
+El `printSummary` al final de la corrida en consola te muestra lo mismo: `Healed: 3 | Review: 1 | Unresolved: 0`
 
-`npm run verify` corre `scripts/verify.sh`: compila y testea los 5 workspaces y termina con
-un resumen tipo `✅ reporter-core (30) / ✅ test-runner (8) / ✅ cypress-plugin (7) / ✅ cli
-(13) / ✅ selenium-plugin (29)` en vez del output completo de cada framework de tests.
+---
 
-Además, `test-runner` y `cypress-plugin` imprimen un resumen de una línea al final de cada
-corrida real de tus tests (`Healed: 3 | Review: 1 | Unresolved: 0`), para no tener que abrir
-`healify-report.html` en CI. Ver el detalle en el README de cada paquete.
-
-## ⚙️ Local setup
+## 🧪 Para Devs / Contribuidores
 
 ```bash
 git clone https://github.com/mescobar996/Healify.git
 cd Healify
 npm install
 npm run build
+npm run verify   # 135 tests en verde
 ```
 
-No hace falta base de datos, cuenta, ni servidor para nada de esto.
+## 🗂 Estructura
+
+```
+reporter-core/     # Motor heurístico (privado)
+test-runner/       # @healify/test-runner 0.4.0
+cypress-plugin/    # @healify/cypress-plugin 0.4.0
+selenium-plugin/   # @healify/selenium-plugin 0.1.0
+cli/               # @healify/cli 0.4.0 - con init + doctor
+docs/guide/        # Manual detallado
+```
 
 ## 📜 Historia
 
-Este repo tuvo antes un SaaS completo: dashboard, auth, billing, worker con cola, PR
-automático a GitHub, 65+ rutas de API, y hasta un endpoint propio para un modo nube
-opcional. Se recortó todo eso porque el caso de uso real — "un tester quiere esto en su
-PC" — no lo necesitaba: hoy `main` es exactamente los paquetes de arriba, sin nada más.
-Ese código anterior sigue existiendo, intacto, en la rama
-[`archive/saas-full`](../../tree/archive/saas-full), por si algún día se retoma la versión
-equipo (dashboard, PR automático, etc.).
+Antes fue un SaaS completo con dashboard, auth, billing. Se recortó a solo paquetes locales porque el QA lo quiere en su PC. El código viejo está en `archive/saas-full`.
 
 ## 📄 License
 
