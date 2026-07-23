@@ -22,10 +22,10 @@
     "cypress": ">=13.0.0"
   },
   "devDependencies": {
-    "@types/node": "^25.5.0",
-    "cypress": "^15.4.0",
-    "esbuild": "^0.27.3",
-    "typescript": "^5.4.0",
-    "vitest": "^4.0.18"
+    "@types/node": "^26.1.1",
+    "cypress": "^15.19.0",
+    "esbuild": "^0.28.1",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
   }
 }
