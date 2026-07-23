@@ -114,6 +114,10 @@ export function computeRebroken(entries: HistoryEntry[]): RebrokenSelector[] {
     if (list.length < 2) continue
     const sorted = [...list].sort((a, b) => a.timestamp.localeCompare(b.timestamp))
     if (sorted[0].status !== 'healed') continue
+    // Debe haber vuelto a aparecer roto (no-healed) después de la primera curación —
+    // dos apariciones 'healed' seguidas no son un re-roto, son dos curaciones.
+    const rebrokeAgain = sorted.slice(1).some((e) => e.status !== 'healed')
+    if (!rebrokeAgain) continue
     result.push({ selector, count: list.length, firstHealedAt: sorted[0].timestamp })
   }
   return result.sort((a, b) => b.count - a.count)
