@@ -84,7 +84,7 @@ function runInit(): void {
   if (report.frameworks.length === 0) {
     console.error('No detectamos Playwright, Cypress ni Selenium en este proyecto.')
     console.error('Healify soporta: Playwright (@playwright/test), Cypress (cypress), Selenium (selenium-webdriver).')
-    console.error('Instalá uno de estos frameworks primero y volvé a correr: npx healify init')
+    console.error('Instalá uno de estos frameworks primero y volvé a correr: npx @healify/cli init')
     process.exit(1)
   }
 
@@ -94,7 +94,8 @@ function runInit(): void {
 function printDoctorReport(report: DoctorReport): void {
   console.log('Healify doctor\n')
   for (const check of report.checks) {
-    console.log(`${check.ok ? '✅' : '❌'} ${check.label}`)
+    const icon = check.info ? 'ℹ️' : check.ok ? '✅' : '❌'
+    console.log(`${icon} ${check.label}`)
     if (!check.ok && check.fix) console.log(`   fix: ${check.fix}`)
   }
 }
@@ -111,6 +112,11 @@ Comandos:
 function main(): void {
   const args = process.argv.slice(2)
   const command = args[0]
+
+  // --help/-h en cualquier posición muestra el uso y no ejecuta nada — antes 'init --help'
+  // corría init de verdad (instalaba paquetes, editaba configs), confirmado corriendo el
+  // binario real. --help nunca debe tener efectos secundarios.
+  if (args.includes('--help') || args.includes('-h')) return printHelp()
 
   if (command === 'init') return runInit()
   if (command === 'doctor') return printDoctorReport(doctor())

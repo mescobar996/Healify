@@ -7,6 +7,8 @@ export interface DoctorCheck {
   label: string
   ok: boolean
   fix?: string
+  /** Informativo, no es ni éxito ni falla accionable — se imprime con ℹ️ en vez de ✅/❌. */
+  info?: boolean
 }
 
 export interface DoctorReport {
@@ -28,7 +30,7 @@ function checkFrameworkConfig(cwd: string, framework: Framework): DoctorCheck {
     return {
       label: `Config de ${framework} encontrado`,
       ok: false,
-      fix: `No encontramos ${framework}.config.* — corré npx healify init, o agregá el config a mano.`,
+      fix: `No encontramos ${framework}.config.* — corré npx @healify/cli init, o agregá el config a mano.`,
     }
   }
 
@@ -38,7 +40,7 @@ function checkFrameworkConfig(cwd: string, framework: Framework): DoctorCheck {
   return {
     label: `${configPath} tiene Healify configurado`,
     ok: wired,
-    fix: wired ? undefined : 'npx healify init',
+    fix: wired ? undefined : 'npx @healify/cli init',
   }
 }
 
@@ -73,12 +75,21 @@ export function doctor(cwd: string = process.cwd()): DoctorReport {
     checks.push(checkFrameworkConfig(cwd, framework))
   }
 
-  const hasReport = existsSync(join(cwd, 'healify-report.json'))
-  checks.push({
-    label: 'healify-report.json existe',
-    ok: hasReport,
-    fix: hasReport ? undefined : 'Corré tus tests al menos una vez con algún selector roto para generar el reporte.',
-  })
+  // Selenium cura en vivo (wrap del WebDriver) y no tiene hook de "fin de corrida" — nunca
+  // genera healify-report.json. Si ese es el único framework, pedirlo sería un check que
+  // jamás puede pasar. Si conviven con Playwright/Cypress, esos sí generan reporte y el
+  // check sigue siendo válido.
+  const generatesReport = frameworks.some((f) => f !== 'selenium')
+  if (generatesReport) {
+    const hasReport = existsSync(join(cwd, 'healify-report.json'))
+    checks.push({
+      label: 'healify-report.json existe',
+      ok: hasReport,
+      fix: hasReport ? undefined : 'Corré tus tests al menos una vez con algún selector roto para generar el reporte.',
+    })
+  } else {
+    checks.push({ label: 'Selenium cura en vivo, no genera reporte', ok: true, info: true })
+  }
 
   return { checks }
 }

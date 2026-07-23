@@ -6,7 +6,7 @@
   <img src="https://img.shields.io/badge/Playwright-1.58-green?logo=playwright" />
   <img src="https://img.shields.io/badge/Cypress-15-green?logo=cypress" />
   <img src="https://img.shields.io/badge/Selenium-4-green?logo=selenium" />
-  <img src="https://img.shields.io/badge/tests-135%20verdes-brightgreen" />
+  <img src="https://img.shields.io/badge/tests-138%20verdes-brightgreen" />
 </div>
 
 ---
@@ -48,14 +48,23 @@ Te va a decir:
 - Si tu config está lista
 - Si ya generaste un reporte
 
-Ejemplo:
+Ejemplo real (`npx @healify/cli doctor`, sin nada instalado todavía):
 
 ```
-🔍 Detectado: Playwright (playwright.config.ts)
-✅ @healify/test-runner 0.4.0 instalado
-❌ Reporter no configurado
-→ ¿Querés que lo agregue? [y/n]
+Healify doctor
+
+✅ Framework detectado: playwright
+❌ @healify/test-runner instalado
+   fix: npm install --save-dev @healify/test-runner
+❌ playwright.config.ts tiene Healify configurado
+   fix: npx healify init
+❌ healify-report.json existe
+   fix: Corré tus tests al menos una vez con algún selector roto para generar el reporte.
 ```
+
+`doctor` no te pregunta nada ni instala nada por vos — solo diagnostica. Cada `fix:` es el
+comando exacto para arreglar ese punto. Si usás Selenium en vez de Playwright/Cypress, el
+check de `healify-report.json` no aparece (Selenium cura en vivo, no genera reporte).
 
 **Paso 3: Arreglar la config automáticamente**
 
@@ -102,7 +111,7 @@ Listo.
 | [`@healify/test-runner`](test-runner/README.md) | 0.4.0 | Playwright - genera reporte al final | `npm i -D @healify/test-runner` |
 | [`@healify/cypress-plugin`](cypress-plugin/README.md) | 0.4.0 | Cypress - mismo reporte | `npm i -D @healify/cypress-plugin` |
 | [`@healify/selenium-plugin`](selenium-plugin/README.md) | 0.1.0 | Selenium - cura en vivo, sin reporte | `npm i -D @healify/selenium-plugin` |
-| [`@healify/cli`](cli/README.md) | 0.4.0 | CLI - diagnostica, inicializa y aplica fixes | `npm i -D @healify/cli` |
+| [`@healify/cli`](cli/README.md) | 0.4.1 | CLI - diagnostica, inicializa y aplica fixes | `npm i -D @healify/cli` |
 | `reporter-core` | 0.4.0 | Motor heurístico - privado, bundleado | — |
 
 ### Instalación manual (si no querés usar `init`)
@@ -196,7 +205,7 @@ git clone https://github.com/mescobar996/Healify.git
 cd Healify
 npm install
 npm run build
-npm run verify   # 135 tests en verde
+npm run verify   # 138 tests en verde
 ```
 
 ## 🗂 Estructura
@@ -206,7 +215,7 @@ reporter-core/     # Motor heurístico (privado)
 test-runner/       # @healify/test-runner 0.4.0
 cypress-plugin/    # @healify/cypress-plugin 0.4.0
 selenium-plugin/   # @healify/selenium-plugin 0.1.0
-cli/               # @healify/cli 0.4.0 - con init + doctor
+cli/               # @healify/cli 0.4.1 - con init + doctor
 docs/guide/        # Manual detallado
 ```
 

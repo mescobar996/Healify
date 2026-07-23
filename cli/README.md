@@ -16,12 +16,12 @@ Si nunca tocaste la configuración de Playwright/Cypress/Selenium, no hace falta
 nada a mano. Tres comandos:
 
 ```bash
-npx healify init      # detecta tu framework, instala el paquete correcto y configura todo
-npx healify doctor     # revisa que esté todo bien instalado y configurado, con ✅/❌
-npx healify fix        # corré esto después de tus tests, para aplicar los fixes sugeridos
+npx @healify/cli init     # detecta tu framework, instala el paquete correcto y configura todo
+npx @healify/cli doctor   # revisa que esté todo bien instalado y configurado, con ✅/❌
+npx @healify/cli fix      # corré esto después de tus tests, para aplicar los fixes sugeridos
 ```
 
-**`npx healify init`** — lee tu `package.json` y tus archivos de config para detectar si
+**`npx @healify/cli init`** — lee tu `package.json` y tus archivos de config para detectar si
 usás Playwright, Cypress o Selenium (podés tener más de uno). Instala automáticamente el
 paquete de Healify que corresponda (`@healify/test-runner`, `@healify/cypress-plugin` o
 `@healify/selenium-plugin`) si todavía no lo tenés, y edita tu `playwright.config.*` o
@@ -29,21 +29,21 @@ paquete de Healify que corresponda (`@healify/test-runner`, `@healify/cypress-pl
 está instalado o configurado, no lo toca de nuevo. Si no detecta ningún framework
 soportado, te lo dice en vez de romper algo.
 
-**`npx healify doctor`** — no modifica nada, solo revisa: ¿hay un framework soportado?,
+**`npx @healify/cli doctor`** — no modifica nada, solo revisa: ¿hay un framework soportado?,
 ¿está instalado el paquete de Healify?, ¿el config lo tiene wireado?, ¿ya generaste un
 `healify-report.json` corriendo tus tests? Cada check en rojo viene con la línea exacta
 para arreglarlo.
 
-**`npx healify fix`** — una vez que corriste tus tests y tenés `healify-report.json`,
+**`npx @healify/cli fix`** — una vez que corriste tus tests y tenés `healify-report.json`,
 aplica las sugerencias de mayor confianza directo en tus archivos (ver detalle abajo).
 
 ## Uso
 
 ```bash
-npx healify fix                       # busca ./healify-report.json
-npx healify fix ruta/al/reporte.json   # ruta explícita
-npx healify fix --dry-run              # muestra qué haría, no escribe nada
-npx healify fix --force                # ignora el chequeo de git working tree sucio
+npx @healify/cli fix                       # busca ./healify-report.json
+npx @healify/cli fix ruta/al/reporte.json   # ruta explícita
+npx @healify/cli fix --dry-run              # muestra qué haría, no escribe nada
+npx @healify/cli fix --force                # ignora el chequeo de git working tree sucio
 ```
 
 Salida típica:

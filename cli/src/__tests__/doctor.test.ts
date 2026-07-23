@@ -48,7 +48,7 @@ describe('doctor', () => {
     expect(pkgCheck?.fix).toBe('npm install --save-dev @healify/test-runner')
   })
 
-  it('marca el config como no wireado y sugiere npx healify init', () => {
+  it('marca el config como no wireado y sugiere npx @healify/cli init', () => {
     writePkg({ '@playwright/test': '^1.58.0', '@healify/test-runner': '*' })
     writeFileSync(join(dir, 'playwright.config.ts'), `export default defineConfig({\n  use: {},\n})\n`)
 
@@ -56,7 +56,7 @@ describe('doctor', () => {
 
     const configCheck = report.checks.find((c) => c.label.includes('tiene Healify configurado'))
     expect(configCheck?.ok).toBe(false)
-    expect(configCheck?.fix).toBe('npx healify init')
+    expect(configCheck?.fix).toBe('npx @healify/cli init')
   })
 
   it('marca config no encontrado si no hay archivo de config', () => {
@@ -85,6 +85,35 @@ describe('doctor', () => {
     const report = doctor(dir)
 
     expect(report.checks.some((c) => c.label.includes('Config de selenium'))).toBe(false)
+  })
+
+  it('selenium-only: no pide healify-report.json como si fuera un error (nunca lo genera)', () => {
+    writePkg({ 'selenium-webdriver': '^4.46.0', '@healify/selenium-plugin': '*' })
+
+    const report = doctor(dir)
+
+    expect(report.checks.some((c) => c.label.includes('healify-report.json existe'))).toBe(false)
+    const infoCheck = report.checks.find((c) => c.info)
+    expect(infoCheck).toMatchObject({ label: 'Selenium cura en vivo, no genera reporte', ok: true, info: true })
+  })
+
+  it('selenium-only: todos los checks quedan en ok (incluido el informativo)', () => {
+    writePkg({ 'selenium-webdriver': '^4.46.0', '@healify/selenium-plugin': '*' })
+
+    const report = doctor(dir)
+
+    expect(report.checks.every((c) => c.ok)).toBe(true)
+  })
+
+  it('playwright + selenium juntos: sí pide healify-report.json porque playwright lo genera', () => {
+    writePkg({ '@playwright/test': '^1.58.0', '@healify/test-runner': '*', 'selenium-webdriver': '^4.46.0', '@healify/selenium-plugin': '*' })
+    writeFileSync(join(dir, 'playwright.config.ts'), `export default defineConfig({\n  reporter: [['@healify/test-runner/reporter']],\n})\n`)
+
+    const report = doctor(dir)
+
+    const reportCheck = report.checks.find((c) => c.label.includes('healify-report.json existe'))
+    expect(reportCheck).toBeDefined()
+    expect(reportCheck?.ok).toBe(false)
   })
 
   it('doctor no modifica ningún archivo', () => {
