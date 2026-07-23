@@ -192,6 +192,27 @@ Cura en vivo, no genera reporte. Ver su README para limitaciones.
 
 **Si te da error `ENOENT: healify-report.json`:** es porque no corriste los tests todavía. Corré `doctor` primero, después tus tests, recién después `fix`.
 
+**Si ya tenías Healify instalado de antes y `init`/`doctor` no muestran lo nuevo de esta
+versión:** revisá qué versión tenés instalada de verdad —
+
+```bash
+npx @healify/cli --help   # la primera línea de ayuda no dice versión; mirá node_modules
+cat node_modules/@healify/cli/package.json | grep version
+```
+
+Todos los paquetes de Healify son `0.x` — con semver, `^0.4.1` en tu `package.json`
+significa "cualquier `0.4.x`", **no** te deja subir a `0.5.0` con un `npm install` sin
+versión explícita. Si ya tenías Healify de una versión anterior, actualizalo pidiendo la
+versión a mano:
+
+```bash
+npm install --save-dev @healify/cli@latest @healify/test-runner@latest
+# o el paquete que uses: @healify/cypress-plugin@latest, @healify/selenium-plugin@latest
+```
+
+Esto no pasa la primera vez que instalás Healify en un proyecto nuevo (ahí no hay ningún
+`^0.x.y` viejo frenándote) — solo al actualizar una instalación existente.
+
 ---
 
 ## 📊 Cómo leer el reporte
