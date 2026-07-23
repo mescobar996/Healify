@@ -4,6 +4,21 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { LocalRun, LocalCaseResult } from '@healify/reporter-core'
 import { appendHistory, readHistory } from '../history'
+import { computeTopRecurrent, computeRebroken, type HistoryEntry } from '../history'
+
+function makeEntry(overrides: Partial<HistoryEntry> = {}): HistoryEntry {
+  return {
+    timestamp: '2026-07-01T00:00:00.000Z',
+    testFile: 'e2e/login.spec.ts',
+    testName: 'un test',
+    selector: '#old',
+    status: 'healed',
+    fixedSelector: "[data-testid='new']",
+    selectorType: 'TESTID',
+    confidence: 0.95,
+    ...overrides,
+  }
+}
 
 function makeCase(overrides: Partial<LocalCaseResult> = {}): LocalCaseResult {
   return {
@@ -79,5 +94,67 @@ describe('appendHistory + readHistory', () => {
     expect(entry.fixedSelector).toBe("[data-testid='new']")
     expect(entry.selectorType).toBe('TESTID')
     expect(entry.confidence).toBe(0.95)
+  })
+})
+
+describe('computeTopRecurrent', () => {
+  it('cuenta apariciones por selector y ordena de mayor a menor', () => {
+    const entries = [
+      makeEntry({ selector: '#a' }),
+      makeEntry({ selector: '#b' }),
+      makeEntry({ selector: '#a' }),
+      makeEntry({ selector: '#a' }),
+    ]
+
+    expect(computeTopRecurrent(entries)).toEqual([
+      { selector: '#a', count: 3 },
+      { selector: '#b', count: 1 },
+    ])
+  })
+
+  it('respeta el límite (top N)', () => {
+    const entries = ['#a', '#b', '#c'].map((selector) => makeEntry({ selector }))
+    expect(computeTopRecurrent(entries, 2)).toHaveLength(2)
+  })
+
+  it('devuelve [] si no hay entradas', () => {
+    expect(computeTopRecurrent([])).toEqual([])
+  })
+})
+
+describe('computeRebroken', () => {
+  it('marca un selector como re-roto si su primera aparición fue healed y volvió a aparecer', () => {
+    const entries = [
+      makeEntry({ selector: '#a', status: 'healed', timestamp: '2026-07-01T00:00:00.000Z' }),
+      makeEntry({ selector: '#a', status: 'review', timestamp: '2026-07-08T00:00:00.000Z' }),
+    ]
+
+    expect(computeRebroken(entries)).toEqual([
+      { selector: '#a', count: 2, firstHealedAt: '2026-07-01T00:00:00.000Z' },
+    ])
+  })
+
+  it('no marca un selector que solo aparece una vez', () => {
+    const entries = [makeEntry({ selector: '#a', status: 'healed' })]
+    expect(computeRebroken(entries)).toEqual([])
+  })
+
+  it('no marca un selector cuya primera aparición nunca fue healed', () => {
+    const entries = [
+      makeEntry({ selector: '#a', status: 'review', timestamp: '2026-07-01T00:00:00.000Z' }),
+      makeEntry({ selector: '#a', status: 'review', timestamp: '2026-07-08T00:00:00.000Z' }),
+    ]
+    expect(computeRebroken(entries)).toEqual([])
+  })
+
+  it('ordena por cantidad de apariciones descendente', () => {
+    const entries = [
+      makeEntry({ selector: '#a', status: 'healed', timestamp: '2026-07-01T00:00:00.000Z' }),
+      makeEntry({ selector: '#a', status: 'review', timestamp: '2026-07-08T00:00:00.000Z' }),
+      makeEntry({ selector: '#b', status: 'healed', timestamp: '2026-07-01T00:00:00.000Z' }),
+      makeEntry({ selector: '#b', status: 'review', timestamp: '2026-07-05T00:00:00.000Z' }),
+      makeEntry({ selector: '#b', status: 'review', timestamp: '2026-07-08T00:00:00.000Z' }),
+    ]
+    expect(computeRebroken(entries).map((r) => r.selector)).toEqual(['#b', '#a'])
   })
 })
