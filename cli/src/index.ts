@@ -6,6 +6,7 @@ import { fixAst } from './fix-ast'
 import { appendHistory } from './history'
 import { init, type InitReport, type FrameworkInitResult } from './commands/init'
 import { doctor, type DoctorReport } from './commands/doctor'
+import { history, type HistoryReport } from './commands/history'
 
 function reasonText(outcome: Extract<FixOutcome, { status: 'skipped' }>, astUsed: boolean): string {
   switch (outcome.reason) {
@@ -147,6 +148,29 @@ function printDoctorReport(report: DoctorReport): void {
   }
 }
 
+function printHistoryReport(report: HistoryReport): void {
+  console.log('Healify history\n')
+
+  if (!report.hasHistory) {
+    console.log('Todavía no hay historial — corré healify fix (sin --dry-run) al menos una vez para empezar a registrar selectores rotos.')
+    return
+  }
+
+  console.log('Top selectores recurrentes:')
+  for (const r of report.topRecurrent) {
+    console.log(`  ${r.count}x  ${r.selector}`)
+  }
+
+  console.log('\nSelectores re-rotos (aproximado: se curaron con confianza antes y volvieron a aparecer rotos después):')
+  if (report.rebroken.length === 0) {
+    console.log('  ninguno todavía')
+  } else {
+    for (const r of report.rebroken) {
+      console.log(`  ${r.count}x  ${r.selector} (curado por primera vez ${r.firstHealedAt})`)
+    }
+  }
+}
+
 function printHelp(): void {
   console.log(`Uso: healify <comando>
 
@@ -154,7 +178,8 @@ Comandos:
   init                                       Detecta tu framework (o te pregunta cuál armar si no hay ninguno), instala lo que falte y configura el reporter/plugin (sin generar tests)
   doctor                                     Verifica que Healify esté instalado y bien configurado
   fix [reporte.json] [--dry-run] [--force] [--ast]   Aplica las sugerencias de mayor confianza directo en tus archivos de test
-                                                       --ast (experimental) también reescribe sugerencias role(...) vía AST`)
+                                                       --ast (experimental) también reescribe sugerencias role(...) vía AST
+  history                                    Muestra selectores recurrentes y re-rotos de .healify/history.jsonl (se graba en cada fix real, no en --dry-run)`)
 }
 
 function main(): void {
@@ -169,6 +194,7 @@ function main(): void {
   if (command === 'init') return runInit()
   if (command === 'doctor') return printDoctorReport(doctor())
   if (command === 'fix') return runFix(args)
+  if (command === 'history') return printHistoryReport(history())
 
   printHelp()
   if (command) process.exit(1)
