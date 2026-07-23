@@ -58,37 +58,47 @@ function runFix(args: string[]): void {
   printOutcomes(outcomes, run)
 }
 
+const RUN_COMMAND: Record<string, string> = {
+  playwright: 'npx playwright test',
+  cypress: 'npx cypress open',
+  selenium: 'npx tsx e2e/selenium.demo.test.ts',
+}
+
 function printInitReport(report: InitReport): void {
   console.log('Healify init\n')
+
+  if (report.prompted) {
+    console.log(`ℹ No detectamos ningún framework de e2e — armamos ${report.results[0].framework} desde cero.\n`)
+  }
 
   for (const r of report.results) {
     if (r.installed === 'already-installed') console.log(`✅ ${r.package} ya estaba instalado`)
     else if (r.installed === 'installed') console.log(`✅ ${r.package} instalado`)
     else console.log(`❌ No pudimos instalar ${r.package} — instalalo a mano: npm install --save-dev ${r.package}`)
 
-    if (r.framework === 'selenium') {
-      console.log(`ℹ Selenium no tiene config para editar — envolvé tu driver a mano, ver el README de ${r.package}`)
-      continue
+    if (r.config === 'scaffolded') {
+      if (r.scaffoldedFiles && r.scaffoldedFiles.length > 0) {
+        console.log(`✅ archivos creados:`)
+        for (const f of r.scaffoldedFiles) console.log(`   - ${f}`)
+      } else {
+        console.log(`✅ ${r.framework} ya tenía todos los archivos de Healify`)
+      }
+    } else if (r.config === 'already-wired') {
+      console.log(`✅ el config ya tenía Healify configurado`)
+    } else if (r.config === 'edited') {
+      console.log(`✅ config actualizado con Healify`)
+    } else if (r.config === 'no-config-found') {
+      console.log(`⚠ no encontramos el config de ${r.framework} — agregalo a mano, ver README`)
+    } else {
+      console.log(`⚠ el config tiene una forma que no reconocemos — agregá Healify a mano, ver README`)
     }
 
-    if (r.config === 'already-wired') console.log(`✅ el config ya tenía Healify configurado`)
-    else if (r.config === 'edited') console.log(`✅ config actualizado con Healify`)
-    else if (r.config === 'no-config-found') console.log(`⚠ no encontramos el config de ${r.framework} — agregalo a mano, ver README`)
-    else console.log(`⚠ el config tiene una forma que no reconocemos — agregá Healify a mano, ver README`)
+    console.log(`\n✅ Listo. Corré ${RUN_COMMAND[r.framework]}`)
   }
 }
 
 function runInit(): void {
-  const report = init()
-
-  if (report.frameworks.length === 0) {
-    console.error('No detectamos Playwright, Cypress ni Selenium en este proyecto.')
-    console.error('Healify soporta: Playwright (@playwright/test), Cypress (cypress), Selenium (selenium-webdriver).')
-    console.error('Instalá uno de estos frameworks primero y volvé a correr: npx @healify/cli init')
-    process.exit(1)
-  }
-
-  printInitReport(report)
+  printInitReport(init())
 }
 
 function printDoctorReport(report: DoctorReport): void {
@@ -104,7 +114,7 @@ function printHelp(): void {
   console.log(`Uso: healify <comando>
 
 Comandos:
-  init                                       Detecta tu framework, instala el paquete de Healify que falte y configura el reporter/plugin
+  init                                       Detecta tu framework (o te pregunta cuál armar si no hay ninguno), instala lo que falte y scaffoldea config + demo
   doctor                                     Verifica que Healify esté instalado y bien configurado
   fix [reporte.json] [--dry-run] [--force]   Aplica las sugerencias de mayor confianza directo en tus archivos de test`)
 }

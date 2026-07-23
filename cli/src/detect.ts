@@ -3,6 +3,7 @@ import { join } from 'node:path'
 
 export type Framework = 'playwright' | 'cypress' | 'selenium'
 export type PackageManager = 'npm' | 'yarn' | 'pnpm'
+export type ModuleType = 'esm' | 'cjs'
 
 export interface DetectResult {
   frameworks: Framework[]
@@ -82,4 +83,60 @@ const INSTALL_ARGS: Record<PackageManager, string[]> = {
 /** Comando de instalación (sin correrlo) para el package manager detectado — usado por init y por los mensajes de doctor. */
 export function installCommand(packageManager: PackageManager, pkg: string): string {
   return `${packageManager} ${INSTALL_ARGS[packageManager].join(' ')} ${pkg}`
+}
+
+/** Hay tsconfig.json -> el proyecto es TypeScript, el scaffold usa .ts. Si no, .js. */
+export function hasTypescript(cwd: string): boolean {
+  return existsSync(join(cwd, 'tsconfig.json'))
+}
+
+/** package.json "type": "module" -> el scaffold .js usa import/export. Si no, require/module.exports. */
+export function detectModuleType(cwd: string): ModuleType {
+  try {
+    const pkg = JSON.parse(readFileSync(join(cwd, 'package.json'), 'utf-8'))
+    return pkg.type === 'module' ? 'esm' : 'cjs'
+  } catch {
+    return 'cjs'
+  }
+}
+
+const VITE_CONFIG_CANDIDATES = ['vite.config.ts', 'vite.config.js', 'vite.config.mjs', 'vite.config.cjs']
+const NEXT_CONFIG_CANDIDATES = ['next.config.ts', 'next.config.js', 'next.config.mjs']
+
+function findFirst(cwd: string, candidates: string[]): string | null {
+  for (const name of candidates) {
+    const path = join(cwd, name)
+    if (existsSync(path)) return path
+  }
+  return null
+}
+
+/**
+ * baseURL para el config de e2e que se scaffoldea. El puerto real casi siempre se define
+ * en el script "dev" de package.json (ej. `vite --port=3000`), no dentro de vite.config —
+ * confirmado auditando un proyecto Vite real donde vite.config.ts no menciona el puerto
+ * para nada. Por eso se chequea el script antes que el archivo de config. Si no hay pista
+ * de ningún lado: 5173 (default de Vite) si hay vite.config, si no 3000 (default de Next),
+ * si no hay ninguno de los dos, 5173 como default genérico.
+ */
+export function detectBaseUrl(cwd: string): string {
+  try {
+    const pkg = JSON.parse(readFileSync(join(cwd, 'package.json'), 'utf-8'))
+    const devScript: string = pkg.scripts?.dev ?? ''
+    const portMatch = devScript.match(/--port[= ](\d+)/)
+    if (portMatch) return `http://localhost:${portMatch[1]}`
+  } catch {
+    // sin package.json legible -> seguir con los defaults por archivo de config
+  }
+
+  const viteConfig = findFirst(cwd, VITE_CONFIG_CANDIDATES)
+  if (viteConfig) {
+    const content = readFileSync(viteConfig, 'utf-8')
+    const portMatch = content.match(/port:\s*(\d+)/)
+    return `http://localhost:${portMatch ? portMatch[1] : '5173'}`
+  }
+
+  if (findFirst(cwd, NEXT_CONFIG_CANDIDATES)) return 'http://localhost:3000'
+
+  return 'http://localhost:5173'
 }

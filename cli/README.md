@@ -21,13 +21,96 @@ npx @healify/cli doctor   # revisa que esté todo bien instalado y configurado, 
 npx @healify/cli fix      # corré esto después de tus tests, para aplicar los fixes sugeridos
 ```
 
-**`npx @healify/cli init`** — lee tu `package.json` y tus archivos de config para detectar si
-usás Playwright, Cypress o Selenium (podés tener más de uno). Instala automáticamente el
-paquete de Healify que corresponda (`@healify/test-runner`, `@healify/cypress-plugin` o
-`@healify/selenium-plugin`) si todavía no lo tenés, y edita tu `playwright.config.*` o
-`cypress.config.*` para dejarlo wireado. Es seguro correrlo más de una vez: si algo ya
-está instalado o configurado, no lo toca de nuevo. Si no detecta ningún framework
-soportado, te lo dice en vez de romper algo.
+**`npx @healify/cli init`** funciona en cualquier estado de tu proyecto:
+
+- **No tenés ningún framework de e2e todavía** → te pregunta cuál armar (Playwright,
+  Cypress o Selenium — default Playwright si apretás Enter) y arma todo desde cero: instala
+  el paquete, crea el config con el reporter/plugin de Healify ya wireado, y un test demo
+  con un selector roto a propósito para que veas el primer `healify-report.html` sin
+  escribir nada a mano.
+- **Ya tenés el framework instalado pero sin config** (típico en un proyecto Vite/Next que
+  nunca llegó a tener `playwright.config.*`) → lo scaffoldea igual que en el caso anterior,
+  sin preguntarte nada — el framework ya está decidido.
+- **Ya tenés config pero sin Healify** → solo inyecta el reporter/plugin, no toca el resto
+  de tu config.
+
+Es seguro correrlo más de una vez: si algo ya está instalado o configurado, no lo toca de
+nuevo (nunca pisa un archivo que ya generaste vos).
+
+<details>
+<summary><b>Playwright — de cero</b></summary>
+
+```
+$ npx @healify/cli init
+Healify init
+
+ℹ No detectamos ningún framework de e2e — armamos playwright desde cero.
+
+✅ @healify/test-runner instalado
+✅ archivos creados:
+   - playwright.config.ts
+   - e2e/healify.demo.spec.ts
+   - e2e/.gitkeep
+
+✅ Listo. Corré npx playwright test
+```
+
+`e2e/healify.demo.spec.ts` falla a propósito (selector `[data-testid="demo-boton-roto-healify"]`
+que no existe) — corré `npx playwright test` con tu app levantada (`npm run dev`) y vas a ver
+`healify-report.html` con esa cura ya clasificada como `healed`. Borrá el demo cuando lo viste.
+</details>
+
+<details>
+<summary><b>Cypress — de cero</b></summary>
+
+```
+$ npx @healify/cli init
+Healify init
+
+ℹ No detectamos ningún framework de e2e — armamos cypress desde cero.
+
+✅ @healify/cypress-plugin instalado
+✅ archivos creados:
+   - cypress.config.ts
+   - cypress/e2e/healify.demo.cy.ts
+   - cypress/support/e2e.ts
+
+✅ Listo. Corré npx cypress open
+```
+
+Mismo selector demo, mismo resultado: corré `npx cypress run` (o `open`) con tu app
+levantada y vas a ver el mismo `healed` en el reporte.
+</details>
+
+<details>
+<summary><b>Selenium — de cero</b></summary>
+
+```
+$ npx @healify/cli init
+Healify init
+
+ℹ No detectamos ningún framework de e2e — armamos selenium desde cero.
+
+✅ @healify/selenium-plugin instalado
+✅ archivos creados:
+   - healify.selenium.example.ts
+   - e2e/selenium.demo.test.ts
+
+✅ Listo. Corré npx tsx e2e/selenium.demo.test.ts
+```
+
+Selenium no tiene config para wirear (se envuelve el `WebDriver` a mano, ver
+`healify.selenium.example.ts`). El demo (`e2e/selenium.demo.test.ts`) es un script
+ejecutable que no depende de tu app — navega a una página mínima autocontenida, así que
+podés correrlo sin levantar nada. Requiere ChromeDriver instalado.
+</details>
+
+**baseURL automático (Playwright/Cypress):** `init` busca el puerto real de tu app en este
+orden — script `"dev"` de tu `package.json` (ej. `vite --port=3000` → `http://localhost:3000`,
+el caso más común en proyectos Vite reales, donde el puerto casi nunca está en
+`vite.config.*`), después `server.port` dentro de `vite.config.*`/`next.config.*` si existe,
+y si no encuentra ninguna pista: `5173` (default de Vite) o `3000` (default de Next). TS o
+JS también se detecta solo (según haya `tsconfig.json`).
 
 **`npx @healify/cli doctor`** — no modifica nada, solo revisa: ¿hay un framework soportado?,
 ¿está instalado el paquete de Healify?, ¿el config lo tiene wireado?, ¿ya generaste un

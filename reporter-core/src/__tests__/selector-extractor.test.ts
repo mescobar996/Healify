@@ -59,4 +59,32 @@ describe('extractSelectorFromError', () => {
     const msg = "Timed out retrying after 4000ms: Expected to find content: 'Aplicar cupón' within the element: <body> but never did."
     expect(extractSelectorFromError(msg)).toBe('text=Aplicar cupón')
   })
+
+  describe('bug real: locator() con data-testid (comillas dobles adentro de comillas simples)', () => {
+    it('extrae un [data-testid=...] completo de un timeout real de page.click, sin cortar en la comilla interna', () => {
+      const msg = 'TimeoutError: page.click: Timeout 3000ms exceeded.\nCall log:\n  - waiting for locator(\'[data-testid="demo-boton-roto-healify"]\')\n'
+      expect(extractSelectorFromError(msg)).toBe('[data-testid="demo-boton-roto-healify"]')
+    })
+
+    it('mismo caso con data-cy (Cypress-style testid) y comillas ANSI en el medio', () => {
+      const msg = '\x1B[2m  - waiting for locator(\x1B[22m\'[data-cy="checkout-btn"]\'\x1B[2m)\x1B[22m'
+      expect(extractSelectorFromError(msg)).toBe('[data-cy="checkout-btn"]')
+    })
+
+    it('"Waiting for selector" con comillas dobles adentro de comillas simples', () => {
+      expect(extractSelectorFromError(`Waiting for selector '[name="email"]' failed after 30000ms`)).toBe('[name="email"]')
+    })
+
+    it('"selector ... not found" con comillas dobles adentro de comillas simples', () => {
+      expect(extractSelectorFromError(`selector '[aria-label="Cerrar"]' not found in DOM`)).toBe('[aria-label="Cerrar"]')
+    })
+
+    it('locator() delimitado por comillas dobles con comillas simples adentro (caso inverso)', () => {
+      expect(extractSelectorFromError(`waiting for locator("//button[text()='Login']")`)).toBe("//button[text()='Login']")
+    })
+
+    it('sigue funcionando el caso simple sin comillas anidadas (no regresión)', () => {
+      expect(extractSelectorFromError("Timed out waiting for locator('button.primary')")).toBe('button.primary')
+    })
+  })
 })

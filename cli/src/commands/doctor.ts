@@ -53,7 +53,7 @@ export function doctor(cwd: string = process.cwd()): DoctorReport {
     checks.push({
       label: 'Framework de test detectado',
       ok: false,
-      fix: 'Instalá Playwright, Cypress o Selenium primero — Healify no tiene qué revisar todavía.',
+      fix: 'npx @healify/cli init — te pregunta qué framework armar (Playwright, Cypress o Selenium) y scaffoldea todo desde cero.',
     })
     return { checks }
   }
