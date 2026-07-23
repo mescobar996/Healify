@@ -77,6 +77,11 @@ real queda exactamente como estaba (Vite-only), según lo pedido. Detalle comple
 `reporter-core`/`test-runner`/`cypress-plugin`/`cli` a `0.5.0`. `selenium-plugin` sin
 cambios de código, queda en `0.1.0`.
 
+**chore:** `npm audit fix --force` — `esbuild` 0.27.7 → 0.28.1 (bump breaking, quedaba
+pendiente desde 0.4.1). Verificado real: build de los 5 workspaces sin cambios de
+comportamiento (tamaños de bundle casi idénticos), 160 tests siguen verdes, `cli/dist/index.js`
+probado a mano (`--help`, `doctor`) sin diferencias. `npm audit` → 0 vulnerabilidades.
+
 ## 0.4.1 - 2026-07-23
 
 - fix: `doctor` marcaba `❌ healify-report.json existe` en proyectos Selenium-only como si fuera un error — Selenium cura en vivo y nunca genera ese archivo, así que ese check nunca podía pasar. Ahora, si Selenium es el único framework, se reemplaza por un check informativo (`ℹ️ Selenium cura en vivo, no genera reporte`). Si convive con Playwright/Cypress, el check de reporte se mantiene (`cli/src/commands/doctor.ts`)

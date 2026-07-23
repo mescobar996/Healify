@@ -10,7 +10,9 @@
       "default": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc --emitDeclarationOnly && esbuild src/index.ts --bundle --platform=node --outdir=dist --format=cjs --external:selenium-webdriver",
     "test": "vitest run"
@@ -24,7 +26,7 @@
   "devDependencies": {
     "@healify/reporter-core": "*",
     "@types/selenium-webdriver": "^4.35.6",
-    "esbuild": "^0.27.3",
+    "esbuild": "^0.28.1",
     "selenium-webdriver": "^4.27.0",
     "typescript": "^5.4.0",
     "vitest": "^4.0.18"
