@@ -177,8 +177,8 @@ Mismas reglas conservadoras que el `fix` normal: git limpio (salvo `--force`), s
 
 ## Historial de curaciones
 
-Cada `healify fix` (sin `--dry-run`) graba todos los casos de esa corrida —
-healed/review/unresolved, no solo lo que `fix` pudo aplicar — en `.healify/history.jsonl`
+Cada `healify fix` (sin `--dry-run`) graba todos los casos de esa corrida
+(healed/review/unresolved, no solo lo que `fix` pudo aplicar) en `.healify/history.jsonl`
 (append-only, un archivo local por proyecto). `--dry-run` nunca graba, para no ensuciar el
 historial con corridas de CI (ej. el gh-action, que corre `fix --dry-run` en cada PR).
 
@@ -192,7 +192,7 @@ el cambio al archivo o lo salteó por ambiguo/git sucio, solo si el motor lo cur
 confianza la primera vez). Si todavía no corriste `fix` sin `--dry-run`, te lo dice en vez
 de fallar.
 
-Se recomienda agregar `.healify/` al `.gitignore` de tu proyecto — es historial local de
+Se recomienda agregar `.healify/` al `.gitignore` de tu proyecto: es historial local de
 esa máquina, no algo para versionar (mismo criterio que `test-results/`).
 
 ## Licencia

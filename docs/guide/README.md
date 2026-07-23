@@ -56,12 +56,14 @@ sugerencia confiable, en vez de inventar una.
 | Playwright | `@healify/test-runner` | `npm install --save-dev @healify/test-runner` | [README](../../test-runner/README.md) |
 | Cypress | `@healify/cypress-plugin` | `npm install --save-dev @healify/cypress-plugin` | [README](../../cypress-plugin/README.md) |
 | Selenium | `@healify/selenium-plugin` | `npm install --save-dev @healify/selenium-plugin selenium-webdriver` | [README](../../selenium-plugin/README.md) |
+| WebdriverIO | `@healify/webdriverio-plugin` | `npm install --save-dev @healify/webdriverio-plugin` (todavía no publicado en npm) | [README](../../webdriverio-plugin/README.md) |
 | — | `@healify/cli` | `npm install --save-dev @healify/cli` | [README](../../cli/README.md) |
 
 Playwright y Cypress generan un reporte (`healify-report.html`/`.json`) al final de la
-corrida. Selenium no tiene un hook de "fin de corrida" nativo, así que
-`@healify/selenium-plugin` cura selectores en vivo, sin generar reporte. Ver su README
-para el detalle y las limitaciones específicas de ese modo.
+corrida automáticamente. Selenium y WebdriverIO no tienen un hook de "fin de corrida"
+nativo, así que esos dos plugins curan selectores en vivo y solo generan
+`healify-report.json` (sin HTML) si llamás `flush()` vos mismo al final de tu suite. Ver
+sus READMEs para el detalle y las limitaciones específicas de ese modo.
 
 ## Cómo funciona el motor heurístico
 
@@ -116,6 +118,11 @@ npx @healify/cli fix --dry-run       # muestra qué haría, sin escribir nada
 Solo toca casos con ≥90% de confianza, nunca adivina en selectores ambiguos (2+
 ocurrencias en el mismo archivo) ni toca archivos con cambios de git sin commitear (salvo
 `--force`). Ver [`cli/README.md`](../../cli/README.md) para el detalle completo.
+
+Cada `fix` real (sin `--dry-run`) además graba en `.healify/history.jsonl`, un historial
+local del proyecto. `npx @healify/cli history` te muestra qué selectores se rompen más
+seguido y cuáles volvieron a romperse después de haber sido curados, útil para priorizar
+qué elementos merecen un `data-testid` estable.
 
 ## Arquitectura del monorepo
 

@@ -12,7 +12,7 @@ npm install --save-dev @healify/cypress-plugin
 
 Requiere `cypress >= 13.0.0` como peer dependency.
 
-## Uso — modo local (default, sin configuración)
+## Uso (modo local, default, sin configuración)
 
 En `cypress.config.ts`:
 
@@ -33,7 +33,7 @@ Corré tus tests normalmente (`npx cypress run`). Sin nada más que configurar: 
 falla por un selector roto, al terminar la corrida aparece `healify-report.html` en el
 directorio desde el que corriste Cypress. Nada sale de tu máquina.
 
-Además, al final de la corrida se imprime un resumen de una línea en stdout — útil en CI,
+Además, al final de la corrida se imprime un resumen de una línea en stdout, útil en CI,
 sin tener que abrir el HTML:
 
 ```
@@ -45,7 +45,7 @@ Healed: 3 | Review: 1 | Unresolved: 0
 Tras cada spec (`after:spec`) se corre la heurística (`analyzeAndHeal()` de
 `@healify/reporter-core`) para cada test fallido, sin red; al terminar la corrida
 (`after:run`) se escribe `healify-report.html`/`.json` con todos los casos acumulados.
-Heurística de pattern-matching sobre el texto del selector y del error — no es IA, no
+Heurística de pattern-matching sobre el texto del selector y del error, no es IA, no
 analiza el DOM en tiempo real.
 
 ## Siguiente paso
