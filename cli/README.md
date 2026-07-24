@@ -125,7 +125,17 @@ npx @healify/cli fix                       # busca ./healify-report.json
 npx @healify/cli fix ruta/al/reporte.json   # ruta explícita
 npx @healify/cli fix --dry-run              # muestra qué haría, no escribe nada
 npx @healify/cli fix --force                # ignora el chequeo de git working tree sucio
+npx @healify/cli --version                  # (o -v) muestra qué versión tenés instalada
 ```
+
+> **¿`fix` te dice "No encontré healify-report.json"?** No es un error: es lo normal si
+> todavía no corriste tus tests, o si pasaron todos (no hubo selectores rotos que
+> reportar). Corré tus tests; cuando alguno falle por un selector, se genera el reporte y
+> `fix` va a tener algo que aplicar. (Sale con código 0, no rompe pipelines.)
+>
+> **¿Sospechás tener una versión vieja?** Los paquetes son `0.x`/`1.x`: si en tu
+> `package.json` tenés `^0.x.y`, un `npm install` a secas NO te sube de minor. Chequeá con
+> `npx @healify/cli --version` y actualizá con `@latest` si hace falta.
 
 Salida típica:
 

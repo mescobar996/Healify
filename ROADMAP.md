@@ -1,10 +1,15 @@
 # ROADMAP: Healify, ideas de features y ajustes (post 0.6.0)
 
-Lista de ideas concretas, ninguna implementada todavía. Cada una nace de un hueco o
-límite real encontrado en esta sesión o documentado en el propio código, no son
-inventadas. Están ordenadas de más chica/segura a más grande/riesgosa. Al final hay un
-meta-prompt listo para pasarle a cualquier IA (esta u otra) y arrancar una de estas sin
-perder contexto.
+> **Estado: 1.0.0 (código).** Features #1 a #8 implementadas; #9 (extensión VSCode)
+> cancelada. Camino a 1.0.0 se sumó pulido de producto (no features): `healify --version`,
+> mejor UX de `fix` sin reporte, badge de CI dinámico, coverage real medido, CI multi-OS,
+> LICENSE MIT, demo real en el README. Falta: publicar 1.0.0 en npm (comandos en HANDOFF),
+> probar webdriverio contra browser real, y rediseñar la landing web (track aparte).
+
+Lista de ideas concretas. Cada una nace de un hueco o límite real encontrado en alguna
+sesión o documentado en el propio código, no son inventadas. Están ordenadas de más
+chica/segura a más grande/riesgosa. Al final hay un meta-prompt listo para pasarle a
+cualquier IA (esta u otra) y arrancar una de estas sin perder contexto.
 
 ---
 

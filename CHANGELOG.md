@@ -1,5 +1,45 @@
 # Changelog
 
+## 1.0.0 — Primera versión estable
+
+Los 6 paquetes (`reporter-core`, `test-runner`, `cypress-plugin`, `selenium-plugin`,
+`webdriverio-plugin`, `cli`) pasan a 1.0.0 juntos. No es una feature nueva: es la
+declaración de que la superficie pública está estable y el producto es presentable de
+punta a punta. Lo que entró en esta versión, todo encontrado o pulido probando la
+herramienta como la usaría un tercero:
+
+**Arreglos de UX (evitan la mala primera impresión):**
+- `healify --version` / `-v`: antes no había forma de que un usuario chequee qué versión
+  tiene. Es justo el gap que hace que alguien con una versión vieja instalada (el pozo del
+  caret `^0.x`, que no sube de minor con un `npm install` a secas) no se dé cuenta y vea
+  comportamiento viejo. Ahora `healify --version` lo dice.
+- `fix` sin `healify-report.json`: antes tiraba el `ENOENT` crudo de Node + exit 1. Pero un
+  `fix` sin reporte no es un error: es lo normal cuando los tests pasaron (ningún selector
+  roto). Ahora da un mensaje que explica qué hacer y sale con exit 0 (no rompe pipelines).
+  JSON corrupto sigue siendo error real (exit 1).
+
+**Presentación (lo que ve alguien que evalúa el repo):**
+- Badge de tests estático "238 verdes" (mentía si un test fallaba) reemplazado por el badge
+  real de GitHub Actions. Badges de WebdriverIO, coverage (~85% real) y MIT agregados.
+- Demo "En 30 segundos" en el README con salida REAL capturada (init → test rompe →
+  `fix --ast` reescribe el archivo), no inventada. Reporte HTML real navegable en
+  `docs/ejemplos/`.
+- Coverage medido de verdad (`@vitest/coverage-v8` + `npm run coverage`), con tabla honesta
+  por paquete en el README (motor `reporter-core` ~90%; adapters más finos).
+
+**Rigor de CI:**
+- Tests corren en Ubuntu Y Windows (Healify es sensible a Windows: puertos, PowerShell,
+  `.cmd` de npm). `typecheck` cubre `webdriverio-plugin`. Nuevos jobs: `gh-action` (sus
+  tests no corrían en CI por no ser workspace) y `coverage`.
+
+**Higiene de release público:**
+- Archivo `LICENSE` MIT real (antes el README lo declaraba pero el archivo no existía).
+- README: la mención a `archive/saas-full` ahora aclara que es una RAMA de git, no una
+  carpeta de `main` (un evaluador buscaba la carpeta y no la encontraba).
+
+Verificado con `npm run verify` (los 6 workspaces en verde), `npm audit` (0
+vulnerabilidades) y un smoke real instalando desde npm contra un browser real.
+
 ## 0.7.1 (test-runner) — bug crítico real: Playwright timeouts nunca curaban
 
 Encontrado probando de verdad contra el paquete publicado (`@healify/test-runner@0.7.0`

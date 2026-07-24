@@ -184,12 +184,12 @@ Listo.
 
 | Paquete | Versión | Para qué | Comando |
 |---|---|---|---|
-| [`@healify/test-runner`](test-runner/README.md) | 0.7.1 | Playwright - genera reporte al final | `npm i -D @healify/test-runner` |
-| [`@healify/cypress-plugin`](cypress-plugin/README.md) | 0.7.0 | Cypress - mismo reporte | `npm i -D @healify/cypress-plugin` |
-| [`@healify/selenium-plugin`](selenium-plugin/README.md) | 0.7.0 | Selenium - cura en vivo, `flush()` genera reporte JSON | `npm i -D @healify/selenium-plugin` |
-| [`@healify/webdriverio-plugin`](webdriverio-plugin/README.md) | 0.6.0 | WebdriverIO - cura en vivo, `flush()` genera reporte JSON | `npm i -D @healify/webdriverio-plugin` |
-| [`@healify/cli`](cli/README.md) | 0.8.0 | CLI - diagnostica, configura (sin generar tests), aplica fixes y guarda historial | `npm i -D @healify/cli` |
-| `reporter-core` | 0.7.0 | Motor heurístico - privado, bundleado | — |
+| [`@healify/test-runner`](test-runner/README.md) | 1.0.0 | Playwright - genera reporte al final | `npm i -D @healify/test-runner` |
+| [`@healify/cypress-plugin`](cypress-plugin/README.md) | 1.0.0 | Cypress - mismo reporte | `npm i -D @healify/cypress-plugin` |
+| [`@healify/selenium-plugin`](selenium-plugin/README.md) | 1.0.0 | Selenium - cura en vivo, `flush()` genera reporte JSON | `npm i -D @healify/selenium-plugin` |
+| [`@healify/webdriverio-plugin`](webdriverio-plugin/README.md) | 1.0.0 | WebdriverIO - cura en vivo, `flush()` genera reporte JSON | `npm i -D @healify/webdriverio-plugin` |
+| [`@healify/cli`](cli/README.md) | 1.0.0 | CLI - diagnostica, configura (sin generar tests), aplica fixes y guarda historial | `npm i -D @healify/cli` |
+| `reporter-core` | 1.0.0 | Motor heurístico - privado, bundleado | — |
 
 ### Instalación manual (si no querés usar `init`)
 
@@ -355,19 +355,22 @@ de framework son más finos y algunos caminos solo se ejercitan contra un browse
 
 ```
 reporter-core/       # Motor heurístico (privado)
-test-runner/         # @healify/test-runner 0.7.1
-cypress-plugin/      # @healify/cypress-plugin 0.7.0
-selenium-plugin/     # @healify/selenium-plugin 0.7.0
-webdriverio-plugin/  # @healify/webdriverio-plugin 0.6.0
-cli/                 # @healify/cli 0.8.0 - init, doctor, fix, history
+test-runner/         # @healify/test-runner 1.0.0
+cypress-plugin/      # @healify/cypress-plugin 1.0.0
+selenium-plugin/     # @healify/selenium-plugin 1.0.0
+webdriverio-plugin/  # @healify/webdriverio-plugin 1.0.0
+cli/                 # @healify/cli 1.0.0 - init, doctor, fix, history
 gh-action/           # GitHub Action (privada, no es workspace de npm ni se publica)
 docs/guide/          # Manual detallado
 ```
 
 ## Historia
 
-Antes fue un SaaS completo con dashboard, auth, billing. Se recortó a solo paquetes locales porque el QA lo quiere en su PC. El código viejo está en `archive/saas-full`.
+Antes fue un SaaS completo con dashboard, auth y billing. Se recortó a solo paquetes
+locales porque el QA lo quiere en su PC, sin servidor ni cuenta. Ese código viejo vive en
+la rama de git [`archive/saas-full`](https://github.com/mescobar996/Healify/tree/archive/saas-full)
+(`git checkout archive/saas-full` para verlo) — no es una carpeta de la rama `main`.
 
-## License
+## Licencia
 
-MIT © 2026 Healify
+MIT. Ver [LICENSE](LICENSE). © 2026 Matías Escobar

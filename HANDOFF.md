@@ -1,4 +1,4 @@
-# HANDOFF — Healify — 2026-07-23 (actualizado, post 0.6.0)
+# HANDOFF — Healify — 2026-07-24 (camino a 1.0.0)
 
 Documento único para dar contexto completo a otra IA/sesión. Cubre 2 proyectos
 separados: **Healify** (la herramienta) y **sgo-pzbp** (proyecto real donde se probó).
@@ -16,32 +16,53 @@ Público objetivo: QA sin experiencia en código.
 Repo: `C:\Proyectos\QA\Healify` — remoto `https://github.com/mescobar996/Healify.git`,
 rama `main`. Monorepo npm workspaces.
 
-## 2. Estado de versiones — CÓDIGO en 0.7.0, FALTA PUBLICAR (npm sigue en 0.6.0)
+## 2. Estado de versiones — CÓDIGO en 1.0.0, FALTA PUBLICAR (npm en 0.7.x/0.8.0)
 
-| Paquete | Versión en código | Versión en npm | Privado |
+| Paquete | Versión en código | Última en npm | Privado |
 |---|---|---|---|
-| `@healify/cli` | 0.7.0 | 0.6.0 (desactualizado) | no |
-| `@healify/test-runner` (Playwright) | 0.7.0 | 0.6.0 (desactualizado) | no |
-| `@healify/cypress-plugin` | 0.7.0 | 0.6.0 (desactualizado) | no |
-| `@healify/selenium-plugin` | 0.7.0 | 0.6.0 (desactualizado) | no |
-| `@healify/webdriverio-plugin` | 0.6.0 | — | no (nuevo, nunca publicado) |
-| `reporter-core` | 0.7.0 | — | sí, bundleado dentro de los otros 4 |
-| `@healify/gh-action` | 0.6.0 | — | sí, standalone (no es workspace de npm, se usa directo del repo vía GitHub Actions) |
+| `@healify/cli` | 1.0.0 | 0.8.0 | no |
+| `@healify/test-runner` (Playwright) | 1.0.0 | 0.7.1 | no |
+| `@healify/cypress-plugin` | 1.0.0 | 0.7.0 | no |
+| `@healify/selenium-plugin` | 1.0.0 | 0.7.0 | no |
+| `@healify/webdriverio-plugin` | 1.0.0 | 0.6.0 | no |
+| `reporter-core` | 1.0.0 | — | sí, bundleado dentro de los otros 5 |
+| `@healify/gh-action` | 1.0.0 | — | sí, standalone (no es workspace de npm, se usa directo del repo vía GitHub Actions) |
 
-**IMPORTANTE — falta publicar 0.7.0.** Comandos, cuando el usuario lo pida:
+**IMPORTANTE — falta publicar 1.0.0.** Comandos, cuando el usuario lo pida (los corre él,
+nunca la IA):
 ```bash
 cd C:\Proyectos\QA\Healify
 npm publish --workspace=@healify/test-runner
 npm publish --workspace=@healify/cypress-plugin
 npm publish --workspace=@healify/selenium-plugin
+npm publish --workspace=@healify/webdriverio-plugin
 npm publish --workspace=@healify/cli
-npm publish --workspace=@healify/webdriverio-plugin   # primera vez, decidir si ya está listo
 ```
-`gh-action` no se publica a npm (se referencia desde otro repo como
-`uses: mescobar996/Healify/gh-action@main` o similar, una vez que se decida cómo
-distribuirlo).
+`reporter-core` es privado (bundleado, no se publica). `gh-action` no se publica a npm.
+
+**Salvedad de honestidad para el publish:** `webdriverio-plugin` fue a 1.0.0 por decisión
+del usuario, pero solo tiene tests unitarios — nunca se corrió contra un browser real (a
+diferencia de Playwright/Cypress, que sí se probaron instalando desde npm contra un
+navegador real). Antes de publicarlo conviene esa prueba real, o publicarlo sabiendo esa
+limitación.
 
 **Yo (la IA) nunca corro `npm publish`** — el usuario lo hace desde su propia terminal.
+
+## 2.b Qué se hizo camino a 1.0.0 (esta sesión)
+- **UX**: `healify --version`/`-v` (módulo `cli/src/version.ts`); `fix` sin reporte ahora
+  da mensaje amable + exit 0 (`describeReadError` en `cli/src/fix.ts`).
+- **Presentación**: badge dinámico de CI (reemplazó el estático "238 verdes" que mentía);
+  demo "En 30 segundos" con salida real en el README; reporte HTML de ejemplo navegable en
+  `docs/ejemplos/`; coverage real (`@vitest/coverage-v8`, `npm run coverage`,
+  `scripts/coverage.sh`) con tabla honesta.
+- **CI** (`.github/workflows/ci.yml`): tests en Ubuntu + Windows; typecheck de
+  webdriverio-plugin; jobs nuevos `gh-action` y `coverage`.
+- **Release**: archivo `LICENSE` MIT; README aclara que `archive/saas-full` es una RAMA;
+  6 paquetes a 1.0.0; CHANGELOG 1.0.0.
+- **Pendiente fuera del repo**: (1) actualizar `sgo-pzbp` a `^1.0.0` + borrar sus demos
+  viejos (lo hace el usuario, 2 comandos); (2) rediseñar la landing de Vercel con Claude
+  Design (se le dio meta-prompt; la web actual está desactualizada, menciona un modo cloud
+  que ya no existe).
 
 ## 3. Arquitectura — archivos clave
 
