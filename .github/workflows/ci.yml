@@ -48,10 +48,17 @@ jobs:
       - name: Type check selenium-plugin
         run: npx tsc --noEmit -p selenium-plugin/tsconfig.json
 
-  # ─── Unit Tests ───────────────────────────────────────────────────────────
+      - name: Type check webdriverio-plugin
+        run: npx tsc --noEmit -p webdriverio-plugin/tsconfig.json
+
+  # ─── Unit Tests (multi-OS: Healify es sensible a Windows) ──────────────────
   test:
     name: Unit Tests
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     timeout-minutes: 15
 
     steps:
@@ -69,6 +76,51 @@ jobs:
 
       - name: Run tests (all workspaces)
         run: npm test
+
+  # ─── gh-action (paquete privado, no es workspace: se testea aparte) ────────
+  gh-action:
+    name: gh-action tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install gh-action deps
+        run: npm ci
+        working-directory: gh-action
+
+      - name: Run gh-action tests
+        run: npm test
+        working-directory: gh-action
+
+  # ─── Coverage ──────────────────────────────────────────────────────────────
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Coverage (por paquete)
+        run: npm run coverage
 
   # ─── Build ────────────────────────────────────────────────────────────────
   build:
