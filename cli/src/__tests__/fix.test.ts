@@ -7,7 +7,7 @@ import type { LocalRun, LocalCaseResult } from '@healify/reporter-core'
 const { mockIsGitDirty } = vi.hoisted(() => ({ mockIsGitDirty: vi.fn(() => false) }))
 vi.mock('../git-check', () => ({ isGitDirty: mockIsGitDirty }))
 
-import { fix } from '../fix'
+import { fix, describeReadError } from '../fix'
 
 function makeCase(overrides: Partial<LocalCaseResult> = {}): LocalCaseResult {
   return {
@@ -27,6 +27,29 @@ function makeCase(overrides: Partial<LocalCaseResult> = {}): LocalCaseResult {
 function makeRun(cases: LocalCaseResult[]): LocalRun {
   return { project: 'test', framework: 'Playwright', generatedAt: new Date(), cases }
 }
+
+describe('describeReadError', () => {
+  it('ENOENT (no hay reporte) → mensaje amable, exit 0, stream log', () => {
+    const err = Object.assign(new Error('ENOENT: no such file'), { code: 'ENOENT' })
+    const r = describeReadError('healify-report.json', err)
+
+    expect(r.exitCode).toBe(0)
+    expect(r.stream).toBe('log')
+    expect(r.message).toContain('No encontré healify-report.json')
+    expect(r.message).toContain('Corré tus tests')
+    expect(r.message).not.toContain('ENOENT')
+  })
+
+  it('JSON corrupto u otro error → mensaje técnico, exit 1, stream error', () => {
+    const err = new SyntaxError('Unexpected token } in JSON')
+    const r = describeReadError('healify-report.json', err)
+
+    expect(r.exitCode).toBe(1)
+    expect(r.stream).toBe('error')
+    expect(r.message).toContain('No se pudo leer healify-report.json')
+    expect(r.message).toContain('Unexpected token')
+  })
+})
 
 describe('fix', () => {
   let dir: string

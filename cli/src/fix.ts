@@ -7,6 +7,28 @@ export interface FixOptions {
   force?: boolean
 }
 
+/**
+ * Clasifica el error de leer el reporte para dar un mensaje humano en vez del ENOENT crudo
+ * de Node. Un `fix` sin `healify-report.json` NO es un error del usuario: es el estado
+ * normal cuando los tests pasaron (ningún selector roto). Por eso ENOENT devuelve exitCode
+ * 0 (no romper pipelines) con un mensaje que explica qué hacer; cualquier otro error (JSON
+ * corrupto, permisos) sí es un problema real → exitCode 1 con el detalle técnico.
+ */
+export function describeReadError(reportPath: string, error: unknown): { message: string; exitCode: number; stream: 'log' | 'error' } {
+  if (error instanceof Error && (error as NodeJS.ErrnoException).code === 'ENOENT') {
+    return {
+      message: `No encontré ${reportPath}.\n\nEso pasa si todavía no corriste tus tests, o si pasaron todos (no hubo selectores rotos que reportar).\nCorré tus tests; si alguno falla por un selector, se genera el reporte y fix va a tener algo que aplicar.`,
+      exitCode: 0,
+      stream: 'log',
+    }
+  }
+  return {
+    message: `No se pudo leer ${reportPath}: ${error instanceof Error ? error.message : String(error)}`,
+    exitCode: 1,
+    stream: 'error',
+  }
+}
+
 export type SkipReason = 'ambiguous' | 'dirty-git' | 'not-found' | 'not-substitutable'
 
 export type FixOutcome =

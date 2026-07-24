@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 import { readFileSync } from 'node:fs'
 import type { LocalRun } from '@healify/reporter-core'
-import { fix, type FixOutcome } from './fix'
+import { fix, describeReadError, type FixOutcome } from './fix'
 import { fixAst } from './fix-ast'
 import { appendHistory } from './history'
 import { init, type InitReport, type FrameworkInitResult } from './commands/init'
 import { doctor, type DoctorReport } from './commands/doctor'
 import { history, type HistoryReport } from './commands/history'
+import { getVersion } from './version'
 
 function reasonText(outcome: Extract<FixOutcome, { status: 'skipped' }>, astUsed: boolean): string {
   switch (outcome.reason) {
@@ -55,8 +56,10 @@ function runFix(args: string[]): void {
   try {
     run = JSON.parse(readFileSync(reportPath, 'utf-8'))
   } catch (error) {
-    console.error(`No se pudo leer ${reportPath}: ${error instanceof Error ? error.message : String(error)}`)
-    process.exit(1)
+    const { message, exitCode, stream } = describeReadError(reportPath, error)
+    if (stream === 'log') console.log(message)
+    else console.error(message)
+    process.exit(exitCode)
   }
 
   console.log(`Healify fix — ${reportPath}${ast ? ' (--ast)' : ''}\n`)
@@ -179,12 +182,21 @@ Comandos:
   doctor                                     Verifica que Healify esté instalado y bien configurado
   fix [reporte.json] [--dry-run] [--force] [--ast]   Aplica las sugerencias de mayor confianza directo en tus archivos de test
                                                        --ast (experimental) también reescribe sugerencias role(...) vía AST
-  history                                    Muestra selectores recurrentes y re-rotos de .healify/history.jsonl (se graba en cada fix real, no en --dry-run)`)
+  history                                    Muestra selectores recurrentes y re-rotos de .healify/history.jsonl (se graba en cada fix real, no en --dry-run)
+
+Flags globales:
+  --version, -v                              Muestra la versión instalada de @healify/cli
+  --help, -h                                 Muestra esta ayuda`)
 }
 
 function main(): void {
   const args = process.argv.slice(2)
   const command = args[0]
+
+  // --version/-v en cualquier posición imprime la versión y no ejecuta nada. Sin esto, un
+  // usuario que sospecha tener una versión vieja (el pozo del caret) no tiene forma de
+  // chequearla con la propia herramienta.
+  if (args.includes('--version') || args.includes('-v')) return console.log(getVersion())
 
   // --help/-h en cualquier posición muestra el uso y no ejecuta nada — antes 'init --help'
   // corría init de verdad (instalaba paquetes, editaba configs), confirmado corriendo el
