@@ -13,6 +13,10 @@
   "scripts": {
     "build": "npm run build --workspaces",
     "test": "npm test --workspaces --if-present",
-    "verify": "bash scripts/verify.sh"
+    "verify": "bash scripts/verify.sh",
+    "coverage": "bash scripts/coverage.sh"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^4.1.10"
   }
 }

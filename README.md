@@ -9,6 +9,7 @@
   <img src="https://img.shields.io/badge/Cypress-15-green?logo=cypress" />
   <img src="https://img.shields.io/badge/Selenium-4-green?logo=selenium" />
   <img src="https://img.shields.io/badge/WebdriverIO-9-green?logo=webdriverio" />
+  <img src="https://img.shields.io/badge/coverage-~85%25-brightgreen" />
   <img src="https://img.shields.io/badge/license-MIT-blue" />
 </div>
 
@@ -324,13 +325,31 @@ El `printSummary` al final de la corrida en consola te muestra lo mismo: `Healed
 
 ## Para devs y contribuidores
 
+Estos comandos son del repo de Healify (este monorepo), no de un proyecto que lo consume:
+
 ```bash
 git clone https://github.com/mescobar996/Healify.git
 cd Healify
 npm install
 npm run build
-npm run verify   # 238 tests en verde
+npm run verify     # build + todos los tests, resumen por paquete
+npm run coverage   # cobertura de líneas por paquete (v8)
 ```
+
+### Cobertura (medida con `npm run coverage`)
+
+| Paquete | Líneas |
+|---|---|
+| reporter-core (el motor) | ~90% |
+| cypress-plugin | 100% |
+| selenium-plugin | 100% |
+| webdriverio-plugin | ~87% |
+| cli | ~72% |
+| test-runner | ~62% |
+
+Reproducible en tu máquina con `npm run coverage`. El motor de heurística
+(`reporter-core`), que es donde vive toda la lógica real, es el más cubierto; los adapters
+de framework son más finos y algunos caminos solo se ejercitan contra un browser real.
 
 ## Estructura
 
