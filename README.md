@@ -1,13 +1,57 @@
 <div align="center">
+  <img src="logo-healify.png" alt="Healify" width="120" />
   <h1>Healify</h1>
   <p><strong>Cuando un selector se rompe, Healify te dice cómo arreglarlo, sin salir de tu máquina.</strong></p>
 
+  <a href="https://github.com/mescobar996/Healify/actions/workflows/ci.yml"><img src="https://github.com/mescobar996/Healify/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <img src="https://img.shields.io/badge/TypeScript-5-blue?logo=typescript" />
   <img src="https://img.shields.io/badge/Playwright-1.58-green?logo=playwright" />
   <img src="https://img.shields.io/badge/Cypress-15-green?logo=cypress" />
   <img src="https://img.shields.io/badge/Selenium-4-green?logo=selenium" />
-  <img src="https://img.shields.io/badge/tests-238%20verdes-brightgreen" />
+  <img src="https://img.shields.io/badge/WebdriverIO-9-green?logo=webdriverio" />
+  <img src="https://img.shields.io/badge/license-MIT-blue" />
 </div>
+
+---
+
+## En 30 segundos (salida real, sin editar)
+
+Tenés un test que hace `page.click('#add-to-cart-btn')`. Alguien renombró ese botón y el
+test se rompe. Así se ve Healify curándolo, de punta a punta:
+
+```console
+$ npx @healify/cli init
+Healify init
+
+✅ @healify/test-runner ya estaba instalado
+✅ archivos creados:
+   - playwright.config.js
+
+✅ Config lista. Escribí tu primer test en e2e/ y corré tus tests — cuando un selector se rompa vas a tener healify-report.html.
+
+$ npx playwright test
+  1 failed
+Healed: 1 | Review: 0 | Unresolved: 0        # ← Healify ya analizó el selector roto
+
+$ npx @healify/cli fix --ast
+Healify fix — healify-report.json (--ast)
+
+✓ e2e/checkout.spec.ts — #add-to-cart-btn → role('button', { name: 'Add' })
+
+1 selector aplicado · 0 salteados
+```
+
+Y el archivo de test quedó reescrito solo, con un selector estable:
+
+```diff
+- await page.click('#add-to-cart-btn')
++ await page.getByRole('button', { name: 'Add' }).click()
+```
+
+Cada corrida además deja un **`healify-report.html`** autocontenido (dark/light,
+interactivo, 100% offline). Podés ver uno real acá:
+[`docs/ejemplos/healify-report-ejemplo.html`](docs/ejemplos/healify-report-ejemplo.html)
+(descargalo y abrilo en tu navegador).
 
 ---
 
