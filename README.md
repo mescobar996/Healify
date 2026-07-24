@@ -139,16 +139,12 @@ Listo.
 
 | Paquete | Versión | Para qué | Comando |
 |---|---|---|---|
-| [`@healify/test-runner`](test-runner/README.md) | 0.7.0 | Playwright - genera reporte al final | `npm i -D @healify/test-runner` |
+| [`@healify/test-runner`](test-runner/README.md) | 0.7.1 | Playwright - genera reporte al final | `npm i -D @healify/test-runner` |
 | [`@healify/cypress-plugin`](cypress-plugin/README.md) | 0.7.0 | Cypress - mismo reporte | `npm i -D @healify/cypress-plugin` |
 | [`@healify/selenium-plugin`](selenium-plugin/README.md) | 0.7.0 | Selenium - cura en vivo, `flush()` genera reporte JSON | `npm i -D @healify/selenium-plugin` |
-| [`@healify/webdriverio-plugin`](webdriverio-plugin/README.md) | 0.6.0 | WebdriverIO - cura en vivo, `flush()` genera reporte JSON. Todavía no publicado en npm | `npm i -D @healify/webdriverio-plugin` |
+| [`@healify/webdriverio-plugin`](webdriverio-plugin/README.md) | 0.6.0 | WebdriverIO - cura en vivo, `flush()` genera reporte JSON | `npm i -D @healify/webdriverio-plugin` |
 | [`@healify/cli`](cli/README.md) | 0.8.0 | CLI - diagnostica, configura (sin generar tests), aplica fixes y guarda historial | `npm i -D @healify/cli` |
 | `reporter-core` | 0.7.0 | Motor heurístico - privado, bundleado | — |
-
-> La versión publicada en npm puede estar detrás de la de este repo (el CLI, por ejemplo,
-> está en 0.8.0 en el código pero 0.6.0 en npm al momento de escribir esto). `npm view
-> @healify/<paquete> version` te dice cuál es la última realmente publicada.
 
 ### Instalación manual (si no querés usar `init`)
 
@@ -229,8 +225,8 @@ await browser.$('#add-to-cart-btn').click()
 healify.flush()
 ```
 
-Cura en vivo. `flush()` genera `healify-report.json` (sin HTML). Todavía no publicado en
-npm. Ver su README para limitaciones.
+Cura en vivo. `flush()` genera `healify-report.json` (sin HTML). Ver su README para
+limitaciones.
 </details>
 
 ---
@@ -296,10 +292,10 @@ npm run verify   # 238 tests en verde
 
 ```
 reporter-core/       # Motor heurístico (privado)
-test-runner/         # @healify/test-runner 0.7.0
+test-runner/         # @healify/test-runner 0.7.1
 cypress-plugin/      # @healify/cypress-plugin 0.7.0
 selenium-plugin/     # @healify/selenium-plugin 0.7.0
-webdriverio-plugin/  # @healify/webdriverio-plugin 0.6.0 - todavía no publicado en npm
+webdriverio-plugin/  # @healify/webdriverio-plugin 0.6.0
 cli/                 # @healify/cli 0.8.0 - init, doctor, fix, history
 gh-action/           # GitHub Action (privada, no es workspace de npm ni se publica)
 docs/guide/          # Manual detallado

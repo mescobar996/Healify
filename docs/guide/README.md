@@ -56,7 +56,7 @@ sugerencia confiable, en vez de inventar una.
 | Playwright | `@healify/test-runner` | `npm install --save-dev @healify/test-runner` | [README](../../test-runner/README.md) |
 | Cypress | `@healify/cypress-plugin` | `npm install --save-dev @healify/cypress-plugin` | [README](../../cypress-plugin/README.md) |
 | Selenium | `@healify/selenium-plugin` | `npm install --save-dev @healify/selenium-plugin selenium-webdriver` | [README](../../selenium-plugin/README.md) |
-| WebdriverIO | `@healify/webdriverio-plugin` | `npm install --save-dev @healify/webdriverio-plugin` (todavía no publicado en npm) | [README](../../webdriverio-plugin/README.md) |
+| WebdriverIO | `@healify/webdriverio-plugin` | `npm install --save-dev @healify/webdriverio-plugin` | [README](../../webdriverio-plugin/README.md) |
 | — | `@healify/cli` | `npm install --save-dev @healify/cli` | [README](../../cli/README.md) |
 
 Playwright y Cypress generan un reporte (`healify-report.html`/`.json`) al final de la
