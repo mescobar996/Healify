@@ -1,6 +1,10 @@
 # Changelog
 
-## Sin publicar — red de seguridad de tests + fix de tipos en WebdriverIO
+## 1.1.1 — red de seguridad de tests + fix de tipos en WebdriverIO
+
+> Solo `@healify/webdriverio-plugin` sube a 1.1.1: es el único paquete cuyo código cambió.
+> Los otros cuatro siguen en 1.1.0 — `reporter-core` (que se bundlea dentro de todos) no se
+> tocó, así que republicarlos no cambiaría un solo byte.
 
 - **Snapshot de la heurística** (`reporter-core/src/__tests__/heuristic-corpus.test.ts`): 34
   selectores reales (IDs generados por frameworks, clases hasheadas de CSS-in-JS, XPath de
@@ -19,9 +23,6 @@
   `init` no compilaba en un proyecto real. Ahora la firma es genérica
   (`wrap<T extends object>(browser: T): T`), que además le conserva al usuario el tipado y
   el autocompletado de su propio browser.
-
-> Pendiente de publicar: `@healify/webdriverio-plugin` necesita un patch (1.1.1) para que
-> el fix de tipos llegue a quien ya instaló 1.1.0.
 
 ## 1.1.0 — auditoría Tech Lead (correcciones + deuda técnica)
 
