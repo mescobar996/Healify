@@ -188,14 +188,14 @@ describe('wrapDriver', () => {
     expect(result).toBe(healedEl)
   })
 
-  it('sugerencia en sintaxis de Playwright (role/has-text/visible=) se trata como sin sugerencia — nunca intenta el retry', async () => {
+  it('sugerencia sin sintaxis CSS (visible=) que tampoco es rol se trata como sin sugerencia', async () => {
     const originalErr = NO_SUCH_ELEMENT()
     const findElement = vi.fn().mockRejectedValueOnce(originalErr)
     mockAnalyzeAndHeal.mockReturnValue({
-      fixedSelector: "role('button', { name: 'Add' })",
+      fixedSelector: "button:has-text('Add')",
       confidence: 0.92,
       explanation: 'x',
-      selectorType: 'ROLE',
+      selectorType: 'TEXT',
     })
     const onEvent = vi.fn()
     const wrapped = wrapDriver(makeDriver(findElement), { onEvent })
@@ -206,8 +206,97 @@ describe('wrapDriver', () => {
       expect.objectContaining({
         type: 'no-suggestion',
         originalSelector: '#old',
-        fixedSelector: "role('button', { name: 'Add' })",
+        fixedSelector: "button:has-text('Add')",
       })
     )
+  })
+
+  it('sugerencia role(...) con nombre se convierte a XPath y SÍ reintenta — Selenium no interpreta la sintaxis de Playwright, pero puede reubicar el elemento por rol+nombre', async () => {
+    const healedEl = makeElement('healed')
+    const findElement = vi.fn()
+      .mockRejectedValueOnce(NO_SUCH_ELEMENT())
+      .mockResolvedValueOnce(healedEl)
+    mockAnalyzeAndHeal.mockReturnValue({
+      fixedSelector: "role('button', { name: 'Comprar' })",
+      confidence: 0.97,
+      explanation: 'x',
+      selectorType: 'ROLE',
+      verified: true,
+    })
+    const onEvent = vi.fn()
+    const wrapped = wrapDriver(makeDriver(findElement), { onEvent })
+
+    const result = await wrapped.findElement(By.css('#old'))
+
+    expect(result).toBe(healedEl)
+    expect(findElement).toHaveBeenCalledTimes(2)
+    const retryLocator = findElement.mock.calls[1][0]
+    expect(retryLocator.using).toBe('xpath')
+    expect(retryLocator.value).toContain("normalize-space(.)='Comprar'")
+    expect(onEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'healed', fixedSelector: "role('button', { name: 'Comprar' })" })
+    )
+  })
+
+  it('sugerencia role(...) SIN nombre no tiene con qué armar un XPath confiable — se trata como sin sugerencia', async () => {
+    const originalErr = NO_SUCH_ELEMENT()
+    const findElement = vi.fn().mockRejectedValueOnce(originalErr)
+    mockAnalyzeAndHeal.mockReturnValue({
+      fixedSelector: "role('button')",
+      confidence: 0.82,
+      explanation: 'x',
+      selectorType: 'ROLE',
+    })
+    const onEvent = vi.fn()
+    const wrapped = wrapDriver(makeDriver(findElement), { onEvent })
+
+    await expect(wrapped.findElement(By.css('#old'))).rejects.toBe(originalErr)
+    expect(findElement).toHaveBeenCalledTimes(1)
+    expect(onEvent).toHaveBeenCalledWith(expect.objectContaining({ type: 'no-suggestion' }))
+  })
+
+  it('sondea el DOM real (executeScript) y se lo pasa a analyzeAndHeal como htmlContext', async () => {
+    const healedEl = makeElement('healed')
+    const findElement = vi.fn()
+      .mockRejectedValueOnce(NO_SUCH_ELEMENT())
+      .mockResolvedValueOnce(healedEl)
+    const executeScript = vi.fn().mockResolvedValue([{ role: 'button', name: 'Comprar' }])
+    mockAnalyzeAndHeal.mockReturnValue({
+      fixedSelector: "role('button', { name: 'Comprar' })",
+      confidence: 0.97,
+      explanation: 'x',
+      selectorType: 'ROLE',
+    })
+    const driver = { ...makeDriver(findElement), executeScript }
+    const wrapped = wrapDriver(driver as unknown as WebDriver)
+
+    const result = await wrapped.findElement(By.css('#old'))
+
+    expect(result).toBe(healedEl)
+    expect(executeScript).toHaveBeenCalledTimes(1)
+    expect(mockAnalyzeAndHeal).toHaveBeenCalledWith(
+      expect.objectContaining({ htmlContext: expect.stringContaining('button "Comprar"') })
+    )
+  })
+
+  it('si executeScript tira (sesión rara, browser sin JS) no rompe nada — sigue con la heurística a ciegas', async () => {
+    const healedEl = makeElement('healed')
+    const findElement = vi.fn()
+      .mockRejectedValueOnce(NO_SUCH_ELEMENT())
+      .mockResolvedValueOnce(healedEl)
+    const executeScript = vi.fn().mockRejectedValue(new Error('sesión cerrada'))
+    mockAnalyzeAndHeal.mockReturnValue({
+      fixedSelector: '[data-testid="real"]',
+      confidence: 0.95,
+      explanation: 'x',
+      selectorType: 'TESTID',
+    })
+    const driver = { ...makeDriver(findElement), executeScript }
+    const wrapped = wrapDriver(driver as unknown as WebDriver)
+
+    const result = await wrapped.findElement(By.css('#old'))
+
+    expect(result).toBe(healedEl)
+    expect(mockAnalyzeAndHeal).toHaveBeenCalledWith(expect.objectContaining({ htmlContext: undefined }))
   })
 })

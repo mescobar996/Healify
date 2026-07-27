@@ -2,9 +2,16 @@
 
 Wrapper de auto-sanado para Selenium `WebDriver`. Cuando `findElement` falla porque un
 selector ya no existe en la página, este plugin intenta curarlo en vivo con una
-heurística de pattern-matching (**no es IA, no analiza el DOM en tiempo real, no hay
-red ni servidor**). Es el mismo motor que usan `@healify/test-runner` (Playwright) y
-`@healify/cypress-plugin` (Cypress): [`analyzeAndHeal()`](https://github.com/mescobar996/Healify/blob/main/reporter-core/src/healing-engine.ts).
+heurística de pattern-matching (**no es IA, no hay red ni servidor**). Es el mismo motor
+que usan `@healify/test-runner` (Playwright) y `@healify/cypress-plugin` (Cypress):
+[`analyzeAndHeal()`](https://github.com/mescobar996/Healify/blob/main/reporter-core/src/healing-engine.ts).
+
+**Verifica contra la página real.** En el momento exacto en que `findElement` falla, el
+plugin todavía tiene el `driver` en la mano — consulta el DOM real ahí mismo
+(`driver.executeScript`) antes de proponer nada. Las sugerencias se confrontan contra lo
+que había de verdad en pantalla: se descarta lo que no existe, y los nombres se leen de la
+página en vez de deducirse por diccionario. Si `executeScript` no está disponible (sesión
+rara, browser sin soporte de JS), degrada limpio a la heurística sin verificar.
 
 ## Instalación
 
@@ -79,14 +86,14 @@ deja pasar el error de Selenium tal cual.
 - **`findElements` (plural)**: pasa directo al driver real, sin intentar curar. Selenium
   devuelve `[]` cuando no hay matches, en vez de lanzar un error, así que no hay nada
   concreto que curar ahí.
-- **Sugerencias tipo `role(...)`/`:has-text(...)`/`visible=...`**: `analyzeAndHeal()`
-  devuelve esa sintaxis para varias de sus estrategias (pensada originalmente para
-  Playwright/Cypress). No es CSS nativo, así que `By.css()` de Selenium no puede
-  ejecutarla: estos casos se reportan como `'no-suggestion'` en vez de intentar un
-  retry que fallaría siempre. En la práctica, esto significa que selectores de
-  botones/links/inputs (donde el motor suele proponer una estrategia por rol o texto)
-  tienen menor tasa de curado real en Selenium que en Playwright/Cypress; el motor
-  compartido no distingue el runtime de destino al generar sugerencias.
+- **Sugerencias `role(...)` con nombre**: se convierten a un XPath real (`By.xpath`) que
+  busca por texto visible, `aria-label`, `placeholder` o `value` según el rol —
+  reconoce `button`, `link`, `textbox`, `checkbox`, `radio` y `searchbox`. Sin nombre
+  (`role('button')`, típico de la estrategia XPath del motor) no hay con qué armar un
+  XPath confiable, y se reporta como `'no-suggestion'`.
+- **`:has-text(...)`/`visible=...`**: siguen siendo sintaxis de Playwright que `By.css()`
+  no puede ejecutar ni tiene equivalente XPath directo — se reportan como
+  `'no-suggestion'`.
 
 ## Licencia
 

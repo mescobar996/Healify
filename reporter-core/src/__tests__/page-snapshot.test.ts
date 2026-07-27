@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parsePageSnapshot, findMatches, existsInPage, bestNameFor, selectorTokens } from '../page-snapshot'
+import { parsePageSnapshot, formatPageElements, findMatches, existsInPage, bestNameFor, selectorTokens } from '../page-snapshot'
 
 /**
  * Capturado tal cual de una corrida real de Playwright 1.58 (`test-results/.../
@@ -134,5 +134,33 @@ describe('findMatches', () => {
 
   it('filtra por rol y nombre', () => {
     expect(findMatches(parsePageSnapshot(SNAPSHOT_REAL), 'button', 'Comprar')).toHaveLength(1)
+  })
+})
+
+describe('formatPageElements', () => {
+  it('formatea de vuelta al mismo formato que parsePageSnapshot lee (ida y vuelta)', () => {
+    const elements = [
+      { role: 'button', name: 'Comprar' },
+      { role: 'link', name: 'Inicio' },
+    ]
+
+    expect(parsePageSnapshot(formatPageElements(elements))).toEqual(elements)
+  })
+
+  it('un elemento sin nombre no lleva comillas colgando', () => {
+    const formatted = formatPageElements([{ role: 'navigation', name: '' }])
+
+    expect(formatted).toBe('- navigation')
+    expect(parsePageSnapshot(formatted)).toEqual([{ role: 'navigation', name: '' }])
+  })
+
+  it('escapa comillas dobles dentro del nombre', () => {
+    const formatted = formatPageElements([{ role: 'button', name: 'Decí "hola"' }])
+
+    expect(parsePageSnapshot(formatted)).toEqual([{ role: 'button', name: 'Decí "hola"' }])
+  })
+
+  it('array vacío da string vacío', () => {
+    expect(formatPageElements([])).toBe('')
   })
 })

@@ -31,6 +31,16 @@ export interface PageElement {
   name: string
 }
 
+/**
+ * Inverso de `parsePageSnapshot`: convierte elementos ya extraídos (por ejemplo, de una
+ * consulta en vivo al DOM real vía Selenium/WebdriverIO) al mismo formato de líneas que el
+ * parser sabe leer. Así el motor recibe siempre el mismo tipo de dato, sin importar si vino de
+ * un archivo que escribió Playwright o de una consulta hecha en el momento del fallo.
+ */
+export function formatPageElements(elements: PageElement[]): string {
+  return elements.map((e) => (e.name ? `- ${e.role} "${e.name.replace(/"/g, '\\"')}"` : `- ${e.role}`)).join('\n')
+}
+
 /** Líneas de propiedad, no de elemento: `- /url: /inicio`. */
 const PROPERTY_LINE = /^\s*-\s*\//
 /** `- button "Comprar" [ref=e8]:` → role + nombre opcional, ignorando atributos y `:` final. */

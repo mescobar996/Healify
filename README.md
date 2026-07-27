@@ -390,21 +390,32 @@ Esto no pasa la primera vez que instalás Healify en un proyecto nuevo (ahí ya 
 El motor trabaja de dos maneras, y la diferencia es grande. El reporte siempre te dice cuál
 de las dos usó en cada caso.
 
-**Verificado contra la página (Playwright).** Cuando un test falla, Playwright guarda solo el
-árbol de accesibilidad de la pantalla en ese momento. Healify lo lee y confronta sus
-sugerencias contra lo que había de verdad: descarta lo que no existe y toma los nombres de la
-página en lugar de deducirlos. Un `#comprar-ahora-a1b2c3` roto resuelve a
-`role('button', { name: 'Comprar' })` con el texto real del botón.
+**Verificado contra la página (Playwright, Selenium, WebdriverIO).** Cada framework llega a esa
+verificación por un camino distinto:
+
+- **Playwright** guarda solo el árbol de accesibilidad de la pantalla cuando un test falla.
+  Healify lo lee del archivo que Playwright ya escribió.
+- **Selenium y WebdriverIO** curan en vivo: en el momento exacto en que un `findElement`/`$()`
+  falla, todavía tienen el browser abierto en la mano. Healify consulta el DOM real ahí mismo
+  (`executeScript`/`execute`), sin depender de que ningún framework les regale un archivo.
+
+En los tres casos el resultado es el mismo: Healify confronta sus sugerencias contra lo que
+había de verdad en pantalla — descarta lo que no existe y toma los nombres de la página en
+lugar de deducirlos. Un `#comprar-ahora-a1b2c3` roto resuelve a
+`role('button', { name: 'Comprar' })` con el texto real del botón, y el fix se aplica
+reescribiendo la llamada (`page.click(...)` → `page.getByRole(...)`, o el XPath equivalente
+para Selenium/WebdriverIO, que no interpretan la sintaxis de Playwright).
 
 Si nada coincide, el reporte lo dice: puede que el elemento ya no exista, y entonces el
 problema no es el selector sino que la funcionalidad no está.
 
-**A ciegas (Cypress, Selenium, WebdriverIO).** Sin ese dato, el motor decide solo por el texto
-del selector — sirve como punto de partida, pero conviene revisar antes de aplicar. Estas
-sugerencias aparecen sin la marca de verificado.
+**A ciegas (Cypress).** Cypress corre dentro del navegador con su propio ciclo de vida — no
+hay un punto donde Healify tenga "el browser en la mano" para consultarlo en vivo. Sin ese
+dato, el motor decide solo por el texto del selector: sirve como punto de partida, pero
+conviene revisar antes de aplicar. Estas sugerencias aparecen sin la marca de verificado.
 
-En los dos casos es comparación de strings contra datos que ya están en tu máquina: no hay IA,
-ni red, ni servidor.
+En todos los casos es comparación de strings contra datos que ya están en tu máquina: no hay
+IA, ni red, ni servidor.
 
 Lo que reconoce por patrón, con o sin página:
 

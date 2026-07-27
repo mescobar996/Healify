@@ -1,5 +1,34 @@
 # Changelog
 
+## Sin publicar — Selenium y WebdriverIO también verifican contra la página real
+
+El bloque anterior le dio a Playwright acceso al árbol de accesibilidad real (el archivo que
+Playwright ya escribe al fallar un test). Selenium y WebdriverIO se quedaron afuera porque no
+tienen ese archivo — pero tienen algo mejor: el browser vivo en la mano, en el momento exacto
+del fallo. `driver.executeScript()`/`browser.execute()` permiten consultar el DOM real ahí
+mismo, sin depender de que ningún framework les regale nada.
+
+- **Sondeo del DOM en vivo** (`reporter-core/src/browser-probe.ts`): script JS plano que corre
+  dentro del browser, recorre los elementos interactivos y calcula rol + nombre accesible con
+  el mismo criterio en toda la escalera (aria-label → texto visible → placeholder → value).
+- **Las sugerencias de rol ahora se pueden aplicar**: Selenium/WebdriverIO no interpretan
+  `role('button', { name: 'Comprar' })` (es sintaxis de Playwright), así que antes se
+  descartaban siempre. Ahora se convierten a un XPath real
+  (`reporter-core/src/role-locator.ts`) que busca por el mismo criterio de nombre — el mismo
+  elemento que originó la sugerencia.
+- **Verificado con Chrome real, no solo con mocks**: usando `selenium-webdriver` con Selenium
+  Manager (detecta el Chrome instalado solo, sin configuración) y `webdriverio` conectado
+  directo al chromedriver que Selenium Manager resolvió. Los tres roles principales (botón,
+  link, campo de texto) curados de punta a punta contra un browser de verdad.
+- **Bug real encontrado en esa verificación — WebdriverIO 9.x nunca curaba en la práctica**:
+  el detector de "elemento no encontrado" buscaba el wording viejo (`"element not found"`);
+  el mensaje real de wdio 9.x es `"...because element wasn't found"` (distinto), así que el
+  healing nunca se disparaba con esta versión, aunque los tests con mocks (que usaban el
+  wording viejo) pasaran igual. No es algo que este bloque haya introducido — estaba roto
+  desde antes y solo se vio al probar contra un driver real.
+- Dedup: `parseRoleSuggestion` (antes duplicado dentro de `healing-engine.ts`) ahora vive en
+  `role-locator.ts` y lo comparten el motor y los dos plugins.
+
 ## Sin publicar — el motor mira la página real
 
 Hasta acá el motor recibía un string y devolvía otro, adivinando nombres por diccionario: de

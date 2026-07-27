@@ -125,11 +125,59 @@ describe('wrapBrowser', () => {
     expect(mockAnalyzeAndHeal).not.toHaveBeenCalled()
   })
 
-  it('sugerencia no CSS-compatible se trata como no-suggestion', async () => {
+  it('sugerencia sin sintaxis CSS y sin rol se trata como no-suggestion', async () => {
     const originalEl = makeWdioElement({ click: vi.fn().mockRejectedValue(noSuchElement()) })
     const browser = makeBrowser(vi.fn().mockReturnValue(originalEl))
     mockAnalyzeAndHeal.mockReturnValue({
-      fixedSelector: "role('button', { name: 'Add' })",
+      fixedSelector: "button:has-text('Add')",
+      confidence: 0.92,
+      explanation: 'x',
+      selectorType: 'TEXT',
+    })
+    const onEvent = vi.fn()
+    const wrapped = wrapBrowser(browser, { onEvent })
+
+    const el = wrapped.$('#old')
+    await expect(el.click()).rejects.toThrow('not locatable')
+    expect(onEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'no-suggestion', fixedSelector: "button:has-text('Add')" })
+    )
+  })
+
+  it('sugerencia role(...) con nombre se convierte a XPath y SÍ reintenta — WebdriverIO no interpreta la sintaxis de Playwright, pero puede reubicar el elemento por rol+nombre', async () => {
+    const healedEl = makeWdioElement({ click: vi.fn().mockResolvedValue(undefined) })
+    const originalEl = makeWdioElement({ click: vi.fn().mockRejectedValue(noSuchElement()) })
+    const findImpl = vi.fn()
+      .mockReturnValueOnce(originalEl)
+      .mockReturnValueOnce(healedEl)
+    mockAnalyzeAndHeal.mockReturnValue({
+      fixedSelector: "role('button', { name: 'Comprar' })",
+      confidence: 0.97,
+      explanation: 'x',
+      selectorType: 'ROLE',
+      verified: true,
+    })
+    const onEvent = vi.fn()
+    const browser = makeBrowser(findImpl)
+    const wrapped = wrapBrowser(browser, { onEvent })
+
+    const el = wrapped.$('#old')
+    await el.click()
+
+    expect(findImpl).toHaveBeenCalledTimes(2)
+    const retrySelector = findImpl.mock.calls[1][0]
+    expect(retrySelector).toMatch(/^\/\//)
+    expect(retrySelector).toContain("normalize-space(.)='Comprar'")
+    expect(onEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'healed', fixedSelector: "role('button', { name: 'Comprar' })" })
+    )
+  })
+
+  it('sugerencia role(...) SIN nombre no tiene con qué armar un XPath confiable — se trata como sin sugerencia', async () => {
+    const originalEl = makeWdioElement({ click: vi.fn().mockRejectedValue(noSuchElement()) })
+    const browser = makeBrowser(vi.fn().mockReturnValue(originalEl))
+    mockAnalyzeAndHeal.mockReturnValue({
+      fixedSelector: "role('button')",
       confidence: 0.92,
       explanation: 'x',
       selectorType: 'ROLE',
@@ -138,10 +186,51 @@ describe('wrapBrowser', () => {
     const wrapped = wrapBrowser(browser, { onEvent })
 
     const el = wrapped.$('#old')
-    await expect(el.click()).rejects.toThrow('not CSS-compatible')
-    expect(onEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'no-suggestion', fixedSelector: "role('button', { name: 'Add' })" })
+    await expect(el.click()).rejects.toThrow('not locatable')
+    expect(onEvent).toHaveBeenCalledWith(expect.objectContaining({ type: 'no-suggestion' }))
+  })
+
+  it('sondea el DOM real (execute) y se lo pasa a analyzeAndHeal como htmlContext', async () => {
+    const originalEl = makeWdioElement({ click: vi.fn().mockRejectedValue(noSuchElement()) })
+    const execute = vi.fn().mockResolvedValue([{ role: 'button', name: 'Comprar' }])
+    const browser = { ...makeBrowser(vi.fn().mockReturnValue(originalEl)), execute }
+    mockAnalyzeAndHeal.mockReturnValue({
+      fixedSelector: "role('button', { name: 'Comprar' })",
+      confidence: 0.97,
+      explanation: 'x',
+      selectorType: 'ROLE',
+    })
+    const wrapped = wrapBrowser(browser as unknown as Parameters<typeof wrapBrowser>[0])
+
+    const el = wrapped.$('#old')
+    await el.click().catch(() => {}) // el retry puede fallar acá (mismo mock devuelve el original), no es el punto del test
+
+    expect(execute).toHaveBeenCalledTimes(1)
+    expect(mockAnalyzeAndHeal).toHaveBeenCalledWith(
+      expect.objectContaining({ htmlContext: expect.stringContaining('button "Comprar"') })
     )
+  })
+
+  it('si execute() tira (sesión rara, browser sin JS) no rompe nada — sigue con la heurística a ciegas', async () => {
+    const healedEl = makeWdioElement({ click: vi.fn().mockResolvedValue(undefined) })
+    const originalEl = makeWdioElement({ click: vi.fn().mockRejectedValue(noSuchElement()) })
+    const findImpl = vi.fn()
+      .mockReturnValueOnce(originalEl)
+      .mockReturnValueOnce(healedEl)
+    const execute = vi.fn().mockRejectedValue(new Error('sesión cerrada'))
+    const browser = { ...makeBrowser(findImpl), execute }
+    mockAnalyzeAndHeal.mockReturnValue({
+      fixedSelector: '[data-testid="real"]',
+      confidence: 0.95,
+      explanation: 'x',
+      selectorType: 'TESTID',
+    })
+    const wrapped = wrapBrowser(browser as unknown as Parameters<typeof wrapBrowser>[0])
+
+    const el = wrapped.$('#old')
+    await el.click()
+
+    expect(mockAnalyzeAndHeal).toHaveBeenCalledWith(expect.objectContaining({ htmlContext: undefined }))
   })
 
   it('respeta un confidenceThreshold custom', async () => {
@@ -183,5 +272,31 @@ describe('wrapBrowser', () => {
     const el = wrapped.$('#old')
     await expect(el.click()).rejects.toThrow('also failed')
     expect(onEvent).toHaveBeenCalledWith(expect.objectContaining({ type: 'failed', originalSelector: '#old' }))
+  })
+})
+
+describe('isNoElementError — reconoce el wording real de WebdriverIO 9.x', () => {
+  it('cura con el mensaje real que devuelve wdio 9.x al fallar un click (verificado contra chromedriver real)', async () => {
+    // Antes de este fix, "...because element wasn't found" no matcheaba ningún patrón
+    // reconocido y el healing nunca se disparaba en la práctica, aunque los tests con el
+    // wording viejo ("Can't find element...") pasaran igual.
+    const healedEl = makeWdioElement({ click: vi.fn().mockResolvedValue(undefined) })
+    const originalEl = makeWdioElement({
+      click: vi.fn().mockRejectedValue(new Error(`Can't call click on element with selector "#old" because element wasn't found`)),
+    })
+    const findImpl = vi.fn().mockReturnValueOnce(originalEl).mockReturnValueOnce(healedEl)
+    mockAnalyzeAndHeal.mockReturnValue({
+      fixedSelector: '[data-testid="real"]',
+      confidence: 0.95,
+      explanation: 'x',
+      selectorType: 'TESTID',
+    })
+    const browser = makeBrowser(findImpl)
+    const wrapped = wrapBrowser(browser)
+
+    const el = wrapped.$('#old')
+    await el.click()
+
+    expect(findImpl).toHaveBeenCalledTimes(2)
   })
 })

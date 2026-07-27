@@ -27,6 +27,7 @@ export interface HealingEventLike {
   fixedSelector?: string
   confidence?: number
   explanation?: string
+  verified?: boolean
 }
 
 /**
@@ -50,6 +51,7 @@ export function buildLocalRunFromEvents(
       confidence: e.confidence ?? 0,
       explanation: e.explanation ?? '',
       selectorType: e.type === 'healed' ? 'HEALED' : 'UNKNOWN',
+      verified: e.verified,
       defectId: buildDefectId(undefined, e.originalSelector),
       severity: severityFor(status),
       expected: `El selector ${e.originalSelector} encuentra un elemento en la página.`,

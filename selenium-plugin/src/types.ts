@@ -26,4 +26,7 @@ export interface HealingEvent {
   confidence?: number
   explanation?: string
   latencyMs: number
+  /** true si la sugerencia se confrontó contra el DOM real (sondeado en vivo con
+   * executeScript en el momento del fallo), no solo contra el texto del selector. */
+  verified?: boolean
 }

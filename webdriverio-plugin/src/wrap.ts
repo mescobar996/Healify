@@ -1,14 +1,24 @@
-import { analyzeAndHeal } from '@healify/reporter-core'
+import { analyzeAndHeal, BROWSER_PROBE_SCRIPT, domContextFromProbeResult, parseRoleSuggestion, roleSuggestionToXPath } from '@healify/reporter-core'
 import { wdioSelectorToSelector, isWdioCssCompatible } from './locator'
 import { DEFAULT_CONFIDENCE_THRESHOLD, type HealifyWebdriverIOOptions, type HealingEvent } from './types'
 
+/**
+ * Bug real encontrado verificando contra un chromedriver de verdad (no en teoría): con
+ * WebdriverIO 9.x, el mensaje real al fallar un `.click()` sobre un elemento inexistente es
+ * `Can't call click on element with selector "..." because element wasn't found` — ninguno de
+ * los cuatro patrones de abajo lo reconocía ("elemento wasn't found" ≠ "element not found"), así
+ * que el healing nunca se disparaba en la práctica con esta versión, aunque los tests con mocks
+ * pasaran igual (los mocks usaban el wording viejo). Se agrega el patrón real sin sacar los
+ * anteriores, por si otra versión de wdio o del driver usa un wording distinto.
+ */
 function isNoElementError(err: unknown): boolean {
   if (!(err instanceof Error)) return false
   const msg = err.message.toLowerCase()
   return msg.includes('can\'t find element') ||
     msg.includes('no such element') ||
     msg.includes('element not found') ||
-    msg.includes('doesn\'t match any element')
+    msg.includes('doesn\'t match any element') ||
+    (msg.includes('element') && (msg.includes('wasn\'t found') || msg.includes('was not found')))
 }
 
 interface WdioBrowser {
@@ -75,7 +85,7 @@ export function wrapBrowser(browser: WdioBrowser, options: HealifyWebdriverIOOpt
     return wrapped as WdioElement
   }
 
-  function tryHeal(originalSelector: string, method: string, args: unknown[]): unknown {
+  async function tryHeal(originalSelector: string, method: string, args: unknown[]): Promise<unknown> {
     const start = Date.now()
     const selector = wdioSelectorToSelector(originalSelector)
     if (selector === null) {
@@ -83,9 +93,21 @@ export function wrapBrowser(browser: WdioBrowser, options: HealifyWebdriverIOOpt
       throw new Error(`Healify: selector '${originalSelector}' is not convertible to CSS/XPath`)
     }
 
+    // WebdriverIO tiene el browser vivo en la mano, a diferencia de Playwright (que necesita
+    // que el framework le regale un archivo con el snapshot posterior al fallo). Se consulta
+    // el DOM real en el momento exacto del fallo, vía execute(). Si tira (sesión rara, browser
+    // que no soporta JS) se degrada limpio a la heurística a ciegas de siempre — mismo criterio
+    // que Playwright sin el attachment.
+    let domContext: string | undefined
+    try {
+      domContext = domContextFromProbeResult(await (browser as Record<string, Function>).execute(BROWSER_PROBE_SCRIPT))
+    } catch {
+      domContext = undefined
+    }
+
     let result: ReturnType<typeof analyzeAndHeal>
     try {
-      result = analyzeAndHeal({ selector })
+      result = analyzeAndHeal({ selector, htmlContext: domContext })
     } catch (healErr) {
       const message = healErr instanceof Error ? healErr.message : String(healErr)
       emit({ type: 'error', originalSelector: selector, explanation: message, latencyMs: Date.now() - start })
@@ -97,13 +119,22 @@ export function wrapBrowser(browser: WdioBrowser, options: HealifyWebdriverIOOpt
       throw new Error(`Healify: no confident suggestion for '${selector}' (confidence: ${result.confidence})`)
     }
 
-    if (!isWdioCssCompatible(result.fixedSelector)) {
+    // Las sugerencias de rol (`role('button', { name: 'Comprar' })`) no son CSS — Playwright
+    // las interpreta con su propio motor de locators, WebdriverIO no. Se convierten a un XPath
+    // real que busca por el mismo criterio de nombre que usó el sondeo del DOM, así encuentra
+    // el mismo elemento que originó la sugerencia. $() de wdio autodetecta XPath por el '//'
+    // inicial, no hace falta ningún wrapper. El resto (TESTID/CSS/CLASS) sigue el camino CSS.
+    const roleSuggestion = parseRoleSuggestion(result.fixedSelector)
+    const roleXpath = roleSuggestion?.name ? roleSuggestionToXPath(roleSuggestion.role, roleSuggestion.name) : null
+    const retrySelector = roleXpath ?? (isWdioCssCompatible(result.fixedSelector) ? result.fixedSelector : null)
+
+    if (!retrySelector) {
       emit({ type: 'no-suggestion', originalSelector: selector, fixedSelector: result.fixedSelector, confidence: result.confidence, latencyMs: Date.now() - start })
-      throw new Error(`Healify: suggestion '${result.fixedSelector}' is not CSS-compatible for WebdriverIO`)
+      throw new Error(`Healify: suggestion '${result.fixedSelector}' is not locatable for WebdriverIO`)
     }
 
     if (options.dryRun) {
-      emit({ type: 'healed', originalSelector: selector, fixedSelector: result.fixedSelector, confidence: result.confidence, explanation: result.explanation, latencyMs: Date.now() - start })
+      emit({ type: 'healed', originalSelector: selector, fixedSelector: result.fixedSelector, confidence: result.confidence, explanation: result.explanation, verified: result.verified, latencyMs: Date.now() - start })
       throw new Error(`Healify: would fix '${selector}' → '${result.fixedSelector}' (dry run)`)
     }
 
@@ -111,13 +142,13 @@ export function wrapBrowser(browser: WdioBrowser, options: HealifyWebdriverIOOpt
     // so we can detect if the healed selector itself fails.
     let healedEl: WdioElement
     try {
-      healedEl = (browser as Record<string, Function>).$(result.fixedSelector) as WdioElement
+      healedEl = (browser as Record<string, Function>).$(retrySelector) as WdioElement
     } catch {
       emit({ type: 'failed', originalSelector: selector, fixedSelector: result.fixedSelector, confidence: result.confidence, latencyMs: Date.now() - start })
       throw new Error(`Healify: healed selector '${result.fixedSelector}' also failed for '${selector}'`)
     }
 
-    emit({ type: 'healed', originalSelector: selector, fixedSelector: result.fixedSelector, confidence: result.confidence, explanation: result.explanation, latencyMs: Date.now() - start })
+    emit({ type: 'healed', originalSelector: selector, fixedSelector: result.fixedSelector, confidence: result.confidence, explanation: result.explanation, verified: result.verified, latencyMs: Date.now() - start })
 
     // Wrap the healed element with isHealed=true to prevent infinite re-healing.
     // If the user's interaction with the healed element fails, let the error propagate as-is.

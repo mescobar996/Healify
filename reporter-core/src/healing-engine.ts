@@ -25,6 +25,7 @@
  */
 
 import { parsePageSnapshot, existsInPage, findMatches, bestElementFor, type PageElement } from './page-snapshot'
+import { parseRoleSuggestion } from './role-locator'
 
 export interface HealRequest {
   selector: string
@@ -448,20 +449,6 @@ const ELEMENT_TO_ARIA_ROLE: Record<string, string> = {
 }
 
 /**
- * `role('button', { name: 'X' })` o `role('button')` → sus partes, para confrontarlo con la
- * página. El motor genera las dos formas: la de XPath y la de selectores posicionales no
- * llevan nombre, y también hay que poder desmentirlas (si no hay ningún botón en pantalla,
- * proponer `role('button')` es igual de inútil).
- */
-function parseRoleStrategy(selector: string): { role: string; name?: string } | null {
-  const withName = selector.match(/^role\('([^']+)',\s*\{\s*name:\s*'([^']*)'\s*\}\s*\)$/)
-  if (withName) return { role: withName[1], name: withName[2] }
-
-  const roleOnly = selector.match(/^role\('([^']+)'\)$/)
-  return roleOnly ? { role: roleOnly[1] } : null
-}
-
-/**
  * Confronta las estrategias contra lo que había de verdad en la pantalla.
  *
  * Es el paso que separa una sugerencia de una adivinanza. Hace dos cosas:
@@ -486,7 +473,7 @@ function applyPageEvidence(
   const expectedRole = ELEMENT_TO_ARIA_ROLE[analysis.element]
 
   const survivors = strategies.filter((strategy) => {
-    const role = parseRoleStrategy(strategy.selector)
+    const role = parseRoleSuggestion(strategy.selector)
     if (!role) return true
     return role.name === undefined
       ? findMatches(pageElements, role.role).length > 0

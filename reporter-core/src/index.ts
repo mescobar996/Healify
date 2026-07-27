@@ -4,3 +4,6 @@ export { runLocalHealing, type LocalCaseInput, type LocalCaseResult, type LocalC
 export { renderLocalReportHtml, renderLocalReportJson, printSummary, buildLocalRunFromEvents, baseEnvironment, statsFromCases, type LocalRun, type HealingEventLike, type RunEnvironment, type RunStats } from './local-report'
 export { renderLocalReportMarkdown, buildDefectId, severityFor, formatDuration, environmentRows, SEVERITY_LABEL, type Severity } from './qa-report'
 export { isPlaywrightOnlySelector } from './selector-compat'
+export { parsePageSnapshot, formatPageElements, existsInPage, findMatches, bestElementFor, bestNameFor, selectorTokens, type PageElement } from './page-snapshot'
+export { parseRoleSuggestion, roleSuggestionToXPath } from './role-locator'
+export { BROWSER_PROBE_SCRIPT, domContextFromProbeResult } from './browser-probe'

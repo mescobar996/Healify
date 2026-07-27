@@ -76,12 +76,16 @@ var require_page_snapshot = __commonJS({
   "../reporter-core/dist/page-snapshot.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.formatPageElements = formatPageElements;
     exports2.parsePageSnapshot = parsePageSnapshot;
     exports2.findMatches = findMatches;
     exports2.existsInPage = existsInPage;
     exports2.selectorTokens = selectorTokens;
     exports2.bestElementFor = bestElementFor;
     exports2.bestNameFor = bestNameFor;
+    function formatPageElements(elements) {
+      return elements.map((e) => e.name ? `- ${e.role} "${e.name.replace(/"/g, '\\"')}"` : `- ${e.role}`).join("\n");
+    }
     var PROPERTY_LINE = /^\s*-\s*\//;
     var ELEMENT_LINE = /^\s*-\s+([a-zA-Z][\w-]*)\s*(?:"((?:[^"\\]|\\.)*)")?/;
     var TEXT_LINE = /^\s*-\s+text:\s*(.+?)\s*$/;
@@ -161,6 +165,45 @@ var require_page_snapshot = __commonJS({
       if (scored.filter((s) => s.score === best.score).length > 1)
         return null;
       return best.name;
+    }
+  }
+});
+
+// ../reporter-core/dist/role-locator.js
+var require_role_locator = __commonJS({
+  "../reporter-core/dist/role-locator.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.parseRoleSuggestion = parseRoleSuggestion2;
+    exports2.roleSuggestionToXPath = roleSuggestionToXPath2;
+    function parseRoleSuggestion2(selector) {
+      const withName = selector.match(/^role\('([^']+)',\s*\{\s*name:\s*'([^']*)'\s*\}\s*\)$/);
+      if (withName)
+        return { role: withName[1], name: withName[2] };
+      const roleOnly = selector.match(/^role\('([^']+)'\)$/);
+      return roleOnly ? { role: roleOnly[1] } : null;
+    }
+    function xpathLiteral(value) {
+      if (!value.includes("'"))
+        return `'${value}'`;
+      if (!value.includes('"'))
+        return `"${value}"`;
+      const parts = value.split("'").map((part) => `'${part}'`);
+      return `concat(${parts.join(`, "'", `)})`;
+    }
+    var ROLE_TO_XPATH = {
+      button: (l) => `//button[normalize-space(.)=${l}] | //button[@aria-label=${l}] | //input[(@type='submit' or @type='button') and @value=${l}] | //*[@role='button'][normalize-space(.)=${l} or @aria-label=${l}]`,
+      link: (l) => `//a[normalize-space(.)=${l}] | //a[@aria-label=${l}] | //*[@role='link'][normalize-space(.)=${l} or @aria-label=${l}]`,
+      textbox: (l) => `//input[@aria-label=${l}] | //input[@placeholder=${l}] | //textarea[@aria-label=${l}] | //textarea[@placeholder=${l}]`,
+      checkbox: (l) => `//input[@type='checkbox'][@aria-label=${l}] | //*[@role='checkbox'][@aria-label=${l}]`,
+      radio: (l) => `//input[@type='radio'][@aria-label=${l}] | //*[@role='radio'][@aria-label=${l}]`,
+      searchbox: (l) => `//input[@type='search'][@aria-label=${l} or @placeholder=${l}]`
+    };
+    function roleSuggestionToXPath2(role, name) {
+      if (!name)
+        return null;
+      const build = ROLE_TO_XPATH[role];
+      return build ? build(xpathLiteral(name)) : null;
     }
   }
 });
@@ -273,6 +316,7 @@ var require_healing_engine = __commonJS({
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.analyzeAndHeal = analyzeAndHeal2;
     var page_snapshot_1 = require_page_snapshot();
+    var role_locator_1 = require_role_locator();
     var VOLATILE_CLASS_RE = /^(css-|sc-|x[0-9a-f]{4,}|[a-z]{2,}_[a-z0-9]{5,})/i;
     var VOLATILE_ID_RE = /_\d{4,}$|-[a-f0-9]{6,}$/i;
     function hasVolatileClassToken(selector) {
@@ -564,17 +608,10 @@ var require_healing_engine = __commonJS({
       link: "link",
       input: "textbox"
     };
-    function parseRoleStrategy(selector) {
-      const withName = selector.match(/^role\('([^']+)',\s*\{\s*name:\s*'([^']*)'\s*\}\s*\)$/);
-      if (withName)
-        return { role: withName[1], name: withName[2] };
-      const roleOnly = selector.match(/^role\('([^']+)'\)$/);
-      return roleOnly ? { role: roleOnly[1] } : null;
-    }
     function applyPageEvidence(strategies, pageElements, selector, analysis) {
       const expectedRole = ELEMENT_TO_ARIA_ROLE[analysis.element];
       const survivors = strategies.filter((strategy) => {
-        const role = parseRoleStrategy(strategy.selector);
+        const role = (0, role_locator_1.parseRoleSuggestion)(strategy.selector);
         if (!role)
           return true;
         return role.name === void 0 ? (0, page_snapshot_1.findMatches)(pageElements, role.role).length > 0 : (0, page_snapshot_1.existsInPage)(pageElements, role.role, role.name);
@@ -908,6 +945,7 @@ var require_local_report = __commonJS({
           confidence: e.confidence ?? 0,
           explanation: e.explanation ?? "",
           selectorType: e.type === "healed" ? "HEALED" : "UNKNOWN",
+          verified: e.verified,
           defectId: (0, qa_report_1.buildDefectId)(void 0, e.originalSelector),
           severity: (0, qa_report_1.severityFor)(status),
           expected: `El selector ${e.originalSelector} encuentra un elemento en la p\xE1gina.`,
@@ -1551,12 +1589,85 @@ var require_selector_compat = __commonJS({
   }
 });
 
+// ../reporter-core/dist/browser-probe.js
+var require_browser_probe = __commonJS({
+  "../reporter-core/dist/browser-probe.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.BROWSER_PROBE_SCRIPT = void 0;
+    exports2.domContextFromProbeResult = domContextFromProbeResult2;
+    var page_snapshot_1 = require_page_snapshot();
+    exports2.BROWSER_PROBE_SCRIPT = `
+var nodes = document.querySelectorAll('button, a, input, textarea, select, [role]');
+var seen = [];
+var results = [];
+for (var i = 0; i < nodes.length; i++) {
+  var el = nodes[i];
+  if (seen.indexOf(el) !== -1) continue;
+  seen.push(el);
+
+  var role = el.getAttribute('role');
+  var tag = el.tagName.toLowerCase();
+  if (!role) {
+    if (tag === 'a') role = el.hasAttribute('href') ? 'link' : null;
+    else if (tag === 'button') role = 'button';
+    else if (tag === 'select') role = 'combobox';
+    else if (tag === 'textarea') role = 'textbox';
+    else if (tag === 'input') {
+      var type = (el.getAttribute('type') || 'text').toLowerCase();
+      if (type === 'checkbox') role = 'checkbox';
+      else if (type === 'radio') role = 'radio';
+      else if (type === 'submit' || type === 'button') role = 'button';
+      else if (type === 'search') role = 'searchbox';
+      else if (type === 'hidden') role = null;
+      else role = 'textbox';
+    }
+  }
+  if (!role) continue;
+
+  var name = '';
+  var ariaLabel = el.getAttribute('aria-label');
+  if (ariaLabel) {
+    name = ariaLabel.trim();
+  } else {
+    var text = (el.innerText || el.textContent || '').trim();
+    if (text) {
+      name = text.split('\\n')[0].trim();
+    } else {
+      var placeholder = el.getAttribute('placeholder');
+      if (placeholder) {
+        name = placeholder.trim();
+      } else if (typeof el.value === 'string' && el.value.trim()) {
+        name = el.value.trim();
+      }
+    }
+  }
+  results.push({ role: role, name: name });
+}
+return results;
+`.trim();
+    function domContextFromProbeResult2(raw) {
+      if (!Array.isArray(raw))
+        return void 0;
+      const elements = raw.filter((item) => {
+        if (typeof item !== "object" || item === null)
+          return false;
+        const candidate = item;
+        return typeof candidate.role === "string" && typeof candidate.name === "string";
+      });
+      if (elements.length === 0)
+        return void 0;
+      return (0, page_snapshot_1.formatPageElements)(elements);
+    }
+  }
+});
+
 // ../reporter-core/dist/index.js
 var require_dist = __commonJS({
   "../reporter-core/dist/index.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
-    exports2.isPlaywrightOnlySelector = exports2.SEVERITY_LABEL = exports2.environmentRows = exports2.formatDuration = exports2.severityFor = exports2.buildDefectId = exports2.renderLocalReportMarkdown = exports2.statsFromCases = exports2.baseEnvironment = exports2.buildLocalRunFromEvents = exports2.printSummary = exports2.renderLocalReportJson = exports2.renderLocalReportHtml = exports2.runLocalHealing = exports2.analyzeAndHeal = exports2.extractSelectorFromError = void 0;
+    exports2.domContextFromProbeResult = exports2.BROWSER_PROBE_SCRIPT = exports2.roleSuggestionToXPath = exports2.parseRoleSuggestion = exports2.selectorTokens = exports2.bestNameFor = exports2.bestElementFor = exports2.findMatches = exports2.existsInPage = exports2.formatPageElements = exports2.parsePageSnapshot = exports2.isPlaywrightOnlySelector = exports2.SEVERITY_LABEL = exports2.environmentRows = exports2.formatDuration = exports2.severityFor = exports2.buildDefectId = exports2.renderLocalReportMarkdown = exports2.statsFromCases = exports2.baseEnvironment = exports2.buildLocalRunFromEvents = exports2.printSummary = exports2.renderLocalReportJson = exports2.renderLocalReportHtml = exports2.runLocalHealing = exports2.analyzeAndHeal = exports2.extractSelectorFromError = void 0;
     var selector_extractor_1 = require_selector_extractor();
     Object.defineProperty(exports2, "extractSelectorFromError", { enumerable: true, get: function() {
       return selector_extractor_1.extractSelectorFromError;
@@ -1611,6 +1722,42 @@ var require_dist = __commonJS({
     Object.defineProperty(exports2, "isPlaywrightOnlySelector", { enumerable: true, get: function() {
       return selector_compat_1.isPlaywrightOnlySelector;
     } });
+    var page_snapshot_1 = require_page_snapshot();
+    Object.defineProperty(exports2, "parsePageSnapshot", { enumerable: true, get: function() {
+      return page_snapshot_1.parsePageSnapshot;
+    } });
+    Object.defineProperty(exports2, "formatPageElements", { enumerable: true, get: function() {
+      return page_snapshot_1.formatPageElements;
+    } });
+    Object.defineProperty(exports2, "existsInPage", { enumerable: true, get: function() {
+      return page_snapshot_1.existsInPage;
+    } });
+    Object.defineProperty(exports2, "findMatches", { enumerable: true, get: function() {
+      return page_snapshot_1.findMatches;
+    } });
+    Object.defineProperty(exports2, "bestElementFor", { enumerable: true, get: function() {
+      return page_snapshot_1.bestElementFor;
+    } });
+    Object.defineProperty(exports2, "bestNameFor", { enumerable: true, get: function() {
+      return page_snapshot_1.bestNameFor;
+    } });
+    Object.defineProperty(exports2, "selectorTokens", { enumerable: true, get: function() {
+      return page_snapshot_1.selectorTokens;
+    } });
+    var role_locator_1 = require_role_locator();
+    Object.defineProperty(exports2, "parseRoleSuggestion", { enumerable: true, get: function() {
+      return role_locator_1.parseRoleSuggestion;
+    } });
+    Object.defineProperty(exports2, "roleSuggestionToXPath", { enumerable: true, get: function() {
+      return role_locator_1.roleSuggestionToXPath;
+    } });
+    var browser_probe_1 = require_browser_probe();
+    Object.defineProperty(exports2, "BROWSER_PROBE_SCRIPT", { enumerable: true, get: function() {
+      return browser_probe_1.BROWSER_PROBE_SCRIPT;
+    } });
+    Object.defineProperty(exports2, "domContextFromProbeResult", { enumerable: true, get: function() {
+      return browser_probe_1.domContextFromProbeResult;
+    } });
   }
 });
 
@@ -1650,7 +1797,7 @@ var DEFAULT_CONFIDENCE_THRESHOLD = 0.9;
 function isNoElementError(err) {
   if (!(err instanceof Error)) return false;
   const msg = err.message.toLowerCase();
-  return msg.includes("can't find element") || msg.includes("no such element") || msg.includes("element not found") || msg.includes("doesn't match any element");
+  return msg.includes("can't find element") || msg.includes("no such element") || msg.includes("element not found") || msg.includes("doesn't match any element") || msg.includes("element") && (msg.includes("wasn't found") || msg.includes("was not found"));
 }
 function wrapBrowser(browser, options = {}) {
   const threshold = options.confidenceThreshold ?? DEFAULT_CONFIDENCE_THRESHOLD;
@@ -1702,16 +1849,22 @@ function wrapBrowser(browser, options = {}) {
     }
     return wrapped;
   }
-  function tryHeal(originalSelector, method, args) {
+  async function tryHeal(originalSelector, method, args) {
     const start = Date.now();
     const selector = wdioSelectorToSelector(originalSelector);
     if (selector === null) {
       emit({ type: "not-convertible", originalSelector, latencyMs: Date.now() - start });
       throw new Error(`Healify: selector '${originalSelector}' is not convertible to CSS/XPath`);
     }
+    let domContext;
+    try {
+      domContext = (0, import_reporter_core2.domContextFromProbeResult)(await browser.execute(import_reporter_core2.BROWSER_PROBE_SCRIPT));
+    } catch {
+      domContext = void 0;
+    }
     let result;
     try {
-      result = (0, import_reporter_core2.analyzeAndHeal)({ selector });
+      result = (0, import_reporter_core2.analyzeAndHeal)({ selector, htmlContext: domContext });
     } catch (healErr) {
       const message = healErr instanceof Error ? healErr.message : String(healErr);
       emit({ type: "error", originalSelector: selector, explanation: message, latencyMs: Date.now() - start });
@@ -1721,22 +1874,25 @@ function wrapBrowser(browser, options = {}) {
       emit({ type: "no-suggestion", originalSelector: selector, confidence: result.confidence, latencyMs: Date.now() - start });
       throw new Error(`Healify: no confident suggestion for '${selector}' (confidence: ${result.confidence})`);
     }
-    if (!isWdioCssCompatible(result.fixedSelector)) {
+    const roleSuggestion = (0, import_reporter_core2.parseRoleSuggestion)(result.fixedSelector);
+    const roleXpath = roleSuggestion?.name ? (0, import_reporter_core2.roleSuggestionToXPath)(roleSuggestion.role, roleSuggestion.name) : null;
+    const retrySelector = roleXpath ?? (isWdioCssCompatible(result.fixedSelector) ? result.fixedSelector : null);
+    if (!retrySelector) {
       emit({ type: "no-suggestion", originalSelector: selector, fixedSelector: result.fixedSelector, confidence: result.confidence, latencyMs: Date.now() - start });
-      throw new Error(`Healify: suggestion '${result.fixedSelector}' is not CSS-compatible for WebdriverIO`);
+      throw new Error(`Healify: suggestion '${result.fixedSelector}' is not locatable for WebdriverIO`);
     }
     if (options.dryRun) {
-      emit({ type: "healed", originalSelector: selector, fixedSelector: result.fixedSelector, confidence: result.confidence, explanation: result.explanation, latencyMs: Date.now() - start });
+      emit({ type: "healed", originalSelector: selector, fixedSelector: result.fixedSelector, confidence: result.confidence, explanation: result.explanation, verified: result.verified, latencyMs: Date.now() - start });
       throw new Error(`Healify: would fix '${selector}' \u2192 '${result.fixedSelector}' (dry run)`);
     }
     let healedEl;
     try {
-      healedEl = browser.$(result.fixedSelector);
+      healedEl = browser.$(retrySelector);
     } catch {
       emit({ type: "failed", originalSelector: selector, fixedSelector: result.fixedSelector, confidence: result.confidence, latencyMs: Date.now() - start });
       throw new Error(`Healify: healed selector '${result.fixedSelector}' also failed for '${selector}'`);
     }
-    emit({ type: "healed", originalSelector: selector, fixedSelector: result.fixedSelector, confidence: result.confidence, explanation: result.explanation, latencyMs: Date.now() - start });
+    emit({ type: "healed", originalSelector: selector, fixedSelector: result.fixedSelector, confidence: result.confidence, explanation: result.explanation, verified: result.verified, latencyMs: Date.now() - start });
     return wrapElement(healedEl, result.fixedSelector, true);
   }
   return new Proxy(browser, {

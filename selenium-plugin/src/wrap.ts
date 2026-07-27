@@ -1,6 +1,6 @@
 import type { WebDriver, WebElement, By } from 'selenium-webdriver'
 import { By as SeleniumBy, error } from 'selenium-webdriver'
-import { analyzeAndHeal } from '@healify/reporter-core'
+import { analyzeAndHeal, BROWSER_PROBE_SCRIPT, domContextFromProbeResult, parseRoleSuggestion, roleSuggestionToXPath } from '@healify/reporter-core'
 import { locatorToSelector, isSeleniumCssCompatible } from './locator'
 import { DEFAULT_CONFIDENCE_THRESHOLD, type HealifySeleniumOptions, type HealingEvent } from './types'
 
@@ -39,9 +39,21 @@ export function wrapDriver(driver: WebDriver, options: HealifySeleniumOptions = 
         throw originalErr
       }
 
+      // Selenium tiene el browser vivo en la mano, a diferencia de Playwright (que necesita
+      // que el framework le regale un archivo con el snapshot posterior al fallo). Se consulta
+      // el DOM real en el momento exacto del fallo, vía executeScript. Si tira (sesión rara,
+      // browser que no soporta JS) se degrada limpio a la heurística a ciegas de siempre —
+      // mismo criterio que Playwright sin el attachment.
+      let domContext: string | undefined
+      try {
+        domContext = domContextFromProbeResult(await driver.executeScript(BROWSER_PROBE_SCRIPT))
+      } catch {
+        domContext = undefined
+      }
+
       let result: ReturnType<typeof analyzeAndHeal>
       try {
-        result = analyzeAndHeal({ selector })
+        result = analyzeAndHeal({ selector, htmlContext: domContext })
       } catch (healErr) {
         const message = healErr instanceof Error ? healErr.message : String(healErr)
         emit({ type: 'error', originalSelector: selector, explanation: message, latencyMs: Date.now() - start })
@@ -58,7 +70,20 @@ export function wrapDriver(driver: WebDriver, options: HealifySeleniumOptions = 
         throw originalErr
       }
 
-      if (!isSeleniumCssCompatible(result.fixedSelector)) {
+      // Las sugerencias de rol (`role('button', { name: 'Comprar' })`) no son CSS — Playwright
+      // las interpreta con su propio motor de locators, Selenium no. Se convierten a un XPath
+      // real que busca por el mismo criterio de nombre que usó el sondeo del DOM, así encuentra
+      // el mismo elemento que originó la sugerencia. El resto (TESTID/CSS/CLASS) sigue el
+      // camino CSS de siempre.
+      const roleSuggestion = parseRoleSuggestion(result.fixedSelector)
+      const roleXpath = roleSuggestion?.name ? roleSuggestionToXPath(roleSuggestion.role, roleSuggestion.name) : null
+      const retryLocator = roleXpath
+        ? SeleniumBy.xpath(roleXpath)
+        : isSeleniumCssCompatible(result.fixedSelector)
+          ? SeleniumBy.css(result.fixedSelector)
+          : null
+
+      if (!retryLocator) {
         emit({
           type: 'no-suggestion',
           originalSelector: selector,
@@ -76,19 +101,21 @@ export function wrapDriver(driver: WebDriver, options: HealifySeleniumOptions = 
           fixedSelector: result.fixedSelector,
           confidence: result.confidence,
           explanation: result.explanation,
+          verified: result.verified,
           latencyMs: Date.now() - start,
         })
         throw originalErr
       }
 
       try {
-        const healedElement = await driver.findElement(SeleniumBy.css(result.fixedSelector))
+        const healedElement = await driver.findElement(retryLocator)
         emit({
           type: 'healed',
           originalSelector: selector,
           fixedSelector: result.fixedSelector,
           confidence: result.confidence,
           explanation: result.explanation,
+          verified: result.verified,
           latencyMs: Date.now() - start,
         })
         return healedElement
