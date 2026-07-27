@@ -97,15 +97,49 @@ function runFix(args: string[]): void {
 }
 
 /** Mensaje final por framework — ninguno asume que ya hay algo para "correr": init no genera tests. */
-function nextStepFor(framework: FrameworkInitResult['framework']): string {
+function nextStepFor(result: FrameworkInitResult): string {
+  const { framework, ext, moduleType } = result
   if (framework === 'selenium') {
     return '✅ Instalado. Ver healify.selenium.example.ts para el patrón de wrap() — copialo a tu código real, no hay nada que ejecutar acá.'
   }
   if (framework === 'webdriverio') {
     return '✅ Instalado. Ver healify.wdio.example.ts para el patrón de wrap() — copialo a tu código real, no hay nada que ejecutar acá.'
   }
-  const testDir = framework === 'playwright' ? 'e2e/' : 'cypress/e2e/'
-  return `✅ Config lista. Escribí tu primer test en ${testDir} y corré tus tests — cuando un selector se rompa vas a tener healify-report.html.`
+  const isPlaywright = framework === 'playwright'
+  const testFile = isPlaywright ? `e2e/mi-primer-test.spec.${ext}` : `cypress/e2e/mi-primer-test.cy.${ext}`
+  // En un proyecto JS + CommonJS, `import` no corre: el snippet tiene que ser copiable tal cual.
+  const importLine =
+    ext === 'js' && moduleType === 'cjs'
+      ? "const { test, expect } = require('@playwright/test')"
+      : "import { test, expect } from '@playwright/test'"
+  const snippet = isPlaywright
+    ? [
+        importLine,
+        '',
+        "test('mi primer test', async ({ page }) => {",
+        "  await page.goto('/')",
+        "  await page.click('#reemplazar-por-tu-selector-real')",
+        '})',
+      ]
+    : [
+        "it('mi primer test', () => {",
+        "  cy.visit('/')",
+        "  cy.get('#reemplazar-por-tu-selector-real').click()",
+        '})',
+      ]
+
+  return [
+    '✅ Config lista. Healify no te genera tests: el primer selector que cure tiene que ser',
+    '   uno de tu propia app. Creá este archivo y editalo:',
+    '',
+    `   ${testFile}`,
+    '',
+    ...snippet.map((line) => (line === '' ? '' : `   ${line}`)),
+    '',
+    "   Reemplazá '#reemplazar-por-tu-selector-real' por un selector de tu app (un botón, un",
+    '   link, cualquier elemento que ya exista). Corré tus tests y, cuando ese selector se',
+    '   rompa, vas a tener healify-report.html.',
+  ].join('\n')
 }
 
 function printInitReport(report: InitReport): void {
@@ -137,7 +171,7 @@ function printInitReport(report: InitReport): void {
       console.log(`⚠ el config tiene una forma que no reconocemos — agregá Healify a mano, ver README`)
     }
 
-    console.log(`\n${nextStepFor(r.framework)}`)
+    console.log(`\n${nextStepFor(r)}`)
   }
 }
 

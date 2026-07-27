@@ -146,14 +146,57 @@ correr nada, levantá tu app en una terminal aparte y dejala corriendo:
 npm run dev
 ```
 
-Confirmá que responde abriendo esa URL a mano en el navegador. Recién ahí, si todavía no
-tenés ningún test e2e, escribí uno simple contra una pantalla real de tu app (un login, un
-botón que ya exista) en `e2e/` (Playwright) o `cypress/e2e/` (Cypress). El reporter ya está
-conectado, no hace falta tocar nada más de la config.
+Confirmá que responde abriendo esa URL a mano en el navegador.
+
+Recién ahí escribí tu primer test. Healify no te lo genera: el primer selector que cure
+tiene que ser uno de tu propia app, no uno inventado. Este es el mínimo que necesitás.
+
+**Si usás Playwright**, creá `e2e/mi-primer-test.spec.ts`:
+
+```ts
+import { test, expect } from '@playwright/test'
+
+test('mi primer test', async ({ page }) => {
+  await page.goto('/')
+  await page.click('#reemplazar-por-tu-selector-real')
+})
+```
+
+**Si usás Cypress**, creá `cypress/e2e/mi-primer-test.cy.ts`:
+
+```ts
+it('mi primer test', () => {
+  cy.visit('/')
+  cy.get('#reemplazar-por-tu-selector-real').click()
+})
+```
+
+Línea por línea:
+
+- `goto('/')` / `visit('/')` abre el navegador en tu `baseURL` (la que quedó en el config).
+  La barra sola es la home; podés poner `/login` o cualquier otra ruta.
+- `click(...)` busca un elemento y le hace click. **Ese es el selector que Healify va a
+  curar cuando se rompa** — el resto del test es andamiaje.
+- `#reemplazar-por-tu-selector-real` es un placeholder, no un selector que exista. Tenés que
+  cambiarlo por uno de tu app o el test va a fallar por el motivo equivocado.
+
+`init` te imprime este mismo snippet al terminar, ya ajustado a tu proyecto: en `.js` si no
+usás TypeScript, y con `require` en vez de `import` si tu `package.json` es CommonJS.
+
+Para sacar un selector real: abrí tu app en el navegador, click derecho sobre el elemento →
+*Inspeccionar*. En el HTML que se abre buscá un `id` (`#mi-id`) o un `data-testid`
+(`[data-testid="mi-id"]`). Si no tiene ninguno de los dos, sirve una clase (`.mi-clase`),
+aunque son más frágiles — justamente el tipo de fragilidad que Healify detecta.
+
+> **Usá el framework que ya te detectó `doctor`.** Si tu proyecto tiene Playwright, corré
+> `npx playwright test`; no instales Cypress "para probar". Correr `npx cypress run` en un
+> proyecto que solo tiene Playwright configurado falla por falta de Cypress, no por Healify.
+
+Con el archivo creado y tu app levantada:
 
 ```bash
 npx playwright test
-# o
+# o, si tu proyecto usa Cypress
 npx cypress run
 ```
 

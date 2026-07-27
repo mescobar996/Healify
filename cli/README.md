@@ -50,13 +50,26 @@ Healify init
 ✅ archivos creados:
    - playwright.config.ts
 
-✅ Config lista. Escribí tu primer test en e2e/ y corré tus tests — cuando un selector se
-   rompa vas a tener healify-report.html.
+✅ Config lista. Healify no te genera tests: el primer selector que cure tiene que ser
+   uno de tu propia app. Creá este archivo y editalo:
+
+   e2e/mi-primer-test.spec.ts
+
+   import { test, expect } from '@playwright/test'
+
+   test('mi primer test', async ({ page }) => {
+     await page.goto('/')
+     await page.click('#reemplazar-por-tu-selector-real')
+   })
+
+   Reemplazá '#reemplazar-por-tu-selector-real' por un selector de tu app (un botón, un
+   link, cualquier elemento que ya exista). Corré tus tests y, cuando ese selector se
+   rompa, vas a tener healify-report.html.
 ```
 
-`init` no crea ningún test. El primer selector roto que Healify cura tiene que ser uno de
-tu propia app, no uno inventado. Escribí tu test en `e2e/` como harías normalmente con
-Playwright; el reporter ya está conectado.
+`init` no crea ese archivo: te muestra qué escribir. El primer selector roto que Healify
+cura tiene que ser uno de tu propia app, no uno inventado. El reporter ya está conectado,
+no hace falta tocar nada más de la config.
 </details>
 
 <details>
@@ -73,8 +86,19 @@ Healify init
    - cypress.config.ts
    - cypress/support/e2e.ts
 
-✅ Config lista. Escribí tu primer test en cypress/e2e/ y corré tus tests — cuando un
-   selector se rompa vas a tener healify-report.html.
+✅ Config lista. Healify no te genera tests: el primer selector que cure tiene que ser
+   uno de tu propia app. Creá este archivo y editalo:
+
+   cypress/e2e/mi-primer-test.cy.ts
+
+   it('mi primer test', () => {
+     cy.visit('/')
+     cy.get('#reemplazar-por-tu-selector-real').click()
+   })
+
+   Reemplazá '#reemplazar-por-tu-selector-real' por un selector de tu app (un botón, un
+   link, cualquier elemento que ya exista). Corré tus tests y, cuando ese selector se
+   rompa, vas a tener healify-report.html.
 ```
 
 `cypress/support/e2e.ts` es el archivo de soporte que Cypress exige para e2e testing (no
@@ -140,6 +164,58 @@ para arreglarlo.
 
 **`npx @healify/cli fix`**, una vez que corriste tus tests y tenés `healify-report.json`,
 aplica las sugerencias de mayor confianza directo en tus archivos (ver detalle abajo).
+
+## Tu primer test, paso a paso
+
+Healify no genera tests, así que después de `init` no hay nada para correr todavía: si
+hacés `npx playwright test` en ese momento vas a ver `No tests found`, y está bien. Falta
+que escribas el primero. Este es el mínimo.
+
+**Playwright** — creá `e2e/mi-primer-test.spec.ts`:
+
+```ts
+import { test, expect } from '@playwright/test'
+
+test('mi primer test', async ({ page }) => {
+  await page.goto('/')
+  await page.click('#reemplazar-por-tu-selector-real')
+})
+```
+
+**Cypress** — creá `cypress/e2e/mi-primer-test.cy.ts`:
+
+```ts
+it('mi primer test', () => {
+  cy.visit('/')
+  cy.get('#reemplazar-por-tu-selector-real').click()
+})
+```
+
+Qué hace cada línea:
+
+- `goto('/')` / `visit('/')` abre el navegador en la `baseURL` que `init` dejó en tu config.
+  `/` es la home; podés poner `/login` o la ruta que quieras probar.
+- `click(...)` busca un elemento y le hace click. **Ese selector es el que Healify va a
+  curar cuando se rompa**; el resto del test es andamiaje.
+- `#reemplazar-por-tu-selector-real` es un placeholder: no existe en ninguna app. Cambialo
+  por uno tuyo o el test falla por el motivo equivocado.
+
+`init` te imprime este mismo snippet al terminar, ya ajustado a tu proyecto: si no tenés
+TypeScript te lo da en `.js`, y si además tu `package.json` es CommonJS te cambia el
+`import` por `const { test, expect } = require('@playwright/test')`. Copiá el que te
+imprimió a vos.
+
+Para sacar un selector real de tu app: abrila en el navegador, click derecho sobre el
+elemento → *Inspeccionar*, y en el HTML buscá un `id` (`#mi-id`) o un `data-testid`
+(`[data-testid="mi-id"]`). Si no hay ninguno, sirve una clase (`.mi-clase`) — más frágil,
+que es justamente lo que Healify detecta y mejora.
+
+Antes de correr nada, levantá tu app (`npm run dev`) y confirmá que responde en esa URL: un
+test e2e abre un navegador de verdad contra un servidor de verdad.
+
+> **Corré el framework que ya tenés.** Si `doctor` te detectó Playwright, usá
+> `npx playwright test`. Correr `npx cypress run` en un proyecto que solo tiene Playwright
+> configurado falla por falta de Cypress, no por Healify — no hace falta instalar los dos.
 
 ## Uso
 

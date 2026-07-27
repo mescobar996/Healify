@@ -10,6 +10,7 @@ import {
   detectModuleType,
   detectBaseUrl,
   type Framework,
+  type ModuleType,
 } from '../detect'
 import { wirePlaywrightConfig, wireCypressConfig, type EditStatus } from '../config-edit'
 import { scaffoldPlaywright, scaffoldCypress, scaffoldSelenium, scaffoldWebdriverio, type ScaffoldFile } from '../scaffold'
@@ -23,6 +24,11 @@ export interface FrameworkInitResult {
   installed: 'already-installed' | 'installed' | 'install-failed'
   config: ConfigOutcome
   scaffoldedFiles?: string[]
+  /** Forma real del proyecto, la misma que se usó para scaffoldear — para que el mensaje
+   * final sugiera un archivo de test que coincida (nada de pedir un `.ts` en un proyecto
+   * sin TypeScript, ni `import` en uno CommonJS). */
+  ext: 'ts' | 'js'
+  moduleType: ModuleType
 }
 
 export interface InitReport {
@@ -97,10 +103,11 @@ function wireExistingConfig(framework: 'playwright' | 'cypress', configPath: str
 function initFramework(cwd: string, framework: Framework, packageManager: ReturnType<typeof detectFramework>['packageManager']): FrameworkInitResult {
   const pkg = healifyPackageFor(framework)
   const installed = installPackage(cwd, packageManager, pkg)
+  const shape = { ext: hasTypescript(cwd) ? ('ts' as const) : ('js' as const), moduleType: detectModuleType(cwd) }
 
   if (framework === 'selenium' || framework === 'webdriverio') {
     const scaffoldedFiles = writeScaffoldFiles(cwd, scaffoldFilesFor(cwd, framework))
-    return { framework, package: pkg, installed, config: 'scaffolded', scaffoldedFiles }
+    return { framework, package: pkg, installed, config: 'scaffolded', scaffoldedFiles, ...shape }
   }
 
   const configPath = findConfigForFramework(cwd, framework)
@@ -109,11 +116,11 @@ function initFramework(cwd: string, framework: Framework, packageManager: Return
     // de config — bug real encontrado en un proyecto Vite-only (paquetes instalados,
     // config nunca creado). Se scaffoldea completo en vez de solo avisar.
     const scaffoldedFiles = writeScaffoldFiles(cwd, scaffoldFilesFor(cwd, framework))
-    return { framework, package: pkg, installed, config: 'scaffolded', scaffoldedFiles }
+    return { framework, package: pkg, installed, config: 'scaffolded', scaffoldedFiles, ...shape }
   }
 
   // CASO C: hay config, se inyecta el marcador de Healify si todavía no está (idempotente).
-  return { framework, package: pkg, installed, config: wireExistingConfig(framework, configPath) }
+  return { framework, package: pkg, installed, config: wireExistingConfig(framework, configPath), ...shape }
 }
 
 /**

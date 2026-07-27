@@ -345,3 +345,43 @@ describe('init — detección de puerto', () => {
     expect(report.portWarning).toContain('5173')
   })
 })
+
+describe('init — forma del proyecto reportada (ext/moduleType)', () => {
+  it('proyecto sin tsconfig y sin "type": "module" → js + cjs', () => {
+    writePkg({ '@playwright/test': '^1.58.0' })
+    writeFileSync(join(dir, 'playwright.config.js'), `module.exports = defineConfig({\n  use: {},\n})\n`)
+
+    const report = init(dir)
+
+    expect(report.results[0].ext).toBe('js')
+    expect(report.results[0].moduleType).toBe('cjs')
+  })
+
+  it('proyecto con tsconfig.json → ts', () => {
+    writePkg({ '@playwright/test': '^1.58.0' })
+    writeFileSync(join(dir, 'tsconfig.json'), '{}')
+    writeFileSync(join(dir, 'playwright.config.ts'), `export default defineConfig({\n  use: {},\n})\n`)
+
+    const report = init(dir)
+
+    expect(report.results[0].ext).toBe('ts')
+  })
+
+  it('la forma reportada coincide con la extensión del config scaffoldeado (CASO B, sin config previo)', () => {
+    writePkg({ '@playwright/test': '^1.58.0' })
+
+    const result = init(dir).results[0]
+
+    expect(result.scaffoldedFiles).toContain(`playwright.config.${result.ext}`)
+  })
+
+  it('Selenium también reporta la forma del proyecto', () => {
+    writePkg({ 'selenium-webdriver': '^4.0.0' })
+    writeFileSync(join(dir, 'tsconfig.json'), '{}')
+
+    const result = init(dir).results[0]
+
+    expect(result.ext).toBe('ts')
+    expect(result.scaffoldedFiles).toContain('healify.selenium.example.ts')
+  })
+})

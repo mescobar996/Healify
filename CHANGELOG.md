@@ -1,5 +1,25 @@
 # Changelog
 
+## Sin publicar — `init` te muestra cómo escribir el primer test
+
+Después de `init`, correr `npx playwright test` daba `No tests found`: correcto (Healify
+nunca genera tests), pero el mensaje decía "escribí tu primer test en `e2e/`" sin mostrar
+cómo, asumiendo una sintaxis que el público objetivo declarado del proyecto no tiene por
+qué saber.
+
+- **`init` ahora imprime un snippet mínimo y real**, ajustado al proyecto: `.ts` o `.js`
+  según tengas TypeScript, y `require` en vez de `import` si tu `package.json` es CommonJS
+  — antes el mensaje pedía un archivo `.ts` incluso en proyectos donde acababa de
+  scaffoldear un `playwright.config.js`. Sigue sin escribir ningún archivo: el selector es
+  un placeholder explícito (`#reemplazar-por-tu-selector-real`) que el usuario tiene que
+  cambiar por uno de su propia app.
+- **`FrameworkInitResult` expone `ext` y `moduleType`**, la misma forma del proyecto que se
+  usó para scaffoldear, para que el mensaje final no pueda contradecir lo que se escribió.
+- **READMEs**: sección "Tu primer test, paso a paso" con el snippet, qué hace cada línea,
+  cómo sacar un selector real con DevTools, y la aclaración de correr el framework que ya
+  se detectó (probar Cypress en un proyecto Playwright-only falla por falta de Cypress, no
+  por Healify).
+
 ## 1.1.1 — red de seguridad de tests + fix de tipos en WebdriverIO
 
 > Solo `@healify/webdriverio-plugin` sube a 1.1.1: es el único paquete cuyo código cambió.
