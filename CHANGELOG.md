@@ -1,5 +1,46 @@
 # Changelog
 
+## Sin publicar — auditoría Tech Lead (correcciones + deuda técnica)
+
+Ronda de correcciones sobre el código real tras una auditoría tipo Tech Lead (revisión de
+`reporter-core`, adapters, CLI y el spec de historial). Nada de esto es feature nueva:
+son bugs reales, deduplicación y ampliación de cobertura sobre lo que ya existía.
+
+- **Bug real arreglado — `init` scaffoldeaba Selenium para proyectos WebdriverIO**:
+  `cli/src/scaffold.ts` no tenía un scaffold propio para WebdriverIO; `scaffoldFilesFor()`
+  caía por fallback implícito al ejemplo de Selenium (imports de `selenium-webdriver` en un
+  proyecto que usa `webdriverio`). Ahora `scaffoldWebdriverio()` genera su propio archivo de
+  referencia (`healify.wdio.example.ts`), `init.ts` distingue explícitamente cada framework
+  sin fallback implícito, y el prompt interactivo (`prompt.ts`) ya ofrece `webdriverio` como
+  opción.
+- **Deduplicación en `reporter-core`**: `buildLocalRunFromEvents()` e
+  `isPlaywrightOnlySelector()` (antes duplicadas casi 1:1 en `selenium-plugin` y
+  `webdriverio-plugin`) se movieron a `reporter-core` y ambos adapters las reusan. Sin
+  cambio de comportamiento observable — refactor puro, mismos tests en verde.
+- **Heurística ampliada**: `analyzeAndHeal()` reconoce ahora las convenciones de testid
+  `data-qa`/`data-test`/`data-e2e` (antes solo `data-testid`/`data-cy`), y detecta
+  selectores basados en posición (`nth-child`/`nth-of-type`) como frágiles, proponiendo un
+  `role()` genérico en vez de dejarlos caer al fallback ciego — sigue siendo pattern-matching
+  sobre el texto del selector, sin tocar DOM real.
+- **UX del CLI mejorada**: `doctor` explica el gotcha de semver caret con un ejemplo
+  numérico concreto; `fix` distingue `EACCES`/`EPERM` (permisos denegados, archivo abierto
+  en otro proceso) del error técnico genérico; `init` ya no confunde "no pude verificar el
+  puerto en este entorno" con "puerto libre" al no tener PowerShell disponible.
+- **Feature #8 (reporte histórico) documentada como IMPLEMENTADA**: el spec quedó
+  desactualizado como "pendiente" cuando el código (`cli/src/history.ts`,
+  `cli/src/commands/history.ts`, `appendHistory()` en `runFix()`) ya estaba en el repo.
+  Riesgos de concurrencia (escritura simultánea al `.jsonl`) y de línea corrupta por
+  escritura interrumpida quedan documentados y asumidos por diseño MVP — sin locks, hasta
+  que haya evidencia real de que hace falta.
+
+Verificado con `npm run verify`: 258 tests en verde en los 6 workspaces.
+
+**Limpieza documental**: se borraron 13 archivos `.md` de planes/specs/logs de auditoría
+de features ya implementadas (`docs/superpowers/plans/`, `docs/superpowers/specs/`,
+`docs/audit-0.4.1.md`, `docs/audit-0.5.0.md`) y el `HANDOFF.md` de la raíz (duplicaba
+`CONTEXT_HANDOFF.md`). Solo quedan README/CHANGELOG/CONTEXT_HANDOFF/CLAUDE.md y el manual
+de usuario en `docs/guide/`.
+
 ## 1.0.0 — Primera versión estable
 
 Los 6 paquetes (`reporter-core`, `test-runner`, `cypress-plugin`, `selenium-plugin`,
