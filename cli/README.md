@@ -224,6 +224,7 @@ npx @healify/cli fix                       # busca ./healify-report.json
 npx @healify/cli fix ruta/al/reporte.json   # ruta explícita
 npx @healify/cli fix --dry-run              # muestra qué haría, no escribe nada
 npx @healify/cli fix --force                # ignora el chequeo de git working tree sucio
+npx @healify/cli fix --interactive          # pregunta caso por caso, en vez de aplicar todo solo
 npx @healify/cli --version                  # (o -v) muestra qué versión tenés instalada
 ```
 
@@ -251,10 +252,37 @@ Healify fix — healify-report.json
 
 ## Qué toca y qué no
 
-Solo aplica casos con confianza ≥90% (`status: 'healed'` en el reporte). Es el mismo
-umbral que ya usa `reporter-core` para decidir si algo es lo bastante confiable como para
-no pedir revisión. Los casos `review`/`unresolved` nunca se tocan: quedan para que los
-revises a mano en `healify-report.html`.
+Por default, solo aplica casos con confianza ≥90% (`status: 'healed'` en el reporte). Es el
+mismo umbral que ya usa `reporter-core` para decidir si algo es lo bastante confiable como
+para no pedir revisión. Los casos `review`/`unresolved` no se tocan solos: quedan para que
+los revises a mano en `healify-report.html`, o con `--interactive` (ver abajo).
+
+## Modo interactivo
+
+```bash
+npx @healify/cli fix --interactive
+```
+
+```
+[1/2] e2e/checkout.spec.ts
+  #comprar-ahora-a1b2c3
+  → role('button', { name: 'Comprar' })
+  97% · verificado en la página
+  Aplicar? [S/n/a/q]
+```
+
+En vez de aplicar todo lo que supera el umbral solo, te muestra cada sugerencia — selector
+original, propuesta, confianza, y de dónde sale (verificada en esta corrida, del repertorio
+de una corrida anterior, o heurística sin comprobar) — y te pregunta.
+
+También ofrece los casos `review` (80-89%), que `fix` normal nunca toca: el default al tocar
+Enter es **No** para esos (el motor mismo no está seguro), pero si vos decidís que tiene
+sentido, se aplica igual. `healed` tiene default **Sí**.
+
+Comandos, además de `s`/`n`: `a` aplica el resto sin seguir preguntando, `q` deja el resto
+sin tocar (se cuenta como salteado, no como "sin revisar"). Necesita una terminal real — si
+`fix --interactive` corre en CI o detrás de un pipe, avisa que no hay cómo preguntar y sigue
+en modo automático en vez de colgarse esperando un input que nunca va a llegar.
 
 Conservador a propósito, nunca adivina:
 
@@ -286,12 +314,19 @@ reescritura. Métodos de Playwright soportados hoy: `click`, `fill`, `type`, `ch
 `locator(...)` dentro de un `expect(...)`. Mismas reglas conservadoras que el resto de `fix`:
 git limpio (salvo `--force`), selector único en el archivo, nunca adivina.
 
-## Historial de curaciones
+## Historial de curaciones (el repertorio)
 
 Cada `healify fix` (sin `--dry-run`) graba todos los casos de esa corrida
 (healed/review/unresolved, no solo lo que `fix` pudo aplicar) en `.healify/history.jsonl`
 (append-only, un archivo local por proyecto). `--dry-run` nunca graba, para no ensuciar el
 historial con corridas de CI (ej. el gh-action, que corre `fix --dry-run` en cada PR).
+
+Este archivo no es solo un log: el motor lo **consulta**. Las entradas que se confirmaron
+contra la página real (Playwright, Selenium o WebdriverIO cuando pudieron verificar) quedan
+disponibles para corridas futuras que no puedan verificar nada por su cuenta — típicamente
+Cypress, que nunca tiene ese dato. Si el mismo selector, en el mismo archivo, ya se curó y se
+confirmó antes, se reusa esa corrección en vez de adivinar de nuevo a ciegas. La verificación
+en vivo de la corrida actual siempre gana por sobre el repertorio.
 
 ```bash
 npx @healify/cli history

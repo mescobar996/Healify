@@ -1,13 +1,17 @@
 import type { WebDriver } from 'selenium-webdriver'
 import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { renderLocalReportJson, buildLocalRunFromEvents } from '@healify/reporter-core'
+import { renderLocalReportJson, buildLocalRunFromEvents, readRepertoire, type HistoryEntry } from '@healify/reporter-core'
 import { wrapDriver } from './wrap'
 import type { HealifySeleniumOptions, HealingEvent } from './types'
 
 export class HealifySeleniumPlugin {
   private readonly options: HealifySeleniumOptions
   private readonly events: HealingEvent[] = []
+  // Se lee una sola vez, al construir el plugin — no por cada findElement() que falla. Solo
+  // entra en juego cuando esta corrida no pudo verificar nada por su cuenta (ver el comentario
+  // de cabecera de reporter-core/src/repertoire.ts).
+  private readonly repertoire: HistoryEntry[]
 
   constructor(options: HealifySeleniumOptions = {}) {
     this.options = {
@@ -17,11 +21,12 @@ export class HealifySeleniumPlugin {
         options.onEvent?.(event)
       },
     }
+    this.repertoire = readRepertoire(process.cwd())
   }
 
   /** Devuelve un proxy sobre el driver — el original nunca se muta. */
   wrap(driver: WebDriver): WebDriver {
-    return wrapDriver(driver, this.options)
+    return wrapDriver(driver, this.options, this.repertoire)
   }
 
   /**

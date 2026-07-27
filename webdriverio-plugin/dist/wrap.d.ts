@@ -1,3 +1,4 @@
+import { type HistoryEntry } from '@healify/reporter-core';
 import { type HealifyWebdriverIOOptions } from './types';
 interface WdioBrowser {
     $(selector: string): unknown;
@@ -11,5 +12,5 @@ interface WdioBrowser {
  * El proxy intercepta el retorno de $() y wrappea sus métodos de interacción
  * (click, setValue, getText, etc.) para capturar el error en el momento correcto.
  */
-export declare function wrapBrowser(browser: WdioBrowser, options?: HealifyWebdriverIOOptions): WdioBrowser;
+export declare function wrapBrowser(browser: WdioBrowser, options?: HealifyWebdriverIOOptions, repertoire?: HistoryEntry[]): WdioBrowser;
 export {};

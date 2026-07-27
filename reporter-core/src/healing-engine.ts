@@ -26,6 +26,7 @@
 
 import { parsePageSnapshot, existsInPage, findMatches, bestElementFor, type PageElement } from './page-snapshot'
 import { parseRoleSuggestion } from './role-locator'
+import { findRepertoireMatch, type HistoryEntry } from './repertoire'
 
 export interface HealRequest {
   selector: string
@@ -34,14 +35,23 @@ export interface HealRequest {
   errorMessage?: string
   /** Sinónimos adicionales del proyecto — se mergean con los built-in EN/ES. */
   customSynonyms?: { actions?: Record<string, string>; fields?: Record<string, string> }
+  /** Archivo donde vive el test — junto con `selector` es el criterio de coincidencia del
+   * repertorio (mismo criterio que `defectId`). `undefined` en Selenium/WebdriverIO, que no
+   * tienen esta granularidad en ningún otro lado del modelo. */
+  testFile?: string
+  /** Historial de curaciones ya confirmadas (`.healify/history.jsonl`), leído por el adapter.
+   * `reporter-core` no toca el disco acá — el caller decide qué repertorio pasar. */
+  repertoire?: HistoryEntry[]
 }
 
 export type SelectorType = 'CSS' | 'XPATH' | 'TESTID' | 'ROLE' | 'TEXT' | 'MIXED'
 
 export interface HealResponse {
-  /** true si la sugerencia se confrontó contra el árbol real de la página y existe ahí.
-   * false cuando no hubo árbol disponible (heurística a ciegas, el modo de siempre). */
+  /** true si la sugerencia se confrontó contra el árbol real de la página (esta corrida o,
+   * vía repertorio, una anterior) y existe ahí. false = heurística a ciegas, el modo de siempre. */
   verified: boolean
+  /** true si `verified` viene del repertorio (una corrida anterior), no de esta corrida. */
+  fromRepertoire: boolean
   fixedSelector: string
   confidence: number
   explanation: string
@@ -547,6 +557,33 @@ export function analyzeAndHeal(request: HealRequest): HealResponse {
     verified = evidence.sawPage && strategies[0]?.priority === 0
   }
 
+  // El repertorio (historial de curaciones ya confirmadas) es un fallback, no una fuente
+  // primaria: si la verificación en vivo de ESTA corrida ya confirmó algo, esa evidencia
+  // manda siempre — la página de ahora es más confiable que la memoria de una corrida
+  // anterior (el texto del botón pudo cambiar desde entonces). El repertorio solo entra
+  // cuando esta corrida no tiene cómo verificar nada por su cuenta (Cypress, siempre; o
+  // cualquier adapter si el snapshot/sondeo no estuvo disponible esa vez).
+  let fromRepertoire = false
+  if (!verified && request.repertoire) {
+    const match = findRepertoireMatch(request.repertoire, selector, request.testFile)
+    if (match) {
+      strategies = [
+        {
+          selector: match.fixedSelector,
+          type: match.selectorType as HealResponse['selectorType'],
+          confidence: match.confidence,
+          explanation: `Repertorio: esta misma corrección ya se confirmó contra la página en una corrida anterior (${match.timestamp}), aunque esta corrida no pudo verificarlo por su cuenta.`,
+          robustnessGain: 50,
+          technicalReason: `Reused from a previously verified fix recorded in .healify/history.jsonl (${match.timestamp})`,
+          priority: 0,
+        },
+        ...strategies,
+      ]
+      verified = true
+      fromRepertoire = true
+    }
+  }
+
   const bestStrategy = strategies[0] ?? {
     selector: 'body',
     type: 'CSS' as const,
@@ -567,6 +604,7 @@ export function analyzeAndHeal(request: HealRequest): HealResponse {
 
   return {
     verified,
+    fromRepertoire,
     fixedSelector: bestStrategy.selector,
     confidence: Math.round(adjustedConfidence * 100) / 100,
     explanation: bestStrategy.explanation,

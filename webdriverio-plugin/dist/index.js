@@ -208,6 +208,50 @@ var require_role_locator = __commonJS({
   }
 });
 
+// ../reporter-core/dist/repertoire.js
+var require_repertoire = __commonJS({
+  "../reporter-core/dist/repertoire.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.parseHistoryLines = parseHistoryLines;
+    exports2.readRepertoire = readRepertoire2;
+    exports2.findRepertoireMatch = findRepertoireMatch;
+    var node_fs_1 = require("node:fs");
+    var node_path_1 = require("node:path");
+    var HISTORY_RELATIVE_PATH = (0, node_path_1.join)(".healify", "history.jsonl");
+    function parseHistoryLines(raw) {
+      const entries = [];
+      for (const line of raw.split("\n")) {
+        if (!line.trim())
+          continue;
+        try {
+          entries.push(JSON.parse(line));
+        } catch {
+        }
+      }
+      return entries;
+    }
+    function readRepertoire2(cwd = process.cwd()) {
+      const fullPath = (0, node_path_1.join)(cwd, HISTORY_RELATIVE_PATH);
+      if (!(0, node_fs_1.existsSync)(fullPath))
+        return [];
+      let raw;
+      try {
+        raw = (0, node_fs_1.readFileSync)(fullPath, "utf-8");
+      } catch {
+        return [];
+      }
+      return parseHistoryLines(raw);
+    }
+    function findRepertoireMatch(entries, selector, testFile) {
+      const candidates = entries.filter((e) => e.verified === true && e.selector === selector && e.testFile === testFile);
+      if (candidates.length === 0)
+        return null;
+      return candidates.reduce((latest, candidate) => candidate.timestamp > latest.timestamp ? candidate : latest);
+    }
+  }
+});
+
 // ../reporter-core/dist/dictionaries/en.json
 var require_en = __commonJS({
   "../reporter-core/dist/dictionaries/en.json"(exports2, module2) {
@@ -317,6 +361,7 @@ var require_healing_engine = __commonJS({
     exports2.analyzeAndHeal = analyzeAndHeal2;
     var page_snapshot_1 = require_page_snapshot();
     var role_locator_1 = require_role_locator();
+    var repertoire_1 = require_repertoire();
     var VOLATILE_CLASS_RE = /^(css-|sc-|x[0-9a-f]{4,}|[a-z]{2,}_[a-z0-9]{5,})/i;
     var VOLATILE_ID_RE = /_\d{4,}$|-[a-f0-9]{6,}$/i;
     function hasVolatileClassToken(selector) {
@@ -661,6 +706,26 @@ var require_healing_engine = __commonJS({
         strategies = evidence.strategies;
         verified = evidence.sawPage && strategies[0]?.priority === 0;
       }
+      let fromRepertoire = false;
+      if (!verified && request.repertoire) {
+        const match = (0, repertoire_1.findRepertoireMatch)(request.repertoire, selector, request.testFile);
+        if (match) {
+          strategies = [
+            {
+              selector: match.fixedSelector,
+              type: match.selectorType,
+              confidence: match.confidence,
+              explanation: `Repertorio: esta misma correcci\xF3n ya se confirm\xF3 contra la p\xE1gina en una corrida anterior (${match.timestamp}), aunque esta corrida no pudo verificarlo por su cuenta.`,
+              robustnessGain: 50,
+              technicalReason: `Reused from a previously verified fix recorded in .healify/history.jsonl (${match.timestamp})`,
+              priority: 0
+            },
+            ...strategies
+          ];
+          verified = true;
+          fromRepertoire = true;
+        }
+      }
       const bestStrategy = strategies[0] ?? {
         selector: "body",
         type: "CSS",
@@ -674,6 +739,7 @@ var require_healing_engine = __commonJS({
       const needsReview = adjustedConfidence < 0.8;
       return {
         verified,
+        fromRepertoire,
         fixedSelector: bestStrategy.selector,
         confidence: Math.round(adjustedConfidence * 100) / 100,
         explanation: bestStrategy.explanation,
@@ -893,7 +959,14 @@ var require_local_mode = __commonJS({
           ...passthrough(input)
         };
       }
-      const heal = (0, healing_engine_1.analyzeAndHeal)({ selector, htmlContext: input.domContext, testName: input.testName, errorMessage: input.errorMessage });
+      const heal = (0, healing_engine_1.analyzeAndHeal)({
+        selector,
+        htmlContext: input.domContext,
+        testName: input.testName,
+        errorMessage: input.errorMessage,
+        testFile: input.testFile,
+        repertoire: input.repertoire
+      });
       const status = heal.confidence >= HEALED_THRESHOLD ? "healed" : heal.confidence >= REVIEW_THRESHOLD ? "review" : "unresolved";
       return {
         testName: input.testName,
@@ -906,6 +979,7 @@ var require_local_mode = __commonJS({
         explanation: heal.explanation,
         selectorType: heal.selectorType,
         verified: heal.verified,
+        fromRepertoire: heal.fromRepertoire,
         defectId: (0, qa_report_1.buildDefectId)(input.testFile, selector),
         severity: (0, qa_report_1.severityFor)(status),
         expected: `El selector ${selector} encuentra un elemento en la p\xE1gina.`,
@@ -1667,7 +1741,7 @@ var require_dist = __commonJS({
   "../reporter-core/dist/index.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
-    exports2.domContextFromProbeResult = exports2.BROWSER_PROBE_SCRIPT = exports2.roleSuggestionToXPath = exports2.parseRoleSuggestion = exports2.selectorTokens = exports2.bestNameFor = exports2.bestElementFor = exports2.findMatches = exports2.existsInPage = exports2.formatPageElements = exports2.parsePageSnapshot = exports2.isPlaywrightOnlySelector = exports2.SEVERITY_LABEL = exports2.environmentRows = exports2.formatDuration = exports2.severityFor = exports2.buildDefectId = exports2.renderLocalReportMarkdown = exports2.statsFromCases = exports2.baseEnvironment = exports2.buildLocalRunFromEvents = exports2.printSummary = exports2.renderLocalReportJson = exports2.renderLocalReportHtml = exports2.runLocalHealing = exports2.analyzeAndHeal = exports2.extractSelectorFromError = void 0;
+    exports2.findRepertoireMatch = exports2.readRepertoire = exports2.parseHistoryLines = exports2.domContextFromProbeResult = exports2.BROWSER_PROBE_SCRIPT = exports2.roleSuggestionToXPath = exports2.parseRoleSuggestion = exports2.selectorTokens = exports2.bestNameFor = exports2.bestElementFor = exports2.findMatches = exports2.existsInPage = exports2.formatPageElements = exports2.parsePageSnapshot = exports2.isPlaywrightOnlySelector = exports2.SEVERITY_LABEL = exports2.environmentRows = exports2.formatDuration = exports2.severityFor = exports2.buildDefectId = exports2.renderLocalReportMarkdown = exports2.statsFromCases = exports2.baseEnvironment = exports2.buildLocalRunFromEvents = exports2.printSummary = exports2.renderLocalReportJson = exports2.renderLocalReportHtml = exports2.runLocalHealing = exports2.analyzeAndHeal = exports2.extractSelectorFromError = void 0;
     var selector_extractor_1 = require_selector_extractor();
     Object.defineProperty(exports2, "extractSelectorFromError", { enumerable: true, get: function() {
       return selector_extractor_1.extractSelectorFromError;
@@ -1758,6 +1832,16 @@ var require_dist = __commonJS({
     Object.defineProperty(exports2, "domContextFromProbeResult", { enumerable: true, get: function() {
       return browser_probe_1.domContextFromProbeResult;
     } });
+    var repertoire_1 = require_repertoire();
+    Object.defineProperty(exports2, "parseHistoryLines", { enumerable: true, get: function() {
+      return repertoire_1.parseHistoryLines;
+    } });
+    Object.defineProperty(exports2, "readRepertoire", { enumerable: true, get: function() {
+      return repertoire_1.readRepertoire;
+    } });
+    Object.defineProperty(exports2, "findRepertoireMatch", { enumerable: true, get: function() {
+      return repertoire_1.findRepertoireMatch;
+    } });
   }
 });
 
@@ -1799,7 +1883,7 @@ function isNoElementError(err) {
   const msg = err.message.toLowerCase();
   return msg.includes("can't find element") || msg.includes("no such element") || msg.includes("element not found") || msg.includes("doesn't match any element") || msg.includes("element") && (msg.includes("wasn't found") || msg.includes("was not found"));
 }
-function wrapBrowser(browser, options = {}) {
+function wrapBrowser(browser, options = {}, repertoire = []) {
   const threshold = options.confidenceThreshold ?? DEFAULT_CONFIDENCE_THRESHOLD;
   const events = [];
   function emit(event) {
@@ -1864,7 +1948,7 @@ function wrapBrowser(browser, options = {}) {
     }
     let result;
     try {
-      result = (0, import_reporter_core2.analyzeAndHeal)({ selector, htmlContext: domContext });
+      result = (0, import_reporter_core2.analyzeAndHeal)({ selector, htmlContext: domContext, repertoire });
     } catch (healErr) {
       const message = healErr instanceof Error ? healErr.message : String(healErr);
       emit({ type: "error", originalSelector: selector, explanation: message, latencyMs: Date.now() - start });
@@ -1920,6 +2004,7 @@ var HealifyWebdriverIOPlugin = class {
         options.onEvent?.(event);
       }
     };
+    this.repertoire = (0, import_reporter_core3.readRepertoire)(process.cwd());
   }
   /**
    * Devuelve un proxy sobre el browser — el original nunca se muta.
@@ -1930,7 +2015,7 @@ var HealifyWebdriverIOPlugin = class {
    * y el autocompletado de su propio browser, que es lo que el proxy devuelve en runtime.
    */
   wrap(browser) {
-    return wrapBrowser(browser, this.options);
+    return wrapBrowser(browser, this.options, this.repertoire);
   }
   /**
    * Escribe healify-report.json con todos los eventos acumulados desde la última llamada.

@@ -253,11 +253,40 @@ npx @healify/cli fix --dry-run
 
 # Aplicar los fixes de mayor confianza en tus archivos
 npx @healify/cli fix
+
+# O decidir vos, caso por caso
+npx @healify/cli fix --interactive
 ```
 
 Abrí `healify-report.html` en el navegador para ver: `Healed: 1 | Review: 1 | Unresolved: 2`
 
 Listo.
+
+## El repertorio: la memoria entre corridas
+
+Cada `fix` (sin `--dry-run`) graba en `.healify/history.jsonl` no solo lo que se aplicó, sino
+lo que el motor ya **confirmó contra la página real** — Playwright, Selenium o WebdriverIO,
+cuando pudieron verificar. La próxima vez que ese mismo selector se rompa en el mismo archivo,
+si esa corrida **no** puede verificar nada por su cuenta (Cypress, siempre; o cualquier
+framework corriendo en un entorno donde el snapshot no estuvo disponible), Healify no vuelve a
+adivinar a ciegas: reusa la corrección que ya se confirmó antes.
+
+La verificación en vivo de la corrida actual siempre gana — si la página cambió, lo que ves
+ahora es más confiable que lo que se grabó la última vez. El repertorio es un respaldo, no un
+reemplazo.
+
+## Modo interactivo: la decisión es tuya
+
+```bash
+npx @healify/cli fix --interactive
+```
+
+En vez de aplicar todo lo que supera el umbral automático, Healify te muestra cada sugerencia
+—selector, propuesta, confianza, si está verificada contra la página o viene del repertorio— y
+te pregunta. También te ofrece los casos "a revisar" (80-89% de confianza), que `fix` normal
+nunca toca: si vos decidís que tiene sentido, se aplica igual. `a` aplica el resto sin más
+preguntas, `q` corta y deja el resto sin tocar. Necesita una terminal real — en CI o detrás de
+un pipe, avisa y sigue en modo automático en vez de colgarse.
 
 ## Paquetes
 

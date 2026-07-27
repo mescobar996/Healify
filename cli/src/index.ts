@@ -4,6 +4,8 @@ import type { LocalRun } from '@healify/reporter-core'
 import { fix, describeReadError, type FixOutcome } from './fix'
 import { fixAst } from './fix-ast'
 import { appendHistory } from './history'
+import { runInteractiveFix } from './interactive'
+import { promptLine } from './prompt'
 import { init, type InitReport, type FrameworkInitResult } from './commands/init'
 import { doctor, type DoctorReport } from './commands/doctor'
 import { history, type HistoryReport } from './commands/history'
@@ -21,6 +23,8 @@ function reasonText(outcome: Extract<FixOutcome, { status: 'skipped' }>, astUsed
       return astUsed
         ? 'la sugerencia no es un rol reescribible (método sin mapeo, o no es una llamada de page/locator) — revisar y aplicar a mano'
         : 'la sugerencia no es un valor de selector sustituible directamente (formato de rol legible) — sacá --no-ast para que se reescriba sola, o revisá y aplicá a mano'
+    case 'declined':
+      return 'vos decidiste no aplicarlo'
   }
 }
 
@@ -62,6 +66,7 @@ function runFix(args: string[]): void {
   // salvo que el usuario supiera del flag `--ast`. Se puede desactivar con `--no-ast`.
   // `--ast` se sigue aceptando (lo usa la gh-action y puede estar en scripts) y no hace nada.
   const ast = !args.includes('--no-ast')
+  const interactive = args.includes('--interactive')
   const reportPath = args.slice(1).find((a) => !a.startsWith('--')) ?? 'healify-report.json'
 
   let run: LocalRun
@@ -74,7 +79,15 @@ function runFix(args: string[]): void {
     process.exit(exitCode)
   }
 
-  console.log(`Healify fix — ${reportPath}${ast ? '' : ' (--no-ast)'}\n`)
+  // Sin TTY no hay quién responda un prompt — mismo criterio que promptLine(). Avisar y
+  // seguir en modo automático es mejor que colgarse esperando un stdin que nunca llega
+  // (rompería cualquier script/CI que por error tenga --interactive puesto).
+  const canPrompt = interactive && !!process.stdin.isTTY
+  if (interactive && !canPrompt) {
+    console.log('--interactive pedido, pero no hay una terminal para preguntar — sigo en modo automático.\n')
+  }
+
+  console.log(`Healify fix — ${reportPath}${ast ? '' : ' (--no-ast)'}${canPrompt ? ' (interactivo)' : ''}\n`)
 
   // Se graba ANTES de aplicar los fixes, con el estado real del reporte (todos los casos,
   // no solo lo que fix() termina aplicando) — así "recurrente"/"re-roto" reflejan selectores
@@ -83,20 +96,38 @@ function runFix(args: string[]): void {
   // no representa corridas reales de un dev.
   if (!dryRun) appendHistory(run, process.cwd())
 
+  // Modo interactivo: el desarrollador decide caso por caso en vez de que se aplique todo
+  // solo. Los casos aprobados se fuerzan a 'healed' para que el pipeline de siempre los
+  // procese igual que hoy; los declinados se sacan de lo que ve fix()/fixAst() — dejarlos
+  // con su status 'healed' original haría que se aplicaran de todas formas.
+  let runForFix = run
+  let declinedOutcomes: FixOutcome[] = []
+  if (canPrompt) {
+    const { approved, declined } = runInteractiveFix(run.cases, promptLine)
+    declinedOutcomes = declined
+    const declinedKeys = new Set(declined.map((d) => `${d.testFile}::${d.selector}`))
+    runForFix = {
+      ...run,
+      cases: run.cases
+        .filter((c) => !declinedKeys.has(`${c.testFile}::${c.selector}`))
+        .map((c) => (approved.has(`${c.testFile}::${c.selector}`) ? { ...c, status: 'healed' as const } : c)),
+    }
+  }
+
   // --ast es aditivo, no reemplaza a fix(): primero corre el reemplazo de texto normal
   // (cubre TESTID/CSS/TEXT, que ya son valores de selector pegables tal cual), y solo
   // reintenta con reescritura AST los casos que ese primer paso saltó como
   // 'not-substitutable' (los role(...), que fix() nunca puede aplicar). Si --ast
   // reemplazara a fix() en vez de complementarlo, los casos TEXT/CSS quedarían sin
   // procesar en silencio.
-  const outcomes = fix(run, { dryRun, force })
+  const outcomes = fix(runForFix, { dryRun, force })
   if (ast) {
     const notSubstitutableKeys = new Set(
       outcomes
         .filter((o): o is Extract<FixOutcome, { status: 'skipped' }> => o.status === 'skipped' && o.reason === 'not-substitutable')
         .map((o) => `${o.testFile}::${o.selector}`)
     )
-    const astRun: LocalRun = { ...run, cases: run.cases.filter((c) => notSubstitutableKeys.has(`${c.testFile}::${c.selector}`)) }
+    const astRun: LocalRun = { ...runForFix, cases: runForFix.cases.filter((c) => notSubstitutableKeys.has(`${c.testFile}::${c.selector}`)) }
     const astByKey = new Map(fixAst(astRun, { dryRun, force }).map((o) => [`${o.testFile}::${o.selector}`, o]))
     for (let i = 0; i < outcomes.length; i++) {
       const key = `${outcomes[i].testFile}::${outcomes[i].selector}`
@@ -105,7 +136,7 @@ function runFix(args: string[]): void {
     }
   }
 
-  printOutcomes(outcomes, run, ast)
+  printOutcomes([...outcomes, ...declinedOutcomes], run, ast)
 }
 
 /** Mensaje final por framework — ninguno asume que ya hay algo para "correr": init no genera tests. */
@@ -229,8 +260,9 @@ function printHelp(): void {
 Comandos:
   init                                       Detecta tu framework (o te pregunta cuál armar si no hay ninguno), instala lo que falte y configura el reporter/plugin (sin generar tests)
   doctor                                     Verifica que Healify esté instalado y bien configurado
-  fix [reporte.json] [--dry-run] [--force] [--no-ast]   Aplica las sugerencias de mayor confianza directo en tus archivos de test
+  fix [reporte.json] [--dry-run] [--force] [--no-ast] [--interactive]   Aplica las sugerencias de mayor confianza directo en tus archivos de test
                                                        --no-ast desactiva la reescritura de sugerencias role(...) (page.click → page.getByRole)
+                                                       --interactive pregunta caso por caso en vez de aplicar todo solo (necesita una terminal real)
   history                                    Muestra selectores recurrentes y re-rotos de .healify/history.jsonl (se graba en cada fix real, no en --dry-run)
 
 Flags globales:

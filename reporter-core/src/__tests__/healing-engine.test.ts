@@ -270,3 +270,77 @@ describe('evidencia de la página real (htmlContext)', () => {
     expect(result.fixedSelector).not.toContain("name: 'Login'")
   })
 })
+
+describe('repertorio (memoria de curaciones verificadas)', () => {
+  const REPERTORIO_VERIFICADO = [
+    {
+      timestamp: '2026-01-01T00:00:00.000Z',
+      testFile: 'e2e/checkout.spec.ts',
+      testName: 'compra un producto',
+      selector: '#comprar-ahora-a1b2c3',
+      status: 'healed' as const,
+      fixedSelector: "role('button', { name: 'Comprar' })",
+      selectorType: 'ROLE',
+      confidence: 0.97,
+      verified: true,
+    },
+  ]
+
+  it('sin árbol de página, usa el repertorio si hay una entrada verificada para el mismo archivo+selector', () => {
+    const result = analyzeAndHeal({
+      selector: '#comprar-ahora-a1b2c3',
+      testFile: 'e2e/checkout.spec.ts',
+      repertoire: REPERTORIO_VERIFICADO,
+    })
+
+    expect(result.fixedSelector).toBe("role('button', { name: 'Comprar' })")
+    expect(result.verified).toBe(true)
+    expect(result.fromRepertoire).toBe(true)
+  })
+
+  it('la verificación en vivo de ESTA corrida gana por sobre el repertorio cuando compiten', () => {
+    // El repertorio dice "Comprar" (de una corrida anterior), pero el texto del botón real
+    // cambió a "Comprar ahora mismo" — la evidencia en vivo tiene que ganar, no la memoria.
+    const paginaReal = `- button "Comprar ahora mismo"`
+
+    const result = analyzeAndHeal({
+      selector: '#comprar-ahora-a1b2c3',
+      testFile: 'e2e/checkout.spec.ts',
+      htmlContext: paginaReal,
+      repertoire: REPERTORIO_VERIFICADO,
+    })
+
+    expect(result.fixedSelector).toBe("role('button', { name: 'Comprar ahora mismo' })")
+    expect(result.fromRepertoire).toBe(false)
+    expect(result.verified).toBe(true)
+  })
+
+  it('no matchea un repertorio de otro archivo — mismo selector, distinto testFile', () => {
+    const result = analyzeAndHeal({
+      selector: '#comprar-ahora-a1b2c3',
+      testFile: 'e2e/otro-flujo.spec.ts',
+      repertoire: REPERTORIO_VERIFICADO,
+    })
+
+    expect(result.fromRepertoire).toBe(false)
+  })
+
+  it('sin repertoire, el comportamiento es exactamente el de siempre', () => {
+    const conRepertorioVacio = analyzeAndHeal({ selector: '#comprar-ahora-a1b2c3', testFile: 'e2e/checkout.spec.ts', repertoire: [] })
+    const sinRepertorio = analyzeAndHeal({ selector: '#comprar-ahora-a1b2c3', testFile: 'e2e/checkout.spec.ts' })
+
+    expect(conRepertorioVacio).toEqual(sinRepertorio)
+  })
+
+  it('una entrada no verificada del repertorio no se usa — recalcular a ciegas da lo mismo, no aporta', () => {
+    const repertorioSinVerificar = [{ ...REPERTORIO_VERIFICADO[0], verified: false }]
+
+    const result = analyzeAndHeal({
+      selector: '#comprar-ahora-a1b2c3',
+      testFile: 'e2e/checkout.spec.ts',
+      repertoire: repertorioSinVerificar,
+    })
+
+    expect(result.fromRepertoire).toBe(false)
+  })
+})

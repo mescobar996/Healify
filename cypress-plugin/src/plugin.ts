@@ -8,6 +8,7 @@ import {
   printSummary,
   baseEnvironment,
   statsFromCases,
+  readRepertoire,
   type LocalCaseResult,
   type CaseAttachment,
 } from '@healify/reporter-core'
@@ -33,6 +34,10 @@ export function HealifyCypressPlugin(
   let failed = 0
   let durationMs = 0
   let browser: string | undefined
+  // Cypress nunca tiene el árbol de accesibilidad de Playwright ni el browser vivo en la
+  // mano como Selenium/WebdriverIO — es el adapter donde el repertorio más aporta, porque
+  // sin él la heurística siempre está a ciegas. Se lee una sola vez por registro del plugin.
+  const repertoire = readRepertoire(process.cwd())
 
   on('after:spec', (spec, results) => {
     durationMs += results.stats?.duration ?? 0
@@ -50,6 +55,7 @@ export function HealifyCypressPlugin(
             errorMessage: test.displayError ?? 'Unknown error',
             durationMs: test.duration,
             attachments: collectAttachments(results),
+            repertoire,
           })
         )
       } catch {

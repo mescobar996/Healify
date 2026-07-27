@@ -1,17 +1,9 @@
 import { existsSync, mkdirSync, appendFileSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import type { LocalRun, LocalCaseResult } from '@healify/reporter-core'
+import type { LocalRun } from '@healify/reporter-core'
+import { parseHistoryLines, type HistoryEntry } from '@healify/reporter-core'
 
-export interface HistoryEntry {
-  timestamp: string
-  testFile?: string
-  testName: string
-  selector: string
-  status: LocalCaseResult['status']
-  fixedSelector: string
-  selectorType: string
-  confidence: number
-}
+export type { HistoryEntry }
 
 const HISTORY_RELATIVE_PATH = join('.healify', 'history.jsonl')
 
@@ -36,6 +28,7 @@ export function appendHistory(run: LocalRun, cwd: string = process.cwd()): void 
         fixedSelector: c.fixedSelector,
         selectorType: c.selectorType,
         confidence: c.confidence,
+        verified: c.verified,
       }
       return JSON.stringify(entry)
     })
@@ -61,16 +54,7 @@ export function readHistory(cwd: string = process.cwd()): HistoryEntry[] {
     return []
   }
 
-  const entries: HistoryEntry[] = []
-  for (const line of raw.split('\n')) {
-    if (!line.trim()) continue
-    try {
-      entries.push(JSON.parse(line))
-    } catch {
-      // línea corrupta (ej. escritura interrumpida a mitad) — se ignora.
-    }
-  }
-  return entries
+  return parseHistoryLines(raw)
 }
 
 export interface RecurrentSelector {

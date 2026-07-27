@@ -9,9 +9,11 @@ import {
   printSummary,
   baseEnvironment,
   statsFromCases,
+  readRepertoire,
   type LocalCaseResult,
   type CaseAttachment,
   type RunEnvironment,
+  type HistoryEntry,
 } from '@healify/reporter-core'
 
 /**
@@ -29,10 +31,15 @@ export default class HealifyReporter implements Reporter {
   private failed = 0
   private startedAt = Date.now()
   private environment: RunEnvironment = baseEnvironment('Playwright')
+  private repertoire: HistoryEntry[] = []
 
   onBegin(config: FullConfig, suite: Suite): void {
     this.startedAt = Date.now()
     this.total = suite.allTests().length
+    // Se lee una sola vez por corrida, no por test — el archivo no cambia mientras la suite
+    // corre. Solo entra en juego cuando esta corrida no pudo verificar nada por su cuenta
+    // (ver el comentario de cabecera de reporter-core/src/repertoire.ts).
+    this.repertoire = readRepertoire(process.cwd())
 
     // El navegador y la baseURL viven en el project que Playwright resolvió, no en la config
     // cruda. Se toma el primero: con varios projects el reporte igual dice cuál miró.
@@ -80,6 +87,7 @@ export default class HealifyReporter implements Reporter {
           steps: describeSteps(result.steps),
           attachments: collectAttachments(result),
           domContext: readPageSnapshot(result),
+          repertoire: this.repertoire,
         })
       )
     } catch {

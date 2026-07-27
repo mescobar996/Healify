@@ -1,6 +1,13 @@
 import type { WebDriver, WebElement, By } from 'selenium-webdriver'
 import { By as SeleniumBy, error } from 'selenium-webdriver'
-import { analyzeAndHeal, BROWSER_PROBE_SCRIPT, domContextFromProbeResult, parseRoleSuggestion, roleSuggestionToXPath } from '@healify/reporter-core'
+import {
+  analyzeAndHeal,
+  BROWSER_PROBE_SCRIPT,
+  domContextFromProbeResult,
+  parseRoleSuggestion,
+  roleSuggestionToXPath,
+  type HistoryEntry,
+} from '@healify/reporter-core'
 import { locatorToSelector, isSeleniumCssCompatible } from './locator'
 import { DEFAULT_CONFIDENCE_THRESHOLD, type HealifySeleniumOptions, type HealingEvent } from './types'
 
@@ -19,7 +26,7 @@ function rawLocatorValue(locator: By): string {
  * vivo usando analyzeAndHeal() de @healify/reporter-core — el mismo motor
  * que usan test-runner/cypress-plugin. No reimplementa heurística.
  */
-export function wrapDriver(driver: WebDriver, options: HealifySeleniumOptions = {}): WebDriver {
+export function wrapDriver(driver: WebDriver, options: HealifySeleniumOptions = {}, repertoire: HistoryEntry[] = []): WebDriver {
   const threshold = options.confidenceThreshold ?? DEFAULT_CONFIDENCE_THRESHOLD
 
   function emit(event: HealingEvent): void {
@@ -53,7 +60,7 @@ export function wrapDriver(driver: WebDriver, options: HealifySeleniumOptions = 
 
       let result: ReturnType<typeof analyzeAndHeal>
       try {
-        result = analyzeAndHeal({ selector, htmlContext: domContext })
+        result = analyzeAndHeal({ selector, htmlContext: domContext, repertoire })
       } catch (healErr) {
         const message = healErr instanceof Error ? healErr.message : String(healErr)
         emit({ type: 'error', originalSelector: selector, explanation: message, latencyMs: Date.now() - start })

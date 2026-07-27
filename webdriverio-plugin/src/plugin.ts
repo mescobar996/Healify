@@ -1,12 +1,15 @@
 import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { renderLocalReportJson, buildLocalRunFromEvents } from '@healify/reporter-core'
+import { renderLocalReportJson, buildLocalRunFromEvents, readRepertoire, type HistoryEntry } from '@healify/reporter-core'
 import { wrapBrowser } from './wrap'
 import type { HealifyWebdriverIOOptions, HealingEvent } from './types'
 
 export class HealifyWebdriverIOPlugin {
   private readonly options: HealifyWebdriverIOOptions
   private readonly events: HealingEvent[] = []
+  // Se lee una sola vez, al construir el plugin. Solo entra en juego cuando esta corrida no
+  // pudo verificar nada por su cuenta (ver reporter-core/src/repertoire.ts).
+  private readonly repertoire: HistoryEntry[]
 
   constructor(options: HealifyWebdriverIOOptions = {}) {
     this.options = {
@@ -16,6 +19,7 @@ export class HealifyWebdriverIOPlugin {
         options.onEvent?.(event)
       },
     }
+    this.repertoire = readRepertoire(process.cwd())
   }
 
   /**
@@ -27,7 +31,7 @@ export class HealifyWebdriverIOPlugin {
    * y el autocompletado de su propio browser, que es lo que el proxy devuelve en runtime.
    */
   wrap<T extends object>(browser: T): T {
-    return wrapBrowser(browser as unknown as Parameters<typeof wrapBrowser>[0], this.options) as unknown as T
+    return wrapBrowser(browser as unknown as Parameters<typeof wrapBrowser>[0], this.options, this.repertoire) as unknown as T
   }
 
   /**

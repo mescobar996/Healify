@@ -31,6 +31,7 @@ vi.mock('@healify/reporter-core', () => ({
     review: 0,
     unresolved: 0,
   })),
+  readRepertoire: vi.fn(() => []),
 }))
 
 vi.mock('node:fs', () => ({

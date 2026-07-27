@@ -1,5 +1,33 @@
 # Changelog
 
+## Sin publicar — repertorio consultable + modo interactivo
+
+Los dos huecos que quedaban del pedido original: memoria entre corridas, y que el
+desarrollador pueda decidir caso por caso en vez de todo-o-nada.
+
+- **Repertorio**: `.healify/history.jsonl` ahora se **consulta**, no solo se escribe. Cuando
+  una corrida no puede verificar nada por su cuenta (Cypress, siempre; o cualquier adapter si
+  el snapshot/sondeo no estuvo disponible esa vez), el motor busca si ese mismo selector, en
+  el mismo archivo, ya se curó y **se confirmó contra la página real** en una corrida
+  anterior — y reusa esa corrección en vez de volver a adivinar a ciegas.
+  - Solo cuentan las entradas `verified: true`. Reusar una curación a ciegas no aporta nada
+    (la heurística es determinística, recalcularla da lo mismo) — el valor real está en
+    cargar hacia adelante una confirmación que sí costó algo conseguir.
+  - La verificación en vivo de la corrida actual **siempre gana** sobre el repertorio: la
+    página de ahora es más confiable que la memoria de una corrida vieja.
+  - Verificado con Playwright real: un selector se curó y verificó, quedó en el historial con
+    `verified: true`; en una segunda corrida **sin** snapshot (`PLAYWRIGHT_NO_COPY_PROMPT=1`),
+    el motor reusó esa misma corrección marcando `fromRepertoire: true`.
+- **`fix --interactive`**: en vez de aplicar todo lo que supera el umbral automático, muestra
+  cada sugerencia (selector, propuesta, confianza, si está verificada o viene del repertorio)
+  y pregunta. Ofrece también los casos `review` (80-89%, hoy invisibles para `fix`) — el
+  desarrollador puede aplicar algo de menor confianza si decide que tiene sentido, cosa que
+  antes no existía en ningún lado. `a` aplica el resto sin seguir preguntando, `q` corta y deja
+  el resto sin tocar. Sin terminal real (CI, pipe) avisa y sigue en modo automático — nunca se
+  cuelga esperando un input que no puede llegar.
+- Dedup: el parseo de `.healify/history.jsonl` vivía duplicado en el motor conceptualmente —
+  ahora `parseHistoryLines`/`readRepertoire` viven en `reporter-core` y `cli` los reusa.
+
 ## Sin publicar — Selenium y WebdriverIO también verifican contra la página real
 
 El bloque anterior le dio a Playwright acceso al árbol de accesibilidad real (el archivo que

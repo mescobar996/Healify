@@ -2,6 +2,7 @@ import type { HealifyWebdriverIOOptions } from './types';
 export declare class HealifyWebdriverIOPlugin {
     private readonly options;
     private readonly events;
+    private readonly repertoire;
     constructor(options?: HealifyWebdriverIOOptions);
     /**
      * Devuelve un proxy sobre el browser — el original nunca se muta.

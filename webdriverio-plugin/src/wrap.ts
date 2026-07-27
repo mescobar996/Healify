@@ -1,4 +1,11 @@
-import { analyzeAndHeal, BROWSER_PROBE_SCRIPT, domContextFromProbeResult, parseRoleSuggestion, roleSuggestionToXPath } from '@healify/reporter-core'
+import {
+  analyzeAndHeal,
+  BROWSER_PROBE_SCRIPT,
+  domContextFromProbeResult,
+  parseRoleSuggestion,
+  roleSuggestionToXPath,
+  type HistoryEntry,
+} from '@healify/reporter-core'
 import { wdioSelectorToSelector, isWdioCssCompatible } from './locator'
 import { DEFAULT_CONFIDENCE_THRESHOLD, type HealifyWebdriverIOOptions, type HealingEvent } from './types'
 
@@ -39,7 +46,7 @@ interface WdioElement {
  * El proxy intercepta el retorno de $() y wrappea sus métodos de interacción
  * (click, setValue, getText, etc.) para capturar el error en el momento correcto.
  */
-export function wrapBrowser(browser: WdioBrowser, options: HealifyWebdriverIOOptions = {}): WdioBrowser {
+export function wrapBrowser(browser: WdioBrowser, options: HealifyWebdriverIOOptions = {}, repertoire: HistoryEntry[] = []): WdioBrowser {
   const threshold = options.confidenceThreshold ?? DEFAULT_CONFIDENCE_THRESHOLD
   const events: HealingEvent[] = []
 
@@ -107,7 +114,7 @@ export function wrapBrowser(browser: WdioBrowser, options: HealifyWebdriverIOOpt
 
     let result: ReturnType<typeof analyzeAndHeal>
     try {
-      result = analyzeAndHeal({ selector, htmlContext: domContext })
+      result = analyzeAndHeal({ selector, htmlContext: domContext, repertoire })
     } catch (healErr) {
       const message = healErr instanceof Error ? healErr.message : String(healErr)
       emit({ type: 'error', originalSelector: selector, explanation: message, latencyMs: Date.now() - start })
