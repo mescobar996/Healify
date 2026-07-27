@@ -1,7 +1,8 @@
 # @healify/cli
 
-Aplica las sugerencias de un `healify-report.json` (generado por `@healify/test-runner` o
-`@healify/cypress-plugin`) directo en tus archivos de test. Cierra el loop entre
+Aplica las sugerencias de un `healify-report.json` (generado por `@healify/test-runner`,
+`@healify/cypress-plugin`, o por `flush()` de `@healify/selenium-plugin`/
+`@healify/webdriverio-plugin`) directo en tus archivos de test. Cierra el loop entre
 "Healify te sugirió un fix" y "el fix ya está en tu código", sin copiar y pegar a mano.
 
 ## Instalación
@@ -12,8 +13,8 @@ npm install --save-dev @healify/cli
 
 ## Para QA sin experiencia
 
-Si nunca tocaste la configuración de Playwright/Cypress/Selenium, no hace falta editar
-nada a mano. Tres comandos:
+Si nunca tocaste la configuración de Playwright/Cypress/Selenium/WebdriverIO, no hace
+falta editar nada a mano. Tres comandos:
 
 ```bash
 npx @healify/cli init     # detecta tu framework, instala el paquete correcto y configura todo
@@ -25,8 +26,8 @@ npx @healify/cli fix      # corré esto después de tus tests, para aplicar los 
 ningún test**, nunca. Solo deja la config real conectada:
 
 - **No tenés ningún framework de e2e todavía** → te pregunta cuál armar (Playwright,
-  Cypress o Selenium, default Playwright si apretás Enter), instala el paquete y crea el
-  config con el reporter/plugin de Healify ya wireado.
+  Cypress, Selenium o WebdriverIO, default Playwright si apretás Enter), instala el
+  paquete y crea el config con el reporter/plugin de Healify ya wireado.
 - **Ya tenés el framework instalado pero sin config** (típico en un proyecto Vite/Next que
   nunca llegó a tener `playwright.config.*`) → lo crea igual que en el caso anterior, sin
   preguntarte nada: el framework ya está decidido.
@@ -103,6 +104,28 @@ Selenium no tiene config para wirear (se envuelve el `WebDriver` a mano). El arc
 resultado: muestra cómo envolver tu `WebDriver` real con `HealifySeleniumPlugin`.
 </details>
 
+<details>
+<summary><b>WebdriverIO, de cero</b></summary>
+
+```
+$ npx @healify/cli init
+Healify init
+
+ℹ No detectamos ningún framework de e2e — armamos webdriverio desde cero.
+
+✅ @healify/webdriverio-plugin instalado
+✅ archivos creados:
+   - healify.wdio.example.ts
+
+✅ Instalado. Ver healify.wdio.example.ts para el patrón de wrap() — copialo a tu código
+   real, no hay nada que ejecutar acá.
+```
+
+Igual que Selenium, WebdriverIO no tiene config ni hook de "fin de corrida" que Healify
+pueda usar (se envuelve el `browser` a mano). El archivo que `init` deja es solo
+documentación de referencia, nunca se ejecuta ni simula ningún resultado.
+</details>
+
 **baseURL automático (Playwright/Cypress):** `init` busca el puerto real de tu app en este
 orden: primero el script `"dev"` de tu `package.json` (ej. `vite --port=3000` da
 `http://localhost:3000`, el caso más común en proyectos Vite reales, donde el puerto casi
@@ -133,9 +156,10 @@ npx @healify/cli --version                  # (o -v) muestra qué versión tené
 > reportar). Corré tus tests; cuando alguno falle por un selector, se genera el reporte y
 > `fix` va a tener algo que aplicar. (Sale con código 0, no rompe pipelines.)
 >
-> **¿Sospechás tener una versión vieja?** Los paquetes son `0.x`/`1.x`: si en tu
-> `package.json` tenés `^0.x.y`, un `npm install` a secas NO te sube de minor. Chequeá con
-> `npx @healify/cli --version` y actualizá con `@latest` si hace falta.
+> **¿Sospechás tener una versión vieja?** Los paquetes de Healify están en `1.0.0`. Si tu
+> `package.json` todavía tiene un rango `^0.x.y` de antes de la 1.0.0, un `npm install` a
+> secas NO te sube de minor (gotcha de semver en versiones `0.x`, `doctor` te lo detecta).
+> Chequeá con `npx @healify/cli --version` y actualizá con `@latest` si hace falta.
 
 Salida típica:
 

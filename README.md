@@ -13,8 +13,6 @@
   <img src="https://img.shields.io/badge/license-MIT-blue" />
 </div>
 
----
-
 ## En 30 segundos (salida real, sin editar)
 
 Tenés un test que hace `page.click('#add-to-cart-btn')`. Alguien renombró ese botón y el
@@ -54,7 +52,12 @@ interactivo, 100% offline). Podés ver uno real acá:
 [`docs/ejemplos/healify-report-ejemplo.html`](docs/ejemplos/healify-report-ejemplo.html)
 (descargalo y abrilo en tu navegador).
 
----
+## Frameworks soportados
+
+Playwright, Cypress, Selenium y WebdriverIO. Los cuatro reusan el mismo motor heurístico
+(`reporter-core`): Playwright y Cypress generan `healify-report.html`/`.json` al final de
+la corrida; Selenium y WebdriverIO curan en vivo (envuelven el driver/browser) y generan
+`healify-report.json` cuando llamás a `flush()`.
 
 ## Para quién es esto
 
@@ -66,9 +69,9 @@ No necesitás saber programar, no necesitás cuenta, API key, ni internet. Heali
 - **QA Automation:** Te genera un reporte HTML + JSON y te deja aplicar el fix con un comando.
 - **QC Engineer:** Te asegura que los selectores que queden sean los más estables (`data-testid` > `id` > `name` > `aria` > texto).
 
-> **Qué NO es:** No es IA, no es un servicio en la nube, no manda tu código a ningún lado. Es pattern-matching local sobre el DOM.
-
----
+> **Qué NO es:** No es IA, no es un servicio en la nube, no manda tu código a ningún lado.
+> Es pattern-matching local sobre el texto del selector y del mensaje de error — nunca
+> analiza el DOM real, nunca verifica que la sugerencia exista de verdad en la página.
 
 ## Empiezo de cero (recomendado para QA)
 
@@ -88,9 +91,10 @@ npx @healify/cli doctor
 
 Te va a decir:
 
-- Qué framework usás (Playwright / Cypress / Selenium)
+- Qué framework usás (Playwright / Cypress / Selenium / WebdriverIO)
 - Si tenés instalado lo necesario
-- Si tu config está lista
+- Si tu config está lista (Playwright/Cypress; Selenium/WebdriverIO curan en vivo, no
+  tienen config que wirear)
 - Si ya generaste un reporte
 
 Ejemplo real (`npx @healify/cli doctor`, sin nada instalado todavía):
@@ -108,8 +112,9 @@ Healify doctor
 ```
 
 `doctor` no te pregunta nada ni instala nada por vos: solo diagnostica. Cada `fix:` es el
-comando exacto para arreglar ese punto. Si usás Selenium en vez de Playwright/Cypress, el
-check de `healify-report.json` no aparece (Selenium cura en vivo, no genera reporte).
+comando exacto para arreglar ese punto. Si usás Selenium o WebdriverIO en vez de
+Playwright/Cypress, el check de `healify-report.json` no aparece (curan en vivo, no
+generan ese reporte solos).
 
 **Paso 3: Arreglar la config automáticamente**
 
@@ -119,17 +124,18 @@ npx @healify/cli init
 
 Esto:
 
-- Te instala el paquete correcto (`test-runner` para Playwright, `cypress-plugin` para Cypress,
-  `selenium-plugin` para Selenium)
+- Te instala el paquete correcto (`test-runner` para Playwright, `cypress-plugin` para
+  Cypress, `selenium-plugin` para Selenium, `webdriverio-plugin` para WebdriverIO)
 - Te edita el `playwright.config.ts` o `cypress.config.ts` automáticamente (o te los crea de
-  cero si todavía no existían)
+  cero si todavía no existían); para Selenium/WebdriverIO te deja un archivo de referencia
+  documental (nunca se ejecuta) mostrando cómo envolver tu driver/browser
 - No duplica nada si ya lo tenías
 
-> **¿Ni siquiera tenés Playwright/Cypress/Selenium instalado?** No hace falta el Paso 2:
-> corré directamente `npx @healify/cli init`. Te pregunta qué framework armar, lo instala y
-> te deja el config conectado. **No genera ningún test**: el primer selector roto que
-> Healify cure tiene que ser uno de tu propia app, no uno inventado. Detalle de los 3 casos
-> en el [README del CLI](cli/README.md).
+> **¿Ni siquiera tenés Playwright/Cypress/Selenium/WebdriverIO instalado?** No hace falta
+> el Paso 2: corré directamente `npx @healify/cli init`. Te pregunta qué framework armar,
+> lo instala y te deja el config conectado. **No genera ningún test**: el primer selector
+> roto que Healify cure tiene que ser uno de tu propia app, no uno inventado. Detalle de
+> los 3 casos en el [README del CLI](cli/README.md).
 
 **Paso 4: Levantá tu app y corré tu primer test real**
 
@@ -177,8 +183,6 @@ npx @healify/cli fix
 Abrí `healify-report.html` en el navegador para ver: `Healed: 1 | Review: 1 | Unresolved: 2`
 
 Listo.
-
----
 
 ## Paquetes
 
@@ -274,8 +278,6 @@ Cura en vivo. `flush()` genera `healify-report.json` (sin HTML). Ver su README p
 limitaciones.
 </details>
 
----
-
 ## Comandos del CLI, explicados para QA
 
 | Comando | Qué hace | Cuándo usarlo |
@@ -292,24 +294,32 @@ limitaciones.
 versión:** revisá qué versión tenés instalada de verdad.
 
 ```bash
-npx @healify/cli --help   # la primera línea de ayuda no dice versión; mirá node_modules
-cat node_modules/@healify/cli/package.json | grep version
+npx @healify/cli --version
 ```
 
-Todos los paquetes de Healify son `0.x`. Con semver, `^0.4.1` en tu `package.json`
-significa "cualquier `0.4.x`", **no** te deja subir a `0.5.0` con un `npm install` sin
-versión explícita. Si ya tenías Healify de una versión anterior, actualizalo pidiendo la
-versión a mano:
+Los 6 paquetes de Healify están en `1.0.0`. Si venís de una instalación anterior a la
+1.0.0, `doctor` te avisa si tu `package.json` todavía tiene un rango `^0.x.y` viejo (el
+gotcha de semver: `^0.4.1` significa "cualquier `0.4.x`", no te sube solo a `0.5.0`, y
+mucho menos a `1.0.0`). Actualizalo pidiendo la versión a mano:
 
 ```bash
 npm install --save-dev @healify/cli@latest @healify/test-runner@latest
-# o el paquete que uses: @healify/cypress-plugin@latest, @healify/selenium-plugin@latest
+# o el paquete que uses: @healify/cypress-plugin@latest, @healify/selenium-plugin@latest, @healify/webdriverio-plugin@latest
 ```
 
-Esto no pasa la primera vez que instalás Healify en un proyecto nuevo (ahí no hay ningún
-`^0.x.y` viejo frenándote), solo al actualizar una instalación existente.
+Esto no pasa la primera vez que instalás Healify en un proyecto nuevo (ahí ya te queda
+`^1.0.0`, que sí sube de minor con un `npm install` normal).
 
----
+## Qué reconoce el motor hoy
+
+Pattern-matching sobre el texto del selector, sin analizar el DOM real:
+
+- Testids: `data-testid`, `data-cy`, `data-qa`, `data-test`, `data-e2e`
+- `[name=]`, `[aria-label=]`, `[role=]`, texto visible (`text=`, `:has-text()`)
+- Locators modernos de Playwright (`getByRole`/`getByText`/`getByLabel`/`getByPlaceholder`/`getByTestId`) — no les propone downgrade
+- IDs y clases dinámicas (hash de build, CSS-in-JS) — propone la parte estable
+- Selectores por posición (`nth-child`/`nth-of-type`) — los marca como frágiles y propone una alternativa por rol
+- Diccionario bilingüe de acciones/campos (`login`/`iniciar`, `email`/`correo`, etc.)
 
 ## Cómo leer el reporte
 
@@ -320,8 +330,6 @@ Esto no pasa la primera vez que instalás Healify en un proyecto nuevo (ahí no 
 - **Unresolved (Rojo):** No encontró alternativa estable. Tenés que arreglarlo a mano.
 
 El `printSummary` al final de la corrida en consola te muestra lo mismo: `Healed: 3 | Review: 1 | Unresolved: 0`
-
----
 
 ## Para devs y contribuidores
 
