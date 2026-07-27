@@ -503,6 +503,161 @@ var require_healing_engine = __commonJS({
   }
 });
 
+// ../reporter-core/dist/qa-report.js
+var require_qa_report = __commonJS({
+  "../reporter-core/dist/qa-report.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.SEVERITY_LABEL = void 0;
+    exports2.baseEnvironment = baseEnvironment;
+    exports2.statsFromCases = statsFromCases;
+    exports2.normalizeRun = normalizeRun;
+    exports2.buildDefectId = buildDefectId;
+    exports2.severityFor = severityFor;
+    exports2.formatDuration = formatDuration;
+    exports2.environmentRows = environmentRows;
+    exports2.renderLocalReportMarkdown = renderLocalReportMarkdown;
+    var node_crypto_1 = require("node:crypto");
+    var node_os_1 = require("node:os");
+    function baseEnvironment(framework, extra = {}) {
+      return {
+        os: process.platform,
+        osVersion: (0, node_os_1.release)(),
+        node: process.version,
+        framework,
+        ...extra
+      };
+    }
+    function statsFromCases(cases, suite) {
+      const count = (status) => cases.filter((c) => c.status === status).length;
+      return {
+        total: suite?.total ?? cases.length,
+        passed: suite?.passed ?? 0,
+        failed: suite?.failed ?? cases.length,
+        healed: count("healed"),
+        review: count("review"),
+        unresolved: count("unresolved"),
+        durationMs: suite?.durationMs
+      };
+    }
+    function normalizeRun(run) {
+      return {
+        ...run,
+        verdict: run.verdict ?? (run.cases.some((c) => c.status !== "healed") ? "failed" : "passed"),
+        stats: run.stats ?? statsFromCases(run.cases),
+        environment: run.environment ?? baseEnvironment(run.framework)
+      };
+    }
+    function buildDefectId(testFile, selector) {
+      const key = `${testFile ?? ""}::${selector}`;
+      return `HLF-${(0, node_crypto_1.createHash)("sha1").update(key).digest("hex").slice(0, 6).toUpperCase()}`;
+    }
+    function severityFor(status) {
+      if (status === "unresolved")
+        return "blocker";
+      if (status === "review")
+        return "major";
+      return "minor";
+    }
+    exports2.SEVERITY_LABEL = {
+      blocker: "Bloqueante",
+      major: "Mayor",
+      minor: "Menor"
+    };
+    function formatDuration(ms) {
+      if (ms === void 0)
+        return void 0;
+      if (ms < 1e3)
+        return `${ms} ms`;
+      const seconds = ms / 1e3;
+      if (seconds < 60)
+        return `${seconds.toFixed(1)} s`;
+      const minutes = Math.floor(seconds / 60);
+      return `${minutes} min ${Math.round(seconds % 60)} s`;
+    }
+    function environmentRows(rawRun) {
+      const run = normalizeRun(rawRun);
+      const env = run.environment;
+      const rows = [
+        { label: "Framework", value: env.frameworkVersion ? `${env.framework} ${env.frameworkVersion}` : env.framework }
+      ];
+      if (env.browser)
+        rows.push({ label: "Navegador", value: env.browser });
+      if (env.baseURL)
+        rows.push({ label: "URL base", value: env.baseURL });
+      rows.push({ label: "Sistema", value: env.osVersion ? `${env.os} ${env.osVersion}` : env.os });
+      rows.push({ label: "Node", value: env.node });
+      const duration = formatDuration(run.stats.durationMs);
+      if (duration)
+        rows.push({ label: "Duraci\xF3n", value: duration });
+      return rows;
+    }
+    function caseMarkdown(c) {
+      const lines = [`### ${c.defectId} \u2014 ${c.testName}`, ""];
+      const meta = [`**Severidad:** ${exports2.SEVERITY_LABEL[c.severity]}`];
+      if (c.testFile)
+        meta.push(`**Ubicaci\xF3n:** \`${c.testFile}${c.line ? `:${c.line}` : ""}\``);
+      const duration = formatDuration(c.durationMs);
+      if (duration)
+        meta.push(`**Duraci\xF3n:** ${duration}`);
+      lines.push(meta.join(" \xB7 "), "");
+      if (c.expected)
+        lines.push(`**Resultado esperado:** ${c.expected}`, "");
+      if (c.actual)
+        lines.push(`**Resultado obtenido:** ${c.actual}`, "");
+      if (c.steps && c.steps.length > 0) {
+        lines.push("**Pasos para reproducir:**", "");
+        c.steps.forEach((step, i) => lines.push(`${i + 1}. ${step}`));
+        lines.push("");
+      }
+      lines.push("**Selector que fall\xF3:**", "", "```", c.selector, "```", "");
+      if (c.status === "unresolved") {
+        lines.push("**Sugerencia:** sin candidato confiable \u2014 requiere an\xE1lisis manual.", "");
+      } else {
+        lines.push(`**Sugerencia (heur\xEDstica local, ${Math.round(c.confidence * 100)}% de confianza):**`, "", "```", c.fixedSelector, "```", "");
+        if (c.explanation)
+          lines.push(`> ${c.explanation}`, "");
+      }
+      if (c.attachments && c.attachments.length > 0) {
+        lines.push("**Evidencia:**", "");
+        for (const a of c.attachments)
+          lines.push(`- [${a.name}](${a.path})`);
+        lines.push("");
+      }
+      return lines.join("\n");
+    }
+    function renderLocalReportMarkdown(rawRun) {
+      const run = normalizeRun(rawRun);
+      const { stats } = run;
+      const verdictLabel = run.verdict === "passed" ? "PASS" : "FAIL";
+      const lines = [
+        `# Reporte de pruebas \u2014 ${run.project}`,
+        "",
+        `**Resultado: ${verdictLabel}**`,
+        "",
+        `Ejecutado el ${run.generatedAt.toLocaleString("es-AR")}`,
+        "",
+        "## Entorno",
+        ""
+      ];
+      for (const row of environmentRows(run))
+        lines.push(`- **${row.label}:** ${row.value}`);
+      lines.push("", "## Resumen", "", "| M\xE9trica | Cantidad |", "|---|---|", `| Tests ejecutados | ${stats.total} |`, `| Tests exitosos | ${stats.passed} |`, `| Tests fallidos | ${stats.failed} |`, `| Defectos con arreglo sugerido | ${stats.healed} |`, `| Defectos que requieren revisi\xF3n | ${stats.review} |`, `| Defectos sin sugerencia | ${stats.unresolved} |`, "");
+      if (run.cases.length === 0) {
+        lines.push("## Defectos", "", "No se detectaron selectores rotos en esta corrida.", "");
+      } else {
+        lines.push("## Defectos", "");
+        const order = ["blocker", "major", "minor"];
+        const sorted = [...run.cases].sort((a, b) => order.indexOf(a.severity) - order.indexOf(b.severity) || a.confidence - b.confidence);
+        for (const c of sorted)
+          lines.push(caseMarkdown(c));
+      }
+      lines.push("---", "", "Generado por Healify \u2014 heur\xEDstica local, sin IA. Las sugerencias salen de analizar el", "texto del selector, no la p\xE1gina real: revisalas antes de darlas por buenas.", "");
+      return lines.join("\n");
+    }
+  }
+});
+
 // ../reporter-core/dist/local-mode.js
 var require_local_mode = __commonJS({
   "../reporter-core/dist/local-mode.js"(exports2) {
@@ -511,8 +666,20 @@ var require_local_mode = __commonJS({
     exports2.runLocalHealing = runLocalHealing;
     var healing_engine_1 = require_healing_engine();
     var selector_extractor_1 = require_selector_extractor();
+    var qa_report_1 = require_qa_report();
     var HEALED_THRESHOLD = 0.9;
     var REVIEW_THRESHOLD = 0.8;
+    function firstLine(errorMessage) {
+      return errorMessage.split("\n")[0].trim();
+    }
+    function passthrough(input) {
+      return {
+        line: input.line,
+        durationMs: input.durationMs,
+        steps: input.steps,
+        attachments: input.attachments
+      };
+    }
     function runLocalHealing(input) {
       const selector = (0, selector_extractor_1.extractSelectorFromError)(input.errorMessage);
       if (selector === "Unknown selector") {
@@ -525,7 +692,12 @@ var require_local_mode = __commonJS({
           fixedSelector: "",
           confidence: 0,
           explanation: "No se pudo extraer un selector del mensaje de error.",
-          selectorType: "UNKNOWN"
+          selectorType: "UNKNOWN",
+          defectId: (0, qa_report_1.buildDefectId)(input.testFile, `${input.testName}:${selector}`),
+          severity: (0, qa_report_1.severityFor)("unresolved"),
+          expected: `El test "${input.testName}" termina sin errores.`,
+          actual: firstLine(input.errorMessage),
+          ...passthrough(input)
         };
       }
       const heal = (0, healing_engine_1.analyzeAndHeal)({ selector, htmlContext: input.domContext, testName: input.testName, errorMessage: input.errorMessage });
@@ -539,7 +711,12 @@ var require_local_mode = __commonJS({
         fixedSelector: heal.fixedSelector,
         confidence: heal.confidence,
         explanation: heal.explanation,
-        selectorType: heal.selectorType
+        selectorType: heal.selectorType,
+        defectId: (0, qa_report_1.buildDefectId)(input.testFile, selector),
+        severity: (0, qa_report_1.severityFor)(status),
+        expected: `El selector ${selector} encuentra un elemento en la p\xE1gina.`,
+        actual: firstLine(input.errorMessage),
+        ...passthrough(input)
       };
     }
   }
@@ -550,22 +727,45 @@ var require_local_report = __commonJS({
   "../reporter-core/dist/local-report.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.statsFromCases = exports2.baseEnvironment = void 0;
     exports2.buildLocalRunFromEvents = buildLocalRunFromEvents2;
     exports2.printSummary = printSummary;
     exports2.renderLocalReportHtml = renderLocalReportHtml;
     exports2.renderLocalReportJson = renderLocalReportJson2;
+    var qa_report_1 = require_qa_report();
+    Object.defineProperty(exports2, "baseEnvironment", { enumerable: true, get: function() {
+      return qa_report_1.baseEnvironment;
+    } });
+    Object.defineProperty(exports2, "statsFromCases", { enumerable: true, get: function() {
+      return qa_report_1.statsFromCases;
+    } });
     function buildLocalRunFromEvents2(events, options) {
-      const cases = events.map((e) => ({
-        testName: e.originalSelector,
-        selector: e.originalSelector,
-        errorMessage: `${e.type}: ${e.originalSelector}`,
-        status: e.type === "healed" ? "healed" : e.type === "no-suggestion" || e.type === "failed" ? "unresolved" : "review",
-        fixedSelector: e.fixedSelector ?? "",
-        confidence: e.confidence ?? 0,
-        explanation: e.explanation ?? "",
-        selectorType: e.type === "healed" ? "HEALED" : "UNKNOWN"
-      }));
-      return { project: options.project, framework: options.framework, generatedAt: /* @__PURE__ */ new Date(), cases };
+      const cases = events.map((e) => {
+        const status = e.type === "healed" ? "healed" : e.type === "no-suggestion" || e.type === "failed" ? "unresolved" : "review";
+        return {
+          testName: e.originalSelector,
+          selector: e.originalSelector,
+          errorMessage: `${e.type}: ${e.originalSelector}`,
+          status,
+          fixedSelector: e.fixedSelector ?? "",
+          confidence: e.confidence ?? 0,
+          explanation: e.explanation ?? "",
+          selectorType: e.type === "healed" ? "HEALED" : "UNKNOWN",
+          defectId: (0, qa_report_1.buildDefectId)(void 0, e.originalSelector),
+          severity: (0, qa_report_1.severityFor)(status),
+          expected: `El selector ${e.originalSelector} encuentra un elemento en la p\xE1gina.`,
+          actual: `${e.type}: ${e.originalSelector}`
+        };
+      });
+      return {
+        project: options.project,
+        framework: options.framework,
+        generatedAt: /* @__PURE__ */ new Date(),
+        cases,
+        verdict: cases.some((c) => c.status !== "healed") ? "failed" : "passed",
+        stats: (0, qa_report_1.statsFromCases)(cases),
+        environment: (0, qa_report_1.baseEnvironment)(options.framework)
+      };
     }
     function printSummary(cases) {
       const count = (status) => cases.filter((c) => c.status === status).length;
@@ -602,17 +802,29 @@ var require_local_report = __commonJS({
           <span class="meter"><span style="width:${pct}%"></span></span>
         </div>` : "";
       const copyBtn = hasFixed ? `<button class="btn" data-action="copy" aria-label="Copiar sugerencia">Copiar sugerencia</button>` : "";
+      const location = c.testFile ? `${c.testFile}${c.line ? `:${c.line}` : ""}` : "";
+      const qaGridHtml = c.expected || c.actual ? `<div class="qa-grid">
+          ${c.expected ? `<div class="qa-field"><div class="label">Resultado esperado</div><div class="value">${escapeHtml(c.expected)}</div></div>` : ""}
+          ${c.actual ? `<div class="qa-field"><div class="label">Resultado obtenido</div><div class="value">${escapeHtml(c.actual)}</div></div>` : ""}
+        </div>` : "";
+      const stepsHtml = c.steps && c.steps.length > 0 ? `<div class="qa-field"><div class="label">Pasos para reproducir</div>
+          <ol class="steps">${c.steps.map((s) => `<li>${escapeHtml(s)}</li>`).join("")}</ol></div>` : "";
+      const evidenceHtml = c.attachments && c.attachments.length > 0 ? `<div class="qa-field"><div class="label">Evidencia</div>
+          <div class="evidence">${c.attachments.map((a) => a.contentType?.startsWith("image/") ? `<a href="${escapeHtml(a.path)}" target="_blank" rel="noopener" title="${escapeHtml(a.name)}"><img src="${escapeHtml(a.path)}" alt="${escapeHtml(a.name)}"></a>` : `<a href="${escapeHtml(a.path)}" target="_blank" rel="noopener">${escapeHtml(a.name)}</a>`).join("")}</div></div>` : "";
       return `
     <article class="case ${c.status}" data-id="${c._id}">
       <div class="case-top">
+        <span class="sev ${c.severity}">${qa_report_1.SEVERITY_LABEL[c.severity]}</span>
+        <span class="defect-id">${escapeHtml(c.defectId)}</span>
         <span class="status-pill">${STATUS_LABEL[c.status]}</span>
         <span class="case-title">
           <span class="name">${escapeHtml(c.testName)}</span>
-          ${c.testFile ? `<span class="path">${escapeHtml(c.testFile)}</span>` : ""}
+          ${location ? `<span class="path">${escapeHtml(location)}</span>` : ""}
         </span>
         ${confidenceHtml}
       </div>
       <div class="case-body">
+        ${qaGridHtml}
         <div class="error">${escapeHtml(c.errorMessage)}</div>
         <div class="diff">
           <div class="diff-col before">
@@ -621,7 +833,12 @@ var require_local_report = __commonJS({
           </div>
           ${suggestionHtml}
         </div>
-        ${c.explanation ? `<p class="engine-note">${escapeHtml(c.explanation)}</p>` : ""}
+        ${// Con `unresolved` no se muestra la explicación del motor: describe la estrategia
+      // que intentó, y al lado de "sin candidato confiable" se lee como si igual hubiera
+      // propuesto algo. Mismo criterio que el Markdown.
+      c.explanation && c.status !== "unresolved" ? `<p class="engine-note">${escapeHtml(c.explanation)}</p>` : ""}
+        ${stepsHtml}
+        ${evidenceHtml}
         <div class="case-actions">
           ${copyBtn}
           <button class="btn" data-action="fix">Marcar como arreglado</button>
@@ -639,7 +856,8 @@ var require_local_report = __commonJS({
       ${c.testFile ? `<span class="mini-file">${escapeHtml(c.testFile)}</span>` : ""}
     </div>`;
     }
-    function renderLocalReportHtml(run) {
+    function renderLocalReportHtml(rawRun) {
+      const run = (0, qa_report_1.normalizeRun)(rawRun);
       const indexed = run.cases.map((c, i) => ({ ...c, _id: i }));
       const total = indexed.length;
       const healedCases = indexed.filter((c) => c.status === "healed");
@@ -771,6 +989,45 @@ var require_local_report = __commonJS({
   .vital.healed .n { color: var(--healed); } .vital.healed .dot { background: var(--healed); }
   .vital.review .n { color: var(--review); } .vital.review .dot { background: var(--review); }
   .vital.unresolved .n { color: var(--unresolved); } .vital.unresolved .dot { background: var(--unresolved); }
+
+  .verdict {
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; margin-bottom: 18px;
+  }
+  .verdict .tag {
+    font-size: 15px; font-weight: 700; letter-spacing: .08em; padding: 6px 14px; border-radius: 8px; flex: none;
+  }
+  .verdict.pass { background: var(--healed-soft); border-color: var(--healed); }
+  .verdict.pass .tag { background: var(--healed); color: var(--background); }
+  .verdict.fail { background: var(--unresolved-soft); border-color: var(--unresolved); }
+  .verdict.fail .tag { background: var(--unresolved); color: #fff; }
+  .verdict .detail { font-size: 13.5px; color: var(--foreground); }
+  .verdict .detail .muted { color: var(--muted); }
+
+  .sev {
+    flex: none; font-size: 10.5px; font-weight: 700; padding: 3px 8px; border-radius: 5px;
+    text-transform: uppercase; letter-spacing: .04em;
+  }
+  .sev.blocker { background: var(--unresolved-soft); color: var(--unresolved); }
+  .sev.major { background: var(--review-soft); color: var(--review); }
+  .sev.minor { background: var(--healed-soft); color: var(--healed); }
+  .defect-id {
+    flex: none; font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--muted);
+    border: 1px solid var(--border); border-radius: 5px; padding: 3px 7px;
+  }
+
+  .qa-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 0; }
+  .qa-field .label { font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 5px; }
+  .qa-field .value { font-size: 12.5px; line-height: 1.5; }
+  .steps { margin: 14px 0 0 0; padding-left: 20px; font-size: 12.5px; color: var(--foreground); }
+  .steps li { margin-bottom: 3px; }
+  .evidence { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+  .evidence a {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 12px; text-decoration: none;
+    border: 1px solid var(--border); border-radius: 8px; padding: 6px 11px; color: var(--foreground);
+  }
+  .evidence a:hover { border-color: var(--border-strong); }
+  .evidence img { max-width: 220px; border-radius: 6px; border: 1px solid var(--border); display: block; }
 
   .section-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
   .section-head h2 { font-size: 16px; margin: 0; font-weight: 600; }
@@ -907,10 +1164,18 @@ var require_local_report = __commonJS({
     </div>
   </div>
 
+  <div class="verdict ${run.verdict === "passed" ? "pass" : "fail"}">
+    <span class="tag">${run.verdict === "passed" ? "PASS" : "FAIL"}</span>
+    <span class="detail">
+      ${run.stats.passed} de ${run.stats.total} test${run.stats.total === 1 ? "" : "s"} sin errores
+      ${run.stats.failed > 0 ? `<span class="muted">\xB7 ${run.stats.failed} con fallos</span>` : ""}
+    </span>
+  </div>
+
   <div class="meta-strip">
     <div class="meta-cell"><div class="label">Proyecto</div><div class="value">${escapeHtml(run.project)}</div></div>
     <div class="meta-cell"><div class="label">Generado</div><div class="value mono">${escapeHtml(dateStr)}</div></div>
-    <div class="meta-cell"><div class="label">Motor</div><div class="value">Heur\xEDstica local</div></div>
+    ${(0, qa_report_1.environmentRows)(run).map((row) => `<div class="meta-cell"><div class="label">${escapeHtml(row.label)}</div><div class="value mono">${escapeHtml(row.value)}</div></div>`).join("")}
   </div>
 
   <div class="vitals">
@@ -926,7 +1191,7 @@ var require_local_report = __commonJS({
       <span class="count"><span id="attention-count-n">${attentionCases.length} caso${attentionCases.length === 1 ? "" : "s"}</span><span class="chev">\u25BE</span></span>
     </div>
     <div class="cases-wrap" id="attention-wrap">
-      ${attentionCases.length > 0 ? `<div class="cases">${attentionCases.map(renderAttentionCase).join("\n")}</div>` : `<div class="empty">Todo limpio \u2014 no hay selectores que necesiten revisi\xF3n manual.</div>`}
+      ${attentionCases.length > 0 ? `<div class="cases">${attentionCases.map(renderAttentionCase).join("\n")}</div>` : `<div class="empty">${total === 0 ? "Ning\xFAn test fall\xF3 por un selector roto en esta corrida." : "Todo limpio \u2014 no hay selectores que necesiten revisi\xF3n manual."}</div>`}
     </div>
   </section>
 
@@ -942,7 +1207,7 @@ var require_local_report = __commonJS({
 
   <div class="foot">
     <span class="privacy"><span class="dot"></span>Ning\xFAn dato de este proyecto sali\xF3 de esta m\xE1quina</span>
-    <span>healify-report.json generado junto a este archivo</span>
+    <span>healify-report.json y healify-report.md generados junto a este archivo</span>
   </div>
 
 </div>
@@ -1032,9 +1297,12 @@ var require_local_report = __commonJS({
     if (reviewEl) reviewEl.textContent = String(review);
     var unresolvedEl = document.getElementById('vital-unresolved-n');
     if (unresolvedEl) unresolvedEl.textContent = String(unresolved);
-    if (total === 0) {
-      var wrap = document.getElementById('attention-wrap');
-      if (wrap) wrap.innerHTML = '<div class="empty">Todo limpio \u2014 no hay selectores que necesiten revisi\xF3n manual.</div>';
+    // Solo se reemplaza si de verdad hab\xEDa casos renderizados y el usuario los fue marcando.
+    // Sin este chequeo pisaba el mensaje del estado inicial vac\xEDo ("ning\xFAn test fall\xF3 por un
+    // selector roto"), que dice algo distinto y m\xE1s preciso.
+    var wrap = document.getElementById('attention-wrap');
+    if (total === 0 && wrap && wrap.querySelector('.cases')) {
+      wrap.innerHTML = '<div class="empty">Todo limpio \u2014 no hay selectores que necesiten revisi\xF3n manual.</div>';
     }
   }
 
@@ -1084,11 +1352,17 @@ var require_local_report = __commonJS({
 </html>
 `;
     }
-    function renderLocalReportJson2(run) {
+    function renderLocalReportJson2(rawRun) {
+      const run = (0, qa_report_1.normalizeRun)(rawRun);
       return JSON.stringify({
         project: run.project,
         framework: run.framework,
         generatedAt: run.generatedAt.toISOString(),
+        verdict: run.verdict,
+        environment: run.environment,
+        stats: run.stats,
+        // `summary` se mantiene por compatibilidad con consumidores que ya lo leían (gh-action).
+        // `stats` es el que tiene los totales de la suite entera, no solo de los casos rotos.
         summary: {
           total: run.cases.length,
           healed: run.cases.filter((c) => c.status === "healed").length,
@@ -1118,7 +1392,7 @@ var require_dist = __commonJS({
   "../reporter-core/dist/index.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
-    exports2.isPlaywrightOnlySelector = exports2.buildLocalRunFromEvents = exports2.printSummary = exports2.renderLocalReportJson = exports2.renderLocalReportHtml = exports2.runLocalHealing = exports2.analyzeAndHeal = exports2.extractSelectorFromError = void 0;
+    exports2.isPlaywrightOnlySelector = exports2.SEVERITY_LABEL = exports2.environmentRows = exports2.formatDuration = exports2.severityFor = exports2.buildDefectId = exports2.renderLocalReportMarkdown = exports2.statsFromCases = exports2.baseEnvironment = exports2.buildLocalRunFromEvents = exports2.printSummary = exports2.renderLocalReportJson = exports2.renderLocalReportHtml = exports2.runLocalHealing = exports2.analyzeAndHeal = exports2.extractSelectorFromError = void 0;
     var selector_extractor_1 = require_selector_extractor();
     Object.defineProperty(exports2, "extractSelectorFromError", { enumerable: true, get: function() {
       return selector_extractor_1.extractSelectorFromError;
@@ -1143,6 +1417,31 @@ var require_dist = __commonJS({
     } });
     Object.defineProperty(exports2, "buildLocalRunFromEvents", { enumerable: true, get: function() {
       return local_report_1.buildLocalRunFromEvents;
+    } });
+    Object.defineProperty(exports2, "baseEnvironment", { enumerable: true, get: function() {
+      return local_report_1.baseEnvironment;
+    } });
+    Object.defineProperty(exports2, "statsFromCases", { enumerable: true, get: function() {
+      return local_report_1.statsFromCases;
+    } });
+    var qa_report_1 = require_qa_report();
+    Object.defineProperty(exports2, "renderLocalReportMarkdown", { enumerable: true, get: function() {
+      return qa_report_1.renderLocalReportMarkdown;
+    } });
+    Object.defineProperty(exports2, "buildDefectId", { enumerable: true, get: function() {
+      return qa_report_1.buildDefectId;
+    } });
+    Object.defineProperty(exports2, "severityFor", { enumerable: true, get: function() {
+      return qa_report_1.severityFor;
+    } });
+    Object.defineProperty(exports2, "formatDuration", { enumerable: true, get: function() {
+      return qa_report_1.formatDuration;
+    } });
+    Object.defineProperty(exports2, "environmentRows", { enumerable: true, get: function() {
+      return qa_report_1.environmentRows;
+    } });
+    Object.defineProperty(exports2, "SEVERITY_LABEL", { enumerable: true, get: function() {
+      return qa_report_1.SEVERITY_LABEL;
     } });
     var selector_compat_1 = require_selector_compat();
     Object.defineProperty(exports2, "isPlaywrightOnlySelector", { enumerable: true, get: function() {

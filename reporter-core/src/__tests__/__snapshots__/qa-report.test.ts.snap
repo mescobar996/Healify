@@ -1,0 +1,59 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`renderLocalReportMarkdown > mantiene el formato del entregable estable (snapshot) 1`] = `
+"# Reporte de pruebas — Proyecto de prueba
+
+**Resultado: FAIL**
+
+Ejecutado el 15/3/2026, 07:30:00
+
+## Entorno
+
+- **Framework:** Playwright 1.58.0
+- **Navegador:** chromium
+- **URL base:** http://localhost:3000
+- **Sistema:** win32 10.0.26200
+- **Node:** v22.0.0
+- **Duración:** 12.5 s
+
+## Resumen
+
+| Métrica | Cantidad |
+|---|---|
+| Tests ejecutados | 10 |
+| Tests exitosos | 9 |
+| Tests fallidos | 1 |
+| Defectos con arreglo sugerido | 0 |
+| Defectos que requieren revisión | 1 |
+| Defectos sin sugerencia | 0 |
+
+## Defectos
+
+### HLF-A4071B — login > entra con credenciales válidas
+
+**Severidad:** Mayor · **Ubicación:** \`e2e/login.spec.ts\`
+
+**Resultado esperado:** El selector #login-btn encuentra un elemento en la página.
+
+**Resultado obtenido:** Waiting for selector '#login-btn' failed
+
+**Selector que falló:**
+
+\`\`\`
+#login-btn
+\`\`\`
+
+**Sugerencia (heurística local, 85% de confianza):**
+
+\`\`\`
+[data-testid='login-btn']
+\`\`\`
+
+> El id parece estable pero conviene un testid.
+
+---
+
+Generado por Healify — heurística local, sin IA. Las sugerencias salen de analizar el
+texto del selector, no la página real: revisalas antes de darlas por buenas.
+"
+`;

@@ -1,5 +1,35 @@
 # Changelog
 
+## Sin publicar — el reporte pasa a ser un entregable de QA
+
+El reporte servía para ver selectores rotos, pero no como entregable: no tenía veredicto, ni
+severidad, ni entorno, ni evidencia. Y había un agujero — si todos los tests pasaban no se
+generaba ningún archivo, así que no había forma de distinguir "salió todo bien" de "no se
+corrió nada".
+
+- **Veredicto PASS/FAIL** y **el reporte se escribe siempre**, también con la suite entera en
+  verde. Sale del resultado real de la corrida, no de cuántos selectores curó Healify.
+- **`healify-report.md` nuevo**: reporte de defectos en Markdown, listo para pegar en un
+  ticket o en un informe, con un bloque por defecto ordenado de más grave a menos grave.
+- **ID de defecto estable** (`HLF-A1B2C3`): el mismo selector roto en el mismo archivo da
+  siempre el mismo ID, en cualquier máquina. Es el cimiento para reconocer defectos repetidos
+  contra el historial más adelante.
+- **Severidad** derivada del estado con una regla fija: sin sugerencia es bloqueante, a
+  revisar es mayor, sanado es menor.
+- **Resultado esperado vs. obtenido, pasos para reproducir y evidencia**: los pasos salen de
+  los que Playwright registró de verdad y la evidencia enlaza al screenshot que el framework
+  ya escribió en disco. Nada se inventa: el adapter que no tiene un dato lo omite.
+- **Entorno** en el reporte: framework y versión, navegador, URL base, sistema, Node y
+  duración.
+- **Bug encontrado verificando con Playwright real**: la ubicación del test se guardaba como
+  ruta absoluta, así que el reporte filtraba la estructura de carpetas de quien lo corría y
+  —peor— el ID de defecto no coincidía entre dos personas del mismo equipo. Ahora es relativa
+  al proyecto.
+- **Bug en el plugin de Cypress**: `after:run` no siempre recibe resultados; leerlos sin
+  chequear hacía que el reporte no se escribiera nunca en esos modos.
+- `fix` sobre una corrida limpia ahora dice "ningún selector roto en la última corrida" en vez
+  de un escueto "0 aplicados · 0 salteados".
+
 ## Sin publicar — `init` te muestra cómo escribir el primer test
 
 Después de `init`, correr `npx playwright test` daba `No tests found`: correcto (Healify

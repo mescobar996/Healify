@@ -25,6 +25,14 @@ function reasonText(outcome: Extract<FixOutcome, { status: 'skipped' }>, astUsed
 }
 
 function printOutcomes(outcomes: FixOutcome[], run: LocalRun, astUsed: boolean): void {
+  // Desde que el reporte se escribe también cuando la suite pasa entera, `fix` se encuentra
+  // con reportes de 0 casos. "0 aplicados · 0 salteados" es correcto pero no dice nada; este
+  // es el camino feliz y merece decirlo.
+  if (run.cases.length === 0) {
+    console.log('Ningún selector roto en la última corrida — no hay nada que aplicar.')
+    return
+  }
+
   let applied = 0
   let skipped = 0
 

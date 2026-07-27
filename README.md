@@ -26,7 +26,11 @@ Healify init
 ✅ archivos creados:
    - playwright.config.js
 
-✅ Config lista. Escribí tu primer test en e2e/ y corré tus tests — cuando un selector se rompa vas a tener healify-report.html.
+✅ Config lista. Healify no te genera tests: el primer selector que cure tiene que ser
+   uno de tu propia app. Creá este archivo y editalo:
+
+   e2e/mi-primer-test.spec.js
+   [...el snippet completo, más abajo en "Tu primer test, paso a paso"]
 
 $ npx playwright test
   1 failed
@@ -51,6 +55,32 @@ Cada corrida además deja un **`healify-report.html`** autocontenido (dark/light
 interactivo, 100% offline). Podés ver uno real acá:
 [`docs/ejemplos/healify-report-ejemplo.html`](docs/ejemplos/healify-report-ejemplo.html)
 (descargalo y abrilo en tu navegador).
+
+## El reporte, en formato de QA
+
+Cada corrida escribe tres archivos, siempre — también cuando todos los tests pasan, porque
+un "salió todo bien" registrado es parte del trabajo:
+
+| Archivo | Para qué |
+|---|---|
+| `healify-report.html` | Leerlo vos: interactivo, con evidencia y modo claro/oscuro |
+| `healify-report.md` | Pegarlo en un ticket de Jira/Redmine o en un informe |
+| `healify-report.json` | Consumirlo desde otra herramienta o desde la GitHub Action |
+
+Los tres arrancan con un veredicto **PASS/FAIL** de la corrida y el entorno donde se ejecutó
+(framework y versión, navegador, URL base, sistema, Node y duración). Cada defecto trae:
+
+- **ID estable** (`HLF-A1B2C3`) — el mismo selector roto en el mismo archivo da siempre el
+  mismo ID, en tu máquina y en la de tu compañero.
+- **Severidad**: bloqueante (sin sugerencia), mayor (necesita revisión) o menor (hay un
+  arreglo de alta confianza listo para aplicar).
+- **Resultado esperado vs. obtenido**, ubicación exacta (`archivo:línea`) y duración.
+- **Pasos para reproducir**, tomados de los que el framework registró de verdad durante el
+  test — no son pasos inventados.
+- **Evidencia**: link al screenshot que Playwright/Cypress ya guardó, si lo tenés activado.
+
+Lo que un adapter no puede saber, no aparece. Selenium y WebdriverIO curan en vivo dentro de
+tu código y no tienen concepto de "suite", así que su reporte no inventa un total de tests.
 
 ## Frameworks soportados
 
@@ -200,7 +230,9 @@ npx playwright test
 npx cypress run
 ```
 
-Al terminar, si algo falló por selector roto, se crea `healify-report.html` y `healify-report.json` en la raíz.
+Al terminar se crean `healify-report.html`, `healify-report.md` y `healify-report.json` en la
+raíz — siempre, hayan fallado tests o no. Si la corrida salió limpia, el reporte lo dice con
+un **PASS** en vez de quedar vacío.
 
 > **¿El test falla apenas arranca, con algo que no tiene nada que ver con tu app (una
 > página en blanco, contenido de otra herramienta)?** Puede que otro programa esté usando

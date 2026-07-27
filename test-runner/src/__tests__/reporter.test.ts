@@ -1,5 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+const { mockWriteFileSync } = vi.hoisted(() => ({ mockWriteFileSync: vi.fn() }))
+vi.mock('node:fs', () => ({ writeFileSync: mockWriteFileSync }))
+
 const { mockRunLocalHealing } = vi.hoisted(() => {
   const mockRunLocalHealing = vi.fn((input: { testName: string; testFile?: string; errorMessage: string }) => ({
     testName: input.testName,
@@ -19,7 +22,17 @@ vi.mock('@healify/reporter-core', () => ({
   runLocalHealing: mockRunLocalHealing,
   renderLocalReportHtml: vi.fn(() => '<html></html>'),
   renderLocalReportJson: vi.fn(() => '{}'),
+  renderLocalReportMarkdown: vi.fn(() => '# reporte'),
   printSummary: vi.fn(),
+  baseEnvironment: vi.fn((framework: string, extra = {}) => ({ os: 'test', node: 'v20', framework, ...extra })),
+  statsFromCases: vi.fn((cases: unknown[], suite?: { total: number; passed: number; failed: number }) => ({
+    total: suite?.total ?? cases.length,
+    passed: suite?.passed ?? 0,
+    failed: suite?.failed ?? cases.length,
+    healed: 0,
+    review: 0,
+    unresolved: 0,
+  })),
 }))
 
 import HealifyReporter from '../reporter'
@@ -149,8 +162,37 @@ describe('HealifyReporter', () => {
     expect(() => reporter.onTestEnd(makeTest(), makeResult())).not.toThrow()
   })
 
-  it('onEnd no escribe nada si no hubo casos', () => {
+  it('onEnd escribe el reporte aunque no haya ningún caso — el "todo pasó" también es un entregable', () => {
+    // Cambio de comportamiento deliberado: antes se cortaba con `if (localResults.length === 0)
+    // return` y no se generaba nada cuando la suite pasaba entera. Un reporte de QA que solo
+    // aparece cuando algo se rompe no permite distinguir "salió todo bien" de "no se corrió".
     const reporter = new HealifyReporter()
-    expect(() => reporter.onEnd()).not.toThrow()
+
+    reporter.onEnd({ status: 'passed' } as any)
+
+    const paths = mockWriteFileSync.mock.calls.map((call) => String(call[0]))
+    expect(paths.some((p) => p.endsWith('healify-report.html'))).toBe(true)
+    expect(paths.some((p) => p.endsWith('healify-report.json'))).toBe(true)
+    expect(paths.some((p) => p.endsWith('healify-report.md'))).toBe(true)
+  })
+
+  it('el veredicto sale del resultado real de la corrida, no de los casos que curó Healify', async () => {
+    const reporter = new HealifyReporter()
+    const renderJson = vi.mocked((await import('@healify/reporter-core')).renderLocalReportJson)
+
+    reporter.onEnd({ status: 'failed' } as any)
+
+    expect(renderJson.mock.calls[0][0].verdict).toBe('failed')
+  })
+
+  it('cuenta los tests de toda la suite, no solo los que fallaron', () => {
+    const reporter = new HealifyReporter()
+
+    reporter.onTestEnd(makeTest(), makeResult({ status: 'passed' }))
+    reporter.onTestEnd(makeTest(), makeResult({ status: 'passed' }))
+    reporter.onTestEnd(makeTest(), makeResult())
+
+    expect(reporter['passed']).toBe(2)
+    expect(reporter['failed']).toBe(1)
   })
 })

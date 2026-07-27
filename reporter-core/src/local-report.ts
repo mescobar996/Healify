@@ -1,10 +1,22 @@
+import { buildDefectId, severityFor, environmentRows, normalizeRun, baseEnvironment, statsFromCases, SEVERITY_LABEL, type RunEnvironment, type RunStats } from './qa-report'
 import type { LocalCaseResult } from './local-mode'
 
+export { baseEnvironment, statsFromCases, type RunEnvironment, type RunStats }
+
+/**
+ * `verdict`, `stats` y `environment` son opcionales a propósito: `LocalRun` es un tipo
+ * público que un consumidor puede estar armando a mano desde antes de que existiera el
+ * reporte QA. Cuando faltan, los renderers los derivan de los casos vía `normalizeRun()` —
+ * el reporte sale igual, solo con menos detalle.
+ */
 export interface LocalRun {
   project: string
   framework: string
   generatedAt: Date
   cases: LocalCaseResult[]
+  verdict?: 'passed' | 'failed'
+  stats?: RunStats
+  environment?: RunEnvironment
 }
 
 /** Forma mínima que necesita buildLocalRunFromEvents — cada adapter (selenium-plugin,
@@ -27,18 +39,36 @@ export function buildLocalRunFromEvents(
   events: HealingEventLike[],
   options: { project: string; framework: string }
 ): LocalRun {
-  const cases: LocalCaseResult[] = events.map((e) => ({
-    testName: e.originalSelector,
-    selector: e.originalSelector,
-    errorMessage: `${e.type}: ${e.originalSelector}`,
-    status: (e.type === 'healed' ? 'healed' : e.type === 'no-suggestion' || e.type === 'failed' ? 'unresolved' : 'review') as LocalCaseResult['status'],
-    fixedSelector: e.fixedSelector ?? '',
-    confidence: e.confidence ?? 0,
-    explanation: e.explanation ?? '',
-    selectorType: e.type === 'healed' ? 'HEALED' : 'UNKNOWN',
-  }))
+  const cases: LocalCaseResult[] = events.map((e) => {
+    const status = (e.type === 'healed' ? 'healed' : e.type === 'no-suggestion' || e.type === 'failed' ? 'unresolved' : 'review') as LocalCaseResult['status']
+    return {
+      testName: e.originalSelector,
+      selector: e.originalSelector,
+      errorMessage: `${e.type}: ${e.originalSelector}`,
+      status,
+      fixedSelector: e.fixedSelector ?? '',
+      confidence: e.confidence ?? 0,
+      explanation: e.explanation ?? '',
+      selectorType: e.type === 'healed' ? 'HEALED' : 'UNKNOWN',
+      defectId: buildDefectId(undefined, e.originalSelector),
+      severity: severityFor(status),
+      expected: `El selector ${e.originalSelector} encuentra un elemento en la página.`,
+      actual: `${e.type}: ${e.originalSelector}`,
+    }
+  })
 
-  return { project: options.project, framework: options.framework, generatedAt: new Date(), cases }
+  // Selenium/WebdriverIO curan en vivo, dentro del código del usuario: no hay hook de "fin de
+  // corrida" ni forma de saber cuántos tests corrieron en total. Se reporta lo único que se
+  // sabe de verdad — los selectores que se interceptaron — sin inventar un total de suite.
+  return {
+    project: options.project,
+    framework: options.framework,
+    generatedAt: new Date(),
+    cases,
+    verdict: cases.some((c) => c.status !== 'healed') ? 'failed' : 'passed',
+    stats: statsFromCases(cases),
+    environment: baseEnvironment(options.framework),
+  }
 }
 
 /** Resumen de 1 línea a stdout, para no obligar a abrir el HTML en CI. */
@@ -102,17 +132,51 @@ function renderAttentionCase(c: IndexedCase): string {
     ? `<button class="btn" data-action="copy" aria-label="Copiar sugerencia">Copiar sugerencia</button>`
     : ''
 
+  const location = c.testFile ? `${c.testFile}${c.line ? `:${c.line}` : ''}` : ''
+
+  const qaGridHtml =
+    c.expected || c.actual
+      ? `<div class="qa-grid">
+          ${c.expected ? `<div class="qa-field"><div class="label">Resultado esperado</div><div class="value">${escapeHtml(c.expected)}</div></div>` : ''}
+          ${c.actual ? `<div class="qa-field"><div class="label">Resultado obtenido</div><div class="value">${escapeHtml(c.actual)}</div></div>` : ''}
+        </div>`
+      : ''
+
+  const stepsHtml =
+    c.steps && c.steps.length > 0
+      ? `<div class="qa-field"><div class="label">Pasos para reproducir</div>
+          <ol class="steps">${c.steps.map((s) => `<li>${escapeHtml(s)}</li>`).join('')}</ol></div>`
+      : ''
+
+  // La evidencia se enlaza al archivo que el framework ya escribió en disco — no se copia ni
+  // se embebe. Si el HTML se mueve de carpeta el link deja de resolver, que es el costo
+  // aceptado a cambio de un reporte liviano.
+  const evidenceHtml =
+    c.attachments && c.attachments.length > 0
+      ? `<div class="qa-field"><div class="label">Evidencia</div>
+          <div class="evidence">${c.attachments
+            .map((a) =>
+              a.contentType?.startsWith('image/')
+                ? `<a href="${escapeHtml(a.path)}" target="_blank" rel="noopener" title="${escapeHtml(a.name)}"><img src="${escapeHtml(a.path)}" alt="${escapeHtml(a.name)}"></a>`
+                : `<a href="${escapeHtml(a.path)}" target="_blank" rel="noopener">${escapeHtml(a.name)}</a>`
+            )
+            .join('')}</div></div>`
+      : ''
+
   return `
     <article class="case ${c.status}" data-id="${c._id}">
       <div class="case-top">
+        <span class="sev ${c.severity}">${SEVERITY_LABEL[c.severity]}</span>
+        <span class="defect-id">${escapeHtml(c.defectId)}</span>
         <span class="status-pill">${STATUS_LABEL[c.status]}</span>
         <span class="case-title">
           <span class="name">${escapeHtml(c.testName)}</span>
-          ${c.testFile ? `<span class="path">${escapeHtml(c.testFile)}</span>` : ''}
+          ${location ? `<span class="path">${escapeHtml(location)}</span>` : ''}
         </span>
         ${confidenceHtml}
       </div>
       <div class="case-body">
+        ${qaGridHtml}
         <div class="error">${escapeHtml(c.errorMessage)}</div>
         <div class="diff">
           <div class="diff-col before">
@@ -121,7 +185,14 @@ function renderAttentionCase(c: IndexedCase): string {
           </div>
           ${suggestionHtml}
         </div>
-        ${c.explanation ? `<p class="engine-note">${escapeHtml(c.explanation)}</p>` : ''}
+        ${
+          // Con `unresolved` no se muestra la explicación del motor: describe la estrategia
+          // que intentó, y al lado de "sin candidato confiable" se lee como si igual hubiera
+          // propuesto algo. Mismo criterio que el Markdown.
+          c.explanation && c.status !== 'unresolved' ? `<p class="engine-note">${escapeHtml(c.explanation)}</p>` : ''
+        }
+        ${stepsHtml}
+        ${evidenceHtml}
         <div class="case-actions">
           ${copyBtn}
           <button class="btn" data-action="fix">Marcar como arreglado</button>
@@ -142,7 +213,8 @@ function renderHealedCase(c: IndexedCase): string {
 }
 
 /** Genera el reporte HTML standalone del modo local — sin red, sin dependencias externas. */
-export function renderLocalReportHtml(run: LocalRun): string {
+export function renderLocalReportHtml(rawRun: LocalRun): string {
+  const run = normalizeRun(rawRun)
   const indexed: IndexedCase[] = run.cases.map((c, i) => ({ ...c, _id: i }))
   const total = indexed.length
   const healedCases = indexed.filter((c) => c.status === 'healed')
@@ -275,6 +347,45 @@ export function renderLocalReportHtml(run: LocalRun): string {
   .vital.healed .n { color: var(--healed); } .vital.healed .dot { background: var(--healed); }
   .vital.review .n { color: var(--review); } .vital.review .dot { background: var(--review); }
   .vital.unresolved .n { color: var(--unresolved); } .vital.unresolved .dot { background: var(--unresolved); }
+
+  .verdict {
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; margin-bottom: 18px;
+  }
+  .verdict .tag {
+    font-size: 15px; font-weight: 700; letter-spacing: .08em; padding: 6px 14px; border-radius: 8px; flex: none;
+  }
+  .verdict.pass { background: var(--healed-soft); border-color: var(--healed); }
+  .verdict.pass .tag { background: var(--healed); color: var(--background); }
+  .verdict.fail { background: var(--unresolved-soft); border-color: var(--unresolved); }
+  .verdict.fail .tag { background: var(--unresolved); color: #fff; }
+  .verdict .detail { font-size: 13.5px; color: var(--foreground); }
+  .verdict .detail .muted { color: var(--muted); }
+
+  .sev {
+    flex: none; font-size: 10.5px; font-weight: 700; padding: 3px 8px; border-radius: 5px;
+    text-transform: uppercase; letter-spacing: .04em;
+  }
+  .sev.blocker { background: var(--unresolved-soft); color: var(--unresolved); }
+  .sev.major { background: var(--review-soft); color: var(--review); }
+  .sev.minor { background: var(--healed-soft); color: var(--healed); }
+  .defect-id {
+    flex: none; font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--muted);
+    border: 1px solid var(--border); border-radius: 5px; padding: 3px 7px;
+  }
+
+  .qa-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 0; }
+  .qa-field .label { font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 5px; }
+  .qa-field .value { font-size: 12.5px; line-height: 1.5; }
+  .steps { margin: 14px 0 0 0; padding-left: 20px; font-size: 12.5px; color: var(--foreground); }
+  .steps li { margin-bottom: 3px; }
+  .evidence { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+  .evidence a {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 12px; text-decoration: none;
+    border: 1px solid var(--border); border-radius: 8px; padding: 6px 11px; color: var(--foreground);
+  }
+  .evidence a:hover { border-color: var(--border-strong); }
+  .evidence img { max-width: 220px; border-radius: 6px; border: 1px solid var(--border); display: block; }
 
   .section-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
   .section-head h2 { font-size: 16px; margin: 0; font-weight: 600; }
@@ -411,10 +522,20 @@ export function renderLocalReportHtml(run: LocalRun): string {
     </div>
   </div>
 
+  <div class="verdict ${run.verdict === 'passed' ? 'pass' : 'fail'}">
+    <span class="tag">${run.verdict === 'passed' ? 'PASS' : 'FAIL'}</span>
+    <span class="detail">
+      ${run.stats.passed} de ${run.stats.total} test${run.stats.total === 1 ? '' : 's'} sin errores
+      ${run.stats.failed > 0 ? `<span class="muted">· ${run.stats.failed} con fallos</span>` : ''}
+    </span>
+  </div>
+
   <div class="meta-strip">
     <div class="meta-cell"><div class="label">Proyecto</div><div class="value">${escapeHtml(run.project)}</div></div>
     <div class="meta-cell"><div class="label">Generado</div><div class="value mono">${escapeHtml(dateStr)}</div></div>
-    <div class="meta-cell"><div class="label">Motor</div><div class="value">Heurística local</div></div>
+    ${environmentRows(run)
+      .map((row) => `<div class="meta-cell"><div class="label">${escapeHtml(row.label)}</div><div class="value mono">${escapeHtml(row.value)}</div></div>`)
+      .join('')}
   </div>
 
   <div class="vitals">
@@ -433,7 +554,11 @@ export function renderLocalReportHtml(run: LocalRun): string {
       ${
         attentionCases.length > 0
           ? `<div class="cases">${attentionCases.map(renderAttentionCase).join('\n')}</div>`
-          : `<div class="empty">Todo limpio — no hay selectores que necesiten revisión manual.</div>`
+          : `<div class="empty">${
+              total === 0
+                ? 'Ningún test falló por un selector roto en esta corrida.'
+                : 'Todo limpio — no hay selectores que necesiten revisión manual.'
+            }</div>`
       }
     </div>
   </section>
@@ -454,7 +579,7 @@ export function renderLocalReportHtml(run: LocalRun): string {
 
   <div class="foot">
     <span class="privacy"><span class="dot"></span>Ningún dato de este proyecto salió de esta máquina</span>
-    <span>healify-report.json generado junto a este archivo</span>
+    <span>healify-report.json y healify-report.md generados junto a este archivo</span>
   </div>
 
 </div>
@@ -544,9 +669,12 @@ export function renderLocalReportHtml(run: LocalRun): string {
     if (reviewEl) reviewEl.textContent = String(review);
     var unresolvedEl = document.getElementById('vital-unresolved-n');
     if (unresolvedEl) unresolvedEl.textContent = String(unresolved);
-    if (total === 0) {
-      var wrap = document.getElementById('attention-wrap');
-      if (wrap) wrap.innerHTML = '<div class="empty">Todo limpio — no hay selectores que necesiten revisión manual.</div>';
+    // Solo se reemplaza si de verdad había casos renderizados y el usuario los fue marcando.
+    // Sin este chequeo pisaba el mensaje del estado inicial vacío ("ningún test falló por un
+    // selector roto"), que dice algo distinto y más preciso.
+    var wrap = document.getElementById('attention-wrap');
+    if (total === 0 && wrap && wrap.querySelector('.cases')) {
+      wrap.innerHTML = '<div class="empty">Todo limpio — no hay selectores que necesiten revisión manual.</div>';
     }
   }
 
@@ -597,12 +725,18 @@ export function renderLocalReportHtml(run: LocalRun): string {
 `
 }
 
-export function renderLocalReportJson(run: LocalRun): string {
+export function renderLocalReportJson(rawRun: LocalRun): string {
+  const run = normalizeRun(rawRun)
   return JSON.stringify(
     {
       project: run.project,
       framework: run.framework,
       generatedAt: run.generatedAt.toISOString(),
+      verdict: run.verdict,
+      environment: run.environment,
+      stats: run.stats,
+      // `summary` se mantiene por compatibilidad con consumidores que ya lo leían (gh-action).
+      // `stats` es el que tiene los totales de la suite entera, no solo de los casos rotos.
       summary: {
         total: run.cases.length,
         healed: run.cases.filter((c) => c.status === 'healed').length,

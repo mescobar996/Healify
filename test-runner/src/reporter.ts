@@ -1,16 +1,53 @@
 import { writeFileSync } from 'node:fs'
-import { join } from 'node:path'
-import type { Reporter, TestCase, TestResult } from '@playwright/test/reporter'
-import { runLocalHealing, renderLocalReportHtml, renderLocalReportJson, printSummary, type LocalCaseResult } from '@healify/reporter-core'
+import { join, relative } from 'node:path'
+import type { FullConfig, FullResult, Reporter, Suite, TestCase, TestResult, TestStep } from '@playwright/test/reporter'
+import {
+  runLocalHealing,
+  renderLocalReportHtml,
+  renderLocalReportJson,
+  renderLocalReportMarkdown,
+  printSummary,
+  baseEnvironment,
+  statsFromCases,
+  type LocalCaseResult,
+  type CaseAttachment,
+  type RunEnvironment,
+} from '@healify/reporter-core'
 
 /**
- * Corre la heurística local (sin red) sobre cada test fallido y al final de
- * la corrida escribe healify-report.html/json en el directorio de trabajo.
+ * Corre la heurística local (sin red) sobre cada test fallido y al final de la corrida
+ * escribe healify-report.html/json/md en el directorio de trabajo.
+ *
+ * El reporte se escribe SIEMPRE, incluso cuando todos los tests pasan: un reporte de QA sin
+ * el caso "todo verde" no sirve como entregable, porque no distingue "salió todo bien" de
+ * "no se corrió nada".
  */
 export default class HealifyReporter implements Reporter {
   private localResults: LocalCaseResult[] = []
+  private total = 0
+  private passed = 0
+  private failed = 0
+  private startedAt = Date.now()
+  private environment: RunEnvironment = baseEnvironment('Playwright')
+
+  onBegin(config: FullConfig, suite: Suite): void {
+    this.startedAt = Date.now()
+    this.total = suite.allTests().length
+
+    // El navegador y la baseURL viven en el project que Playwright resolvió, no en la config
+    // cruda. Se toma el primero: con varios projects el reporte igual dice cuál miró.
+    const project = config.projects[0]
+    this.environment = baseEnvironment('Playwright', {
+      frameworkVersion: config.version,
+      browser: project?.name,
+      baseURL: typeof project?.use?.baseURL === 'string' ? project.use.baseURL : undefined,
+    })
+  }
 
   onTestEnd(test: TestCase, result: TestResult): void {
+    if (result.status === 'passed') this.passed++
+    else if (result.status === 'failed' || result.status === 'timedOut') this.failed++
+
     if (result.status !== 'failed' && result.status !== 'timedOut') return
 
     // Bug real encontrado probando contra Playwright de verdad: cuando el click() nunca
@@ -26,25 +63,81 @@ export default class HealifyReporter implements Reporter {
       result.error?.value ||
       'Unknown error'
     const testName = test.titlePath().filter(Boolean).join(' > ')
-    const testFile = test.location.file
+    // Relativa al cwd, no absoluta: la ruta viaja dentro del reporte (que se comparte y se
+    // pega en tickets) y además alimenta el defectId. Con la ruta absoluta, dos personas del
+    // mismo equipo generaban IDs distintos para el mismo defecto, y el reporte filtraba la
+    // estructura de carpetas de quien lo corrió.
+    const testFile = relative(process.cwd(), test.location.file).replace(/\\/g, '/')
 
     try {
-      this.localResults.push(runLocalHealing({ testName, testFile, errorMessage }))
+      this.localResults.push(
+        runLocalHealing({
+          testName,
+          testFile,
+          errorMessage,
+          line: test.location.line,
+          durationMs: result.duration,
+          steps: describeSteps(result.steps),
+          attachments: collectAttachments(result),
+        })
+      )
     } catch {
       // Nunca romper la corrida real por un fallo del healing local.
     }
   }
 
-  onEnd(): void {
-    if (this.localResults.length === 0) return
-
+  onEnd(result: FullResult): void {
     try {
-      const run = { project: 'Playwright suite', framework: 'Playwright', generatedAt: new Date(), cases: this.localResults }
+      const run = {
+        project: 'Playwright suite',
+        framework: 'Playwright',
+        generatedAt: new Date(),
+        cases: this.localResults,
+        verdict: (result.status === 'passed' ? 'passed' : 'failed') as 'passed' | 'failed',
+        stats: statsFromCases(this.localResults, {
+          total: this.total,
+          passed: this.passed,
+          failed: this.failed,
+          durationMs: Date.now() - this.startedAt,
+        }),
+        environment: this.environment,
+      }
       writeFileSync(join(process.cwd(), 'healify-report.html'), renderLocalReportHtml(run))
       writeFileSync(join(process.cwd(), 'healify-report.json'), renderLocalReportJson(run))
+      writeFileSync(join(process.cwd(), 'healify-report.md'), renderLocalReportMarkdown(run))
     } catch {
       // Fire-and-forget: el reporte local nunca debe romper la corrida.
     }
     printSummary(this.localResults)
   }
+}
+
+/**
+ * Los pasos que Playwright registró de verdad durante el test, que es lo que sirve como
+ * "pasos para reproducir" en un reporte de defectos. Solo se toman los de categoría
+ * `test.step` (los que el usuario escribió) y las llamadas a la API de página — el resto
+ * (hooks, fixtures, expects internos) es ruido de infraestructura.
+ */
+function describeSteps(steps: TestStep[] | undefined): string[] | undefined {
+  const relevant = (steps ?? [])
+    .filter((s) => s.category === 'test.step' || s.category === 'pw:api')
+    .map((s) => s.title.trim())
+    .filter(Boolean)
+  return relevant.length > 0 ? relevant : undefined
+}
+
+/**
+ * Evidencia que Playwright ya escribió en disco (screenshot, video, trace) si el usuario la
+ * tiene configurada. Se enlaza por ruta relativa al cwd, para que el link del reporte
+ * resuelva desde donde queda el HTML. Nunca se copia ni se embebe el archivo.
+ */
+function collectAttachments(result: TestResult): CaseAttachment[] | undefined {
+  const attachments = (result.attachments ?? [])
+    .filter((a) => a.path)
+    .map((a) => ({
+      name: a.name,
+      path: relative(process.cwd(), a.path as string).replace(/\\/g, '/'),
+      contentType: a.contentType,
+    }))
+  return attachments.length > 0 ? attachments : undefined
 }

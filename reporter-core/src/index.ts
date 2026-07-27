@@ -1,5 +1,6 @@
 export { extractSelectorFromError } from './selector-extractor'
 export { analyzeAndHeal, type HealRequest, type HealResponse, type SelectorType } from './healing-engine'
-export { runLocalHealing, type LocalCaseInput, type LocalCaseResult, type LocalCaseStatus } from './local-mode'
-export { renderLocalReportHtml, renderLocalReportJson, printSummary, buildLocalRunFromEvents, type LocalRun, type HealingEventLike } from './local-report'
+export { runLocalHealing, type LocalCaseInput, type LocalCaseResult, type LocalCaseStatus, type CaseAttachment } from './local-mode'
+export { renderLocalReportHtml, renderLocalReportJson, printSummary, buildLocalRunFromEvents, baseEnvironment, statsFromCases, type LocalRun, type HealingEventLike, type RunEnvironment, type RunStats } from './local-report'
+export { renderLocalReportMarkdown, buildDefectId, severityFor, formatDuration, environmentRows, SEVERITY_LABEL, type Severity } from './qa-report'
 export { isPlaywrightOnlySelector } from './selector-compat'

@@ -20,7 +20,17 @@ vi.mock('@healify/reporter-core', () => ({
   runLocalHealing: mockRunLocalHealing,
   renderLocalReportHtml: vi.fn(() => '<html></html>'),
   renderLocalReportJson: vi.fn(() => '{}'),
+  renderLocalReportMarkdown: vi.fn(() => '# reporte'),
   printSummary: vi.fn(),
+  baseEnvironment: vi.fn((framework: string, extra = {}) => ({ os: 'test', node: 'v20', framework, ...extra })),
+  statsFromCases: vi.fn((cases: unknown[], suite?: { total: number; passed: number; failed: number }) => ({
+    total: suite?.total ?? cases.length,
+    passed: suite?.passed ?? 0,
+    failed: suite?.failed ?? cases.length,
+    healed: 0,
+    review: 0,
+    unresolved: 0,
+  })),
 }))
 
 vi.mock('node:fs', () => ({
@@ -96,27 +106,42 @@ describe('HealifyCypressPlugin', () => {
     expect(mockRunLocalHealing.mock.calls[0][0]).toMatchObject({ errorMessage: 'Unknown error' })
   })
 
-  it('escribe healify-report.html/json en after:run cuando hay casos acumulados', () => {
+  it('escribe healify-report.html/json/md en after:run cuando hay casos acumulados', () => {
     const { on, handlers } = createOnCapture()
     HealifyCypressPlugin(on, fakeConfig)
 
     handlers['after:spec'](makeSpec(), makeResults([makeTest()]))
     handlers['after:run']()
 
-    expect(mockWriteFileSync).toHaveBeenCalledTimes(2)
+    expect(mockWriteFileSync).toHaveBeenCalledTimes(3)
     const paths = mockWriteFileSync.mock.calls.map((call) => call[0])
     expect(paths.some((p: string) => p.endsWith('healify-report.html'))).toBe(true)
     expect(paths.some((p: string) => p.endsWith('healify-report.json'))).toBe(true)
+    expect(paths.some((p: string) => p.endsWith('healify-report.md'))).toBe(true)
   })
 
-  it('NO escribe nada en after:run si no hubo tests fallidos', () => {
+  it('escribe el reporte también cuando toda la suite pasó — el "todo verde" también es un entregable', () => {
+    // Cambio de comportamiento deliberado: antes se cortaba con `if (localResults.length === 0)
+    // return`. Un reporte que solo existe cuando algo falla no distingue "salió todo bien" de
+    // "no se corrió nada".
     const { on, handlers } = createOnCapture()
     HealifyCypressPlugin(on, fakeConfig)
 
     handlers['after:spec'](makeSpec(), makeResults([makeTest({ state: 'passed' })]))
     handlers['after:run']()
 
-    expect(mockWriteFileSync).not.toHaveBeenCalled()
+    expect(mockWriteFileSync).toHaveBeenCalledTimes(3)
+  })
+
+  it('no rompe si Cypress invoca after:run sin resultados', () => {
+    // Cypress no pasa `results` en todos los modos de ejecución. Encontrado por este test:
+    // leer `results.browserName` sin chequear tiraba y el reporte no se escribía nunca.
+    const { on, handlers } = createOnCapture()
+    HealifyCypressPlugin(on, fakeConfig)
+
+    handlers['after:spec'](makeSpec(), makeResults([makeTest()]))
+    expect(() => handlers['after:run'](undefined)).not.toThrow()
+    expect(mockWriteFileSync).toHaveBeenCalledTimes(3)
   })
 
   it('no rompe la corrida si runLocalHealing lanza una excepción', () => {
