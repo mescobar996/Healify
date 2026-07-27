@@ -1302,7 +1302,14 @@ var HealifyWebdriverIOPlugin = class {
       }
     };
   }
-  /** Devuelve un proxy sobre el browser — el original nunca se muta. */
+  /**
+   * Devuelve un proxy sobre el browser — el original nunca se muta.
+   *
+   * Genérico a propósito: `WebdriverIO.Browser` es una interfaz sin index signature, así que
+   * no es asignable a `Record<string, unknown>` y tiparlo así rompía el uso real (ver
+   * healify.wdio.example.ts). Con `<T extends object>` el usuario además conserva el tipado
+   * y el autocompletado de su propio browser, que es lo que el proxy devuelve en runtime.
+   */
   wrap(browser) {
     return wrapBrowser(browser, this.options);
   }

@@ -1,0 +1,704 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`corpus de heurística (snapshot) > no cambia la salida para #ember1234 1`] = `
+{
+  "alternatives": [],
+  "confidence": 0.82,
+  "explanation": "Se detectó un ID dinámico con hash o número aleatorio. Se propuso una clase estable como alternativa.",
+  "fixedSelector": ".ember",
+  "needsReview": false,
+  "robustnessImprovement": 38,
+  "selectorType": "CSS",
+  "technicalDetails": {
+    "accessibilityCompliant": false,
+    "detectedIssue": "ID selectors are brittle and can change",
+    "proposedSolution": "Dynamic IDs change between builds; stable classes are preferred",
+    "stableAgainstDOMChanges": true,
+  },
+}
+`;
+
+exports[`corpus de heurística (snapshot) > no cambia la salida para #login-button 1`] = `
+{
+  "alternatives": [
+    {
+      "confidence": 0.85,
+      "selector": "button:has-text('Login')",
+    },
+  ],
+  "confidence": 0.87,
+  "explanation": "Se detectó un ID inestable; se cambió por un selector basado en accesibilidad (ARIA role) para mayor robustez.",
+  "fixedSelector": "role('button', { name: 'Login' })",
+  "needsReview": false,
+  "robustnessImprovement": 45,
+  "selectorType": "ROLE",
+  "technicalDetails": {
+    "accessibilityCompliant": true,
+    "detectedIssue": "ID selectors are brittle and can change",
+    "proposedSolution": "ARIA roles are stable across refactors and DOM restructures",
+    "stableAgainstDOMChanges": true,
+  },
+}
+`;
+
+exports[`corpus de heurística (snapshot) > no cambia la salida para #mat-input-27 1`] = `
+{
+  "alternatives": [
+    {
+      "confidence": 0.88,
+      "selector": "input[placeholder*='Field']",
+    },
+    {
+      "confidence": 0.78,
+      "selector": ".mat-input",
+    },
+  ],
+  "confidence": 0.91,
+  "explanation": "Selector basado en la relación semántica entre label e input. Altamente resiliente a cambios de estructura.",
+  "fixedSelector": "label:has-text('Field') + input",
+  "needsReview": false,
+  "robustnessImprovement": 40,
+  "selectorType": "CSS",
+  "technicalDetails": {
+    "accessibilityCompliant": false,
+    "detectedIssue": "ID selectors are brittle and can change",
+    "proposedSolution": "Label-input relationships are semantically meaningful",
+    "stableAgainstDOMChanges": true,
+  },
+}
+`;
+
+exports[`corpus de heurística (snapshot) > no cambia la salida para #react-select-3-option-0 1`] = `
+{
+  "alternatives": [],
+  "confidence": 0.76,
+  "explanation": "Se detectó un ID dinámico con hash o número aleatorio. Se propuso una clase estable como alternativa.",
+  "fixedSelector": ".react-select-option",
+  "needsReview": true,
+  "robustnessImprovement": 38,
+  "selectorType": "CSS",
+  "technicalDetails": {
+    "accessibilityCompliant": false,
+    "detectedIssue": "ID selectors are brittle and can change",
+    "proposedSolution": "Dynamic IDs change between builds; stable classes are preferred",
+    "stableAgainstDOMChanges": true,
+  },
+}
+`;
+
+exports[`corpus de heurística (snapshot) > no cambia la salida para #submit 1`] = `
+{
+  "alternatives": [
+    {
+      "confidence": 0.85,
+      "selector": "button:has-text('Submit')",
+    },
+  ],
+  "confidence": 0.9,
+  "explanation": "Se detectó un ID inestable; se cambió por un selector basado en accesibilidad (ARIA role) para mayor robustez.",
+  "fixedSelector": "role('button', { name: 'Submit' })",
+  "needsReview": false,
+  "robustnessImprovement": 45,
+  "selectorType": "ROLE",
+  "technicalDetails": {
+    "accessibilityCompliant": true,
+    "detectedIssue": "ID selectors are brittle and can change",
+    "proposedSolution": "ARIA roles are stable across refactors and DOM restructures",
+    "stableAgainstDOMChanges": true,
+  },
+}
+`;
+
+exports[`corpus de heurística (snapshot) > no cambia la salida para #user_email_1a2b3c 1`] = `
+{
+  "alternatives": [],
+  "confidence": 0.75,
+  "explanation": "Selector compuesto con filtro de visibilidad. Mayor robustez contra elementos ocultos.",
+  "fixedSelector": "visible=user_email_1a2b3c",
+  "needsReview": true,
+  "robustnessImprovement": 25,
+  "selectorType": "CSS",
+  "technicalDetails": {
+    "accessibilityCompliant": false,
+    "detectedIssue": "ID selectors are brittle and can change",
+    "proposedSolution": "Visibility filters prevent interaction with hidden elements",
+    "stableAgainstDOMChanges": true,
+  },
+}
+`;
+
+exports[`corpus de heurística (snapshot) > no cambia la salida para .MuiButton-root-482 1`] = `
+{
+  "alternatives": [
+    {
+      "confidence": 0.85,
+      "selector": "button:has-text('Submit')",
+    },
+  ],
+  "confidence": 0.89,
+  "explanation": "Se detectó un CLASS inestable; se cambió por un selector basado en accesibilidad (ARIA role) para mayor robustez.",
+  "fixedSelector": "role('button', { name: 'Submit' })",
+  "needsReview": false,
+  "robustnessImprovement": 45,
+  "selectorType": "ROLE",
+  "technicalDetails": {
+    "accessibilityCompliant": true,
+    "detectedIssue": "Class names can change during refactoring",
+    "proposedSolution": "ARIA roles are stable across refactors and DOM restructures",
+    "stableAgainstDOMChanges": true,
+  },
+}
+`;
+
+exports[`corpus de heurística (snapshot) > no cambia la salida para .btn-primary 1`] = `
+{
+  "alternatives": [
+    {
+      "confidence": 0.85,
+      "selector": "button:has-text('Submit')",
+    },
+  ],
+  "confidence": 0.93,
+  "explanation": "Se detectó un CLASS inestable; se cambió por un selector basado en accesibilidad (ARIA role) para mayor robustez.",
+  "fixedSelector": "role('button', { name: 'Submit' })",
+  "needsReview": false,
+  "robustnessImprovement": 45,
+  "selectorType": "ROLE",
+  "technicalDetails": {
+    "accessibilityCompliant": true,
+    "detectedIssue": "Class names can change during refactoring",
+    "proposedSolution": "ARIA roles are stable across refactors and DOM restructures",
+    "stableAgainstDOMChanges": true,
+  },
+}
+`;
+
+exports[`corpus de heurística (snapshot) > no cambia la salida para .css-1x2y3z4 1`] = `
+{
+  "alternatives": [],
+  "confidence": 0.77,
+  "explanation": "Selector compuesto con filtro de visibilidad. Mayor robustez contra elementos ocultos.",
+  "fixedSelector": "visible=css-1x2y3z4",
+  "needsReview": true,
+  "robustnessImprovement": 25,
+  "selectorType": "CSS",
+  "technicalDetails": {
+    "accessibilityCompliant": false,
+    "detectedIssue": "Class names can change during refactoring",
+    "proposedSolution": "Visibility filters prevent interaction with hidden elements",
+    "stableAgainstDOMChanges": true,
+  },
+}
+`;
+
+exports[`corpus de heurística (snapshot) > no cambia la salida para .flex.items-center.px-4 1`] = `
+{
+  "alternatives": [],
+  "confidence": 0.75,
+  "explanation": "Selector compuesto con filtro de visibilidad. Mayor robustez contra elementos ocultos.",
+  "fixedSelector": "visible=flex.items-center.px-4",
+  "needsReview": true,
+  "robustnessImprovement": 25,
+  "selectorType": "CSS",
+  "technicalDetails": {
+    "accessibilityCompliant": false,
+    "detectedIssue": "Class names can change during refactoring",
+    "proposedSolution": "Visibility filters prevent interaction with hidden elements",
+    "stableAgainstDOMChanges": true,
+  },
+}
+`;
+
+exports[`corpus de heurística (snapshot) > no cambia la salida para .jsx-2847362913 1`] = `
+{
+  "alternatives": [],
+  "confidence": 0.75,
+  "explanation": "Selector compuesto con filtro de visibilidad. Mayor robustez contra elementos ocultos.",
+  "fixedSelector": "visible=jsx-2847362913",
+  "needsReview": true,
+  "robustnessImprovement": 25,
+  "selectorType": "CSS",
+  "technicalDetails": {
+    "accessibilityCompliant": false,
+    "detectedIssue": "Class names can change during refactoring",
+    "proposedSolution": "Visibility filters prevent interaction with hidden elements",
+    "stableAgainstDOMChanges": true,
+  },
+}
+`;
+
+exports[`corpus de heurística (snapshot) > no cambia la salida para .modal .footer button 1`] = `
+{
+  "alternatives": [
+    {
+      "confidence": 0.85,
+      "selector": "button:has-text('Submit')",
+    },
+  ],
+  "confidence": 0.92,
+  "explanation": "Se detectó un CLASS inestable; se cambió por un selector basado en accesibilidad (ARIA role) para mayor robustez.",
+  "fixedSelector": "role('button', { name: 'Submit' })",
+  "needsReview": false,
+  "robustnessImprovement": 45,
+  "selectorType": "ROLE",
+  "technicalDetails": {
+    "accessibilityCompliant": true,
+    "detectedIssue": "Class names can change during refactoring",
+    "proposedSolution": "ARIA roles are stable across refactors and DOM restructures",
+    "stableAgainstDOMChanges": true,
+  },
+}
+`;
+
+exports[`corpus de heurística (snapshot) > no cambia la salida para .sc-bdVaJa 1`] = `
+{
+  "alternatives": [],
+  "confidence": 0.75,
+  "explanation": "Selector compuesto con filtro de visibilidad. Mayor robustez contra elementos ocultos.",
+  "fixedSelector": "visible=sc-bdVaJa",
+  "needsReview": true,
+  "robustnessImprovement": 25,
+  "selectorType": "CSS",
+  "technicalDetails": {
+    "accessibilityCompliant": false,
+    "detectedIssue": "Class names can change during refactoring",
+    "proposedSolution": "Visibility filters prevent interaction with hidden elements",
+    "stableAgainstDOMChanges": true,
+  },
+}
+`;
+
+exports[`corpus de heurística (snapshot) > no cambia la salida para //*[@id="root"]/div/section[3] 1`] = `
+{
+  "alternatives": [],
+  "confidence": 0.84,
+  "explanation": "Se reemplazó el XPath frágil por un selector de rol. Los XPath dependen de la estructura exacta del DOM que cambia frecuentemente.",
+  "fixedSelector": "role('button')",
+  "needsReview": false,
+  "robustnessImprovement": 55,
+  "selectorType": "ROLE",
+  "technicalDetails": {
+    "accessibilityCompliant": true,
+    "detectedIssue": "XPath is fragile to DOM structure changes",
+    "proposedSolution": "XPath is the most fragile selector type; ARIA roles are preferred",
+    "stableAgainstDOMChanges": true,
+  },
+}
+`;
+
+exports[`corpus de heurística (snapshot) > no cambia la salida para //button[@id="save"] 1`] = `
+{
+  "alternatives": [
+    {
+      "confidence": 0.82,
+      "selector": "role('button')",
+    },
+    {
+      "confidence": 0.85,
+      "selector": "button:has-text('Save')",
+    },
+  ],
+  "confidence": 0.92,
+  "explanation": "Se detectó un XPATH inestable; se cambió por un selector basado en accesibilidad (ARIA role) para mayor robustez.",
+  "fixedSelector": "role('button', { name: 'Save' })",
+  "needsReview": false,
+  "robustnessImprovement": 45,
+  "selectorType": "ROLE",
+  "technicalDetails": {
+    "accessibilityCompliant": true,
+    "detectedIssue": "XPath is fragile to DOM structure changes",
+    "proposedSolution": "ARIA roles are stable across refactors and DOM restructures",
+    "stableAgainstDOMChanges": true,
+  },
+}
+`;
+
+exports[`corpus de heurística (snapshot) > no cambia la salida para /html/body/div[2]/div/form/button 1`] = `
+{
+  "alternatives": [
+    {
+      "confidence": 0.85,
+      "selector": "button:has-text('Submit')",
+    },
+  ],
+  "confidence": 0.9,
+  "explanation": "Se detectó un CSS inestable; se cambió por un selector basado en accesibilidad (ARIA role) para mayor robustez.",
+  "fixedSelector": "role('button', { name: 'Submit' })",
+  "needsReview": false,
+  "robustnessImprovement": 45,
+  "selectorType": "ROLE",
+  "technicalDetails": {
+    "accessibilityCompliant": true,
+    "detectedIssue": "Selector pattern analysis",
+    "proposedSolution": "ARIA roles are stable across refactors and DOM restructures",
+    "stableAgainstDOMChanges": true,
+  },
+}
+`;
+
+exports[`corpus de heurística (snapshot) > no cambia la salida para [aria-label="Cerrar"] 1`] = `
+{
+  "alternatives": [],
+  "confidence": 0.98,
+  "explanation": "El selector ya usa aria-label, un atributo de accesibilidad estable. Se conserva tal cual.",
+  "fixedSelector": "[aria-label="Cerrar"]",
+  "needsReview": false,
+  "robustnessImprovement": 0,
+  "selectorType": "ROLE",
+  "technicalDetails": {
+    "accessibilityCompliant": true,
+    "detectedIssue": "Selector pattern analysis",
+    "proposedSolution": "aria-label is an accessibility attribute purpose-built for stable identification",
+    "stableAgainstDOMChanges": true,
+  },
+}
+`;
+
+exports[`corpus de heurística (snapshot) > no cambia la salida para [data-cy="login-form"] 1`] = `
+{
+  "alternatives": [
+    {
+      "confidence": 0.92,
+      "selector": "role('button', { name: 'Login' })",
+    },
+    {
+      "confidence": 0.85,
+      "selector": "button:has-text('Login')",
+    },
+  ],
+  "confidence": 0.96,
+  "explanation": "El testid se mantiene pero se normaliza la sintaxis. Los atributos data-cy son la opción más estable cuando están disponibles.",
+  "fixedSelector": "[data-cy='login-form']",
+  "needsReview": false,
+  "robustnessImprovement": 50,
+  "selectorType": "TESTID",
+  "technicalDetails": {
+    "accessibilityCompliant": false,
+    "detectedIssue": "Selector pattern analysis",
+    "proposedSolution": "data-cy attributes are purpose-built for testing stability",
+    "stableAgainstDOMChanges": true,
+  },
+}
+`;
+
+exports[`corpus de heurística (snapshot) > no cambia la salida para [data-e2e="nav-profile"] 1`] = `
+{
+  "alternatives": [
+    {
+      "confidence": 0.91,
+      "selector": "role('link', { name: 'Submit' })",
+    },
+  ],
+  "confidence": 0.96,
+  "explanation": "El testid se mantiene pero se normaliza la sintaxis. Los atributos data-e2e son la opción más estable cuando están disponibles.",
+  "fixedSelector": "[data-e2e='nav-profile']",
+  "needsReview": false,
+  "robustnessImprovement": 50,
+  "selectorType": "TESTID",
+  "technicalDetails": {
+    "accessibilityCompliant": false,
+    "detectedIssue": "Selector pattern analysis",
+    "proposedSolution": "data-e2e attributes are purpose-built for testing stability",
+    "stableAgainstDOMChanges": true,
+  },
+}
+`;
+
+exports[`corpus de heurística (snapshot) > no cambia la salida para [data-qa="user-menu"] 1`] = `
+{
+  "alternatives": [],
+  "confidence": 0.98,
+  "explanation": "El testid se mantiene pero se normaliza la sintaxis. Los atributos data-qa son la opción más estable cuando están disponibles.",
+  "fixedSelector": "[data-qa='user-menu']",
+  "needsReview": false,
+  "robustnessImprovement": 50,
+  "selectorType": "TESTID",
+  "technicalDetails": {
+    "accessibilityCompliant": false,
+    "detectedIssue": "Selector pattern analysis",
+    "proposedSolution": "data-qa attributes are purpose-built for testing stability",
+    "stableAgainstDOMChanges": true,
+  },
+}
+`;
+
+exports[`corpus de heurística (snapshot) > no cambia la salida para [data-test="checkout-total"] 1`] = `
+{
+  "alternatives": [],
+  "confidence": 0.98,
+  "explanation": "El testid se mantiene pero se normaliza la sintaxis. Los atributos data-test son la opción más estable cuando están disponibles.",
+  "fixedSelector": "[data-test='checkout-total']",
+  "needsReview": false,
+  "robustnessImprovement": 50,
+  "selectorType": "TESTID",
+  "technicalDetails": {
+    "accessibilityCompliant": false,
+    "detectedIssue": "Selector pattern analysis",
+    "proposedSolution": "data-test attributes are purpose-built for testing stability",
+    "stableAgainstDOMChanges": true,
+  },
+}
+`;
+
+exports[`corpus de heurística (snapshot) > no cambia la salida para [data-testid="submit-button"] 1`] = `
+{
+  "alternatives": [
+    {
+      "confidence": 0.92,
+      "selector": "role('button', { name: 'Submit' })",
+    },
+    {
+      "confidence": 0.85,
+      "selector": "button:has-text('Submit')",
+    },
+  ],
+  "confidence": 0.9,
+  "explanation": "El testid se mantiene pero se normaliza la sintaxis. Los atributos data-testid son la opción más estable cuando están disponibles.",
+  "fixedSelector": "[data-testid='submit-button']",
+  "needsReview": false,
+  "robustnessImprovement": 50,
+  "selectorType": "TESTID",
+  "technicalDetails": {
+    "accessibilityCompliant": false,
+    "detectedIssue": "Selector pattern analysis",
+    "proposedSolution": "data-testid attributes are purpose-built for testing stability",
+    "stableAgainstDOMChanges": true,
+  },
+}
+`;
+
+exports[`corpus de heurística (snapshot) > no cambia la salida para [name="email"] 1`] = `
+{
+  "alternatives": [],
+  "confidence": 0.85,
+  "explanation": "El selector ya usa el atributo name, razonablemente estable aunque puede no ser único. Se conserva tal cual.",
+  "fixedSelector": "[name="email"]",
+  "needsReview": false,
+  "robustnessImprovement": 0,
+  "selectorType": "CSS",
+  "technicalDetails": {
+    "accessibilityCompliant": false,
+    "detectedIssue": "The name attribute may not be unique",
+    "proposedSolution": "The name attribute is usually stable but may not be unique across the page",
+    "stableAgainstDOMChanges": true,
+  },
+}
+`;
+
+exports[`corpus de heurística (snapshot) > no cambia la salida para [type="button"] 1`] = `
+{
+  "alternatives": [
+    {
+      "confidence": 0.85,
+      "selector": "button:has-text('Submit')",
+    },
+  ],
+  "confidence": 0.88,
+  "explanation": "Se detectó un CSS inestable; se cambió por un selector basado en accesibilidad (ARIA role) para mayor robustez.",
+  "fixedSelector": "role('button', { name: 'Submit' })",
+  "needsReview": false,
+  "robustnessImprovement": 45,
+  "selectorType": "ROLE",
+  "technicalDetails": {
+    "accessibilityCompliant": true,
+    "detectedIssue": "Selector pattern analysis",
+    "proposedSolution": "ARIA roles are stable across refactors and DOM restructures",
+    "stableAgainstDOMChanges": true,
+  },
+}
+`;
+
+exports[`corpus de heurística (snapshot) > no cambia la salida para [type="submit"] 1`] = `
+{
+  "alternatives": [
+    {
+      "confidence": 0.85,
+      "selector": "button:has-text('Submit')",
+    },
+  ],
+  "confidence": 0.91,
+  "explanation": "Se detectó un CSS inestable; se cambió por un selector basado en accesibilidad (ARIA role) para mayor robustez.",
+  "fixedSelector": "role('button', { name: 'Submit' })",
+  "needsReview": false,
+  "robustnessImprovement": 45,
+  "selectorType": "ROLE",
+  "technicalDetails": {
+    "accessibilityCompliant": true,
+    "detectedIssue": "Selector pattern analysis",
+    "proposedSolution": "ARIA roles are stable across refactors and DOM restructures",
+    "stableAgainstDOMChanges": true,
+  },
+}
+`;
+
+exports[`corpus de heurística (snapshot) > no cambia la salida para div:nth-child(3) > span:nth-of-type(2) 1`] = `
+{
+  "alternatives": [],
+  "confidence": 0.79,
+  "explanation": "Selector basado en posición (nth-child/nth-of-type) — depende del orden exacto de hermanos en el DOM, se rompe con solo agregar/quitar un elemento vecino. Se propone un selector de rol como punto de partida; revisar manualmente para afinar el name.",
+  "fixedSelector": "role('button')",
+  "needsReview": true,
+  "robustnessImprovement": 40,
+  "selectorType": "ROLE",
+  "technicalDetails": {
+    "accessibilityCompliant": true,
+    "detectedIssue": "Position-based selector (nth-child/nth-of-type) depends on exact sibling order in the DOM",
+    "proposedSolution": "Position-based selectors (nth-child/nth-of-type) break whenever sibling elements are added, removed, or reordered",
+    "stableAgainstDOMChanges": true,
+  },
+}
+`;
+
+exports[`corpus de heurística (snapshot) > no cambia la salida para form.checkout > button.submit 1`] = `
+{
+  "alternatives": [
+    {
+      "confidence": 0.85,
+      "selector": "button:has-text('Submit')",
+    },
+  ],
+  "confidence": 0.88,
+  "explanation": "Se detectó un CSS inestable; se cambió por un selector basado en accesibilidad (ARIA role) para mayor robustez.",
+  "fixedSelector": "role('button', { name: 'Submit' })",
+  "needsReview": false,
+  "robustnessImprovement": 45,
+  "selectorType": "ROLE",
+  "technicalDetails": {
+    "accessibilityCompliant": true,
+    "detectedIssue": "Selector pattern analysis",
+    "proposedSolution": "ARIA roles are stable across refactors and DOM restructures",
+    "stableAgainstDOMChanges": true,
+  },
+}
+`;
+
+exports[`corpus de heurística (snapshot) > no cambia la salida para getByRole("button", { name: "Guardar" }) 1`] = `
+{
+  "alternatives": [],
+  "confidence": 0.79,
+  "explanation": "El selector ya usa un locator moderno de Playwright (getBy*), que es la práctica recomendada. No se propone downgrade — sin acceso al DOM real no se puede saber por qué dejó de encontrar el elemento; puede ser un cambio genuino de la UI que amerita revisión manual.",
+  "fixedSelector": "getByRole("button", { name: "Guardar" })",
+  "needsReview": true,
+  "robustnessImprovement": 0,
+  "selectorType": "ROLE",
+  "technicalDetails": {
+    "accessibilityCompliant": true,
+    "detectedIssue": "Selector pattern analysis",
+    "proposedSolution": "Modern Playwright locators are already best practice; the failure likely reflects a real UI change, not a selector quality issue",
+    "stableAgainstDOMChanges": true,
+  },
+}
+`;
+
+exports[`corpus de heurística (snapshot) > no cambia la salida para getByText("Iniciar sesión") 1`] = `
+{
+  "alternatives": [],
+  "confidence": 0.76,
+  "explanation": "El selector ya usa un locator moderno de Playwright (getBy*), que es la práctica recomendada. No se propone downgrade — sin acceso al DOM real no se puede saber por qué dejó de encontrar el elemento; puede ser un cambio genuino de la UI que amerita revisión manual.",
+  "fixedSelector": "getByText("Iniciar sesión")",
+  "needsReview": true,
+  "robustnessImprovement": 0,
+  "selectorType": "TEXT",
+  "technicalDetails": {
+    "accessibilityCompliant": true,
+    "detectedIssue": "Selector pattern analysis",
+    "proposedSolution": "Modern Playwright locators are already best practice; the failure likely reflects a real UI change, not a selector quality issue",
+    "stableAgainstDOMChanges": true,
+  },
+}
+`;
+
+exports[`corpus de heurística (snapshot) > no cambia la salida para header nav ul li a.active 1`] = `
+{
+  "alternatives": [],
+  "confidence": 0.94,
+  "explanation": "Selector por rol de enlace con texto. Muy estable y accesible.",
+  "fixedSelector": "role('link', { name: 'Submit' })",
+  "needsReview": false,
+  "robustnessImprovement": 42,
+  "selectorType": "ROLE",
+  "technicalDetails": {
+    "accessibilityCompliant": true,
+    "detectedIssue": "Selector pattern analysis",
+    "proposedSolution": "Link roles with names are the gold standard for navigation",
+    "stableAgainstDOMChanges": true,
+  },
+}
+`;
+
+exports[`corpus de heurística (snapshot) > no cambia la salida para input[placeholder="Buscar"] 1`] = `
+{
+  "alternatives": [
+    {
+      "confidence": 0.88,
+      "selector": "input[placeholder*='Field']",
+    },
+  ],
+  "confidence": 0.94,
+  "explanation": "Selector basado en la relación semántica entre label e input. Altamente resiliente a cambios de estructura.",
+  "fixedSelector": "label:has-text('Field') + input",
+  "needsReview": false,
+  "robustnessImprovement": 40,
+  "selectorType": "CSS",
+  "technicalDetails": {
+    "accessibilityCompliant": false,
+    "detectedIssue": "Selector pattern analysis",
+    "proposedSolution": "Label-input relationships are semantically meaningful",
+    "stableAgainstDOMChanges": true,
+  },
+}
+`;
+
+exports[`corpus de heurística (snapshot) > no cambia la salida para table tr:nth-of-type(4) td:nth-child(2) 1`] = `
+{
+  "alternatives": [],
+  "confidence": 0.8,
+  "explanation": "Selector basado en posición (nth-child/nth-of-type) — depende del orden exacto de hermanos en el DOM, se rompe con solo agregar/quitar un elemento vecino. Se propone un selector de rol como punto de partida; revisar manualmente para afinar el name.",
+  "fixedSelector": "role('button')",
+  "needsReview": false,
+  "robustnessImprovement": 40,
+  "selectorType": "ROLE",
+  "technicalDetails": {
+    "accessibilityCompliant": true,
+    "detectedIssue": "Position-based selector (nth-child/nth-of-type) depends on exact sibling order in the DOM",
+    "proposedSolution": "Position-based selectors (nth-child/nth-of-type) break whenever sibling elements are added, removed, or reordered",
+    "stableAgainstDOMChanges": true,
+  },
+}
+`;
+
+exports[`corpus de heurística (snapshot) > no cambia la salida para text=Continuar 1`] = `
+{
+  "alternatives": [],
+  "confidence": 0.78,
+  "explanation": "Selector compuesto con filtro de visibilidad. Mayor robustez contra elementos ocultos.",
+  "fixedSelector": "visible=text=Continuar",
+  "needsReview": true,
+  "robustnessImprovement": 25,
+  "selectorType": "CSS",
+  "technicalDetails": {
+    "accessibilityCompliant": false,
+    "detectedIssue": "Text content can change with copy updates",
+    "proposedSolution": "Visibility filters prevent interaction with hidden elements",
+    "stableAgainstDOMChanges": true,
+  },
+}
+`;
+
+exports[`corpus de heurística (snapshot) > no cambia la salida para ul li:nth-child(1) a 1`] = `
+{
+  "alternatives": [],
+  "confidence": 0.75,
+  "explanation": "Selector basado en posición (nth-child/nth-of-type) — depende del orden exacto de hermanos en el DOM, se rompe con solo agregar/quitar un elemento vecino. Se propone un selector de rol como punto de partida; revisar manualmente para afinar el name.",
+  "fixedSelector": "role('button')",
+  "needsReview": true,
+  "robustnessImprovement": 40,
+  "selectorType": "ROLE",
+  "technicalDetails": {
+    "accessibilityCompliant": true,
+    "detectedIssue": "Position-based selector (nth-child/nth-of-type) depends on exact sibling order in the DOM",
+    "proposedSolution": "Position-based selectors (nth-child/nth-of-type) break whenever sibling elements are added, removed, or reordered",
+    "stableAgainstDOMChanges": true,
+  },
+}
+`;

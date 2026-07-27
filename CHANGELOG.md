@@ -1,5 +1,28 @@
 # Changelog
 
+## Sin publicar — red de seguridad de tests + fix de tipos en WebdriverIO
+
+- **Snapshot de la heurística** (`reporter-core/src/__tests__/heuristic-corpus.test.ts`): 34
+  selectores reales (IDs generados por frameworks, clases hasheadas de CSS-in-JS, XPath de
+  grabadores, los cinco atributos testid, posicionales, locators modernos de Playwright)
+  congelan la salida completa de `analyzeAndHeal()`. Cualquier retoque de estrategias o
+  prioridades rompe el snapshot y obliga a revisar el diff antes de aceptarlo, en vez de
+  cambiar el comportamiento del motor sin que nadie lo note.
+- **Los scaffolds ahora se compilan de verdad**
+  (`cli/src/__tests__/scaffold-compiles.test.ts`): cada archivo que `init` escribe en el
+  proyecto del usuario se vuelca a un directorio temporal y pasa por `tsc --noEmit` contra
+  las dependencias reales. Antes solo se comparaban strings, así que un import roto o un
+  tipo inválido pasaba desapercibido.
+- **Bug real que encontró ese test — `HealifyWebdriverIOPlugin.wrap()` no aceptaba un
+  browser de WebdriverIO**: `wrap(browser: Record<string, unknown>)` rechazaba
+  `WebdriverIO.Browser` (interfaz sin index signature), o sea que el ejemplo generado por
+  `init` no compilaba en un proyecto real. Ahora la firma es genérica
+  (`wrap<T extends object>(browser: T): T`), que además le conserva al usuario el tipado y
+  el autocompletado de su propio browser.
+
+> Pendiente de publicar: `@healify/webdriverio-plugin` necesita un patch (1.1.1) para que
+> el fix de tipos llegue a quien ya instaló 1.1.0.
+
 ## 1.1.0 — auditoría Tech Lead (correcciones + deuda técnica)
 
 Ronda de correcciones sobre el código real tras una auditoría tipo Tech Lead (revisión de

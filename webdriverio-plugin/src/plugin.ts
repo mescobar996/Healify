@@ -18,9 +18,16 @@ export class HealifyWebdriverIOPlugin {
     }
   }
 
-  /** Devuelve un proxy sobre el browser — el original nunca se muta. */
-  wrap(browser: Record<string, unknown>): Record<string, unknown> {
-    return wrapBrowser(browser as any, this.options) as unknown as Record<string, unknown>
+  /**
+   * Devuelve un proxy sobre el browser — el original nunca se muta.
+   *
+   * Genérico a propósito: `WebdriverIO.Browser` es una interfaz sin index signature, así que
+   * no es asignable a `Record<string, unknown>` y tiparlo así rompía el uso real (ver
+   * healify.wdio.example.ts). Con `<T extends object>` el usuario además conserva el tipado
+   * y el autocompletado de su propio browser, que es lo que el proxy devuelve en runtime.
+   */
+  wrap<T extends object>(browser: T): T {
+    return wrapBrowser(browser as unknown as Parameters<typeof wrapBrowser>[0], this.options) as unknown as T
   }
 
   /**
