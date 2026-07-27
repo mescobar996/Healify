@@ -78,11 +78,12 @@ function checkSemverCaret(cwd: string, pkgManager: string): DoctorCheck[] {
     // Si la versión instalada tiene el mismo minor que la declarada, el caret lo encerró.
     const installedMatch = installedVersion.match(/^0\.(\d+)\./)
     if (installedMatch && installedMatch[1] === declaredMinor) {
+      const nextMinor = `0.${parseInt(declaredMinor, 10) + 1}.0`
       checks.push({
         label: `Semver caret gotcha en ${pkg}`,
         ok: true,
         info: true,
-        fix: `Tenés ${range} declarado — un npm install sin versión no te va a subir de minor. Usá ${pkg}@latest para tener la última.`,
+        fix: `Tenés ${range} declarado — un npm install sin versión no te sube de 0.${declaredMinor}.x a ${nextMinor} (mismo problema con cualquier ^0.x.y: en semver, 0.x es "todo experimental", así que el caret solo fija patch). Usá ${pkg}@latest para tener la última.`,
       })
     }
   }

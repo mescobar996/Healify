@@ -4,9 +4,10 @@ const { mockAnalyzeAndHeal } = vi.hoisted(() => ({
   mockAnalyzeAndHeal: vi.fn(),
 }))
 
-vi.mock('@healify/reporter-core', () => ({
-  analyzeAndHeal: mockAnalyzeAndHeal,
-}))
+vi.mock('@healify/reporter-core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@healify/reporter-core')>()
+  return { ...actual, analyzeAndHeal: mockAnalyzeAndHeal }
+})
 
 import { wrapBrowser } from '../wrap'
 

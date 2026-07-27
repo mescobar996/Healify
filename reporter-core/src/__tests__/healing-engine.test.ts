@@ -73,6 +73,47 @@ describe('analyzeAndHeal', () => {
     expect(result.fixedSelector).not.toContain('data-testid')
   })
 
+  describe.each(['data-qa', 'data-test', 'data-e2e'])('convención de testid: %s', (attr) => {
+    it('se reconoce como TESTID de alta confianza, sin reescribir al otro atributo', () => {
+      const result = analyzeAndHeal({ selector: `[${attr}='add-to-cart']` })
+      expect(result.selectorType).toBe('TESTID')
+      expect(result.confidence).toBeGreaterThanOrEqual(0.9)
+      expect(result.fixedSelector).toBe(`[${attr}='add-to-cart']`)
+    })
+  })
+
+  describe('selector basado en posición (nth-child/nth-of-type)', () => {
+    it('se marca como frágil e indica que depende del orden de hermanos', () => {
+      const result = analyzeAndHeal({ selector: 'div:nth-child(3) > span:nth-of-type(2)' })
+      expect(result.technicalDetails.detectedIssue).toContain('Position-based selector')
+    })
+
+    it('sin otra pista de elemento, propone un role genérico en vez de caer al fallback visible=', () => {
+      const result = analyzeAndHeal({ selector: 'div:nth-child(3) > span:nth-of-type(2)' })
+      expect(result.selectorType).toBe('ROLE')
+      expect(result.fixedSelector).not.toMatch(/^visible=/)
+    })
+
+    it('si además hay una pista de elemento (button/input), esa estrategia sigue ganando', () => {
+      const result = analyzeAndHeal({ selector: 'li:nth-child(2) button.btn-guardar' })
+      expect(result.selectorType).toBe('ROLE')
+      expect(result.fixedSelector).toContain('Guardar')
+    })
+  })
+
+  describe('regresión: [type="submit"]/[type="button"] ya se clasifican como button (texto literal del atributo)', () => {
+    it("[type='submit'] genera una sugerencia de rol de botón con acción Submit", () => {
+      const result = analyzeAndHeal({ selector: "[type='submit']" })
+      expect(result.selectorType).toBe('ROLE')
+      expect(result.fixedSelector).toContain('Submit')
+    })
+
+    it("[type='button'] genera una sugerencia de rol de botón", () => {
+      const result = analyzeAndHeal({ selector: "[type='button']" })
+      expect(result.selectorType).toBe('ROLE')
+    })
+  })
+
   it('preserves a [name=] attribute selector with moderate confidence', () => {
     const result = analyzeAndHeal({ selector: "[name='email']" })
     expect(result.selectorType).toBe('CSS')

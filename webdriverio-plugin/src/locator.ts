@@ -1,3 +1,5 @@
+import { isPlaywrightOnlySelector } from '@healify/reporter-core'
+
 /**
  * Convierte un selector string de WebdriverIO a un selector que analyzeAndHeal() puede interpretar.
  * WebdriverIO usa strings directos (CSS, XPath, etc.) — no tiene la clase By de Selenium.
@@ -23,10 +25,5 @@ export function wdioSelectorToSelector(selector: string): string | null {
  * WebdriverIO no tiene motor de Playwright para interpretarlas — rechazar las que no son CSS válido.
  */
 export function isWdioCssCompatible(selector: string): boolean {
-  return (
-    !/^role\(/.test(selector) &&
-    !selector.includes(':has-text(') &&
-    !/^visible=/.test(selector) &&
-    !/^getBy[A-Z]/.test(selector)
-  )
+  return !isPlaywrightOnlySelector(selector)
 }

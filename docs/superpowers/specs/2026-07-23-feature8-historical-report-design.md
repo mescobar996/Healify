@@ -1,6 +1,14 @@
 # Feature #8 — Historial de curaciones (MVP)
 
-## Status: APPROVED — Ready for Implementation Plan
+## Status: IMPLEMENTED
+
+*Actualizado tras auditoría Tech Lead (2026-07-27): el MVP descrito en este spec ya está
+implementado y wireado en el repo real —
+[cli/src/history.ts](../../../cli/src/history.ts),
+[cli/src/commands/history.ts](../../../cli/src/commands/history.ts), y `runFix()` en
+[cli/src/index.ts](../../../cli/src/index.ts) llama a `appendHistory(run, cwd)` cuando
+`!dryRun`. Este documento queda como referencia de diseño, no como pendiente de
+implementación plan.*
 
 *Reemplaza la versión anterior de este documento (mismo archivo). La versión original
 asumía código que no existe en el repo real (`cli/src/commands/fix.ts`, `cli/src/config.ts`)
@@ -162,7 +170,8 @@ Total aproximado: ~19 tests nuevos.
 | Riesgo | Mitigación |
 |---|---|
 | Archivo crece sin límite | No mitigado en este MVP — a ~300 bytes/línea no es un problema real todavía. Si lo fuera, se agrega retención después, con datos reales de cuánto crece. |
-| Escritura concurrente corrompe el JSONL | Mismo supuesto que ya usa el resto del CLI: proceso único, sin considerar multi-proceso concurrente. |
+| Escritura concurrente corrompe el JSONL | Mismo supuesto que ya usa el resto del CLI: proceso único, sin considerar multi-proceso concurrente. **Trigger de revisión** (agregado en auditoría 2026-07-27): si el `gh-action` llega a correr `fix` en paralelo con un proceso local de un dev sobre el mismo repo/checkout, revisar si `appendFileSync` sigue siendo suficiente o hace falta un lock de archivo — no implementado hoy porque no hay evidencia real de que esto ocurra. |
+| Línea corrupta por escritura interrumpida (agregado en auditoría 2026-07-27) | Si el proceso muere a mitad de un `appendFileSync` (kill, corte de luz), `readHistory()` descarta esa línea silenciosamente sin avisar al usuario que se perdió un registro — comportamiento aceptado (el historial es un complemento, no la fuente de verdad), pero no estaba documentado como riesgo conocido. |
 | Selectores con datos sensibles | Solo se guardan strings de selector — mismo dato que ya vive en `healify-report.json`, no es información nueva expuesta. |
 | `--dry-run` del gh-action ensucia el historial | Resuelto por diseño: `--dry-run` nunca graba. |
 

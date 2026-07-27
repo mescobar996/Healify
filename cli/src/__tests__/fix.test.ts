@@ -49,6 +49,17 @@ describe('describeReadError', () => {
     expect(r.message).toContain('No se pudo leer healify-report.json')
     expect(r.message).toContain('Unexpected token')
   })
+
+  it.each(['EACCES', 'EPERM'])('%s (permisos denegados) → mensaje amable, exit 1, stream error, sin el código crudo', (code) => {
+    const err = Object.assign(new Error(`${code}: permission denied, open 'healify-report.json'`), { code })
+    const r = describeReadError('healify-report.json', err)
+
+    expect(r.exitCode).toBe(1)
+    expect(r.stream).toBe('error')
+    expect(r.message).toContain('permisos denegados')
+    expect(r.message).toContain('abierto en otro programa')
+    expect(r.message).not.toContain(code)
+  })
 })
 
 describe('fix', () => {

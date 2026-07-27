@@ -8,10 +8,10 @@ const { mockAnalyzeAndHeal, mockRenderLocalReportJson } = vi.hoisted(() => ({
   mockRenderLocalReportJson: vi.fn(),
 }))
 
-vi.mock('@healify/reporter-core', () => ({
-  analyzeAndHeal: mockAnalyzeAndHeal,
-  renderLocalReportJson: mockRenderLocalReportJson,
-}))
+vi.mock('@healify/reporter-core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@healify/reporter-core')>()
+  return { ...actual, analyzeAndHeal: mockAnalyzeAndHeal, renderLocalReportJson: mockRenderLocalReportJson }
+})
 
 import { HealifyWebdriverIOPlugin } from '../plugin'
 

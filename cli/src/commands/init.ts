@@ -12,7 +12,7 @@ import {
   type Framework,
 } from '../detect'
 import { wirePlaywrightConfig, wireCypressConfig, type EditStatus } from '../config-edit'
-import { scaffoldPlaywright, scaffoldCypress, scaffoldSelenium, type ScaffoldFile } from '../scaffold'
+import { scaffoldPlaywright, scaffoldCypress, scaffoldSelenium, scaffoldWebdriverio, type ScaffoldFile } from '../scaffold'
 import { promptFrameworkChoice } from '../prompt'
 
 export type ConfigOutcome = EditStatus | 'no-config-found' | 'scaffolded'
@@ -83,7 +83,8 @@ function scaffoldFilesFor(cwd: string, framework: Framework): ScaffoldFile[] {
   const baseUrl = detectBaseUrl(cwd)
   if (framework === 'playwright') return scaffoldPlaywright(baseUrl, ext, detectModuleType(cwd))
   if (framework === 'cypress') return scaffoldCypress(baseUrl, ext, detectModuleType(cwd))
-  return scaffoldSelenium(ext)
+  if (framework === 'selenium') return scaffoldSelenium(ext)
+  return scaffoldWebdriverio(ext)
 }
 
 function wireExistingConfig(framework: 'playwright' | 'cypress', configPath: string): EditStatus {
@@ -141,23 +142,32 @@ export function init(cwd: string = process.cwd(), options: InitOptions = {}): In
   const portMatch = baseUrl.match(/:(\d+)/)
   if (portMatch) {
     const port = parseInt(portMatch[1], 10)
-    const portInUse = options.checkPort ? options.checkPort(port) : defaultCheckPort(port)
-    if (portInUse) {
+    const portInUse: boolean | 'unknown' = options.checkPort ? options.checkPort(port) : defaultCheckPort(port)
+    if (portInUse === true) {
       report.portWarning = `Algo ya responde en el puerto ${port} — puede ser tu app u otro proceso (ej. Obsidian en 3000). Si tu app no está levantada, acordate de correr npm run dev antes de escribir tests e2e.`
+    } else if (portInUse === 'unknown') {
+      // No es "puerto libre" — es "no pudimos chequear" (ej. sin PowerShell, entorno no-Windows).
+      // Antes esto se reportaba en silencio como si el puerto estuviera libre.
+      report.portWarning = `No pudimos verificar si el puerto ${port} está libre en este entorno — si tu app no está levantada, acordate de correr npm run dev antes de escribir tests e2e.`
     }
   }
 
   return report
 }
 
-function defaultCheckPort(port: number): boolean {
+/** 'unknown' cuando no se pudo determinar (ej. sin PowerShell disponible) — nunca se confunde
+ * con "puerto libre" (false), que solo se devuelve cuando PowerShell respondió explícitamente. */
+function defaultCheckPort(port: number): boolean | 'unknown' {
   try {
     const out = execSync(
       `powershell -Command "Test-NetConnection -ComputerName localhost -Port ${port} -WarningAction SilentlyContinue | Select-Object -ExpandProperty TcpTestSucceeded"`,
       { timeout: 2000, stdio: 'pipe' },
     )
-    return out.toString().trim() === 'True'
+    const result = out.toString().trim()
+    if (result === 'True') return true
+    if (result === 'False') return false
+    return 'unknown'
   } catch {
-    return false
+    return 'unknown'
   }
 }

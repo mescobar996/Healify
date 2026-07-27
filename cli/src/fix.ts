@@ -22,6 +22,17 @@ export function describeReadError(reportPath: string, error: unknown): { message
       stream: 'log',
     }
   }
+  // EACCES/EPERM es el caso más común de "no es un error del motor" en Windows: el archivo
+  // suele estar abierto en otro proceso (VS Code, un `tail`, otro `healify fix` corriendo) o
+  // el usuario no tiene permisos de lectura ahí. Mensaje concreto en vez del error crudo de
+  // Node, mismo criterio que el caso ENOENT de arriba.
+  if (error instanceof Error && ['EACCES', 'EPERM'].includes((error as NodeJS.ErrnoException).code ?? '')) {
+    return {
+      message: `No se pudo leer ${reportPath}: permisos denegados.\n\nVerificá que el archivo no esté abierto en otro programa (VS Code, otro healify fix corriendo) y que tengas permisos de lectura sobre él.`,
+      exitCode: 1,
+      stream: 'error',
+    }
+  }
   return {
     message: `No se pudo leer ${reportPath}: ${error instanceof Error ? error.message : String(error)}`,
     exitCode: 1,

@@ -81,6 +81,22 @@ export async function createHealedDriver() {
 `
 }
 
+function webdriverioExampleContent(): string {
+  return `/**
+ * Ejemplo de cómo envolver tu browser de WebdriverIO con Healify. Igual que Selenium,
+ * WebdriverIO no tiene hook de "fin de corrida" que Healify pueda usar para un config
+ * automático — .wrap() cura en vivo, selector por selector, dentro de tu propio código
+ * de test. Copiá este patrón a donde uses el objeto \`browser\` real (no hace falta
+ * ejecutar este archivo).
+ */
+import { HealifyWebdriverIOPlugin } from '@healify/webdriverio-plugin'
+
+export function wrapHealedBrowser(browser: WebdriverIO.Browser) {
+  return new HealifyWebdriverIOPlugin({ onEvent: console.log }).wrap(browser)
+}
+`
+}
+
 /** Solo config real, wireada con el reporter de Healify — sin ningún test generado. */
 export function scaffoldPlaywright(baseUrl: string, ext: 'ts' | 'js', moduleType: ModuleType): ScaffoldFile[] {
   return [{ path: `playwright.config.${ext}`, content: playwrightConfigContent(baseUrl, ext, moduleType) }]
@@ -97,4 +113,9 @@ export function scaffoldCypress(baseUrl: string, ext: 'ts' | 'js', moduleType: M
 /** Solo el ejemplo de referencia (no se ejecuta, no simula ningún resultado) — sin ningún demo ejecutable. */
 export function scaffoldSelenium(ext: 'ts' | 'js'): ScaffoldFile[] {
   return [{ path: `healify.selenium.example.${ext}`, content: seleniumExampleContent() }]
+}
+
+/** Solo el ejemplo de referencia (no se ejecuta, no simula ningún resultado) — sin ningún demo ejecutable. */
+export function scaffoldWebdriverio(ext: 'ts' | 'js'): ScaffoldFile[] {
+  return [{ path: `healify.wdio.example.${ext}`, content: webdriverioExampleContent() }]
 }

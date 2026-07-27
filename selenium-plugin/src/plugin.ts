@@ -1,7 +1,7 @@
 import type { WebDriver } from 'selenium-webdriver'
 import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { renderLocalReportJson, type LocalRun, type LocalCaseResult } from '@healify/reporter-core'
+import { renderLocalReportJson, buildLocalRunFromEvents } from '@healify/reporter-core'
 import { wrapDriver } from './wrap'
 import type { HealifySeleniumOptions, HealingEvent } from './types'
 
@@ -32,26 +32,13 @@ export class HealifySeleniumPlugin {
   flush(cwd: string = process.cwd()): number {
     if (this.events.length === 0) return 0
 
-    const cases: LocalCaseResult[] = this.events.map((e) => ({
-      testName: e.originalSelector,
-      selector: e.originalSelector,
-      errorMessage: `${e.type}: ${e.originalSelector}`,
-      status: (e.type === 'healed' ? 'healed' : e.type === 'no-suggestion' || e.type === 'failed' ? 'unresolved' : 'review') as LocalCaseResult['status'],
-      fixedSelector: e.fixedSelector ?? '',
-      confidence: e.confidence ?? 0,
-      explanation: e.explanation ?? '',
-      selectorType: e.type === 'healed' ? 'HEALED' : 'UNKNOWN',
-    }))
-
-    const run: LocalRun = {
+    const run = buildLocalRunFromEvents(this.events, {
       project: this.options.projectName ?? 'selenium-project',
       framework: 'Selenium',
-      generatedAt: new Date(),
-      cases,
-    }
+    })
 
     writeFileSync(join(cwd, 'healify-report.json'), renderLocalReportJson(run))
-    const count = cases.length
+    const count = run.cases.length
     this.events.length = 0
     return count
   }

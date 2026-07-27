@@ -101,6 +101,9 @@ function nextStepFor(framework: FrameworkInitResult['framework']): string {
   if (framework === 'selenium') {
     return '✅ Instalado. Ver healify.selenium.example.ts para el patrón de wrap() — copialo a tu código real, no hay nada que ejecutar acá.'
   }
+  if (framework === 'webdriverio') {
+    return '✅ Instalado. Ver healify.wdio.example.ts para el patrón de wrap() — copialo a tu código real, no hay nada que ejecutar acá.'
+  }
   const testDir = framework === 'playwright' ? 'e2e/' : 'cypress/e2e/'
   return `✅ Config lista. Escribí tu primer test en ${testDir} y corré tus tests — cuando un selector se rompa vas a tener healify-report.html.`
 }

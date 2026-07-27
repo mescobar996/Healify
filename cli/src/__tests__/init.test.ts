@@ -123,6 +123,18 @@ describe('init — CASO B (framework instalado, sin config)', () => {
     expect(report.results[0].scaffoldedFiles).toEqual(['healify.selenium.example.js'])
     expect(existsSync(join(dir, 'healify.selenium.example.js'))).toBe(true)
   })
+
+  it('bug real: webdriverio instalado sin wdio.conf -> scaffoldea SU PROPIO ejemplo, no el de selenium', () => {
+    writePkg({ webdriverio: '^9.0.0', '@healify/webdriverio-plugin': '*' })
+
+    const report = init(dir)
+
+    expect(report.results[0].framework).toBe('webdriverio')
+    expect(report.results[0].config).toBe('scaffolded')
+    expect(report.results[0].scaffoldedFiles).toEqual(['healify.wdio.example.js'])
+    expect(existsSync(join(dir, 'healify.wdio.example.js'))).toBe(true)
+    expect(existsSync(join(dir, 'healify.selenium.example.js'))).toBe(false)
+  })
 })
 
 describe('init — CASO A (nada detectado, elige framework)', () => {
@@ -320,5 +332,16 @@ describe('init — detección de puerto', () => {
     const report = init(dir)
 
     expect(report.portWarning).toBeUndefined()
+  })
+
+  it('bug real: sin PowerShell disponible (execSync tira) no se confunde con "puerto libre" — avisa que no se pudo chequear', () => {
+    writePkg({ '@playwright/test': '^1.58.0' })
+    writeFileSync(join(dir, 'playwright.config.ts'), `export default defineConfig({\n  use: {},\n})\n`)
+    mockExecSync.mockImplementation(() => { throw new Error('powershell: command not found') })
+
+    const report = init(dir)
+
+    expect(report.portWarning).toContain('No pudimos verificar')
+    expect(report.portWarning).toContain('5173')
   })
 })

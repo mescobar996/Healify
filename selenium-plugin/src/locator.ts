@@ -1,4 +1,5 @@
 import type { By } from 'selenium-webdriver'
+import { isPlaywrightOnlySelector } from '@healify/reporter-core'
 
 /** Las únicas dos propiedades públicas y estables que expone el constructor de By (lib/by.js) — using/value, no hay tipo runtime más específico que inspeccionar. */
 interface RawLocator {
@@ -41,10 +42,5 @@ export function locatorToSelector(locator: By): string | null {
  * tiene el motor de Playwright para interpretarlas.
  */
 export function isSeleniumCssCompatible(selector: string): boolean {
-  return (
-    !/^role\(/.test(selector) &&
-    !selector.includes(':has-text(') &&
-    !/^visible=/.test(selector) &&
-    !/^getBy[A-Z]/.test(selector)
-  )
+  return !isPlaywrightOnlySelector(selector)
 }

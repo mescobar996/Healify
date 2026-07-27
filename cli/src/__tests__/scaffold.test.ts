@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { transformSync } from 'esbuild'
-import { scaffoldPlaywright, scaffoldCypress, scaffoldSelenium } from '../scaffold'
+import { scaffoldPlaywright, scaffoldCypress, scaffoldSelenium, scaffoldWebdriverio } from '../scaffold'
 
 describe('scaffold', () => {
   it('playwright: config .ts trae baseURL y el reporter de Healify ya wireado, sin ningún test', () => {
@@ -34,11 +34,20 @@ describe('scaffold', () => {
     expect(example.path.startsWith('e2e/')).toBe(false)
   })
 
+  it('webdriverio: scaffoldea solo el ejemplo de referencia, sin ningún demo ejecutable', () => {
+    const files = scaffoldWebdriverio('ts')
+    expect(files.map((f) => f.path)).toEqual(['healify.wdio.example.ts'])
+    const example = files[0]
+    expect(example.content).toContain('new HealifyWebdriverIOPlugin({ onEvent: console.log }).wrap(browser)')
+    expect(example.path.startsWith('e2e/')).toBe(false)
+  })
+
   it('todos los archivos generados parsean como TS/JS válido', () => {
     const allFiles = [
       ...scaffoldPlaywright('http://localhost:5173', 'ts', 'esm'),
       ...scaffoldCypress('http://localhost:5173', 'ts', 'esm'),
       ...scaffoldSelenium('ts'),
+      ...scaffoldWebdriverio('ts'),
     ]
     for (const f of allFiles) {
       expect(() => transformSync(f.content, { loader: 'ts' }), f.path).not.toThrow()

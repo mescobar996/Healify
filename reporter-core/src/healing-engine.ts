@@ -86,6 +86,14 @@ function hasVolatileClassToken(selector: string): boolean {
   return classTokens.some((token) => VOLATILE_CLASS_RE.test(token.slice(1)))
 }
 
+// Atributos de test-id conocidos, en orden de preferencia para testidAttributeName() cuando
+// un selector (raro, pero posible) trae más de uno — data-testid/data-cy ya soportados,
+// data-qa/data-test/data-e2e son convenciones equivalentes usadas por otros equipos/frameworks.
+const TESTID_ATTRS = ['data-testid', 'data-cy', 'data-qa', 'data-test', 'data-e2e'] as const
+type TestIdAttr = (typeof TESTID_ATTRS)[number]
+
+const NTH_POSITION_RE = /:nth-(?:child|of-type)\(/
+
 function analyzeSelector(selector: string): SelectorAnalysis {
   const analysis: SelectorAnalysis = {
     type: 'CSS',
@@ -118,7 +126,7 @@ function analyzeSelector(selector: string): SelectorAnalysis {
       analysis.isDynamic = true
       analysis.issues.push('Generated CSS class detected - unstable')
     }
-  } else if (selector.includes('[data-testid=') || selector.includes('[data-cy=')) {
+  } else if (TESTID_ATTRS.some((attr) => selector.includes(`[${attr}=`))) {
     analysis.type = 'TESTID'
   } else if (selector.startsWith('//')) {
     analysis.type = 'XPATH'
@@ -136,6 +144,14 @@ function analyzeSelector(selector: string): SelectorAnalysis {
     analysis.type = 'ATTRIBUTE'
     analysis.attributeKind = 'name'
     analysis.issues.push('The name attribute may not be unique')
+  }
+
+  // Independiente del `type` detectado arriba (nth-child puede combinarse con CSS de clase,
+  // de tag, o ir suelto) — depende del orden exacto de hermanos en el DOM, se rompe apenas
+  // se agrega/quita/reordena un elemento vecino, sin que el elemento buscado haya cambiado.
+  if (NTH_POSITION_RE.test(selector)) {
+    analysis.isFragile = true
+    analysis.issues.push('Position-based selector (nth-child/nth-of-type) depends on exact sibling order in the DOM')
   }
 
   if (/button|btn/i.test(selector)) {
@@ -192,13 +208,14 @@ function extractFieldName(selector: string, fields: Record<string, string>): str
 }
 
 function extractTestid(selector: string): string {
-  const match = selector.match(/data-(?:testid|cy)=['"]([^'"]+)['"]/)
+  const match = selector.match(/data-(?:testid|cy|qa|test|e2e)=['"]([^'"]+)['"]/)
   return match ? match[1] : 'element'
 }
 
-/** Cypress usa `data-cy` en vez de `data-testid` — reescribir al otro atributo rompería el selector. */
-function testidAttributeName(selector: string): 'data-testid' | 'data-cy' {
-  return selector.includes('[data-cy=') ? 'data-cy' : 'data-testid'
+/** Cada framework/equipo tiene su propia convención (data-cy en Cypress, data-qa/data-test/data-e2e
+ * en otros) — reescribir a otro atributo rompería el selector, se conserva el que ya está presente. */
+function testidAttributeName(selector: string): TestIdAttr {
+  return TESTID_ATTRS.find((attr) => selector.includes(`[${attr}=`)) ?? 'data-testid'
 }
 
 function extractBaseClass(selector: string): string {
@@ -334,6 +351,22 @@ function generateHealingStrategies(selector: string, analysis: SelectorAnalysis,
       robustnessGain: 55,
       technicalReason: 'XPath is the most fragile selector type; ARIA roles are preferred',
       priority: 4,
+    })
+  }
+
+  // Selector basado en posición (nth-child/nth-of-type) sin otro patrón reconocido (element
+  // sigue en 'element' genérico): no hay pista de acción/campo para armar un role con name,
+  // así que se propone un role genérico de baja confianza en vez de caer al fallback
+  // 'visible=' — al menos señala accesibilidad como dirección, requiere revisión manual.
+  if (NTH_POSITION_RE.test(selector) && analysis.element === 'element') {
+    strategies.push({
+      selector: `role('button')`,
+      type: 'ROLE',
+      confidence: 0.76,
+      explanation: `Selector basado en posición (nth-child/nth-of-type) — depende del orden exacto de hermanos en el DOM, se rompe con solo agregar/quitar un elemento vecino. Se propone un selector de rol como punto de partida; revisar manualmente para afinar el name.`,
+      robustnessGain: 40,
+      technicalReason: 'Position-based selectors (nth-child/nth-of-type) break whenever sibling elements are added, removed, or reordered',
+      priority: 6,
     })
   }
 

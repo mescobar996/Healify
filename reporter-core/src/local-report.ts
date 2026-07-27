@@ -7,6 +7,40 @@ export interface LocalRun {
   cases: LocalCaseResult[]
 }
 
+/** Forma mínima que necesita buildLocalRunFromEvents — cada adapter (selenium-plugin,
+ * webdriverio-plugin) define su propio HealingEvent con este mismo shape estructural. */
+export interface HealingEventLike {
+  type: string
+  originalSelector: string
+  fixedSelector?: string
+  confidence?: number
+  explanation?: string
+}
+
+/**
+ * Convierte los HealingEvent acumulados por un wrap "en vivo" (Selenium/WebdriverIO,
+ * sin hook de fin de corrida como Playwright/Cypress) al mismo LocalRun que consumen
+ * renderLocalReportJson/Html. Antes duplicado casi 1:1 en selenium-plugin/src/plugin.ts
+ * y webdriverio-plugin/src/plugin.ts — mismo mapeo de status, solo cambiaba framework/project.
+ */
+export function buildLocalRunFromEvents(
+  events: HealingEventLike[],
+  options: { project: string; framework: string }
+): LocalRun {
+  const cases: LocalCaseResult[] = events.map((e) => ({
+    testName: e.originalSelector,
+    selector: e.originalSelector,
+    errorMessage: `${e.type}: ${e.originalSelector}`,
+    status: (e.type === 'healed' ? 'healed' : e.type === 'no-suggestion' || e.type === 'failed' ? 'unresolved' : 'review') as LocalCaseResult['status'],
+    fixedSelector: e.fixedSelector ?? '',
+    confidence: e.confidence ?? 0,
+    explanation: e.explanation ?? '',
+    selectorType: e.type === 'healed' ? 'HEALED' : 'UNKNOWN',
+  }))
+
+  return { project: options.project, framework: options.framework, generatedAt: new Date(), cases }
+}
+
 /** Resumen de 1 línea a stdout, para no obligar a abrir el HTML en CI. */
 export function printSummary(cases: LocalCaseResult[]): void {
   const count = (status: LocalCaseResult['status']) => cases.filter((c) => c.status === status).length

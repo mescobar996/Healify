@@ -184,6 +184,8 @@ var require_healing_engine = __commonJS({
       const classTokens = selector.match(/\.[a-zA-Z0-9_-]+/g) ?? [];
       return classTokens.some((token) => VOLATILE_CLASS_RE.test(token.slice(1)));
     }
+    var TESTID_ATTRS = ["data-testid", "data-cy", "data-qa", "data-test", "data-e2e"];
+    var NTH_POSITION_RE = /:nth-(?:child|of-type)\(/;
     function analyzeSelector(selector) {
       const analysis = {
         type: "CSS",
@@ -214,7 +216,7 @@ var require_healing_engine = __commonJS({
           analysis.isDynamic = true;
           analysis.issues.push("Generated CSS class detected - unstable");
         }
-      } else if (selector.includes("[data-testid=") || selector.includes("[data-cy=")) {
+      } else if (TESTID_ATTRS.some((attr) => selector.includes(`[${attr}=`))) {
         analysis.type = "TESTID";
       } else if (selector.startsWith("//")) {
         analysis.type = "XPATH";
@@ -232,6 +234,10 @@ var require_healing_engine = __commonJS({
         analysis.type = "ATTRIBUTE";
         analysis.attributeKind = "name";
         analysis.issues.push("The name attribute may not be unique");
+      }
+      if (NTH_POSITION_RE.test(selector)) {
+        analysis.isFragile = true;
+        analysis.issues.push("Position-based selector (nth-child/nth-of-type) depends on exact sibling order in the DOM");
       }
       if (/button|btn/i.test(selector)) {
         analysis.element = "button";
@@ -277,11 +283,11 @@ var require_healing_engine = __commonJS({
       return "Field";
     }
     function extractTestid(selector) {
-      const match = selector.match(/data-(?:testid|cy)=['"]([^'"]+)['"]/);
+      const match = selector.match(/data-(?:testid|cy|qa|test|e2e)=['"]([^'"]+)['"]/);
       return match ? match[1] : "element";
     }
     function testidAttributeName(selector) {
-      return selector.includes("[data-cy=") ? "data-cy" : "data-testid";
+      return TESTID_ATTRS.find((attr) => selector.includes(`[${attr}=`)) ?? "data-testid";
     }
     function extractBaseClass(selector) {
       return selector.replace(/[#.]/, "").replace(/[-_]?\d+/g, "").replace(/[-_][a-f0-9]{6,}/gi, "").toLowerCase();
@@ -401,6 +407,17 @@ var require_healing_engine = __commonJS({
           robustnessGain: 55,
           technicalReason: "XPath is the most fragile selector type; ARIA roles are preferred",
           priority: 4
+        });
+      }
+      if (NTH_POSITION_RE.test(selector) && analysis.element === "element") {
+        strategies.push({
+          selector: `role('button')`,
+          type: "ROLE",
+          confidence: 0.76,
+          explanation: `Selector basado en posici\xF3n (nth-child/nth-of-type) \u2014 depende del orden exacto de hermanos en el DOM, se rompe con solo agregar/quitar un elemento vecino. Se propone un selector de rol como punto de partida; revisar manualmente para afinar el name.`,
+          robustnessGain: 40,
+          technicalReason: "Position-based selectors (nth-child/nth-of-type) break whenever sibling elements are added, removed, or reordered",
+          priority: 6
         });
       }
       if (analysis.isDynamic && analysis.type === "CLASS") {
@@ -533,9 +550,23 @@ var require_local_report = __commonJS({
   "../reporter-core/dist/local-report.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.buildLocalRunFromEvents = buildLocalRunFromEvents2;
     exports2.printSummary = printSummary;
     exports2.renderLocalReportHtml = renderLocalReportHtml;
     exports2.renderLocalReportJson = renderLocalReportJson2;
+    function buildLocalRunFromEvents2(events, options) {
+      const cases = events.map((e) => ({
+        testName: e.originalSelector,
+        selector: e.originalSelector,
+        errorMessage: `${e.type}: ${e.originalSelector}`,
+        status: e.type === "healed" ? "healed" : e.type === "no-suggestion" || e.type === "failed" ? "unresolved" : "review",
+        fixedSelector: e.fixedSelector ?? "",
+        confidence: e.confidence ?? 0,
+        explanation: e.explanation ?? "",
+        selectorType: e.type === "healed" ? "HEALED" : "UNKNOWN"
+      }));
+      return { project: options.project, framework: options.framework, generatedAt: /* @__PURE__ */ new Date(), cases };
+    }
     function printSummary(cases) {
       const count = (status) => cases.filter((c) => c.status === status).length;
       console.log(`Healed: ${count("healed")} | Review: ${count("review")} | Unresolved: ${count("unresolved")}`);
@@ -1070,12 +1101,24 @@ var require_local_report = __commonJS({
   }
 });
 
+// ../reporter-core/dist/selector-compat.js
+var require_selector_compat = __commonJS({
+  "../reporter-core/dist/selector-compat.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.isPlaywrightOnlySelector = isPlaywrightOnlySelector2;
+    function isPlaywrightOnlySelector2(selector) {
+      return /^role\(/.test(selector) || selector.includes(":has-text(") || /^visible=/.test(selector) || /^getBy[A-Z]/.test(selector);
+    }
+  }
+});
+
 // ../reporter-core/dist/index.js
 var require_dist = __commonJS({
   "../reporter-core/dist/index.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
-    exports2.printSummary = exports2.renderLocalReportJson = exports2.renderLocalReportHtml = exports2.runLocalHealing = exports2.analyzeAndHeal = exports2.extractSelectorFromError = void 0;
+    exports2.isPlaywrightOnlySelector = exports2.buildLocalRunFromEvents = exports2.printSummary = exports2.renderLocalReportJson = exports2.renderLocalReportHtml = exports2.runLocalHealing = exports2.analyzeAndHeal = exports2.extractSelectorFromError = void 0;
     var selector_extractor_1 = require_selector_extractor();
     Object.defineProperty(exports2, "extractSelectorFromError", { enumerable: true, get: function() {
       return selector_extractor_1.extractSelectorFromError;
@@ -1098,6 +1141,13 @@ var require_dist = __commonJS({
     Object.defineProperty(exports2, "printSummary", { enumerable: true, get: function() {
       return local_report_1.printSummary;
     } });
+    Object.defineProperty(exports2, "buildLocalRunFromEvents", { enumerable: true, get: function() {
+      return local_report_1.buildLocalRunFromEvents;
+    } });
+    var selector_compat_1 = require_selector_compat();
+    Object.defineProperty(exports2, "isPlaywrightOnlySelector", { enumerable: true, get: function() {
+      return selector_compat_1.isPlaywrightOnlySelector;
+    } });
   }
 });
 
@@ -1112,12 +1162,13 @@ module.exports = __toCommonJS(index_exports);
 // src/plugin.ts
 var import_node_fs = require("node:fs");
 var import_node_path = require("node:path");
-var import_reporter_core2 = __toESM(require_dist());
+var import_reporter_core3 = __toESM(require_dist());
 
 // src/wrap.ts
-var import_reporter_core = __toESM(require_dist());
+var import_reporter_core2 = __toESM(require_dist());
 
 // src/locator.ts
+var import_reporter_core = __toESM(require_dist());
 function wdioSelectorToSelector(selector) {
   const trimmed = selector.trim();
   if (/^[a-zA-Z]+=/.test(trimmed)) return null;
@@ -1126,7 +1177,7 @@ function wdioSelectorToSelector(selector) {
   return null;
 }
 function isWdioCssCompatible(selector) {
-  return !/^role\(/.test(selector) && !selector.includes(":has-text(") && !/^visible=/.test(selector) && !/^getBy[A-Z]/.test(selector);
+  return !(0, import_reporter_core.isPlaywrightOnlySelector)(selector);
 }
 
 // src/types.ts
@@ -1197,7 +1248,7 @@ function wrapBrowser(browser, options = {}) {
     }
     let result;
     try {
-      result = (0, import_reporter_core.analyzeAndHeal)({ selector });
+      result = (0, import_reporter_core2.analyzeAndHeal)({ selector });
     } catch (healErr) {
       const message = healErr instanceof Error ? healErr.message : String(healErr);
       emit({ type: "error", originalSelector: selector, explanation: message, latencyMs: Date.now() - start });
@@ -1262,24 +1313,12 @@ var HealifyWebdriverIOPlugin = class {
    */
   flush(cwd = process.cwd()) {
     if (this.events.length === 0) return 0;
-    const cases = this.events.map((e) => ({
-      testName: e.originalSelector,
-      selector: e.originalSelector,
-      errorMessage: `${e.type}: ${e.originalSelector}`,
-      status: e.type === "healed" ? "healed" : e.type === "no-suggestion" || e.type === "failed" ? "unresolved" : "review",
-      fixedSelector: e.fixedSelector ?? "",
-      confidence: e.confidence ?? 0,
-      explanation: e.explanation ?? "",
-      selectorType: e.type === "healed" ? "HEALED" : "UNKNOWN"
-    }));
-    const run = {
+    const run = (0, import_reporter_core3.buildLocalRunFromEvents)(this.events, {
       project: this.options.projectName ?? "webdriverio-project",
-      framework: "WebdriverIO",
-      generatedAt: /* @__PURE__ */ new Date(),
-      cases
-    };
-    (0, import_node_fs.writeFileSync)((0, import_node_path.join)(cwd, "healify-report.json"), (0, import_reporter_core2.renderLocalReportJson)(run));
-    const count = cases.length;
+      framework: "WebdriverIO"
+    });
+    (0, import_node_fs.writeFileSync)((0, import_node_path.join)(cwd, "healify-report.json"), (0, import_reporter_core3.renderLocalReportJson)(run));
+    const count = run.cases.length;
     this.events.length = 0;
     return count;
   }

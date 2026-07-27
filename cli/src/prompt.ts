@@ -1,7 +1,12 @@
 import { readSync } from 'node:fs'
 import type { Framework } from './detect'
 
-const CHOICES: Record<string, Framework> = { playwright: 'playwright', cypress: 'cypress', selenium: 'selenium' }
+const CHOICES: Record<string, Framework> = {
+  playwright: 'playwright',
+  cypress: 'cypress',
+  selenium: 'selenium',
+  webdriverio: 'webdriverio',
+}
 
 /**
  * Prompt sync sin dependencias nuevas (fs.readSync sobre el fd 0) — evita agregar un
@@ -12,7 +17,7 @@ const CHOICES: Record<string, Framework> = { playwright: 'playwright', cypress: 
 export function promptFrameworkChoice(defaultFramework: Framework = 'playwright'): Framework {
   if (!process.stdin.isTTY) return defaultFramework
 
-  process.stdout.write(`No detectamos e2e. ¿Framework? [playwright/cypress/selenium] (default: ${defaultFramework}) `)
+  process.stdout.write(`No detectamos e2e. ¿Framework? [playwright/cypress/selenium/webdriverio] (default: ${defaultFramework}) `)
 
   const buf = Buffer.alloc(256)
   let answer = ''
