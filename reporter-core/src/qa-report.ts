@@ -169,7 +169,10 @@ function caseMarkdown(c: LocalCaseResult): string {
   if (c.status === 'unresolved') {
     lines.push('**Sugerencia:** sin candidato confiable — requiere análisis manual.', '')
   } else {
-    lines.push(`**Sugerencia (heurística local, ${Math.round(c.confidence * 100)}% de confianza):**`, '', '```', c.fixedSelector, '```', '')
+    const origen = c.verified
+      ? 'verificada contra la página real'
+      : 'heurística sobre el texto del selector, sin comprobar contra la página'
+    lines.push(`**Sugerencia (${origen}, ${Math.round(c.confidence * 100)}% de confianza):**`, '', '```', c.fixedSelector, '```', '')
     if (c.explanation) lines.push(`> ${c.explanation}`, '')
   }
 
@@ -237,8 +240,9 @@ export function renderLocalReportMarkdown(rawRun: LocalRun): string {
   lines.push(
     '---',
     '',
-    'Generado por Healify — heurística local, sin IA. Las sugerencias salen de analizar el',
-    'texto del selector, no la página real: revisalas antes de darlas por buenas.',
+    'Generado por Healify — heurística local, sin IA. Las sugerencias marcadas como',
+    'verificadas se confrontaron contra el árbol de la página capturado al fallar el test; el',
+    'resto sale de analizar el texto del selector y conviene revisarlo antes de aplicarlo.',
     '',
   )
 

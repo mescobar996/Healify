@@ -15,6 +15,7 @@ exports[`corpus de heurística (snapshot) > no cambia la salida para #ember1234 
     "proposedSolution": "Dynamic IDs change between builds; stable classes are preferred",
     "stableAgainstDOMChanges": true,
   },
+  "verified": false,
 }
 `;
 
@@ -38,6 +39,7 @@ exports[`corpus de heurística (snapshot) > no cambia la salida para #login-butt
     "proposedSolution": "ARIA roles are stable across refactors and DOM restructures",
     "stableAgainstDOMChanges": true,
   },
+  "verified": false,
 }
 `;
 
@@ -65,6 +67,7 @@ exports[`corpus de heurística (snapshot) > no cambia la salida para #mat-input-
     "proposedSolution": "Label-input relationships are semantically meaningful",
     "stableAgainstDOMChanges": true,
   },
+  "verified": false,
 }
 `;
 
@@ -83,6 +86,7 @@ exports[`corpus de heurística (snapshot) > no cambia la salida para #react-sele
     "proposedSolution": "Dynamic IDs change between builds; stable classes are preferred",
     "stableAgainstDOMChanges": true,
   },
+  "verified": false,
 }
 `;
 
@@ -106,6 +110,7 @@ exports[`corpus de heurística (snapshot) > no cambia la salida para #submit 1`]
     "proposedSolution": "ARIA roles are stable across refactors and DOM restructures",
     "stableAgainstDOMChanges": true,
   },
+  "verified": false,
 }
 `;
 
@@ -124,6 +129,7 @@ exports[`corpus de heurística (snapshot) > no cambia la salida para #user_email
     "proposedSolution": "Visibility filters prevent interaction with hidden elements",
     "stableAgainstDOMChanges": true,
   },
+  "verified": false,
 }
 `;
 
@@ -147,6 +153,7 @@ exports[`corpus de heurística (snapshot) > no cambia la salida para .MuiButton-
     "proposedSolution": "ARIA roles are stable across refactors and DOM restructures",
     "stableAgainstDOMChanges": true,
   },
+  "verified": false,
 }
 `;
 
@@ -170,6 +177,7 @@ exports[`corpus de heurística (snapshot) > no cambia la salida para .btn-primar
     "proposedSolution": "ARIA roles are stable across refactors and DOM restructures",
     "stableAgainstDOMChanges": true,
   },
+  "verified": false,
 }
 `;
 
@@ -188,6 +196,7 @@ exports[`corpus de heurística (snapshot) > no cambia la salida para .css-1x2y3z
     "proposedSolution": "Visibility filters prevent interaction with hidden elements",
     "stableAgainstDOMChanges": true,
   },
+  "verified": false,
 }
 `;
 
@@ -206,6 +215,7 @@ exports[`corpus de heurística (snapshot) > no cambia la salida para .flex.items
     "proposedSolution": "Visibility filters prevent interaction with hidden elements",
     "stableAgainstDOMChanges": true,
   },
+  "verified": false,
 }
 `;
 
@@ -224,6 +234,7 @@ exports[`corpus de heurística (snapshot) > no cambia la salida para .jsx-284736
     "proposedSolution": "Visibility filters prevent interaction with hidden elements",
     "stableAgainstDOMChanges": true,
   },
+  "verified": false,
 }
 `;
 
@@ -247,6 +258,7 @@ exports[`corpus de heurística (snapshot) > no cambia la salida para .modal .foo
     "proposedSolution": "ARIA roles are stable across refactors and DOM restructures",
     "stableAgainstDOMChanges": true,
   },
+  "verified": false,
 }
 `;
 
@@ -265,6 +277,7 @@ exports[`corpus de heurística (snapshot) > no cambia la salida para .sc-bdVaJa 
     "proposedSolution": "Visibility filters prevent interaction with hidden elements",
     "stableAgainstDOMChanges": true,
   },
+  "verified": false,
 }
 `;
 
@@ -283,6 +296,7 @@ exports[`corpus de heurística (snapshot) > no cambia la salida para //*[@id="ro
     "proposedSolution": "XPath is the most fragile selector type; ARIA roles are preferred",
     "stableAgainstDOMChanges": true,
   },
+  "verified": false,
 }
 `;
 
@@ -310,6 +324,7 @@ exports[`corpus de heurística (snapshot) > no cambia la salida para //button[@i
     "proposedSolution": "ARIA roles are stable across refactors and DOM restructures",
     "stableAgainstDOMChanges": true,
   },
+  "verified": false,
 }
 `;
 
@@ -333,6 +348,7 @@ exports[`corpus de heurística (snapshot) > no cambia la salida para /html/body/
     "proposedSolution": "ARIA roles are stable across refactors and DOM restructures",
     "stableAgainstDOMChanges": true,
   },
+  "verified": false,
 }
 `;
 
@@ -351,6 +367,7 @@ exports[`corpus de heurística (snapshot) > no cambia la salida para [aria-label
     "proposedSolution": "aria-label is an accessibility attribute purpose-built for stable identification",
     "stableAgainstDOMChanges": true,
   },
+  "verified": false,
 }
 `;
 
@@ -378,6 +395,7 @@ exports[`corpus de heurística (snapshot) > no cambia la salida para [data-cy="l
     "proposedSolution": "data-cy attributes are purpose-built for testing stability",
     "stableAgainstDOMChanges": true,
   },
+  "verified": false,
 }
 `;
 
@@ -401,6 +419,7 @@ exports[`corpus de heurística (snapshot) > no cambia la salida para [data-e2e="
     "proposedSolution": "data-e2e attributes are purpose-built for testing stability",
     "stableAgainstDOMChanges": true,
   },
+  "verified": false,
 }
 `;
 
@@ -419,6 +438,7 @@ exports[`corpus de heurística (snapshot) > no cambia la salida para [data-qa="u
     "proposedSolution": "data-qa attributes are purpose-built for testing stability",
     "stableAgainstDOMChanges": true,
   },
+  "verified": false,
 }
 `;
 
@@ -437,6 +457,7 @@ exports[`corpus de heurística (snapshot) > no cambia la salida para [data-test=
     "proposedSolution": "data-test attributes are purpose-built for testing stability",
     "stableAgainstDOMChanges": true,
   },
+  "verified": false,
 }
 `;
 
@@ -464,6 +485,7 @@ exports[`corpus de heurística (snapshot) > no cambia la salida para [data-testi
     "proposedSolution": "data-testid attributes are purpose-built for testing stability",
     "stableAgainstDOMChanges": true,
   },
+  "verified": false,
 }
 `;
 
@@ -482,6 +504,7 @@ exports[`corpus de heurística (snapshot) > no cambia la salida para [name="emai
     "proposedSolution": "The name attribute is usually stable but may not be unique across the page",
     "stableAgainstDOMChanges": true,
   },
+  "verified": false,
 }
 `;
 
@@ -505,6 +528,7 @@ exports[`corpus de heurística (snapshot) > no cambia la salida para [type="butt
     "proposedSolution": "ARIA roles are stable across refactors and DOM restructures",
     "stableAgainstDOMChanges": true,
   },
+  "verified": false,
 }
 `;
 
@@ -528,6 +552,7 @@ exports[`corpus de heurística (snapshot) > no cambia la salida para [type="subm
     "proposedSolution": "ARIA roles are stable across refactors and DOM restructures",
     "stableAgainstDOMChanges": true,
   },
+  "verified": false,
 }
 `;
 
@@ -546,6 +571,7 @@ exports[`corpus de heurística (snapshot) > no cambia la salida para div:nth-chi
     "proposedSolution": "Position-based selectors (nth-child/nth-of-type) break whenever sibling elements are added, removed, or reordered",
     "stableAgainstDOMChanges": true,
   },
+  "verified": false,
 }
 `;
 
@@ -569,6 +595,7 @@ exports[`corpus de heurística (snapshot) > no cambia la salida para form.checko
     "proposedSolution": "ARIA roles are stable across refactors and DOM restructures",
     "stableAgainstDOMChanges": true,
   },
+  "verified": false,
 }
 `;
 
@@ -587,6 +614,7 @@ exports[`corpus de heurística (snapshot) > no cambia la salida para getByRole("
     "proposedSolution": "Modern Playwright locators are already best practice; the failure likely reflects a real UI change, not a selector quality issue",
     "stableAgainstDOMChanges": true,
   },
+  "verified": false,
 }
 `;
 
@@ -605,6 +633,7 @@ exports[`corpus de heurística (snapshot) > no cambia la salida para getByText("
     "proposedSolution": "Modern Playwright locators are already best practice; the failure likely reflects a real UI change, not a selector quality issue",
     "stableAgainstDOMChanges": true,
   },
+  "verified": false,
 }
 `;
 
@@ -623,6 +652,7 @@ exports[`corpus de heurística (snapshot) > no cambia la salida para header nav 
     "proposedSolution": "Link roles with names are the gold standard for navigation",
     "stableAgainstDOMChanges": true,
   },
+  "verified": false,
 }
 `;
 
@@ -646,6 +676,7 @@ exports[`corpus de heurística (snapshot) > no cambia la salida para input[place
     "proposedSolution": "Label-input relationships are semantically meaningful",
     "stableAgainstDOMChanges": true,
   },
+  "verified": false,
 }
 `;
 
@@ -664,6 +695,7 @@ exports[`corpus de heurística (snapshot) > no cambia la salida para table tr:nt
     "proposedSolution": "Position-based selectors (nth-child/nth-of-type) break whenever sibling elements are added, removed, or reordered",
     "stableAgainstDOMChanges": true,
   },
+  "verified": false,
 }
 `;
 
@@ -682,6 +714,7 @@ exports[`corpus de heurística (snapshot) > no cambia la salida para text=Contin
     "proposedSolution": "Visibility filters prevent interaction with hidden elements",
     "stableAgainstDOMChanges": true,
   },
+  "verified": false,
 }
 `;
 
@@ -700,5 +733,6 @@ exports[`corpus de heurística (snapshot) > no cambia la salida para ul li:nth-c
     "proposedSolution": "Position-based selectors (nth-child/nth-of-type) break whenever sibling elements are added, removed, or reordered",
     "stableAgainstDOMChanges": true,
   },
+  "verified": false,
 }
 `;

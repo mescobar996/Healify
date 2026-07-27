@@ -36,6 +36,9 @@ export interface LocalCaseResult {
   confidence: number
   explanation: string
   selectorType: string
+  /** true si la sugerencia se confrontó contra el árbol real de la página capturado al fallar
+   * el test. false o ausente = heurística sobre el texto del selector, sin comprobar. */
+  verified?: boolean
   /** Identificador estable del defecto: el mismo selector roto en el mismo archivo devuelve
    * siempre el mismo ID, corrida tras corrida. */
   defectId: string
@@ -105,6 +108,7 @@ export function runLocalHealing(input: LocalCaseInput): LocalCaseResult {
     confidence: heal.confidence,
     explanation: heal.explanation,
     selectorType: heal.selectorType,
+    verified: heal.verified,
     defectId: buildDefectId(input.testFile, selector),
     severity: severityFor(status),
     expected: `El selector ${selector} encuentra un elemento en la página.`,

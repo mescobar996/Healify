@@ -43,7 +43,7 @@ Ejecutado el 15/3/2026, 07:30:00
 #login-btn
 \`\`\`
 
-**Sugerencia (heurística local, 85% de confianza):**
+**Sugerencia (heurística sobre el texto del selector, sin comprobar contra la página, 85% de confianza):**
 
 \`\`\`
 [data-testid='login-btn']
@@ -53,7 +53,8 @@ Ejecutado el 15/3/2026, 07:30:00
 
 ---
 
-Generado por Healify — heurística local, sin IA. Las sugerencias salen de analizar el
-texto del selector, no la página real: revisalas antes de darlas por buenas.
+Generado por Healify — heurística local, sin IA. Las sugerencias marcadas como
+verificadas se confrontaron contra el árbol de la página capturado al fallar el test; el
+resto sale de analizar el texto del selector y conviene revisarlo antes de aplicarlo.
 "
 `;

@@ -1,4 +1,4 @@
-import { writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import type { FullConfig, FullResult, Reporter, Suite, TestCase, TestResult, TestStep } from '@playwright/test/reporter'
 import {
@@ -79,6 +79,7 @@ export default class HealifyReporter implements Reporter {
           durationMs: result.duration,
           steps: describeSteps(result.steps),
           attachments: collectAttachments(result),
+          domContext: readPageSnapshot(result),
         })
       )
     } catch {
@@ -124,6 +125,30 @@ function describeSteps(steps: TestStep[] | undefined): string[] | undefined {
     .map((s) => s.title.trim())
     .filter(Boolean)
   return relevant.length > 0 ? relevant : undefined
+}
+
+/**
+ * El árbol de accesibilidad de la página en el momento del fallo.
+ *
+ * Playwright lo escribe solo, sin que el usuario configure nada, como un attachment llamado
+ * `error-context` (ver `_snapshotForAI` en playwright/lib/index.js). Es lo que le permite al
+ * motor confrontar sus sugerencias contra lo que había de verdad en pantalla en vez de
+ * adivinar nombres por diccionario.
+ *
+ * Dos límites que conviene tener presentes:
+ * - El árbol se toma al terminar el test, no en el instante exacto del click fallido. En la
+ *   práctica coinciden, porque el test aborta en el fallo.
+ * - Con `PLAYWRIGHT_NO_COPY_PROMPT` seteado, Playwright no lo genera. Ahí no hay dato y el
+ *   motor vuelve a la heurística a ciegas de siempre.
+ */
+function readPageSnapshot(result: TestResult): string | undefined {
+  const attachment = (result.attachments ?? []).find((a) => a.name === 'error-context' && a.path)
+  if (!attachment?.path) return undefined
+  try {
+    return readFileSync(attachment.path, 'utf-8')
+  } catch {
+    return undefined
+  }
 }
 
 /**

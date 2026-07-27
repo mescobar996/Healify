@@ -6,14 +6,25 @@
  * zod: el paquete original la usaba para validar payloads de API HTTP, acá
  * no hay red, solo tipos.
  *
- * Importante para quien lo lea de nuevo: esto NO analiza el DOM capturado.
- * A pesar de que el caller puede pasar `htmlContext`, esta función decide
- * todo por pattern-matching del texto del selector contra diccionarios
- * fijos (login→Login, email→Email, etc.) más un ajuste determinístico por
- * hash — no hay verificación de que el selector sugerido exista realmente
- * en el DOM. Es una heurística de buena fe, no un motor de IA ni un
- * verificador. Repórtalo como tal en cualquier UI que consuma esto.
+ * Importante para quien lo lea de nuevo — el motor tiene dos modos, y la
+ * diferencia entre ellos es enorme:
+ *
+ * - **Sin `htmlContext`**: pattern-matching del texto del selector contra
+ *   diccionarios fijos (login→Login, email→Email) más un ajuste determinístico
+ *   por hash. No hay forma de saber si lo que propone existe: es una heurística
+ *   de buena fe, y las sugerencias salen con `verified: false`.
+ * - **Con `htmlContext`** (el árbol de accesibilidad que el framework capturó
+ *   al fallar el test): las sugerencias de rol se confrontan contra lo que
+ *   había de verdad en pantalla — se descarta lo que no existe y los nombres
+ *   se leen de la página en vez de deducirse. Salen con `verified: true`.
+ *
+ * En ninguno de los dos modos hay IA, red ni servidor: es comparación de
+ * strings contra datos que ya están en la máquina. Repórtalo como tal en
+ * cualquier UI que consuma esto, y distinguí los dos modos: un usuario merece
+ * saber si la sugerencia se comprobó o se dedujo.
  */
+
+import { parsePageSnapshot, existsInPage, findMatches, bestElementFor, type PageElement } from './page-snapshot'
 
 export interface HealRequest {
   selector: string
@@ -27,6 +38,9 @@ export interface HealRequest {
 export type SelectorType = 'CSS' | 'XPATH' | 'TESTID' | 'ROLE' | 'TEXT' | 'MIXED'
 
 export interface HealResponse {
+  /** true si la sugerencia se confrontó contra el árbol real de la página y existe ahí.
+   * false cuando no hubo árbol disponible (heurística a ciegas, el modo de siempre). */
+  verified: boolean
   fixedSelector: string
   confidence: number
   explanation: string
@@ -426,7 +440,106 @@ function generateHealingStrategies(selector: string, analysis: SelectorAnalysis,
   return strategies.sort((a, b) => a.priority - b.priority || b.confidence - a.confidence)
 }
 
-/** Analiza un selector fallido y propone una heurística de sanado — sin red, sin verificar contra DOM real. */
+/** Tipo de elemento que detecta el motor → rol ARIA con el que aparece en el árbol de la página. */
+const ELEMENT_TO_ARIA_ROLE: Record<string, string> = {
+  button: 'button',
+  link: 'link',
+  input: 'textbox',
+}
+
+/**
+ * `role('button', { name: 'X' })` o `role('button')` → sus partes, para confrontarlo con la
+ * página. El motor genera las dos formas: la de XPath y la de selectores posicionales no
+ * llevan nombre, y también hay que poder desmentirlas (si no hay ningún botón en pantalla,
+ * proponer `role('button')` es igual de inútil).
+ */
+function parseRoleStrategy(selector: string): { role: string; name?: string } | null {
+  const withName = selector.match(/^role\('([^']+)',\s*\{\s*name:\s*'([^']*)'\s*\}\s*\)$/)
+  if (withName) return { role: withName[1], name: withName[2] }
+
+  const roleOnly = selector.match(/^role\('([^']+)'\)$/)
+  return roleOnly ? { role: roleOnly[1] } : null
+}
+
+/**
+ * Confronta las estrategias contra lo que había de verdad en la pantalla.
+ *
+ * Es el paso que separa una sugerencia de una adivinanza. Hace dos cosas:
+ *
+ * 1. **Descarta lo que no existe.** El motor propone nombres accesibles a partir de
+ *    diccionarios (`login` → `Login`), así que sin evidencia terminaba ofreciendo cosas como
+ *    `role('link', { name: 'Submit' })` para un `<a>` cualquiera. Si ese par rol+nombre no
+ *    está en la página, la estrategia se cae.
+ * 2. **Propone desde lo real.** Busca en la página un elemento del rol esperado y usa su
+ *    nombre accesible verdadero, con confianza alta porque ya no hay nada que adivinar.
+ *
+ * Solo toca estrategias de tipo ROLE: el árbol de accesibilidad no expone `data-testid` ni
+ * clases, así que una sugerencia TESTID/CSS no se puede ni confirmar ni desmentir con este
+ * dato y se deja intacta.
+ */
+function applyPageEvidence(
+  strategies: HealingStrategy[],
+  pageElements: PageElement[],
+  selector: string,
+  analysis: SelectorAnalysis
+): { strategies: HealingStrategy[]; sawPage: boolean } {
+  const expectedRole = ELEMENT_TO_ARIA_ROLE[analysis.element]
+
+  const survivors = strategies.filter((strategy) => {
+    const role = parseRoleStrategy(strategy.selector)
+    if (!role) return true
+    return role.name === undefined
+      ? findMatches(pageElements, role.role).length > 0
+      : existsInPage(pageElements, role.role, role.name)
+  })
+
+  // El rol esperado es solo una pista: si el motor no supo deducirlo del texto del selector,
+  // `bestElementFor` igual busca entre los elementos interactivos de la página.
+  const real = bestElementFor(pageElements, selector, expectedRole)
+  if (real) {
+    survivors.unshift({
+      selector: `role('${real.role}', { name: '${real.name}' })`,
+      type: 'ROLE',
+      confidence: 0.97,
+      explanation: `Verificado contra la página: hay un ${real.role} con el nombre accesible "${real.name}". El nombre se leyó del árbol de accesibilidad capturado cuando el test falló, no se dedujo del texto del selector.`,
+      robustnessGain: 50,
+      technicalReason: `Confirmed against the accessibility tree captured at failure time: role=${real.role}, name=${real.name}`,
+      priority: 0,
+    })
+    return { strategies: survivors, sawPage: true }
+  }
+
+  if (survivors.length === 0) {
+    // Ninguna sugerencia sobrevivió y tampoco hay un elemento del rol esperado. Eso no es un
+    // problema de selector: lo que el test buscaba no estaba en la pantalla. Decirlo vale más
+    // que ofrecer un candidato inventado.
+    const roleNote = expectedRole ? ` No hay ningún ${expectedRole} en la página.` : ''
+    return {
+      strategies: [
+        {
+          selector,
+          type: 'CSS',
+          confidence: 0.5,
+          explanation: `Ninguna sugerencia sobrevivió al contraste con la página real.${roleNote} Puede que el elemento ya no exista: revisá si la funcionalidad sigue estando, en vez de buscarle otro selector.`,
+          robustnessGain: 0,
+          technicalReason: 'No candidate matched the accessibility tree captured at failure time',
+          priority: 9,
+        },
+      ],
+      sawPage: true,
+    }
+  }
+
+  return { strategies: survivors, sawPage: true }
+}
+
+/**
+ * Analiza un selector fallido y propone una heurística de sanado.
+ *
+ * Sin `htmlContext` es pattern-matching puro sobre el texto del selector, igual que siempre.
+ * Con `htmlContext` (el árbol de accesibilidad que el framework capturó al fallar), las
+ * sugerencias se confrontan contra lo que había de verdad en pantalla — ver `applyPageEvidence`.
+ */
 export function analyzeAndHeal(request: HealRequest): HealResponse {
   const { selector, customSynonyms } = request
   const analysis = analyzeSelector(selector)
@@ -435,7 +548,17 @@ export function analyzeAndHeal(request: HealRequest): HealResponse {
   const actions = { ...ACTIONS, ...customSynonyms?.actions }
   const fields = { ...FIELDS, ...customSynonyms?.fields }
 
-  const strategies = generateHealingStrategies(selector, analysis, actions, fields)
+  let strategies = generateHealingStrategies(selector, analysis, actions, fields)
+
+  // Sin árbol de página el comportamiento es exactamente el de siempre — de eso se encarga
+  // el snapshot del corpus de selectores, que no debe moverse por este cambio.
+  const pageElements = parsePageSnapshot(request.htmlContext)
+  let verified = false
+  if (pageElements.length > 0) {
+    const evidence = applyPageEvidence(strategies, pageElements, selector, analysis)
+    strategies = evidence.strategies
+    verified = evidence.sawPage && strategies[0]?.priority === 0
+  }
 
   const bestStrategy = strategies[0] ?? {
     selector: 'body',
@@ -447,13 +570,16 @@ export function analyzeAndHeal(request: HealRequest): HealResponse {
     priority: 9,
   }
 
-  const adjustedConfidence = Math.max(
-    0.75,
-    Math.min(0.98, bestStrategy.confidence + deterministicAdjustment(selector))
-  )
+  // El ajuste determinístico existe para desempatar entre adivinanzas parejas. Cuando la
+  // sugerencia se confirmó contra la página no hay nada que desempatar: se respeta su
+  // confianza tal cual, sin ruido de hash.
+  const adjustedConfidence = verified
+    ? bestStrategy.confidence
+    : Math.max(0.75, Math.min(0.98, bestStrategy.confidence + deterministicAdjustment(selector)))
   const needsReview = adjustedConfidence < 0.80
 
   return {
+    verified,
     fixedSelector: bestStrategy.selector,
     confidence: Math.round(adjustedConfidence * 100) / 100,
     explanation: bestStrategy.explanation,

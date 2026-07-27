@@ -36,8 +36,8 @@ $ npx playwright test
   1 failed
 Healed: 1 | Review: 0 | Unresolved: 0        # ← Healify ya analizó el selector roto
 
-$ npx @healify/cli fix --ast
-Healify fix — healify-report.json (--ast)
+$ npx @healify/cli fix
+Healify fix — healify-report.json
 
 ✓ e2e/checkout.spec.ts — #add-to-cart-btn → role('button', { name: 'Add' })
 
@@ -387,7 +387,26 @@ Esto no pasa la primera vez que instalás Healify en un proyecto nuevo (ahí ya 
 
 ## Qué reconoce el motor hoy
 
-Pattern-matching sobre el texto del selector, sin analizar el DOM real:
+El motor trabaja de dos maneras, y la diferencia es grande. El reporte siempre te dice cuál
+de las dos usó en cada caso.
+
+**Verificado contra la página (Playwright).** Cuando un test falla, Playwright guarda solo el
+árbol de accesibilidad de la pantalla en ese momento. Healify lo lee y confronta sus
+sugerencias contra lo que había de verdad: descarta lo que no existe y toma los nombres de la
+página en lugar de deducirlos. Un `#comprar-ahora-a1b2c3` roto resuelve a
+`role('button', { name: 'Comprar' })` con el texto real del botón.
+
+Si nada coincide, el reporte lo dice: puede que el elemento ya no exista, y entonces el
+problema no es el selector sino que la funcionalidad no está.
+
+**A ciegas (Cypress, Selenium, WebdriverIO).** Sin ese dato, el motor decide solo por el texto
+del selector — sirve como punto de partida, pero conviene revisar antes de aplicar. Estas
+sugerencias aparecen sin la marca de verificado.
+
+En los dos casos es comparación de strings contra datos que ya están en tu máquina: no hay IA,
+ni red, ni servidor.
+
+Lo que reconoce por patrón, con o sin página:
 
 - Testids: `data-testid`, `data-cy`, `data-qa`, `data-test`, `data-e2e`
 - `[name=]`, `[aria-label=]`, `[role=]`, texto visible (`text=`, `:has-text()`)

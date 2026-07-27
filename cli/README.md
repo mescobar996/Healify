@@ -263,27 +263,28 @@ Conservador a propósito, nunca adivina:
 | El selector aparece 0 veces en el archivo | Salta, avisa "ya no se encontró" |
 | El selector aparece 2+ veces | Salta, avisa "ambiguo", no elige cuál |
 | El archivo tiene cambios sin commitear en git | Salta, avisa (a menos que uses `--force` o `--dry-run`) |
-| La sugerencia es tipo `role('button', { name: 'X' })` sin `--ast` | Salta: es texto legible para el reporte, no un valor de selector pegable; aplicarlo tal cual corrompería el archivo. Con `--ast` sí se puede aplicar (ver abajo) |
+| La sugerencia es tipo `role('button', { name: 'X' })` y usaste `--no-ast` | Salta: es texto legible para el reporte, no un valor de selector pegable, y aplicarlo tal cual corrompería el archivo. Sin `--no-ast` se reescribe la llamada completa (ver abajo) |
 
-## `fix --ast` (experimental)
+## Reescritura de sugerencias por rol
 
-Las sugerencias `role('button', { name: 'X' })` no son un valor de selector pegable. Hace
-falta reescribir la llamada completa (`page.click('#x')` → `page.getByRole('button', {
-name: 'X' }).click()`), un cambio estructural, no textual. `--ast` usa
-[`ts-morph`](https://ts-morph.com/) para hacer esa reescritura de verdad, en vez de
-saltarla:
+Las sugerencias `role('button', { name: 'X' })` no son un valor de selector pegable: hace
+falta reescribir la llamada completa.
 
-```bash
-npx @healify/cli fix --ast
+```diff
+- await page.click('#comprar-ahora-a1b2c3')
++ await page.getByRole('button', { name: 'Comprar' }).click()
 ```
 
-Es aditivo, no reemplaza el `fix` normal: primero aplica todo lo que ya aplicaba antes
-(TESTID/CSS/TEXT, que ya son selectores pegables tal cual), y solo para lo que quedó
-salteado como "no sustituible" intenta la reescritura AST. Métodos de Playwright
-soportados hoy: `click`, `fill`, `type`, `check`, `uncheck`, `selectOption`, `hover`,
-`focus`, `blur`, `tap`, `dblclick`, `press`, y `locator(...)` dentro de un `expect(...)`.
-Mismas reglas conservadoras que el `fix` normal: git limpio (salvo `--force`), selector
-único en el archivo, nunca adivina.
+Eso es un cambio estructural, no textual, así que `fix` usa [`ts-morph`](https://ts-morph.com/)
+para hacerlo de verdad sobre el AST del archivo. Viene activado por defecto; se apaga con
+`--no-ast`.
+
+Es aditivo: primero aplica todo lo que se puede reemplazar como texto (TESTID/CSS/TEXT, que ya
+son selectores pegables), y solo para lo que quedó como "no sustituible" intenta la
+reescritura. Métodos de Playwright soportados hoy: `click`, `fill`, `type`, `check`,
+`uncheck`, `selectOption`, `hover`, `focus`, `blur`, `tap`, `dblclick`, `press`, y
+`locator(...)` dentro de un `expect(...)`. Mismas reglas conservadoras que el resto de `fix`:
+git limpio (salvo `--force`), selector único en el archivo, nunca adivina.
 
 ## Historial de curaciones
 

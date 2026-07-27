@@ -20,7 +20,7 @@ function reasonText(outcome: Extract<FixOutcome, { status: 'skipped' }>, astUsed
     case 'not-substitutable':
       return astUsed
         ? 'la sugerencia no es un rol reescribible (método sin mapeo, o no es una llamada de page/locator) — revisar y aplicar a mano'
-        : 'la sugerencia no es un valor de selector sustituible directamente (formato de rol legible) — probá --ast (experimental) o revisá y aplicá a mano'
+        : 'la sugerencia no es un valor de selector sustituible directamente (formato de rol legible) — sacá --no-ast para que se reescriba sola, o revisá y aplicá a mano'
   }
 }
 
@@ -57,7 +57,11 @@ function printOutcomes(outcomes: FixOutcome[], run: LocalRun, astUsed: boolean):
 function runFix(args: string[]): void {
   const dryRun = args.includes('--dry-run')
   const force = args.includes('--force')
-  const ast = args.includes('--ast')
+  // La reescritura estructural pasó a ser el default: las sugerencias role(...) son las que
+  // el motor propone en la mayoría de los casos, y hasta ahora quedaban todas sin aplicar
+  // salvo que el usuario supiera del flag `--ast`. Se puede desactivar con `--no-ast`.
+  // `--ast` se sigue aceptando (lo usa la gh-action y puede estar en scripts) y no hace nada.
+  const ast = !args.includes('--no-ast')
   const reportPath = args.slice(1).find((a) => !a.startsWith('--')) ?? 'healify-report.json'
 
   let run: LocalRun
@@ -70,7 +74,7 @@ function runFix(args: string[]): void {
     process.exit(exitCode)
   }
 
-  console.log(`Healify fix — ${reportPath}${ast ? ' (--ast)' : ''}\n`)
+  console.log(`Healify fix — ${reportPath}${ast ? '' : ' (--no-ast)'}\n`)
 
   // Se graba ANTES de aplicar los fixes, con el estado real del reporte (todos los casos,
   // no solo lo que fix() termina aplicando) — así "recurrente"/"re-roto" reflejan selectores
@@ -225,8 +229,8 @@ function printHelp(): void {
 Comandos:
   init                                       Detecta tu framework (o te pregunta cuál armar si no hay ninguno), instala lo que falte y configura el reporter/plugin (sin generar tests)
   doctor                                     Verifica que Healify esté instalado y bien configurado
-  fix [reporte.json] [--dry-run] [--force] [--ast]   Aplica las sugerencias de mayor confianza directo en tus archivos de test
-                                                       --ast (experimental) también reescribe sugerencias role(...) vía AST
+  fix [reporte.json] [--dry-run] [--force] [--no-ast]   Aplica las sugerencias de mayor confianza directo en tus archivos de test
+                                                       --no-ast desactiva la reescritura de sugerencias role(...) (page.click → page.getByRole)
   history                                    Muestra selectores recurrentes y re-rotos de .healify/history.jsonl (se graba en cada fix real, no en --dry-run)
 
 Flags globales:

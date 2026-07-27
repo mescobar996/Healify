@@ -71,6 +71,100 @@ var require_selector_extractor = __commonJS({
   }
 });
 
+// ../reporter-core/dist/page-snapshot.js
+var require_page_snapshot = __commonJS({
+  "../reporter-core/dist/page-snapshot.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.parsePageSnapshot = parsePageSnapshot;
+    exports2.findMatches = findMatches;
+    exports2.existsInPage = existsInPage;
+    exports2.selectorTokens = selectorTokens;
+    exports2.bestElementFor = bestElementFor;
+    exports2.bestNameFor = bestNameFor;
+    var PROPERTY_LINE = /^\s*-\s*\//;
+    var ELEMENT_LINE = /^\s*-\s+([a-zA-Z][\w-]*)\s*(?:"((?:[^"\\]|\\.)*)")?/;
+    var TEXT_LINE = /^\s*-\s+text:\s*(.+?)\s*$/;
+    function parsePageSnapshot(markdown) {
+      if (!markdown)
+        return [];
+      const elements = [];
+      for (const line of markdown.split("\n")) {
+        if (PROPERTY_LINE.test(line))
+          continue;
+        const textMatch = line.match(TEXT_LINE);
+        if (textMatch) {
+          elements.push({ role: "text", name: unescapeName(textMatch[1]) });
+          continue;
+        }
+        const match = line.match(ELEMENT_LINE);
+        if (!match)
+          continue;
+        const role = match[1];
+        if (role === "yaml")
+          continue;
+        elements.push({ role, name: match[2] ? unescapeName(match[2]) : "" });
+      }
+      return elements;
+    }
+    function unescapeName(raw) {
+      return raw.replace(/\\"/g, '"').replace(/\\\\/g, "\\");
+    }
+    function findMatches(elements, role, name) {
+      return elements.filter((e) => e.role === role && (name === void 0 || e.name === name));
+    }
+    function existsInPage(elements, role, name) {
+      return findMatches(elements, role, name).length > 0;
+    }
+    function selectorTokens(selector) {
+      return selector.toLowerCase().split(/[^a-z0-9áéíóúñ]+/i).filter((token) => token.length >= 3 && !/^\d+$/.test(token) && !/^[0-9a-f]{6,}$/.test(token));
+    }
+    var INTERACTIVE_ROLES = ["button", "link", "textbox", "checkbox", "radio", "combobox", "menuitem", "tab", "option", "searchbox", "switch"];
+    function bestElementFor(elements, selector, preferredRole) {
+      if (preferredRole) {
+        const name = bestNameFor(elements, preferredRole, selector);
+        if (name !== null)
+          return { role: preferredRole, name };
+      }
+      const tokens = selectorTokens(selector);
+      if (tokens.length === 0)
+        return null;
+      const scored = elements.filter((e) => INTERACTIVE_ROLES.includes(e.role) && e.name.length > 0).map((element) => {
+        const nameTokens = selectorTokens(element.name);
+        const score = nameTokens.filter((nameToken) => tokens.some((token) => token === nameToken || token.startsWith(nameToken) || nameToken.startsWith(token))).length;
+        return { element, score };
+      }).filter((s) => s.score > 0);
+      if (scored.length === 0)
+        return null;
+      const best = scored.reduce((a, b) => b.score > a.score ? b : a);
+      if (scored.filter((s) => s.score === best.score).length > 1)
+        return null;
+      return best.element;
+    }
+    function bestNameFor(elements, role, selector) {
+      const candidates = findMatches(elements, role).filter((e) => e.name.length > 0);
+      if (candidates.length === 0)
+        return null;
+      if (candidates.length === 1)
+        return candidates[0].name;
+      const tokens = selectorTokens(selector);
+      if (tokens.length === 0)
+        return null;
+      const scored = candidates.map((candidate) => {
+        const nameTokens = selectorTokens(candidate.name);
+        const score = nameTokens.filter((nameToken) => tokens.some((token) => token === nameToken || token.startsWith(nameToken) || nameToken.startsWith(token))).length;
+        return { name: candidate.name, score };
+      });
+      const best = scored.reduce((a, b) => b.score > a.score ? b : a);
+      if (best.score === 0)
+        return null;
+      if (scored.filter((s) => s.score === best.score).length > 1)
+        return null;
+      return best.name;
+    }
+  }
+});
+
 // ../reporter-core/dist/dictionaries/en.json
 var require_en = __commonJS({
   "../reporter-core/dist/dictionaries/en.json"(exports2, module2) {
@@ -178,6 +272,7 @@ var require_healing_engine = __commonJS({
     };
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.analyzeAndHeal = analyzeAndHeal2;
+    var page_snapshot_1 = require_page_snapshot();
     var VOLATILE_CLASS_RE = /^(css-|sc-|x[0-9a-f]{4,}|[a-z]{2,}_[a-z0-9]{5,})/i;
     var VOLATILE_ID_RE = /_\d{4,}$|-[a-f0-9]{6,}$/i;
     function hasVolatileClassToken(selector) {
@@ -464,12 +559,71 @@ var require_healing_engine = __commonJS({
       }
       return strategies.sort((a, b) => a.priority - b.priority || b.confidence - a.confidence);
     }
+    var ELEMENT_TO_ARIA_ROLE = {
+      button: "button",
+      link: "link",
+      input: "textbox"
+    };
+    function parseRoleStrategy(selector) {
+      const withName = selector.match(/^role\('([^']+)',\s*\{\s*name:\s*'([^']*)'\s*\}\s*\)$/);
+      if (withName)
+        return { role: withName[1], name: withName[2] };
+      const roleOnly = selector.match(/^role\('([^']+)'\)$/);
+      return roleOnly ? { role: roleOnly[1] } : null;
+    }
+    function applyPageEvidence(strategies, pageElements, selector, analysis) {
+      const expectedRole = ELEMENT_TO_ARIA_ROLE[analysis.element];
+      const survivors = strategies.filter((strategy) => {
+        const role = parseRoleStrategy(strategy.selector);
+        if (!role)
+          return true;
+        return role.name === void 0 ? (0, page_snapshot_1.findMatches)(pageElements, role.role).length > 0 : (0, page_snapshot_1.existsInPage)(pageElements, role.role, role.name);
+      });
+      const real = (0, page_snapshot_1.bestElementFor)(pageElements, selector, expectedRole);
+      if (real) {
+        survivors.unshift({
+          selector: `role('${real.role}', { name: '${real.name}' })`,
+          type: "ROLE",
+          confidence: 0.97,
+          explanation: `Verificado contra la p\xE1gina: hay un ${real.role} con el nombre accesible "${real.name}". El nombre se ley\xF3 del \xE1rbol de accesibilidad capturado cuando el test fall\xF3, no se dedujo del texto del selector.`,
+          robustnessGain: 50,
+          technicalReason: `Confirmed against the accessibility tree captured at failure time: role=${real.role}, name=${real.name}`,
+          priority: 0
+        });
+        return { strategies: survivors, sawPage: true };
+      }
+      if (survivors.length === 0) {
+        const roleNote = expectedRole ? ` No hay ning\xFAn ${expectedRole} en la p\xE1gina.` : "";
+        return {
+          strategies: [
+            {
+              selector,
+              type: "CSS",
+              confidence: 0.5,
+              explanation: `Ninguna sugerencia sobrevivi\xF3 al contraste con la p\xE1gina real.${roleNote} Puede que el elemento ya no exista: revis\xE1 si la funcionalidad sigue estando, en vez de buscarle otro selector.`,
+              robustnessGain: 0,
+              technicalReason: "No candidate matched the accessibility tree captured at failure time",
+              priority: 9
+            }
+          ],
+          sawPage: true
+        };
+      }
+      return { strategies: survivors, sawPage: true };
+    }
     function analyzeAndHeal2(request) {
       const { selector, customSynonyms } = request;
       const analysis = analyzeSelector(selector);
       const actions = { ...ACTIONS, ...customSynonyms?.actions };
       const fields = { ...FIELDS, ...customSynonyms?.fields };
-      const strategies = generateHealingStrategies(selector, analysis, actions, fields);
+      let strategies = generateHealingStrategies(selector, analysis, actions, fields);
+      const pageElements = (0, page_snapshot_1.parsePageSnapshot)(request.htmlContext);
+      let verified = false;
+      if (pageElements.length > 0) {
+        const evidence = applyPageEvidence(strategies, pageElements, selector, analysis);
+        strategies = evidence.strategies;
+        verified = evidence.sawPage && strategies[0]?.priority === 0;
+      }
       const bestStrategy = strategies[0] ?? {
         selector: "body",
         type: "CSS",
@@ -479,9 +633,10 @@ var require_healing_engine = __commonJS({
         technicalReason: "No suitable pattern found",
         priority: 9
       };
-      const adjustedConfidence = Math.max(0.75, Math.min(0.98, bestStrategy.confidence + deterministicAdjustment(selector)));
+      const adjustedConfidence = verified ? bestStrategy.confidence : Math.max(0.75, Math.min(0.98, bestStrategy.confidence + deterministicAdjustment(selector)));
       const needsReview = adjustedConfidence < 0.8;
       return {
+        verified,
         fixedSelector: bestStrategy.selector,
         confidence: Math.round(adjustedConfidence * 100) / 100,
         explanation: bestStrategy.explanation,
@@ -614,7 +769,8 @@ var require_qa_report = __commonJS({
       if (c.status === "unresolved") {
         lines.push("**Sugerencia:** sin candidato confiable \u2014 requiere an\xE1lisis manual.", "");
       } else {
-        lines.push(`**Sugerencia (heur\xEDstica local, ${Math.round(c.confidence * 100)}% de confianza):**`, "", "```", c.fixedSelector, "```", "");
+        const origen = c.verified ? "verificada contra la p\xE1gina real" : "heur\xEDstica sobre el texto del selector, sin comprobar contra la p\xE1gina";
+        lines.push(`**Sugerencia (${origen}, ${Math.round(c.confidence * 100)}% de confianza):**`, "", "```", c.fixedSelector, "```", "");
         if (c.explanation)
           lines.push(`> ${c.explanation}`, "");
       }
@@ -652,7 +808,7 @@ var require_qa_report = __commonJS({
         for (const c of sorted)
           lines.push(caseMarkdown(c));
       }
-      lines.push("---", "", "Generado por Healify \u2014 heur\xEDstica local, sin IA. Las sugerencias salen de analizar el", "texto del selector, no la p\xE1gina real: revisalas antes de darlas por buenas.", "");
+      lines.push("---", "", "Generado por Healify \u2014 heur\xEDstica local, sin IA. Las sugerencias marcadas como", "verificadas se confrontaron contra el \xE1rbol de la p\xE1gina capturado al fallar el test; el", "resto sale de analizar el texto del selector y conviene revisarlo antes de aplicarlo.", "");
       return lines.join("\n");
     }
   }
@@ -712,6 +868,7 @@ var require_local_mode = __commonJS({
         confidence: heal.confidence,
         explanation: heal.explanation,
         selectorType: heal.selectorType,
+        verified: heal.verified,
         defectId: (0, qa_report_1.buildDefectId)(input.testFile, selector),
         severity: (0, qa_report_1.severityFor)(status),
         expected: `El selector ${selector} encuentra un elemento en la p\xE1gina.`,
@@ -791,7 +948,7 @@ var require_local_report = __commonJS({
       const pct = Math.round(c.confidence * 100);
       const hasFixed = c.status === "review" && c.fixedSelector.length > 0;
       const suggestionHtml = hasFixed ? `<div class="diff-col after">
-        <div class="label">Sugerencia (heur\xEDstica local)</div>
+        <div class="label">Sugerencia ${c.verified ? '<span class="verified-tag">verificada en la p\xE1gina</span>' : "(heur\xEDstica local, sin comprobar)"}</div>
         <code class="copy-source">${escapeHtml(c.fixedSelector)}</code>
       </div>` : `<div class="diff-col after empty">
         <div class="label">Sugerencia</div>
@@ -1015,6 +1172,12 @@ var require_local_report = __commonJS({
     flex: none; font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--muted);
     border: 1px solid var(--border); border-radius: 5px; padding: 3px 7px;
   }
+  .verified-tag {
+    display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600;
+    color: var(--healed); background: var(--healed-soft); border-radius: 5px; padding: 3px 8px;
+    margin-left: 8px; vertical-align: middle;
+  }
+  .verified-tag::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--healed); }
 
   .qa-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 0; }
   .qa-field .label { font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 5px; }
@@ -1219,7 +1382,8 @@ var require_local_report = __commonJS({
   </div>
   <div class="modal-body">
     <p><strong>Esto no es un modelo de IA.</strong> Es <em>pattern-matching</em> determin\xEDstico sobre el texto del selector y del mensaje de error, corriendo 100% en tu m\xE1quina. No hay red, no hay servidor, no hay cuenta.</p>
-    <p><strong>No analiza el DOM.</strong> El motor no inspecciona el \xE1rbol del documento ni verifica que el selector sugerido exista de verdad en la p\xE1gina \u2014 decide todo por el texto del selector fallido. Tampoco tiene memoria entre tests ni entre corridas: cada caso se eval\xFAa de forma aislada.</p>
+    <p><strong>Dos modos, y la diferencia importa.</strong> Cuando el framework aporta el \xE1rbol de accesibilidad de la p\xE1gina (Playwright lo guarda solo al fallar un test), las sugerencias de rol se confrontan contra lo que hab\xEDa de verdad en pantalla: se descarta lo que no existe y los nombres se leen de la p\xE1gina. Esas llevan la marca <strong>verificada en la p\xE1gina</strong>. Cuando ese dato no est\xE1, el motor decide solo por el texto del selector fallido, sin forma de comprobar nada \u2014 y lo dice.</p>
+    <p><strong>Sin memoria entre corridas.</strong> Cada caso se eval\xFAa aislado; el motor no aprende de lo que sugiri\xF3 antes.</p>
     <h3>Reglas que aplica</h3>
     <ul class="rules">
       <li><strong>IDs din\xE1micos</strong>Si el selector es un <code>#id</code> con d\xEDgitos o un sufijo hexadecimal (ej. <code>#user-a1b2c3</code>), se marca como inestable y se propone una clase derivada del mismo nombre, sin el sufijo din\xE1mico.</li>

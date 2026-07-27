@@ -205,11 +205,28 @@ describe('renderLocalReportMarkdown', () => {
     expect(md).toContain('sin candidato confiable')
   })
 
-  it('aclara que la sugerencia sale del texto del selector, no de la página real', () => {
-    expect(renderLocalReportMarkdown(makeRun())).toContain('no la página real')
+  it('el pie distingue las sugerencias verificadas de las que hay que revisar', () => {
+    const pie = renderLocalReportMarkdown(makeRun())
+
+    expect(pie).toContain('verificadas')
+    expect(pie).toContain('texto del selector')
   })
 
   it('mantiene el formato del entregable estable (snapshot)', () => {
     expect(renderLocalReportMarkdown(makeRun())).toMatchSnapshot()
+  })
+})
+
+describe('renderLocalReportMarkdown — origen de la sugerencia', () => {
+  it('dice cuándo la sugerencia se verificó contra la página', () => {
+    const md = renderLocalReportMarkdown(makeRun({ cases: [makeCase({ verified: true })] }))
+
+    expect(md).toContain('verificada contra la página real')
+  })
+
+  it('dice explícitamente cuándo NO se comprobó — el usuario tiene que saber qué está leyendo', () => {
+    const md = renderLocalReportMarkdown(makeRun({ cases: [makeCase({ verified: false })] }))
+
+    expect(md).toContain('sin comprobar contra la página')
   })
 })

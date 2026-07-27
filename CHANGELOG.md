@@ -1,5 +1,40 @@
 # Changelog
 
+## Sin publicar — el motor mira la página real
+
+Hasta acá el motor recibía un string y devolvía otro, adivinando nombres por diccionario: de
+ahí salían sugerencias como `role('link', { name: 'Submit' })` para un `<a>` cualquiera, sin
+ninguna evidencia de que ese texto existiera. Sobre un corpus de 34 selectores realistas, los
+únicos arreglos que `fix` llegaba a aplicar eran casos que ya estaban bien.
+
+Playwright, resulta, ya guarda el árbol de accesibilidad de la página cada vez que un test
+falla (`error-context.md`). Estaba ahí, en disco, sin usar.
+
+- **Las sugerencias se confrontan contra la página**: si el motor propone un rol y un nombre
+  que no existen en pantalla, la sugerencia se descarta en vez de ofrecerse.
+- **Los nombres se leen de la página, no se deducen**: un `#comprar-ahora-a1b2c3` roto ahora
+  resuelve a `role('button', { name: 'Comprar' })` con el texto real del botón. La confianza
+  sube a 97% y, a diferencia de antes, está justificada.
+- **Marca `verificada` en los tres formatos**: el reporte distingue lo comprobado contra la
+  página de lo deducido del texto del selector. El usuario tiene derecho a saber cuál está
+  leyendo.
+- **Si nada coincide, se dice**: cuando ninguna sugerencia sobrevive el contraste, el reporte
+  avisa que el elemento puede haber desaparecido — el defecto no es el selector, es la
+  funcionalidad. Para un QA eso vale más que un candidato inventado.
+- **`fix` reescribe `role(...)` por defecto**: `page.click('#x')` pasa a
+  `page.getByRole('button', { name: 'Comprar' }).click()`. La reescritura ya existía pero
+  estaba detrás de `--ast`, marcada como experimental, así que en la práctica casi nada se
+  aplicaba. Se puede desactivar con `--no-ast`; `--ast` se sigue aceptando y no hace nada.
+- Sin dependencias nuevas y sin cambiar cómo se escriben los tests: el dato ya estaba, solo
+  había que leerlo. Sigue sin haber IA, red ni servidor.
+
+**Verificado de punta a punta, por primera vez**: un test que fallaba por un selector roto,
+arreglado solo por `fix`, vuelve a correr y **pasa**. Hasta ahora nunca se había comprobado
+que un arreglo aplicado por Healify dejara el test en verde.
+
+Por ahora solo Playwright. Cypress, Selenium y WebdriverIO siguen con la heurística a ciegas
+y lo dicen en el reporte.
+
 ## Sin publicar — el reporte pasa a ser un entregable de QA
 
 El reporte servía para ver selectores rotos, pero no como entregable: no tenía veredicto, ni

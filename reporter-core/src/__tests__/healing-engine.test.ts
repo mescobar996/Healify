@@ -192,3 +192,81 @@ describe('analyzeAndHeal', () => {
     })
   })
 })
+
+describe('evidencia de la página real (htmlContext)', () => {
+  // Árbol tal cual lo escribe Playwright al fallar un test — mismo fixture que
+  // page-snapshot.test.ts, capturado de una corrida real.
+  const PAGINA = `# Page snapshot
+
+\`\`\`yaml
+- generic [active] [ref=e1]:
+  - heading "Tienda" [level=1] [ref=e2]
+  - navigation [ref=e3]:
+    - link "Inicio" [ref=e4]:
+      - /url: /inicio
+  - textbox "Correo" [ref=e7]
+  - button "Comprar" [ref=e8]
+\`\`\`
+`
+
+  it('propone el nombre real del botón en vez de adivinarlo del diccionario', () => {
+    const result = analyzeAndHeal({ selector: '#comprar-ahora-a1b2c3', htmlContext: PAGINA })
+
+    expect(result.fixedSelector).toBe("role('button', { name: 'Comprar' })")
+    expect(result.verified).toBe(true)
+  })
+
+  it('sin la página, el mismo selector no llega a esa sugerencia — es la diferencia que hace el dato', () => {
+    const aCiegas = analyzeAndHeal({ selector: '#comprar-ahora-a1b2c3' })
+
+    expect(aCiegas.verified).toBe(false)
+    expect(aCiegas.fixedSelector).not.toBe("role('button', { name: 'Comprar' })")
+  })
+
+  it('una sugerencia verificada tiene confianza suficiente para aplicarse sola', () => {
+    const result = analyzeAndHeal({ selector: '#comprar-ahora-a1b2c3', htmlContext: PAGINA })
+
+    expect(result.confidence).toBeGreaterThanOrEqual(0.9)
+    expect(result.needsReview).toBe(false)
+  })
+
+  it('lee el nombre real de un campo de texto', () => {
+    const result = analyzeAndHeal({ selector: '#input-email-x7f2', htmlContext: PAGINA })
+
+    expect(result.fixedSelector).toBe("role('textbox', { name: 'Correo' })")
+  })
+
+  it('avisa que el elemento no está en la página en vez de inventar un candidato', () => {
+    // Un XPath solo genera estrategias de rol, así que si en la página no hay nada que
+    // coincida no queda ningún candidato. Ahí el problema deja de ser el selector: lo que el
+    // test buscaba no estaba en pantalla, y eso es lo que hay que decir.
+    const result = analyzeAndHeal({ selector: '//div[3]/span[2]', htmlContext: '- heading "Tienda"' })
+
+    expect(result.confidence).toBeLessThan(0.8)
+    expect(result.explanation).toContain('página')
+  })
+
+  it('una sugerencia CSS no se descarta por la página: el árbol de accesibilidad no expone clases', () => {
+    // Solo las sugerencias de rol se pueden confrontar. Una clase estable propuesta para un id
+    // dinámico no se puede ni confirmar ni desmentir con este dato, así que sobrevive intacta.
+    const result = analyzeAndHeal({ selector: '#acepto-terminos-9z8y', htmlContext: '- button "Comprar"' })
+
+    expect(result.fixedSelector).toContain('acepto-terminos')
+  })
+
+  it('no se rompe con un árbol vacío o corrupto — degrada a la heurística de siempre', () => {
+    const basura = analyzeAndHeal({ selector: '#comprar-ahora-a1b2c3', htmlContext: 'no es un snapshot' })
+    const aCiegas = analyzeAndHeal({ selector: '#comprar-ahora-a1b2c3' })
+
+    expect(basura.fixedSelector).toBe(aCiegas.fixedSelector)
+    expect(basura.verified).toBe(false)
+  })
+
+  it('descarta un nombre que el motor propuso pero que no existe en la página', () => {
+    // El diccionario traduce "login" → "Login", pero en esta página no hay ningún botón así.
+    const soloComprar = `- button "Comprar"`
+    const result = analyzeAndHeal({ selector: '#login-btn-a1b2c3', htmlContext: soloComprar })
+
+    expect(result.fixedSelector).not.toContain("name: 'Login'")
+  })
+})

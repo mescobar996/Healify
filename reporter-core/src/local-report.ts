@@ -112,7 +112,11 @@ function renderAttentionCase(c: IndexedCase): string {
 
   const suggestionHtml = hasFixed
     ? `<div class="diff-col after">
-        <div class="label">Sugerencia (heurística local)</div>
+        <div class="label">Sugerencia ${
+          c.verified
+            ? '<span class="verified-tag">verificada en la página</span>'
+            : '(heurística local, sin comprobar)'
+        }</div>
         <code class="copy-source">${escapeHtml(c.fixedSelector)}</code>
       </div>`
     : `<div class="diff-col after empty">
@@ -373,6 +377,12 @@ export function renderLocalReportHtml(rawRun: LocalRun): string {
     flex: none; font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--muted);
     border: 1px solid var(--border); border-radius: 5px; padding: 3px 7px;
   }
+  .verified-tag {
+    display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600;
+    color: var(--healed); background: var(--healed-soft); border-radius: 5px; padding: 3px 8px;
+    margin-left: 8px; vertical-align: middle;
+  }
+  .verified-tag::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--healed); }
 
   .qa-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 0; }
   .qa-field .label { font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 5px; }
@@ -591,7 +601,8 @@ export function renderLocalReportHtml(rawRun: LocalRun): string {
   </div>
   <div class="modal-body">
     <p><strong>Esto no es un modelo de IA.</strong> Es <em>pattern-matching</em> determinístico sobre el texto del selector y del mensaje de error, corriendo 100% en tu máquina. No hay red, no hay servidor, no hay cuenta.</p>
-    <p><strong>No analiza el DOM.</strong> El motor no inspecciona el árbol del documento ni verifica que el selector sugerido exista de verdad en la página — decide todo por el texto del selector fallido. Tampoco tiene memoria entre tests ni entre corridas: cada caso se evalúa de forma aislada.</p>
+    <p><strong>Dos modos, y la diferencia importa.</strong> Cuando el framework aporta el árbol de accesibilidad de la página (Playwright lo guarda solo al fallar un test), las sugerencias de rol se confrontan contra lo que había de verdad en pantalla: se descarta lo que no existe y los nombres se leen de la página. Esas llevan la marca <strong>verificada en la página</strong>. Cuando ese dato no está, el motor decide solo por el texto del selector fallido, sin forma de comprobar nada — y lo dice.</p>
+    <p><strong>Sin memoria entre corridas.</strong> Cada caso se evalúa aislado; el motor no aprende de lo que sugirió antes.</p>
     <h3>Reglas que aplica</h3>
     <ul class="rules">
       <li><strong>IDs dinámicos</strong>Si el selector es un <code>#id</code> con dígitos o un sufijo hexadecimal (ej. <code>#user-a1b2c3</code>), se marca como inestable y se propone una clase derivada del mismo nombre, sin el sufijo dinámico.</li>
