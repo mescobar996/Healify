@@ -1,6 +1,6 @@
 # Changelog
 
-## Sin publicar — auditoría Tech Lead (correcciones + deuda técnica)
+## 1.1.0 — auditoría Tech Lead (correcciones + deuda técnica)
 
 Ronda de correcciones sobre el código real tras una auditoría tipo Tech Lead (revisión de
 `reporter-core`, adapters, CLI y el spec de historial). Nada de esto es feature nueva:
