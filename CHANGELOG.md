@@ -1,6 +1,6 @@
 # Changelog
 
-## Sin publicar — repertorio consultable + modo interactivo
+## 1.2.0 — repertorio consultable + modo interactivo
 
 Los dos huecos que quedaban del pedido original: memoria entre corridas, y que el
 desarrollador pueda decidir caso por caso en vez de todo-o-nada.
@@ -28,7 +28,7 @@ desarrollador pueda decidir caso por caso en vez de todo-o-nada.
 - Dedup: el parseo de `.healify/history.jsonl` vivía duplicado en el motor conceptualmente —
   ahora `parseHistoryLines`/`readRepertoire` viven en `reporter-core` y `cli` los reusa.
 
-## Sin publicar — Selenium y WebdriverIO también verifican contra la página real
+### Selenium y WebdriverIO también verifican contra la página real
 
 El bloque anterior le dio a Playwright acceso al árbol de accesibilidad real (el archivo que
 Playwright ya escribe al fallar un test). Selenium y WebdriverIO se quedaron afuera porque no
@@ -57,7 +57,7 @@ mismo, sin depender de que ningún framework les regale nada.
 - Dedup: `parseRoleSuggestion` (antes duplicado dentro de `healing-engine.ts`) ahora vive en
   `role-locator.ts` y lo comparten el motor y los dos plugins.
 
-## Sin publicar — el motor mira la página real
+### El motor mira la página real
 
 Hasta acá el motor recibía un string y devolvía otro, adivinando nombres por diccionario: de
 ahí salían sugerencias como `role('link', { name: 'Submit' })` para un `<a>` cualquiera, sin
@@ -92,7 +92,7 @@ que un arreglo aplicado por Healify dejara el test en verde.
 Por ahora solo Playwright. Cypress, Selenium y WebdriverIO siguen con la heurística a ciegas
 y lo dicen en el reporte.
 
-## Sin publicar — el reporte pasa a ser un entregable de QA
+### El reporte pasa a ser un entregable de QA
 
 El reporte servía para ver selectores rotos, pero no como entregable: no tenía veredicto, ni
 severidad, ni entorno, ni evidencia. Y había un agujero — si todos los tests pasaban no se
@@ -122,7 +122,7 @@ corrió nada".
 - `fix` sobre una corrida limpia ahora dice "ningún selector roto en la última corrida" en vez
   de un escueto "0 aplicados · 0 salteados".
 
-## Sin publicar — `init` te muestra cómo escribir el primer test
+### `init` te muestra cómo escribir el primer test
 
 Después de `init`, correr `npx playwright test` daba `No tests found`: correcto (Healify
 nunca genera tests), pero el mensaje decía "escribí tu primer test en `e2e/`" sin mostrar
