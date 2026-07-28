@@ -85,4 +85,8 @@ CONTEXT_HANDOFF.md
 
 # Config local de OpenCode (otro asistente, setup personal — no es parte del proyecto)
 OPENCODE.md
+
+# Historial local de Healify corriendo contra sí mismo (dev/testing manual) — no es
+# contenido del proyecto, mismo criterio que recomendamos a los usuarios en cli/README.md.
+.healify/
 opencode.json

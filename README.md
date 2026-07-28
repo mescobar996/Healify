@@ -89,6 +89,19 @@ Playwright, Cypress, Selenium y WebdriverIO. Los cuatro reusan el mismo motor he
 la corrida; Selenium y WebdriverIO curan en vivo (envuelven el driver/browser) y generan
 `healify-report.json` cuando llamás a `flush()`.
 
+## Y si tu equipo automatiza en otro lenguaje
+
+El motor no está atado a JS: `npx @healify/cli heal` lo expone como un comando que recibe
+JSON por stdin y devuelve JSON por stdout — heurística, verificación contra la página y
+repertorio incluidos. Cualquier lenguaje que pueda spawnear un subproceso lo usa.
+
+Hay adapters de referencia (código para copiar y adaptar a tu proyecto, no paquetes
+publicados) para **Python** (verificado con Selenium real) y **Java** (compilado y con el
+puente a `heal` verificado real; el driver en vivo no se pudo correr en el entorno donde se
+escribió esto, por una limitación de esa máquina, no del código) en
+[`docs/adapters/`](docs/adapters/). El contrato completo está documentado en
+[`docs/adapters/README.md`](docs/adapters/README.md) por si tu lenguaje no tiene uno todavía.
+
 ## Para quién es esto
 
 **Si sos QA Manual, QA Automation o QC Engineer y se te rompe un test porque cambió un ID, una clase o un texto, esto es para vos.**

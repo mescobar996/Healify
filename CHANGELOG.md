@@ -1,5 +1,45 @@
 # Changelog
 
+## Sin publicar — multi-lenguaje: `healify heal`
+
+Hasta acá Healify era JS/TS puro. Un equipo que automatiza con pytest+Selenium (Python) o
+JUnit+Selenium (Java) no podía usarlo. El motor mismo es agnóstico (recibe un string, devuelve
+un string) — lo único atado a Node era cómo se lo invocaba.
+
+- **`healify heal`** (nuevo comando): el motor entero — heurística, verificación contra la
+  página, repertorio — expuesto como JSON por stdin/stdout. Cualquier lenguaje que pueda
+  spawnear un subproceso lo usa, sin reescribir nada. Devuelve un `locator` ya resuelto
+  (`{ strategy: 'css'|'xpath'|'unsupported', value }`) — el cliente no necesita entender la
+  sintaxis `role(...)` de Playwright.
+- **`healify probe-script`** (nuevo comando): imprime el script JS que hay que correr con el
+  `execute_script`/equivalente de cualquier driver para sondear el DOM — el mismo que ya usan
+  los plugins de Selenium/WebdriverIO en JS, reusado tal cual.
+- **El repertorio se consulta del lado del servidor**: `heal` lee `.healify/history.jsonl` en
+  cada invocación. Si dos lenguajes corren contra el mismo repo (ej. Playwright en JS y
+  pytest en Python), comparten repertorio — una curación verificada en un lenguaje resuelve
+  un selector roto en el otro, verificado real con el binario: una entrada grabada a mano
+  (simulando un adapter de Python) fue reusada por una segunda llamada a `heal` sin DOM,
+  marcando `fromRepertoire: true`, y una tercera llamada con `testFile` distinto correctamente
+  NO la reusó.
+- **Adapters de referencia** (no paquetes publicados — código para copiar y adaptar, ver
+  `docs/adapters/`):
+  - **Python** (`docs/adapters/python/healify_selenium.py`): verificado de punta a punta con
+    Selenium 4.46 y Chrome real (Selenium Manager). Encontró y corrigió un bug real de
+    portabilidad: `subprocess.run(["npx", ...])` sin `shell=True` no resuelve `npx.cmd` en
+    Windows (`[WinError 2]`) — se resuelve con `shutil.which`.
+  - **Java** (`docs/adapters/java/HealifySeleniumWrapper.java`): compila real contra
+    selenium-java 4.27 (resuelto con una Maven portable, sin instalar nada). El puente a
+    `healify heal` (subproceso + parseo del JSON real) se verificó de punta a punta. El
+    `ChromeDriver` en vivo no se pudo correr en esta sesión por un bug de red del JDK 17 de
+    esta máquina (`java.net.http` roto para cualquier uso, confirmado con un repro de 4
+    líneas sin Selenium de por medio) — no es un defecto de Selenium ni de Healify.
+  - **C#** (`docs/adapters/csharp/HealifySeleniumWrapper.cs`): **sin verificar** — no hay SDK
+    de .NET en esta máquina. Marcado explícito en el propio archivo.
+- Dedup: `resolveLocatorStrategy` (reporter-core) reemplaza la lógica que vivía duplicada e
+  inline en `selenium-plugin`/`webdriverio-plugin` para convertir `role(...)` a XPath — ahora
+  la comparten esos dos plugins JS y el comando `heal`. Cero cambio de comportamiento
+  (verificado: sus 39 + 28 tests no se movieron).
+
 ## 1.2.0 — repertorio consultable + modo interactivo
 
 Los dos huecos que quedaban del pedido original: memoria entre corridas, y que el

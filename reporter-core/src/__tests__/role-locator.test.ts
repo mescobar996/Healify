@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseRoleSuggestion, roleSuggestionToXPath } from '../role-locator'
+import { parseRoleSuggestion, roleSuggestionToXPath, resolveLocatorStrategy } from '../role-locator'
 
 describe('parseRoleSuggestion', () => {
   it('extrae rol y nombre', () => {
@@ -73,5 +73,33 @@ describe('roleSuggestionToXPath', () => {
     const xpath = roleSuggestionToXPath('button', `L'Oreal dice "hola"`)
 
     expect(xpath).toContain('concat(')
+  })
+})
+
+describe('resolveLocatorStrategy', () => {
+  it('role con nombre → xpath', () => {
+    const r = resolveLocatorStrategy("role('button', { name: 'Comprar' })")
+
+    expect(r.strategy).toBe('xpath')
+    expect(r.value).toContain("normalize-space(.)='Comprar'")
+  })
+
+  it('role sin nombre → unsupported, nada confiable para armar un xpath', () => {
+    expect(resolveLocatorStrategy("role('button')")).toEqual({ strategy: 'unsupported', value: null })
+  })
+
+  it('CSS plano → css, tal cual', () => {
+    expect(resolveLocatorStrategy('[data-testid="add-to-cart"]')).toEqual({ strategy: 'css', value: '[data-testid="add-to-cart"]' })
+    expect(resolveLocatorStrategy('.stable-class')).toEqual({ strategy: 'css', value: '.stable-class' })
+  })
+
+  it('sintaxis Playwright-only sin rol (:has-text, visible=, getBy*) → unsupported', () => {
+    expect(resolveLocatorStrategy("button:has-text('Add')")).toEqual({ strategy: 'unsupported', value: null })
+    expect(resolveLocatorStrategy('visible=oldselector')).toEqual({ strategy: 'unsupported', value: null })
+    expect(resolveLocatorStrategy("getByRole('button', { name: 'Add' })")).toEqual({ strategy: 'unsupported', value: null })
+  })
+
+  it('rol sin mapeo conocido, aunque tenga nombre → unsupported', () => {
+    expect(resolveLocatorStrategy("role('heading', { name: 'Tienda' })")).toEqual({ strategy: 'unsupported', value: null })
   })
 })

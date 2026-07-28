@@ -2,11 +2,10 @@ import {
   analyzeAndHeal,
   BROWSER_PROBE_SCRIPT,
   domContextFromProbeResult,
-  parseRoleSuggestion,
-  roleSuggestionToXPath,
+  resolveLocatorStrategy,
   type HistoryEntry,
 } from '@healify/reporter-core'
-import { wdioSelectorToSelector, isWdioCssCompatible } from './locator'
+import { wdioSelectorToSelector } from './locator'
 import { DEFAULT_CONFIDENCE_THRESHOLD, type HealifyWebdriverIOOptions, type HealingEvent } from './types'
 
 /**
@@ -127,13 +126,13 @@ export function wrapBrowser(browser: WdioBrowser, options: HealifyWebdriverIOOpt
     }
 
     // Las sugerencias de rol (`role('button', { name: 'Comprar' })`) no son CSS — Playwright
-    // las interpreta con su propio motor de locators, WebdriverIO no. Se convierten a un XPath
-    // real que busca por el mismo criterio de nombre que usó el sondeo del DOM, así encuentra
-    // el mismo elemento que originó la sugerencia. $() de wdio autodetecta XPath por el '//'
-    // inicial, no hace falta ningún wrapper. El resto (TESTID/CSS/CLASS) sigue el camino CSS.
-    const roleSuggestion = parseRoleSuggestion(result.fixedSelector)
-    const roleXpath = roleSuggestion?.name ? roleSuggestionToXPath(roleSuggestion.role, roleSuggestion.name) : null
-    const retrySelector = roleXpath ?? (isWdioCssCompatible(result.fixedSelector) ? result.fixedSelector : null)
+    // las interpreta con su propio motor de locators, WebdriverIO no. resolveLocatorStrategy
+    // (reporter-core) convierte eso a un XPath real que busca por el mismo criterio de
+    // nombre que usó el sondeo del DOM, así encuentra el mismo elemento que originó la
+    // sugerencia. $() de wdio autodetecta XPath por el '//' inicial, no hace falta ningún
+    // wrapper. Misma función que usa `healify heal` para dar servicio a otros lenguajes.
+    const resolution = resolveLocatorStrategy(result.fixedSelector)
+    const retrySelector = resolution.strategy === 'unsupported' ? null : resolution.value
 
     if (!retrySelector) {
       emit({ type: 'no-suggestion', originalSelector: selector, fixedSelector: result.fixedSelector, confidence: result.confidence, latencyMs: Date.now() - start })

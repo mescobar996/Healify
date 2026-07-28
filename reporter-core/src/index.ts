@@ -5,6 +5,6 @@ export { renderLocalReportHtml, renderLocalReportJson, printSummary, buildLocalR
 export { renderLocalReportMarkdown, buildDefectId, severityFor, formatDuration, environmentRows, SEVERITY_LABEL, type Severity } from './qa-report'
 export { isPlaywrightOnlySelector } from './selector-compat'
 export { parsePageSnapshot, formatPageElements, existsInPage, findMatches, bestElementFor, bestNameFor, selectorTokens, type PageElement } from './page-snapshot'
-export { parseRoleSuggestion, roleSuggestionToXPath } from './role-locator'
+export { parseRoleSuggestion, roleSuggestionToXPath, resolveLocatorStrategy, type LocatorResolution } from './role-locator'
 export { BROWSER_PROBE_SCRIPT, domContextFromProbeResult } from './browser-probe'
 export { parseHistoryLines, readRepertoire, findRepertoireMatch, type HistoryEntry } from './repertoire'

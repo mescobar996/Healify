@@ -10,6 +10,8 @@
  * mayoría de los casos, el mismo que originó la sugerencia.
  */
 
+import { isPlaywrightOnlySelector } from './selector-compat'
+
 /**
  * `role('button', { name: 'X' })` o `role('button')` → sus partes.
  *
@@ -60,4 +62,35 @@ export function roleSuggestionToXPath(role: string, name: string): string | null
   if (!name) return null
   const build = ROLE_TO_XPATH[role]
   return build ? build(xpathLiteral(name)) : null
+}
+
+export interface LocatorResolution {
+  strategy: 'css' | 'xpath' | 'unsupported'
+  value: string | null
+}
+
+/**
+ * Qué locator ejecutable corresponde a una sugerencia del motor, sin importar quién pregunta.
+ *
+ * Antes vivía duplicada e inline en `selenium-plugin/src/wrap.ts` y
+ * `webdriverio-plugin/src/wrap.ts` (mismo criterio, dos copias) — se extrajo acá para que la
+ * compartan esos dos plugins JS y, ahora, cualquier lenguaje que llame a `healify heal` por
+ * subproceso. Es la única fuente de verdad de "cómo convertir una sugerencia en algo que un
+ * driver pueda ejecutar".
+ *
+ * - `role('X', { name: 'Y' })` con nombre → XPath (ver `roleSuggestionToXPath`).
+ * - `role('X')` sin nombre → `unsupported` (nada confiable para buscar).
+ * - Cualquier otra sintaxis Playwright-only (`:has-text()`, `visible=`, `getBy*(...)`) →
+ *   `unsupported`: no es CSS real y no hay forma de convertirla a XPath.
+ * - El resto (ya es CSS: TESTID, atributo, clase estable) → `css`, tal cual.
+ */
+export function resolveLocatorStrategy(fixedSelector: string): LocatorResolution {
+  const roleSuggestion = parseRoleSuggestion(fixedSelector)
+  if (roleSuggestion) {
+    const xpath = roleSuggestion.name ? roleSuggestionToXPath(roleSuggestion.role, roleSuggestion.name) : null
+    return xpath ? { strategy: 'xpath', value: xpath } : { strategy: 'unsupported', value: null }
+  }
+
+  if (isPlaywrightOnlySelector(fixedSelector)) return { strategy: 'unsupported', value: null }
+  return { strategy: 'css', value: fixedSelector }
 }

@@ -169,14 +169,28 @@ var require_page_snapshot = __commonJS({
   }
 });
 
+// ../reporter-core/dist/selector-compat.js
+var require_selector_compat = __commonJS({
+  "../reporter-core/dist/selector-compat.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.isPlaywrightOnlySelector = isPlaywrightOnlySelector2;
+    function isPlaywrightOnlySelector2(selector) {
+      return /^role\(/.test(selector) || selector.includes(":has-text(") || /^visible=/.test(selector) || /^getBy[A-Z]/.test(selector);
+    }
+  }
+});
+
 // ../reporter-core/dist/role-locator.js
 var require_role_locator = __commonJS({
   "../reporter-core/dist/role-locator.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
-    exports2.parseRoleSuggestion = parseRoleSuggestion2;
-    exports2.roleSuggestionToXPath = roleSuggestionToXPath2;
-    function parseRoleSuggestion2(selector) {
+    exports2.parseRoleSuggestion = parseRoleSuggestion;
+    exports2.roleSuggestionToXPath = roleSuggestionToXPath;
+    exports2.resolveLocatorStrategy = resolveLocatorStrategy2;
+    var selector_compat_1 = require_selector_compat();
+    function parseRoleSuggestion(selector) {
       const withName = selector.match(/^role\('([^']+)',\s*\{\s*name:\s*'([^']*)'\s*\}\s*\)$/);
       if (withName)
         return { role: withName[1], name: withName[2] };
@@ -199,11 +213,21 @@ var require_role_locator = __commonJS({
       radio: (l) => `//input[@type='radio'][@aria-label=${l}] | //*[@role='radio'][@aria-label=${l}]`,
       searchbox: (l) => `//input[@type='search'][@aria-label=${l} or @placeholder=${l}]`
     };
-    function roleSuggestionToXPath2(role, name) {
+    function roleSuggestionToXPath(role, name) {
       if (!name)
         return null;
       const build = ROLE_TO_XPATH[role];
       return build ? build(xpathLiteral(name)) : null;
+    }
+    function resolveLocatorStrategy2(fixedSelector) {
+      const roleSuggestion = parseRoleSuggestion(fixedSelector);
+      if (roleSuggestion) {
+        const xpath = roleSuggestion.name ? roleSuggestionToXPath(roleSuggestion.role, roleSuggestion.name) : null;
+        return xpath ? { strategy: "xpath", value: xpath } : { strategy: "unsupported", value: null };
+      }
+      if ((0, selector_compat_1.isPlaywrightOnlySelector)(fixedSelector))
+        return { strategy: "unsupported", value: null };
+      return { strategy: "css", value: fixedSelector };
     }
   }
 });
@@ -1651,18 +1675,6 @@ var require_local_report = __commonJS({
   }
 });
 
-// ../reporter-core/dist/selector-compat.js
-var require_selector_compat = __commonJS({
-  "../reporter-core/dist/selector-compat.js"(exports2) {
-    "use strict";
-    Object.defineProperty(exports2, "__esModule", { value: true });
-    exports2.isPlaywrightOnlySelector = isPlaywrightOnlySelector2;
-    function isPlaywrightOnlySelector2(selector) {
-      return /^role\(/.test(selector) || selector.includes(":has-text(") || /^visible=/.test(selector) || /^getBy[A-Z]/.test(selector);
-    }
-  }
-});
-
 // ../reporter-core/dist/browser-probe.js
 var require_browser_probe = __commonJS({
   "../reporter-core/dist/browser-probe.js"(exports2) {
@@ -1741,7 +1753,7 @@ var require_dist = __commonJS({
   "../reporter-core/dist/index.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
-    exports2.findRepertoireMatch = exports2.readRepertoire = exports2.parseHistoryLines = exports2.domContextFromProbeResult = exports2.BROWSER_PROBE_SCRIPT = exports2.roleSuggestionToXPath = exports2.parseRoleSuggestion = exports2.selectorTokens = exports2.bestNameFor = exports2.bestElementFor = exports2.findMatches = exports2.existsInPage = exports2.formatPageElements = exports2.parsePageSnapshot = exports2.isPlaywrightOnlySelector = exports2.SEVERITY_LABEL = exports2.environmentRows = exports2.formatDuration = exports2.severityFor = exports2.buildDefectId = exports2.renderLocalReportMarkdown = exports2.statsFromCases = exports2.baseEnvironment = exports2.buildLocalRunFromEvents = exports2.printSummary = exports2.renderLocalReportJson = exports2.renderLocalReportHtml = exports2.runLocalHealing = exports2.analyzeAndHeal = exports2.extractSelectorFromError = void 0;
+    exports2.findRepertoireMatch = exports2.readRepertoire = exports2.parseHistoryLines = exports2.domContextFromProbeResult = exports2.BROWSER_PROBE_SCRIPT = exports2.resolveLocatorStrategy = exports2.roleSuggestionToXPath = exports2.parseRoleSuggestion = exports2.selectorTokens = exports2.bestNameFor = exports2.bestElementFor = exports2.findMatches = exports2.existsInPage = exports2.formatPageElements = exports2.parsePageSnapshot = exports2.isPlaywrightOnlySelector = exports2.SEVERITY_LABEL = exports2.environmentRows = exports2.formatDuration = exports2.severityFor = exports2.buildDefectId = exports2.renderLocalReportMarkdown = exports2.statsFromCases = exports2.baseEnvironment = exports2.buildLocalRunFromEvents = exports2.printSummary = exports2.renderLocalReportJson = exports2.renderLocalReportHtml = exports2.runLocalHealing = exports2.analyzeAndHeal = exports2.extractSelectorFromError = void 0;
     var selector_extractor_1 = require_selector_extractor();
     Object.defineProperty(exports2, "extractSelectorFromError", { enumerable: true, get: function() {
       return selector_extractor_1.extractSelectorFromError;
@@ -1825,6 +1837,9 @@ var require_dist = __commonJS({
     Object.defineProperty(exports2, "roleSuggestionToXPath", { enumerable: true, get: function() {
       return role_locator_1.roleSuggestionToXPath;
     } });
+    Object.defineProperty(exports2, "resolveLocatorStrategy", { enumerable: true, get: function() {
+      return role_locator_1.resolveLocatorStrategy;
+    } });
     var browser_probe_1 = require_browser_probe();
     Object.defineProperty(exports2, "BROWSER_PROBE_SCRIPT", { enumerable: true, get: function() {
       return browser_probe_1.BROWSER_PROBE_SCRIPT;
@@ -1869,9 +1884,6 @@ function wdioSelectorToSelector(selector) {
   if (/^[.#\[]/.test(trimmed) || /^[a-z][a-z0-9]*/i.test(trimmed)) return trimmed;
   if (trimmed.startsWith("//") || trimmed.startsWith("(//")) return trimmed;
   return null;
-}
-function isWdioCssCompatible(selector) {
-  return !(0, import_reporter_core.isPlaywrightOnlySelector)(selector);
 }
 
 // src/types.ts
@@ -1958,9 +1970,8 @@ function wrapBrowser(browser, options = {}, repertoire = []) {
       emit({ type: "no-suggestion", originalSelector: selector, confidence: result.confidence, latencyMs: Date.now() - start });
       throw new Error(`Healify: no confident suggestion for '${selector}' (confidence: ${result.confidence})`);
     }
-    const roleSuggestion = (0, import_reporter_core2.parseRoleSuggestion)(result.fixedSelector);
-    const roleXpath = roleSuggestion?.name ? (0, import_reporter_core2.roleSuggestionToXPath)(roleSuggestion.role, roleSuggestion.name) : null;
-    const retrySelector = roleXpath ?? (isWdioCssCompatible(result.fixedSelector) ? result.fixedSelector : null);
+    const resolution = (0, import_reporter_core2.resolveLocatorStrategy)(result.fixedSelector);
+    const retrySelector = resolution.strategy === "unsupported" ? null : resolution.value;
     if (!retrySelector) {
       emit({ type: "no-suggestion", originalSelector: selector, fixedSelector: result.fixedSelector, confidence: result.confidence, latencyMs: Date.now() - start });
       throw new Error(`Healify: suggestion '${result.fixedSelector}' is not locatable for WebdriverIO`);

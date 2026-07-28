@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { readFileSync } from 'node:fs'
 import type { LocalRun } from '@healify/reporter-core'
+import { BROWSER_PROBE_SCRIPT } from '@healify/reporter-core'
 import { fix, describeReadError, type FixOutcome } from './fix'
 import { fixAst } from './fix-ast'
 import { appendHistory } from './history'
@@ -9,6 +10,7 @@ import { promptLine } from './prompt'
 import { init, type InitReport, type FrameworkInitResult } from './commands/init'
 import { doctor, type DoctorReport } from './commands/doctor'
 import { history, type HistoryReport } from './commands/history'
+import { runHeal } from './commands/heal'
 import { getVersion } from './version'
 
 function reasonText(outcome: Extract<FixOutcome, { status: 'skipped' }>, astUsed: boolean): string {
@@ -254,6 +256,36 @@ function printHistoryReport(report: HistoryReport): void {
   }
 }
 
+/**
+ * `healify heal` — el motor expuesto para cualquier lenguaje que pueda spawnear un
+ * subproceso: JSON por stdin, JSON por stdout. Ver `commands/heal.ts` para el contrato
+ * completo y `docs/adapters/README.md` para ejemplos de integración.
+ */
+function runHealCommand(): void {
+  let raw: string
+  try {
+    raw = readFileSync(0, 'utf-8')
+  } catch (error) {
+    console.log(JSON.stringify({ error: `No se pudo leer stdin: ${error instanceof Error ? error.message : String(error)}` }))
+    process.exit(1)
+  }
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    console.log(JSON.stringify({ error: 'stdin no es JSON válido. Se espera { "selector": "..." } como mínimo.' }))
+    process.exit(1)
+  }
+
+  const result = runHeal(parsed)
+  if (!result.ok) {
+    console.log(JSON.stringify({ error: result.error }))
+    process.exit(1)
+  }
+  console.log(JSON.stringify(result.output))
+}
+
 function printHelp(): void {
   console.log(`Uso: healify <comando>
 
@@ -264,6 +296,8 @@ Comandos:
                                                        --no-ast desactiva la reescritura de sugerencias role(...) (page.click → page.getByRole)
                                                        --interactive pregunta caso por caso en vez de aplicar todo solo (necesita una terminal real)
   history                                    Muestra selectores recurrentes y re-rotos de .healify/history.jsonl (se graba en cada fix real, no en --dry-run)
+  heal                                       Motor vía JSON por stdin/stdout, para usar desde Python/Java/C#/etc. Ver docs/adapters/README.md
+  probe-script                               Imprime el script que hay que correr con execute_script() para sondear el DOM (insumo de "heal")
 
 Flags globales:
   --version, -v                              Muestra la versión instalada de @healify/cli
@@ -288,6 +322,8 @@ function main(): void {
   if (command === 'doctor') return printDoctorReport(doctor())
   if (command === 'fix') return runFix(args)
   if (command === 'history') return printHistoryReport(history())
+  if (command === 'heal') return runHealCommand()
+  if (command === 'probe-script') return console.log(BROWSER_PROBE_SCRIPT)
 
   printHelp()
   if (command) process.exit(1)

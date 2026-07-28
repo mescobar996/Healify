@@ -341,6 +341,20 @@ de fallar.
 Se recomienda agregar `.healify/` al `.gitignore` de tu proyecto: es historial local de
 esa máquina, no algo para versionar (mismo criterio que `test-results/`).
 
+## `heal`/`probe-script`: el motor para otros lenguajes
+
+```bash
+echo '{"selector": "#comprar-ahora-a1b2c3"}' | npx @healify/cli heal
+npx @healify/cli probe-script
+```
+
+Pensados para invocarse desde un subproceso, no a mano: son el puente que usan los adapters
+de referencia de Python/Java/C# en [`docs/adapters/`](../docs/adapters/) para que equipos que
+no automatizan en JS también puedan usar el motor. `heal` recibe JSON por stdin (selector,
+opcionalmente el DOM sondeado y el archivo del test) y devuelve JSON con la sugerencia y un
+`locator` ya resuelto a CSS o XPath, listo para reintentar con cualquier driver. El contrato
+completo está en [`docs/adapters/README.md`](../docs/adapters/README.md).
+
 ## Licencia
 
 MIT

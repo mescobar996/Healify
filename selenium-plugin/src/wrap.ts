@@ -4,11 +4,10 @@ import {
   analyzeAndHeal,
   BROWSER_PROBE_SCRIPT,
   domContextFromProbeResult,
-  parseRoleSuggestion,
-  roleSuggestionToXPath,
+  resolveLocatorStrategy,
   type HistoryEntry,
 } from '@healify/reporter-core'
-import { locatorToSelector, isSeleniumCssCompatible } from './locator'
+import { locatorToSelector } from './locator'
 import { DEFAULT_CONFIDENCE_THRESHOLD, type HealifySeleniumOptions, type HealingEvent } from './types'
 
 function isNoSuchElementError(err: unknown): boolean {
@@ -78,17 +77,18 @@ export function wrapDriver(driver: WebDriver, options: HealifySeleniumOptions = 
       }
 
       // Las sugerencias de rol (`role('button', { name: 'Comprar' })`) no son CSS — Playwright
-      // las interpreta con su propio motor de locators, Selenium no. Se convierten a un XPath
-      // real que busca por el mismo criterio de nombre que usó el sondeo del DOM, así encuentra
-      // el mismo elemento que originó la sugerencia. El resto (TESTID/CSS/CLASS) sigue el
-      // camino CSS de siempre.
-      const roleSuggestion = parseRoleSuggestion(result.fixedSelector)
-      const roleXpath = roleSuggestion?.name ? roleSuggestionToXPath(roleSuggestion.role, roleSuggestion.name) : null
-      const retryLocator = roleXpath
-        ? SeleniumBy.xpath(roleXpath)
-        : isSeleniumCssCompatible(result.fixedSelector)
-          ? SeleniumBy.css(result.fixedSelector)
-          : null
+      // las interpreta con su propio motor de locators, Selenium no. resolveLocatorStrategy
+      // (reporter-core) convierte eso a un XPath real que busca por el mismo criterio de
+      // nombre que usó el sondeo del DOM, así encuentra el mismo elemento que originó la
+      // sugerencia. El resto (TESTID/CSS/CLASS) sigue el camino CSS de siempre. Misma función
+      // que usa `healify heal` para dar servicio a otros lenguajes — una sola fuente de verdad.
+      const resolution = resolveLocatorStrategy(result.fixedSelector)
+      const retryLocator =
+        resolution.strategy === 'xpath'
+          ? SeleniumBy.xpath(resolution.value!)
+          : resolution.strategy === 'css'
+            ? SeleniumBy.css(resolution.value!)
+            : null
 
       if (!retryLocator) {
         emit({
