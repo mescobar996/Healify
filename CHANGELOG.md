@@ -1,6 +1,10 @@
 # Changelog
 
-## Sin publicar — Python empaquetado real + C# verificado
+## Python empaquetado real + C# verificado (fuera del ciclo de versión npm)
+
+> Este bloque no toca ningún paquete npm (`python/healify-selenium/` y
+> `docs/adapters/csharp/` viven fuera de los 6 workspaces) — no le corresponde un número de
+> versión de Healify. `healify-selenium` tiene su propio versionado en PyPI (`0.1.0`).
 
 - **`healify-selenium` en PyPI** (`python/healify-selenium/`): el adapter de Python deja de
   ser solo un archivo de referencia para copiar y pasa a ser un paquete instalable
@@ -20,7 +24,7 @@
   `MODULE_NOT_FOUND` interno de npm apenas se corre así. Arreglado invocando `cmd.exe /c npx
   ...` explícito, el patrón estándar de .NET para lanzar batch scripts sin una shell real.
 
-## Sin publicar — combinadores CSS compuestos
+## 1.4.0 — combinadores CSS compuestos
 
 Último hueco documentado como "fuera de alcance a propósito": el motor no reconocía
 selectores con combinador (`.padre > .hijo`, `.card .title`, `div + span`) como un patrón

@@ -1,6 +1,6 @@
 {
   "name": "@healify/selenium-plugin",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Self-healing wrapper for Selenium WebDriver: heuristic, local-first, no AI, no server.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
