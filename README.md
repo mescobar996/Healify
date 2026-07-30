@@ -101,13 +101,14 @@ El motor no está atado a JS: `npx @healify/cli heal` lo expone como un comando 
 JSON por stdin y devuelve JSON por stdout — heurística, verificación contra la página y
 repertorio incluidos. Cualquier lenguaje que pueda spawnear un subproceso lo usa.
 
-Hay adapters de referencia (código para copiar y adaptar a tu proyecto, no paquetes
-publicados) para **Python** (verificado con Selenium real), **Java** (compilado y con el
-puente a `heal` verificado real; el driver en vivo no se pudo correr en el entorno donde se
-escribió esto, por una limitación de esa máquina, no del código) y **C#** (sin verificar —
-no había SDK de .NET donde se escribió, marcado explícito en el propio archivo) en
-[`docs/adapters/`](docs/adapters/). El contrato completo está documentado en
-[`docs/adapters/README.md`](docs/adapters/README.md) por si tu lenguaje no tiene uno todavía.
+**Python** tiene un paquete real: `pip install healify-selenium` (verificado de punta a
+punta con Selenium real, wheel incluido). **Java** y **C#** son adapters de referencia
+(código para copiar y adaptar, no paquetes en Maven Central/NuGet): Java compila real y el
+puente a `heal` se verificó real, pero el driver en vivo no se pudo correr por una
+limitación del entorno donde se escribió (no del código); C# verificado de punta a punta con
+.NET 8 + Chrome real. Todo en [`docs/adapters/`](docs/adapters/) — el contrato completo está
+documentado en [`docs/adapters/README.md`](docs/adapters/README.md) por si tu lenguaje no
+tiene uno todavía.
 
 ## Para quién es esto
 
@@ -526,7 +527,8 @@ selenium-plugin/     # @healify/selenium-plugin 1.3.0
 webdriverio-plugin/  # @healify/webdriverio-plugin 1.3.0
 cli/                 # @healify/cli 1.3.0 - init, doctor, fix, history, heal, probe-script
 gh-action/           # GitHub Action (privada, no es workspace de npm ni se publica)
-docs/adapters/       # Adapters de referencia para Python/Java/C# (no paquetes publicados)
+python/healify-selenium/  # pip install healify-selenium — paquete real, verificado
+docs/adapters/       # Adapters de referencia para Java/C# (código para copiar, no paquetes)
 docs/guide/          # Manual detallado
 ```
 

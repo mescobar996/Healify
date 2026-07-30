@@ -1,5 +1,25 @@
 # Changelog
 
+## Sin publicar — Python empaquetado real + C# verificado
+
+- **`healify-selenium` en PyPI** (`python/healify-selenium/`): el adapter de Python deja de
+  ser solo un archivo de referencia para copiar y pasa a ser un paquete instalable
+  (`pip install healify-selenium`), con `pyproject.toml`, licencia MIT y README propios.
+  Verificado de punta a punta con el wheel real: construido (`python -m build`, pasa
+  `twine check`), instalado en un venv limpio, y corrido contra Chrome real con Selenium
+  4.46 — mismo resultado que el adapter de referencia (`verified: true`, click ejecutado).
+  Java y C# siguen siendo adapters de referencia (código para copiar), no paquetes en Maven
+  Central/NuGet — eso sigue siendo un compromiso de mantenimiento aparte, no asumido.
+- **Adapter C# verificado de punta a punta, por primera vez**: con un .NET 8 SDK portable
+  (zip, sin instalar nada en el sistema) + Selenium.WebDriver 4.27 vía NuGet + Chrome real.
+  Un selector roto a propósito se curó en vivo y se verificó contra la página
+  (`verified: true`, `confidence: 0.97`).
+- **Bug real encontrado y arreglado en esa verificación**: `RunProcess` invocaba `npx.cmd`
+  directo como `FileName` con `UseShellExecute=false` — a diferencia de una terminal real,
+  `Process.Start` de .NET en Windows no lo asocia con un intérprete solo, y termina en un
+  `MODULE_NOT_FOUND` interno de npm apenas se corre así. Arreglado invocando `cmd.exe /c npx
+  ...` explícito, el patrón estándar de .NET para lanzar batch scripts sin una shell real.
+
 ## Sin publicar — combinadores CSS compuestos
 
 Último hueco documentado como "fuera de alcance a propósito": el motor no reconocía

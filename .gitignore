@@ -90,3 +90,10 @@ OPENCODE.md
 # contenido del proyecto, mismo criterio que recomendamos a los usuarios en cli/README.md.
 .healify/
 opencode.json
+
+# python/healify-selenium — artefactos de build (python -m build), no fuente
+python/healify-selenium/dist/
+python/healify-selenium/build/
+python/healify-selenium/src/*.egg-info/
+__pycache__/
+*.pyc

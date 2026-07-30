@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "healify-selenium"
+version = "0.1.0"
+description = "Selenium adapter for Healify: heals broken selectors verified against the real DOM, no AI, no network."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Matías Escobar" }]
+requires-python = ">=3.9"
+dependencies = ["selenium>=4.6"]
+keywords = ["selenium", "testing", "qa", "selector-healing", "test-automation"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Topic :: Software Development :: Testing",
+  "Topic :: Software Development :: Quality Assurance",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
+
+[project.urls]
+Homepage = "https://github.com/mescobar996/Healify"
+Repository = "https://github.com/mescobar996/Healify"
+"Bug Tracker" = "https://github.com/mescobar996/Healify/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -1,13 +1,16 @@
 // Adapter de referencia: Healify + Selenium (C# / .NET).
 //
-// *** SIN VERIFICAR EN NINGUNA SESIÓN — no hay SDK de .NET instalado en la máquina donde se
-// escribió esto. A diferencia de los adapters de Python y Java (verificados de punta a punta
-// contra Chrome real, o al menos contra el puente `healify heal` real donde el entorno lo
-// permitió), este archivo se escribió por analogía con esos dos, siguiendo el mismo contrato
-// documentado en docs/adapters/README.md, pero NUNCA se compiló ni se corrió. Si vas a
-// usarlo, tratalo como un punto de partida a revisar, no como código probado. Lo primero que
-// habría que hacer con un SDK de .NET disponible: `dotnet build` y correr el smoke más
-// simple posible (un find_element roto contra un botón real) antes de confiar en esto. ***
+// Verificado de punta a punta (2026-07-30): .NET 8 SDK portable (zip, sin instalar nada en
+// el sistema) + Selenium.WebDriver 4.27 vía NuGet + Chrome real (Selenium Manager resuelve
+// ChromeDriver solo). Un selector roto a propósito se curó en vivo, se verificó contra la
+// página real (`verified: true`, `confidence: 0.97`) y el click se ejecutó de verdad.
+//
+// Bug real encontrado y arreglado en esa verificación: `RunProcess` pasaba "npx.cmd" como
+// `FileName` con `UseShellExecute=false` — a diferencia de una terminal real (que sí sabe
+// asociar `.cmd` con su intérprete), `Process.Start` de .NET en Windows NO resuelve eso solo
+// y termina llamando una instalación de npm/npx que se rompe con un `MODULE_NOT_FOUND` interno
+// (`npm-prefix.js`) apenas se ejecuta fuera de una shell. El fix: invocar `cmd.exe /c npx ...`
+// explícito, el patrón estándar de .NET para lanzar batch scripts en Windows sin una shell.
 //
 // No es un paquete publicado (no está en NuGet) — es un archivo que copiás a tu proyecto y
 // adaptás, mismo espíritu que healify.selenium.example.ts en la versión JS. Llama al motor
@@ -252,22 +255,30 @@ namespace Healify
 
         private string RunProcess(string command, string? stdin)
         {
-            // En Windows "npx" es "npx.cmd" — con UseShellExecute=false, ProcessBuilder-style
-            // no siempre lo resuelve sin la extensión (mismo problema visto en los adapters
-            // de Python/Java). Se resuelve explícito acá también.
+            // En Windows, "npx" en realidad es "npx.cmd" (un batch script) — pero pasarlo tal
+            // cual como FileName con UseShellExecute=false NO alcanza: verificado real que
+            // Process.Start no lo asocia con un intérprete de la forma en que sí lo hace una
+            // shell real, y termina en un MODULE_NOT_FOUND interno de npm/npx apenas se corre
+            // así. El fix estándar de .NET en Windows para lanzar batch scripts sin una shell:
+            // invocar cmd.exe /c explícito.
             var isWindows = Environment.OSVersion.Platform == PlatformID.Win32NT;
-            var npx = isWindows ? "npx.cmd" : "npx";
 
             var psi = new ProcessStartInfo
             {
-                FileName = npx,
-                ArgumentList = { "@healify/cli", command },
+                FileName = isWindows ? "cmd.exe" : "npx",
                 WorkingDirectory = _projectRoot,
                 RedirectStandardInput = stdin != null,
                 RedirectStandardOutput = true,
                 UseShellExecute = false,
                 CreateNoWindow = true,
             };
+            if (isWindows)
+            {
+                psi.ArgumentList.Add("/c");
+                psi.ArgumentList.Add("npx");
+            }
+            psi.ArgumentList.Add("@healify/cli");
+            psi.ArgumentList.Add(command);
 
             using var process = Process.Start(psi) ?? throw new InvalidOperationException("No se pudo iniciar el proceso de healify.");
             if (stdin != null)

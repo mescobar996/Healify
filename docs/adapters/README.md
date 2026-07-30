@@ -5,16 +5,17 @@ invocable desde JS/TS vía los cuatro paquetes npm. `@healify/cli` expone ese mi
 como dos comandos que hablan JSON por stdin/stdout, así que **cualquier lenguaje que pueda
 spawnear un subproceso lo puede usar**, sin reescribir un pedazo de la heurística.
 
-No hay paquetes publicados en PyPI/Maven Central/NuGet — eso es un compromiso de
-mantenimiento aparte que no se asumió acá. Lo que hay son **adapters de referencia**: código
-real, copiable, que adaptás a tu proyecto (mismo espíritu que
-`healify.selenium.example.ts`/`healify.wdio.example.ts` en la versión JS).
+Java y C# no tienen paquete publicado (Maven Central/NuGet) — eso es un compromiso de
+mantenimiento aparte que no se asumió acá. Son **adapters de referencia**: código real,
+copiable, que adaptás a tu proyecto (mismo espíritu que
+`healify.selenium.example.ts`/`healify.wdio.example.ts` en la versión JS). **Python sí es un
+paquete real** (`pip install healify-selenium`) — ver [`python/`](../../python/healify-selenium/).
 
-| Lenguaje | Archivo | Verificado |
+| Lenguaje | Dónde | Verificado |
 |---|---|---|
-| Python | [`python/healify_selenium.py`](python/healify_selenium.py) | ✅ Selenium 4.46 + Chrome real, de punta a punta |
-| Java | [`java/HealifySeleniumWrapper.java`](java/HealifySeleniumWrapper.java) | ⚠️ Compila real contra selenium-java 4.27; el puente a `healify heal` (subproceso + parseo) se probó real; el `ChromeDriver` en vivo no se pudo correr en esta sesión por un bug de red del JDK 17 usado (`java.net.http` roto en este sandbox, no algo de Selenium ni de Healify — ver el comentario de cabecera del archivo) |
-| C# | [`csharp/HealifySeleniumWrapper.cs`](csharp/HealifySeleniumWrapper.cs) | ❌ Sin verificar — no hay SDK de .NET en la máquina donde se escribió. Ver la advertencia en el archivo |
+| Python | [`pip install healify-selenium`](../../python/healify-selenium/) | ✅ Selenium 4.46 + Chrome real, de punta a punta — incluido el wheel empaquetado, instalado en un venv limpio |
+| Java | [`java/HealifySeleniumWrapper.java`](java/HealifySeleniumWrapper.java) (copiar y adaptar) | ⚠️ Compila real contra selenium-java 4.27; el puente a `healify heal` (subproceso + parseo) se probó real; el `ChromeDriver` en vivo no se pudo correr en esa sesión por un bug de red del JDK 17 usado (`java.net.http` roto en ese sandbox, no algo de Selenium ni de Healify — ver el comentario de cabecera del archivo) |
+| C# | [`csharp/HealifySeleniumWrapper.cs`](csharp/HealifySeleniumWrapper.cs) (copiar y adaptar) | ✅ .NET 8 SDK portable + Selenium.WebDriver 4.27 + Chrome real, de punta a punta |
 
 ## El contrato: `healify heal` y `healify probe-script`
 
@@ -106,14 +107,14 @@ No hace falta que exista uno de referencia para arrancar. El contrato de arriba 
 completo — lo mínimo que necesitás:
 
 1. Al fallar tu equivalente de `find_element`, convertí el locator nativo de tu framework a
-   un string CSS o XPath (ver `locatorToSelector`/`LocatorToSelector` en cualquiera de los
-   tres adapters para el criterio con `By.id`/`By.className`/etc.).
+   un string CSS o XPath (ver `_locator_to_selector`/`locatorToSelector`/`LocatorToSelector`
+   en Python/Java/C# para el criterio con `By.id`/`By.className`/etc.).
 2. Corré `probe-script` una vez (cacheado), ejecutalo con tu `execute_script` equivalente.
 3. Armá el JSON de entrada, mandalo por stdin a `healify heal`.
 4. Con la respuesta, reintentá con `locator.strategy`/`locator.value`.
 5. Opcional: grabá en `.healify/history.jsonl` para sumar al repertorio compartido.
 
-Alcance deliberado de los tres adapters de referencia: envuelven solo el equivalente de
-`find_element` (no cada método de interacción — mismo alcance acotado que `selenium-plugin`
-en JS), y no generan `healify-report.html/json/md` — eso queda para una integración más
-completa, más adelante.
+Alcance deliberado de los tres adapters: envuelven solo el equivalente de `find_element`
+(no cada método de interacción — mismo alcance acotado que `selenium-plugin` en JS), y no
+generan `healify-report.html/json/md` — eso queda para una integración más completa, más
+adelante.

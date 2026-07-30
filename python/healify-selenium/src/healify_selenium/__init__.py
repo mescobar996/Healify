@@ -1,17 +1,17 @@
 """
-Adapter de referencia: Healify + Selenium (Python).
+Healify + Selenium (Python).
 
-No es un paquete instalable (no está en PyPI) — es un archivo que copiás a tu proyecto y
-adaptás, mismo espíritu que healify.selenium.example.ts en la versión JS. Llama al motor
-real de Healify (reporter-core, el mismo que usan los cuatro adapters de JS) vía
-`npx @healify/cli heal`, así que necesitás Node instalado y @healify/cli en el proyecto
-(o accesible por npx) — no hay heurística reimplementada acá, es un cliente delgado.
+Llama al motor real de Healify (`reporter-core`, el mismo que usan los cuatro adapters de
+JS) vía `npx @healify/cli heal`, así que necesitás Node instalado y `@healify/cli`
+accesible por `npx` en el proyecto — no hay heurística reimplementada acá, es un cliente
+delgado.
 
 Requiere: pip install selenium (4.6+, trae Selenium Manager — resuelve el driver solo).
 
 Uso mínimo:
 
     from selenium import webdriver
+    from selenium.webdriver.common.by import By
     from healify_selenium import HealifySeleniumWrapper
 
     driver = webdriver.Chrome()
@@ -36,6 +36,9 @@ from typing import Any
 
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
+
+__version__ = "0.1.0"
+__all__ = ["HealifySeleniumWrapper", "HealEvent", "DEFAULT_CONFIDENCE_THRESHOLD"]
 
 # Mismo umbral que HEALED_THRESHOLD en reporter-core/src/local-mode.ts — acá no hay paso de
 # revisión humana, así que el piso para actuar solo tiene que ser el más alto que el motor
