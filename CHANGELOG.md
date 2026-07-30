@@ -1,6 +1,8 @@
 # Changelog
 
-## Sin publicar — Cypress: curado en vivo contra el DOM real
+## 1.3.0 — Cypress en vivo + multi-lenguaje
+
+### Cypress: curado en vivo contra el DOM real
 
 Cypress era el único de los cuatro frameworks soportados sin verificación contra el DOM real:
 solo un reporter pasivo, heurística sobre el texto del error, post-hoc. La razón: Cypress no
@@ -27,7 +29,7 @@ comando nuevo, no un wrap del existente.
   selector roto a propósito curado y clickeado de punta a punta (`verified: true` en el
   reporte), y un selector genuinamente irrecuperable fallando limpio sin romper la corrida.
 
-## Sin publicar — multi-lenguaje: `healify heal`
+### Multi-lenguaje: `healify heal`
 
 Hasta acá Healify era JS/TS puro. Un equipo que automatiza con pytest+Selenium (Python) o
 JUnit+Selenium (Java) no podía usarlo. El motor mismo es agnóstico (recibe un string, devuelve
