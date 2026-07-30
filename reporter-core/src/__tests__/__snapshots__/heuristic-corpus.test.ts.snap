@@ -189,6 +189,26 @@ exports[`corpus de heurística (snapshot) > no cambia la salida para .btn-primar
 }
 `;
 
+exports[`corpus de heurística (snapshot) > no cambia la salida para .card .price 1`] = `
+{
+  "alternatives": [],
+  "confidence": 0.78,
+  "explanation": "Selector compuesto con combinador CSS — depende de la relación exacta entre ancestro y elemento objetivo, se rompe si se agrega un wrapper o se reordena el markup. Se propone conservar solo el elemento objetivo (.price), sin la ruta de ancestros.",
+  "fixedSelector": ".price",
+  "fromRepertoire": false,
+  "needsReview": true,
+  "robustnessImprovement": 35,
+  "selectorType": "CSS",
+  "technicalDetails": {
+    "accessibilityCompliant": false,
+    "detectedIssue": "Class names can change during refactoring",
+    "proposedSolution": "Combinator-based selectors break when markup structure changes even if the target element itself is unchanged",
+    "stableAgainstDOMChanges": true,
+  },
+  "verified": false,
+}
+`;
+
 exports[`corpus de heurística (snapshot) > no cambia la salida para .css-1x2y3z4 1`] = `
 {
   "alternatives": [],
@@ -288,6 +308,26 @@ exports[`corpus de heurística (snapshot) > no cambia la salida para .sc-bdVaJa 
     "accessibilityCompliant": false,
     "detectedIssue": "Class names can change during refactoring",
     "proposedSolution": "Visibility filters prevent interaction with hidden elements",
+    "stableAgainstDOMChanges": true,
+  },
+  "verified": false,
+}
+`;
+
+exports[`corpus de heurística (snapshot) > no cambia la salida para .sidebar > .username 1`] = `
+{
+  "alternatives": [],
+  "confidence": 0.84,
+  "explanation": "Selector compuesto con combinador CSS — depende de la relación exacta entre ancestro y elemento objetivo, se rompe si se agrega un wrapper o se reordena el markup. Se propone conservar solo el elemento objetivo (.username), sin la ruta de ancestros.",
+  "fixedSelector": ".username",
+  "fromRepertoire": false,
+  "needsReview": false,
+  "robustnessImprovement": 35,
+  "selectorType": "CSS",
+  "technicalDetails": {
+    "accessibilityCompliant": false,
+    "detectedIssue": "Class names can change during refactoring",
+    "proposedSolution": "Combinator-based selectors break when markup structure changes even if the target element itself is unchanged",
     "stableAgainstDOMChanges": true,
   },
   "verified": false,
@@ -482,6 +522,39 @@ exports[`corpus de heurística (snapshot) > no cambia la salida para [data-test=
 }
 `;
 
+exports[`corpus de heurística (snapshot) > no cambia la salida para [data-testid="product-card"] [data-testid="add-to-cart-btn"] 1`] = `
+{
+  "alternatives": [
+    {
+      "confidence": 0.95,
+      "selector": "[data-testid='product-card']",
+    },
+    {
+      "confidence": 0.92,
+      "selector": "role('button', { name: 'Add' })",
+    },
+    {
+      "confidence": 0.85,
+      "selector": "button:has-text('Add')",
+    },
+  ],
+  "confidence": 0.91,
+  "explanation": "Selector compuesto con combinador CSS — depende de la ruta de ancestros, no solo del elemento buscado. Se conserva el testid del elemento objetivo ([data-testid="add-to-cart-btn"]), descartando la ruta.",
+  "fixedSelector": "[data-testid='add-to-cart-btn']",
+  "fromRepertoire": false,
+  "needsReview": false,
+  "robustnessImprovement": 50,
+  "selectorType": "TESTID",
+  "technicalDetails": {
+    "accessibilityCompliant": false,
+    "detectedIssue": "Compound selector with a CSS combinator (descendant/child/sibling) depends on the ancestor/sibling structure in the DOM",
+    "proposedSolution": "Combinator-based selectors are brittle to markup restructuring; the target testid attribute is independent of ancestor structure",
+    "stableAgainstDOMChanges": true,
+  },
+  "verified": false,
+}
+`;
+
 exports[`corpus de heurística (snapshot) > no cambia la salida para [data-testid="submit-button"] 1`] = `
 {
   "alternatives": [
@@ -618,7 +691,7 @@ exports[`corpus de heurística (snapshot) > no cambia la salida para form.checko
   "selectorType": "ROLE",
   "technicalDetails": {
     "accessibilityCompliant": true,
-    "detectedIssue": "Selector pattern analysis",
+    "detectedIssue": "Compound selector with a CSS combinator (descendant/child/sibling) depends on the ancestor/sibling structure in the DOM",
     "proposedSolution": "ARIA roles are stable across refactors and DOM restructures",
     "stableAgainstDOMChanges": true,
   },
@@ -678,7 +751,7 @@ exports[`corpus de heurística (snapshot) > no cambia la salida para header nav 
   "selectorType": "ROLE",
   "technicalDetails": {
     "accessibilityCompliant": true,
-    "detectedIssue": "Selector pattern analysis",
+    "detectedIssue": "Compound selector with a CSS combinator (descendant/child/sibling) depends on the ancestor/sibling structure in the DOM",
     "proposedSolution": "Link roles with names are the gold standard for navigation",
     "stableAgainstDOMChanges": true,
   },

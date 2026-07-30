@@ -65,6 +65,16 @@ const CORPUS = [
   'form.checkout > button.submit',
   '.modal .footer button',
   'header nav ul li a.active',
+
+  // Compuestos sin keyword de acción reconocible — antes caían al fallback `visible=` roto
+  // (solo recortaba el primer '.'/'#' de todo el string, sin entender que había una ruta de
+  // ancestros de por medio: '.card .price' → 'visible=card .price', ni CSS válido)
+  '.card .price',
+  '.sidebar > .username',
+
+  // Compuesto con dos testids — antes extractTestid() (sin /g) tomaba el del ANCESTRO por ser
+  // el primer match de todo el string, no el del elemento objetivo real
+  '[data-testid="product-card"] [data-testid="add-to-cart-btn"]',
 ]
 
 describe('corpus de heurística (snapshot)', () => {

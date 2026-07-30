@@ -1,5 +1,38 @@
 # Changelog
 
+## Sin publicar — combinadores CSS compuestos
+
+Último hueco documentado como "fuera de alcance a propósito": el motor no reconocía
+selectores con combinador (`.padre > .hijo`, `.card .title`, `div + span`) como un patrón
+propio — dependen de la relación exacta entre dos elementos en el DOM, no solo del elemento
+buscado, y se rompen con un wrapper nuevo o un reordenamiento de hermanos aunque el elemento
+buscado no haya cambiado en nada.
+
+- **Detección** (`hasCompoundCombinator`): marca el selector como frágil y explica por qué —
+  antes, un selector así sin keyword de acción reconocible (`.card .price`) quedaba con
+  `detectedIssue: "Selector pattern analysis"`, un placeholder sin información real.
+- **Bug real arreglado — el fallback roto para selectores compuestos sin keyword**: sin
+  ninguna estrategia aplicable, el motor caía a `visible=${selector.replace(/[.#]/, '')}` —
+  sin flag `/g`, solo recorta el PRIMER `.`/`#` de todo el selector. Para `.card .price` eso
+  daba `visible=card .price`, ni CSS válido. Ahora se propone conservar solo el elemento
+  objetivo (`extractCombinatorTarget`, el último segmento después del combinador más a la
+  derecha): `.card .price` → `.price`, `.sidebar > .username` → `.username`.
+- **Bug real arreglado — testid del ancestro en vez del objetivo**: con dos testids
+  compuestos (`[data-testid="product-card"] [data-testid="add-to-cart-btn"]`),
+  `extractTestid()` (sin `/g`) tomaba el primer match de todo el string — el del ancestro,
+  no el del elemento que el selector busca en definitiva. Ahora extrae el testid del target.
+- **Sin falsos positivos**: un espacio adentro de `has-text('Add to cart')` o del valor de un
+  atributo (`[aria-label="Cerrar sesión"]`) no se confunde con un combinador descendiente
+  (`maskQuotedContent` enmascara el contenido entre comillas antes de buscar el combinador,
+  preservando índices para no perder el segmento objetivo real).
+- **Sin cambio de comportamiento donde ya andaba bien**: selectores compuestos con un keyword
+  de acción reconocible (`form.checkout > button.submit` → sigue proponiendo
+  `role('button', { name: 'Submit' })`) o con posición (`nth-child`/`nth-of-type`, que ya
+  tenía su propio fallback) no cambian de resultado — verificado con el snapshot de 37
+  selectores (antes 34) del corpus de heurística.
+- 12 tests nuevos (3 snapshot + 9 unitarios), **203 tests** en `reporter-core` (antes 191),
+  **459 en total** en los 6 workspaces.
+
 ## 1.3.0 — Cypress en vivo + multi-lenguaje
 
 ### Cypress: curado en vivo contra el DOM real

@@ -144,6 +144,61 @@ describe('analyzeAndHeal', () => {
     })
   })
 
+  describe('combinador CSS compuesto (.padre > .hijo, .card .title, div + span)', () => {
+    it('se marca como frágil e indica que depende de la ruta de ancestros/hermanos', () => {
+      // Selector sin prefijo '#'/'.' (no dispara el issue de ID/CLASS primero) para que el
+      // issue de combinador sea el primero de la lista.
+      const result = analyzeAndHeal({ selector: 'div > span' })
+      expect(result.technicalDetails.detectedIssue).toContain('Compound selector with a CSS combinator')
+    })
+
+    it('bug real que arregla: sin keyword de acción, antes caía al fallback visible= (roto: solo recortaba el primer punto de todo el selector)', () => {
+      const result = analyzeAndHeal({ selector: '.card .price' })
+      expect(result.fixedSelector).toBe('.price')
+      expect(result.fixedSelector).not.toMatch(/^visible=/)
+    })
+
+    it('combinador explícito ">" — conserva solo el elemento objetivo', () => {
+      const result = analyzeAndHeal({ selector: '.sidebar > .username' })
+      expect(result.fixedSelector).toBe('.username')
+    })
+
+    it('si el objetivo tiene un keyword de acción reconocible, esa estrategia sigue ganando (sin cambio de comportamiento)', () => {
+      const result = analyzeAndHeal({ selector: 'form.checkout > button.submit' })
+      expect(result.selectorType).toBe('ROLE')
+      expect(result.fixedSelector).toContain('Submit')
+    })
+
+    it('bug real que arregla: con dos testids compuestos, extrae el del elemento OBJETIVO, no el del ancestro (regex sin /g tomaba el primer match)', () => {
+      const result = analyzeAndHeal({
+        selector: '[data-testid="product-card"] [data-testid="add-to-cart-btn"]',
+      })
+      expect(result.fixedSelector).toBe("[data-testid='add-to-cart-btn']")
+      expect(result.selectorType).toBe('TESTID')
+    })
+
+    it('sin nada estable en el objetivo (tag suelto), propone un role genérico en vez del fallback visible= roto', () => {
+      const result = analyzeAndHeal({ selector: '.list > li > span' })
+      expect(result.selectorType).toBe('ROLE')
+      expect(result.fixedSelector).not.toMatch(/^visible=/)
+    })
+
+    it('un selector simple sin combinador no se marca como compuesto', () => {
+      const result = analyzeAndHeal({ selector: '.price' })
+      expect(result.technicalDetails.detectedIssue).not.toContain('Compound selector with a CSS combinator')
+    })
+
+    it('un espacio adentro de has-text(...) no se confunde con un combinador descendiente', () => {
+      const result = analyzeAndHeal({ selector: "button:has-text('Add to cart')" })
+      expect(result.technicalDetails.detectedIssue).not.toContain('Compound selector with a CSS combinator')
+    })
+
+    it('un espacio adentro del valor de un atributo no se confunde con un combinador descendiente', () => {
+      const result = analyzeAndHeal({ selector: '[aria-label="Cerrar sesión"]' })
+      expect(result.technicalDetails.detectedIssue).not.toContain('Compound selector with a CSS combinator')
+    })
+  })
+
   describe('custom synonyms (healify.config.json)', () => {
     it('usa un sinónimo de acción custom para generar la sugerencia', () => {
       const result = analyzeAndHeal({

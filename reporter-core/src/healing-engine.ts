@@ -78,6 +78,9 @@ interface SelectorAnalysis {
   isAlreadyModernLocator?: boolean
   /** Qué atributo genérico disparó el tipo ATTRIBUTE, para elegir la estrategia correcta. */
   attributeKind?: 'name' | 'aria-label'
+  /** Selector compuesto con combinador CSS (`.padre > .hijo`, `.card .title`, `div + span`) —
+   * depende de la relación exacta entre dos elementos en el DOM, no solo del elemento buscado. */
+  isCompoundCombinator?: boolean
 }
 
 interface HealingStrategy {
@@ -118,6 +121,49 @@ const TESTID_ATTRS = ['data-testid', 'data-cy', 'data-qa', 'data-test', 'data-e2
 type TestIdAttr = (typeof TESTID_ATTRS)[number]
 
 const NTH_POSITION_RE = /:nth-(?:child|of-type)\(/
+
+// Selectores de tipo texto ya cubiertos por otras ramas: sus espacios internos (adentro de
+// comillas o paréntesis) no son un combinador CSS, y ya tienen su propio tratamiento — no deben
+// entrar a la detección de combinador compuesto.
+const TEXT_LIKE_SELECTOR_RE = /has-text\(|text=|getBy|^role\(/
+
+/**
+ * Reemplaza el contenido entre comillas por 'x', preservando comillas y longitud — así un
+ * índice calculado sobre el string "enmascarado" sigue apuntando al mismo lugar en el selector
+ * original, y un espacio real DENTRO de un valor de atributo (`[data-testid="add to cart"]`) o
+ * de un texto (`has-text('Add to cart')`) no se confunde con un combinador CSS real.
+ */
+function maskQuotedContent(selector: string): string {
+  return selector.replace(/'[^']*'|"[^"]*"/g, (match) => match[0] + 'x'.repeat(match.length - 2) + match[match.length - 1])
+}
+
+const COMBINATOR_TOKEN_RE = /\s*[>+~]\s*|\s+/
+
+/**
+ * Combinador CSS compuesto (`.padre > .hijo`, `.card .title`, `div + span`) — a diferencia de
+ * un selector simple, depende de la relación exacta entre dos elementos en el DOM: agregar un
+ * wrapper, reordenar hermanos o achatar un nivel de anidamiento lo rompe aunque el elemento
+ * buscado en sí no haya cambiado en nada.
+ */
+function hasCompoundCombinator(selector: string): boolean {
+  if (selector.startsWith('//') || TEXT_LIKE_SELECTOR_RE.test(selector)) return false
+  return COMBINATOR_TOKEN_RE.test(maskQuotedContent(selector))
+}
+
+/**
+ * Último segmento del selector, después del combinador más a la derecha — el elemento que el
+ * selector busca en definitiva, sin la ruta de ancestros/hermanos que lo precede.
+ */
+function extractCombinatorTarget(selector: string): string {
+  const masked = maskQuotedContent(selector)
+  const re = new RegExp(COMBINATOR_TOKEN_RE, 'g')
+  let lastEnd = 0
+  let match: RegExpExecArray | null
+  while ((match = re.exec(masked)) !== null) {
+    lastEnd = match.index + match[0].length
+  }
+  return selector.slice(lastEnd).trim()
+}
 
 function analyzeSelector(selector: string): SelectorAnalysis {
   const analysis: SelectorAnalysis = {
@@ -177,6 +223,12 @@ function analyzeSelector(selector: string): SelectorAnalysis {
   if (NTH_POSITION_RE.test(selector)) {
     analysis.isFragile = true
     analysis.issues.push('Position-based selector (nth-child/nth-of-type) depends on exact sibling order in the DOM')
+  }
+
+  if (hasCompoundCombinator(selector)) {
+    analysis.isFragile = true
+    analysis.isCompoundCombinator = true
+    analysis.issues.push('Compound selector with a CSS combinator (descendant/child/sibling) depends on the ancestor/sibling structure in the DOM')
   }
 
   if (/button|btn/i.test(selector)) {
@@ -430,6 +482,85 @@ function generateHealingStrategies(selector: string, analysis: SelectorAnalysis,
         explanation: `Se detectó un ID dinámico con hash o número aleatorio. Se propuso una clase estable como alternativa.`,
         robustnessGain: 38,
         technicalReason: 'Dynamic IDs change between builds; stable classes are preferred',
+        priority: 6,
+      })
+    }
+  }
+
+  // Combinador CSS compuesto (`.padre > .hijo`, `.card .title`, `div + span`): a diferencia de
+  // un selector simple, depende de la relación exacta entre dos elementos en el DOM, no solo
+  // del elemento buscado — un wrapper nuevo, hermanos reordenados o un nivel de anidamiento
+  // aplanado lo rompen. Se propone conservar solo el elemento objetivo (el último segmento,
+  // después del combinador más a la derecha), sin la ruta de ancestros. Corre después de todo
+  // lo anterior para poder usar `strategies.length === 0` como "nada más funcionó" en el
+  // fallback genérico de abajo.
+  if (analysis.isCompoundCombinator) {
+    const target = extractCombinatorTarget(selector)
+    const targetTestidAttr = TESTID_ATTRS.find((attr) => target.includes(`[${attr}=`))
+
+    if (targetTestidAttr) {
+      // Confianza más alta que el testid "plano" (0.95) a propósito: acá además se identificó
+      // y descartó una ruta de ancestros frágil, así que corresponde ganarle en el sort al
+      // bloque TESTID genérico de arriba — que sobre un selector compuesto con DOS testids
+      // (`[data-testid="card"] [data-testid="buy-btn"]`) extrae el del ancestro por error
+      // (regex sin /g, toma el primer match de todo el string), no el del objetivo real.
+      strategies.push({
+        selector: `[${targetTestidAttr}='${extractTestid(target)}']`,
+        type: 'TESTID',
+        confidence: 0.96,
+        explanation: `Selector compuesto con combinador CSS — depende de la ruta de ancestros, no solo del elemento buscado. Se conserva el testid del elemento objetivo (${target}), descartando la ruta.`,
+        robustnessGain: 50,
+        technicalReason: 'Combinator-based selectors are brittle to markup restructuring; the target testid attribute is independent of ancestor structure',
+        priority: 1,
+      })
+    } else if (target.startsWith('.') && !hasVolatileClassToken(target)) {
+      strategies.push({
+        selector: target,
+        type: 'CSS',
+        confidence: 0.80,
+        explanation: `Selector compuesto con combinador CSS — depende de la relación exacta entre ancestro y elemento objetivo, se rompe si se agrega un wrapper o se reordena el markup. Se propone conservar solo el elemento objetivo (${target}), sin la ruta de ancestros.`,
+        robustnessGain: 35,
+        technicalReason: 'Combinator-based selectors break when markup structure changes even if the target element itself is unchanged',
+        priority: 6,
+      })
+    } else if (target.startsWith('#') && !VOLATILE_ID_RE.test(target)) {
+      strategies.push({
+        selector: target,
+        type: 'CSS',
+        confidence: 0.80,
+        explanation: `Selector compuesto con combinador CSS — depende de la relación exacta entre ancestro y elemento objetivo. Se propone conservar solo el elemento objetivo (${target}), sin la ruta de ancestros.`,
+        robustnessGain: 35,
+        technicalReason: 'Combinator-based selectors break when markup structure changes even if the target element itself is unchanged',
+        priority: 6,
+      })
+    } else if (target.startsWith('#') && VOLATILE_ID_RE.test(target)) {
+      const baseClass = extractBaseClass(target)
+      if (!isUnstableClassCandidate(target, baseClass)) {
+        strategies.push({
+          selector: `.${baseClass}`,
+          type: 'CSS',
+          confidence: 0.75,
+          explanation: `Selector compuesto con combinador CSS, y el elemento objetivo (${target}) tiene un ID dinámico. Se propone una clase estable derivada, sin la ruta de ancestros.`,
+          robustnessGain: 35,
+          technicalReason: 'Combinator-based selectors are brittle; the target ID is additionally dynamic, so a stable class is proposed instead',
+          priority: 6,
+        })
+      }
+    }
+
+    // Ni testid, ni clase, ni ID estable en el objetivo (ej. un tag suelto, `a`, `span`) — no
+    // hay nada estable para proponer directo. Igual que con nth-child, se ofrece un rol
+    // genérico como punto de partida en vez de dejar caer al fallback `visible=` de abajo, que
+    // solo recorta el PRIMER carácter `.`/`#` de todo el selector sin entender que hay una ruta
+    // de ancestros de por medio (`.card .title` → `visible=card .title`, ni CSS válido).
+    if (strategies.length === 0) {
+      strategies.push({
+        selector: `role('button')`,
+        type: 'ROLE',
+        confidence: 0.74,
+        explanation: `Selector compuesto con combinador CSS (\`${selector}\`) — depende de la ruta de ancestros/hermanos en el DOM, se rompe con cualquier cambio de markup aunque el elemento buscado no haya cambiado. El elemento objetivo (${target}) no tiene un atributo estable reconocible; se propone un selector de rol como punto de partida, revisar manualmente para afinar el name.`,
+        robustnessGain: 30,
+        technicalReason: 'Combinator-based selectors depend on ancestor/sibling structure; no stable attribute was found on the target element',
         priority: 6,
       })
     }
