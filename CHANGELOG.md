@@ -1,5 +1,32 @@
 # Changelog
 
+## Sin publicar — Cypress: curado en vivo contra el DOM real
+
+Cypress era el único de los cuatro frameworks soportados sin verificación contra el DOM real:
+solo un reporter pasivo, heurística sobre el texto del error, post-hoc. La razón: Cypress no
+expone un gancho para envolver `cy.get()` sin pisar su propio motor de retry-ability, a
+diferencia de Selenium/WebdriverIO (que exponen `findElement`/`$` directo) — hacía falta un
+comando nuevo, no un wrap del existente.
+
+- **`cy.healifyGet(selector, options?)`** (`@healify/cypress-plugin/support`, nuevo entry
+  point): como `cy.get()`, pero si el selector no aparece dentro del timeout, sondea el DOM
+  real vía `BROWSER_PROBE_SCRIPT` (mismo script que Selenium/WebdriverIO, corrido en la
+  ventana de la app bajo test, no en la del test-runner de Cypress — un error real encontrado
+  en la verificación: `new Function()` a secas corre en el scope global equivocado), pide una
+  curación verificada a Healify y reintenta con la sugerencia (CSS o XPath) antes de fallar.
+  Opciones: `timeout` (default: `defaultCommandTimeout`), `confidenceThreshold` (default 0.9,
+  igual que selenium-plugin/webdriverio-plugin).
+- **Puente browser↔Node vía `cy.task`**: Cypress corre el spec en el browser y el motor
+  (`analyzeAndHeal`, repertorio) en Node — dos procesos separados, a diferencia de
+  Selenium/WebdriverIO donde ambos viven en el mismo proceso. `plugin.ts` registra
+  `healify:probe-script` (devuelve el script), `healify:heal` (corre el motor, consulta) y
+  `healify:record-event` (recibe el resultado del retry ya resuelto en el browser). El caso
+  vivo se suma al mismo `healify-report.json` que el modo reporte, aunque el test haya
+  **pasado** (Cypress nunca lo ve como fallido: se curó antes de llegar a fallar).
+- Verificado real: Cypress 15 + Chrome headless contra una página HTML servida en local — un
+  selector roto a propósito curado y clickeado de punta a punta (`verified: true` en el
+  reporte), y un selector genuinamente irrecuperable fallando limpio sin romper la corrida.
+
 ## Sin publicar — multi-lenguaje: `healify heal`
 
 Hasta acá Healify era JS/TS puro. Un equipo que automatiza con pytest+Selenium (Python) o

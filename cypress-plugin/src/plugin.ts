@@ -9,9 +9,16 @@ import {
   baseEnvironment,
   statsFromCases,
   readRepertoire,
+  analyzeAndHeal,
+  resolveLocatorStrategy,
+  domContextFromProbeResult,
+  BROWSER_PROBE_SCRIPT,
+  buildDefectId,
+  severityFor,
   type LocalCaseResult,
   type CaseAttachment,
 } from '@healify/reporter-core'
+import type { HealTaskInput, HealTaskOutput, RecordEventInput } from './support-protocol'
 
 /**
  * Corre la heurística local (sin red) sobre cada test fallido y al final de la corrida
@@ -29,6 +36,11 @@ export function HealifyCypressPlugin(
   config: Cypress.PluginConfigOptions
 ): Cypress.PluginConfigOptions {
   const localResults: LocalCaseResult[] = []
+  // Casos que curó `cy.healifyGet` en vivo (comando opcional de support.ts) — el test
+  // correspondiente termina PASANDO, así que Cypress nunca lo reporta en after:spec como
+  // fallido. Sin este array esos casos quedarían invisibles en el reporte, a pesar de haber
+  // curado un selector roto de verdad.
+  const liveResults: LocalCaseResult[] = []
   let total = 0
   let passed = 0
   let failed = 0
@@ -38,6 +50,55 @@ export function HealifyCypressPlugin(
   // mano como Selenium/WebdriverIO — es el adapter donde el repertorio más aporta, porque
   // sin él la heurística siempre está a ciegas. Se lee una sola vez por registro del plugin.
   const repertoire = readRepertoire(process.cwd())
+
+  // `cy.healifyGet` (support.ts) corre en el browser, sin acceso a analyzeAndHeal() ni al
+  // repertorio (viven en Node) — dos tasks lo puentean. 'healify:probe-script'/'healify:heal'
+  // son consultas puras (sin efecto de lado); 'healify:record-event' es el único que escribe,
+  // y solo después de que el browser confirmó cómo terminó el retry (igual que `emit()` en
+  // selenium-plugin/webdriverio-plugin, un proceso más allá).
+  on('task', {
+    'healify:probe-script': () => BROWSER_PROBE_SCRIPT,
+
+    'healify:heal': (input: HealTaskInput): HealTaskOutput => {
+      const result = analyzeAndHeal({
+        selector: input.selector,
+        testFile: input.testFile,
+        htmlContext: domContextFromProbeResult(input.pageElements),
+        repertoire,
+      })
+      return {
+        fixedSelector: result.fixedSelector,
+        confidence: result.confidence,
+        verified: result.verified,
+        fromRepertoire: result.fromRepertoire,
+        explanation: result.explanation,
+        locator: resolveLocatorStrategy(result.fixedSelector),
+      }
+    },
+
+    'healify:record-event': (event: RecordEventInput): null => {
+      const status: LocalCaseResult['status'] =
+        event.type === 'healed' ? 'healed' : event.type === 'no-suggestion' || event.type === 'failed' ? 'unresolved' : 'review'
+      liveResults.push({
+        testName: event.originalSelector,
+        testFile: event.testFile,
+        selector: event.originalSelector,
+        errorMessage: `${event.type}: ${event.originalSelector}`,
+        status,
+        fixedSelector: event.fixedSelector ?? '',
+        confidence: event.confidence ?? 0,
+        explanation: event.explanation ?? '',
+        selectorType: event.type === 'healed' ? 'HEALED' : 'UNKNOWN',
+        verified: event.verified,
+        fromRepertoire: event.fromRepertoire,
+        defectId: buildDefectId(event.testFile, event.originalSelector),
+        severity: severityFor(status),
+        expected: `El selector ${event.originalSelector} encuentra un elemento en la página.`,
+        actual: `${event.type}: ${event.originalSelector}`,
+      })
+      return null
+    },
+  })
 
   on('after:spec', (spec, results) => {
     durationMs += results.stats?.duration ?? 0
@@ -70,13 +131,14 @@ export function HealifyCypressPlugin(
     try {
       browser =
         results && 'browserName' in results ? `${results.browserName} ${results.browserVersion ?? ''}`.trim() : undefined
+      const cases = [...localResults, ...liveResults]
       const run = {
         project: 'Cypress suite',
         framework: 'Cypress',
         generatedAt: new Date(),
-        cases: localResults,
+        cases,
         verdict: (failed === 0 ? 'passed' : 'failed') as 'passed' | 'failed',
-        stats: statsFromCases(localResults, { total, passed, failed, durationMs }),
+        stats: statsFromCases(cases, { total, passed, failed, durationMs }),
         environment: baseEnvironment('Cypress', {
           frameworkVersion: results && 'cypressVersion' in results ? results.cypressVersion : undefined,
           browser,
@@ -89,7 +151,7 @@ export function HealifyCypressPlugin(
     } catch {
       // Fire-and-forget: el reporte local nunca debe romper la corrida.
     }
-    printSummary(localResults)
+    printSummary([...localResults, ...liveResults])
   })
 
   return config

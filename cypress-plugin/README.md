@@ -40,13 +40,49 @@ sin tener que abrir el HTML:
 Healed: 3 | Review: 1 | Unresolved: 0
 ```
 
-## Cómo funciona
+## Cómo funciona (modo reporte, siempre activo)
 
 Tras cada spec (`after:spec`) se corre la heurística (`analyzeAndHeal()` de
 `@healify/reporter-core`) para cada test fallido, sin red; al terminar la corrida
 (`after:run`) se escribe `healify-report.html`/`.json` con todos los casos acumulados.
-Heurística de pattern-matching sobre el texto del selector y del error, no es IA, no
-analiza el DOM en tiempo real.
+Heurística de pattern-matching sobre el texto del selector y del error — a ciegas, salvo que
+uses `cy.healifyGet` (ver abajo) o que el repertorio ya tenga una curación verificada para ese
+selector.
+
+## `cy.healifyGet`: curado en vivo contra el DOM real (opcional)
+
+Playwright/Selenium/WebdriverIO curan contra el árbol real de la página en el momento del
+fallo, no solo contra el texto del selector — Cypress puede hacer lo mismo, pero necesita un
+comando explícito en vez de un reporter pasivo, porque Cypress no expone un gancho para
+envolver `cy.get()` sin pisar su propio motor de retry-ability.
+
+En tu support file (`cypress/support/e2e.ts`):
+
+```ts
+import '@healify/cypress-plugin/support'
+```
+
+Y en el test, en vez de `cy.get(selector)`:
+
+```ts
+cy.healifyGet('#comprar-ahora-a1b2c3').click()
+```
+
+Si el selector aparece dentro del timeout (igual que `cy.get()`), no pasa nada distinto. Si
+no aparece, sondea el DOM real de la página (mismo criterio de nombre accesible que el resto
+de Healify: aria-label → texto visible → placeholder → value), pide una curación verificada
+contra ESE DOM y reintenta con la sugerencia — recién ahí falla el test si tampoco encuentra
+nada. El resultado queda en `healify-report.json` con `verified: true`, aunque el test haya
+terminado en verde (Cypress no lo reporta como fallido: lo curaste antes de que llegara a
+fallar).
+
+Opciones: `cy.healifyGet(selector, { timeout, confidenceThreshold })` — mismos defaults que
+`cy.get()` y que selenium-plugin/webdriverio-plugin (`confidenceThreshold: 0.9`).
+
+Alcance deliberado: envuelve un solo comando (`healifyGet`, no cada método de Cypress) — mismo
+criterio acotado que `selenium-plugin` (envuelve `findElement`, no cada interacción). Y sigue
+sin poder envolver `cy.get()` en sí: es opt-in, un reemplazo puntual donde ya sabés que un
+selector es frágil.
 
 ## Siguiente paso
 

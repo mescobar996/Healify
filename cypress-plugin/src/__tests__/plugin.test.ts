@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { mockRunLocalHealing, mockWriteFileSync } = vi.hoisted(() => {
+const { mockRunLocalHealing, mockWriteFileSync, mockAnalyzeAndHeal, mockResolveLocatorStrategy } = vi.hoisted(() => {
   const mockRunLocalHealing = vi.fn((input: { testName: string; testFile?: string; errorMessage: string }) => ({
     testName: input.testName,
     testFile: input.testFile,
@@ -13,7 +13,16 @@ const { mockRunLocalHealing, mockWriteFileSync } = vi.hoisted(() => {
     selectorType: 'UNKNOWN',
   }))
   const mockWriteFileSync = vi.fn()
-  return { mockRunLocalHealing, mockWriteFileSync }
+  const mockAnalyzeAndHeal = vi.fn(() => ({
+    fixedSelector: "role('button', { name: 'Comprar' })",
+    confidence: 0.97,
+    verified: true,
+    fromRepertoire: false,
+    explanation: 'texto real de la página',
+    selectorType: 'ROLE',
+  }))
+  const mockResolveLocatorStrategy = vi.fn(() => ({ strategy: 'xpath' as const, value: "//button[normalize-space(.)='Comprar']" }))
+  return { mockRunLocalHealing, mockWriteFileSync, mockAnalyzeAndHeal, mockResolveLocatorStrategy }
 })
 
 vi.mock('@healify/reporter-core', () => ({
@@ -32,6 +41,12 @@ vi.mock('@healify/reporter-core', () => ({
     unresolved: 0,
   })),
   readRepertoire: vi.fn(() => []),
+  analyzeAndHeal: mockAnalyzeAndHeal,
+  resolveLocatorStrategy: mockResolveLocatorStrategy,
+  domContextFromProbeResult: vi.fn((raw: unknown) => (Array.isArray(raw) && raw.length > 0 ? 'button "Comprar"' : undefined)),
+  BROWSER_PROBE_SCRIPT: 'return [];',
+  buildDefectId: vi.fn((testFile: string | undefined, selector: string) => `DEF-${testFile ?? 'x'}-${selector}`),
+  severityFor: vi.fn((status: string) => (status === 'unresolved' ? 'blocker' : 'minor')),
 }))
 
 vi.mock('node:fs', () => ({
@@ -158,5 +173,94 @@ describe('HealifyCypressPlugin', () => {
   it('devuelve la config sin modificar', () => {
     const { on } = createOnCapture()
     expect(HealifyCypressPlugin(on, fakeConfig)).toBe(fakeConfig)
+  })
+})
+
+describe('HealifyCypressPlugin — tasks de cy.healifyGet (live)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  function taskHandlers(on: Cypress.PluginEvents, handlers: Record<string, any>) {
+    HealifyCypressPlugin(on, fakeConfig)
+    return handlers['task'] as Record<string, (...args: any[]) => any>
+  }
+
+  it("'healify:probe-script' devuelve BROWSER_PROBE_SCRIPT tal cual", () => {
+    const { on, handlers } = createOnCapture()
+    const tasks = taskHandlers(on, handlers)
+
+    expect(tasks['healify:probe-script']()).toBe('return [];')
+  })
+
+  it("'healify:heal' llama analyzeAndHeal con el repertorio ya leído y devuelve el locator resuelto", () => {
+    const { on, handlers } = createOnCapture()
+    const tasks = taskHandlers(on, handlers)
+
+    const output = tasks['healify:heal']({
+      selector: '#comprar-ahora-a1b2c3',
+      testFile: 'e2e/checkout.cy.ts',
+      pageElements: [{ role: 'button', name: 'Comprar' }],
+    })
+
+    expect(mockAnalyzeAndHeal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        selector: '#comprar-ahora-a1b2c3',
+        testFile: 'e2e/checkout.cy.ts',
+        htmlContext: 'button "Comprar"',
+      })
+    )
+    expect(output).toEqual({
+      fixedSelector: "role('button', { name: 'Comprar' })",
+      confidence: 0.97,
+      verified: true,
+      fromRepertoire: false,
+      explanation: 'texto real de la página',
+      locator: { strategy: 'xpath', value: "//button[normalize-space(.)='Comprar']" },
+    })
+  })
+
+  it("'healify:heal' degrada a heurística a ciegas cuando pageElements no trae nada aprovechable", () => {
+    const { on, handlers } = createOnCapture()
+    const tasks = taskHandlers(on, handlers)
+
+    tasks['healify:heal']({ selector: '#comprar-ahora-a1b2c3', pageElements: [] })
+
+    expect(mockAnalyzeAndHeal).toHaveBeenCalledWith(expect.objectContaining({ htmlContext: undefined }))
+  })
+
+  it("'healify:record-event' de un 'healed' vivo aparece en el reporte final aunque el test haya pasado", () => {
+    const { on, handlers } = createOnCapture()
+    const tasks = taskHandlers(on, handlers)
+
+    tasks['healify:record-event']({
+      type: 'healed',
+      originalSelector: '#comprar-ahora-a1b2c3',
+      testFile: 'e2e/checkout.cy.ts',
+      fixedSelector: "role('button', { name: 'Comprar' })",
+      confidence: 0.97,
+      explanation: 'texto real de la página',
+      verified: true,
+      fromRepertoire: false,
+    })
+
+    // Nunca hubo un after:spec con test fallido — el único caso viene de la task en vivo.
+    handlers['after:run']()
+
+    const jsonCall = mockWriteFileSync.mock.calls.find((call) => String(call[0]).endsWith('healify-report.json'))
+    expect(jsonCall).toBeDefined()
+  })
+
+  it("'healify:record-event' de un 'no-suggestion' se reporta como unresolved", () => {
+    const { on, handlers } = createOnCapture()
+    const tasks = taskHandlers(on, handlers)
+
+    const result = tasks['healify:record-event']({
+      type: 'no-suggestion',
+      originalSelector: '#comprar-ahora-a1b2c3',
+      testFile: 'e2e/checkout.cy.ts',
+    })
+
+    expect(result).toBeNull()
   })
 })
