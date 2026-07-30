@@ -89,6 +89,12 @@ Playwright, Cypress, Selenium y WebdriverIO. Los cuatro reusan el mismo motor he
 la corrida; Selenium y WebdriverIO curan en vivo (envuelven el driver/browser) y generan
 `healify-report.json` cuando llamás a `flush()`.
 
+Los cuatro pueden verificar contra el DOM real, no solo adivinar por el texto del selector
+— Cypress necesita un paso extra porque no expone un gancho para envolver `cy.get()` sin
+pisar su retry-ability nativo: `cy.healifyGet(selector)` (opt-in, `import
+'@healify/cypress-plugin/support'`) reemplaza `cy.get()` puntualmente donde ya sabés que un
+selector es frágil. Ver [`cypress-plugin/README.md`](cypress-plugin/README.md).
+
 ## Y si tu equipo automatiza en otro lenguaje
 
 El motor no está atado a JS: `npx @healify/cli heal` lo expone como un comando que recibe
@@ -96,9 +102,10 @@ JSON por stdin y devuelve JSON por stdout — heurística, verificación contra 
 repertorio incluidos. Cualquier lenguaje que pueda spawnear un subproceso lo usa.
 
 Hay adapters de referencia (código para copiar y adaptar a tu proyecto, no paquetes
-publicados) para **Python** (verificado con Selenium real) y **Java** (compilado y con el
+publicados) para **Python** (verificado con Selenium real), **Java** (compilado y con el
 puente a `heal` verificado real; el driver en vivo no se pudo correr en el entorno donde se
-escribió esto, por una limitación de esa máquina, no del código) en
+escribió esto, por una limitación de esa máquina, no del código) y **C#** (sin verificar —
+no había SDK de .NET donde se escribió, marcado explícito en el propio archivo) en
 [`docs/adapters/`](docs/adapters/). El contrato completo está documentado en
 [`docs/adapters/README.md`](docs/adapters/README.md) por si tu lenguaje no tiene uno todavía.
 
@@ -305,12 +312,12 @@ un pipe, avisa y sigue en modo automático en vez de colgarse.
 
 | Paquete | Versión | Para qué | Comando |
 |---|---|---|---|
-| [`@healify/test-runner`](test-runner/README.md) | 1.0.0 | Playwright - genera reporte al final | `npm i -D @healify/test-runner` |
-| [`@healify/cypress-plugin`](cypress-plugin/README.md) | 1.0.0 | Cypress - mismo reporte | `npm i -D @healify/cypress-plugin` |
-| [`@healify/selenium-plugin`](selenium-plugin/README.md) | 1.0.0 | Selenium - cura en vivo, `flush()` genera reporte JSON | `npm i -D @healify/selenium-plugin` |
-| [`@healify/webdriverio-plugin`](webdriverio-plugin/README.md) | 1.0.0 | WebdriverIO - cura en vivo, `flush()` genera reporte JSON | `npm i -D @healify/webdriverio-plugin` |
-| [`@healify/cli`](cli/README.md) | 1.0.0 | CLI - diagnostica, configura (sin generar tests), aplica fixes y guarda historial | `npm i -D @healify/cli` |
-| `reporter-core` | 1.0.0 | Motor heurístico - privado, bundleado | — |
+| [`@healify/test-runner`](test-runner/README.md) | 1.3.0 | Playwright - genera reporte al final | `npm i -D @healify/test-runner` |
+| [`@healify/cypress-plugin`](cypress-plugin/README.md) | 1.3.0 | Cypress - reporte + `cy.healifyGet` opcional en vivo | `npm i -D @healify/cypress-plugin` |
+| [`@healify/selenium-plugin`](selenium-plugin/README.md) | 1.3.0 | Selenium - cura en vivo, `flush()` genera reporte JSON | `npm i -D @healify/selenium-plugin` |
+| [`@healify/webdriverio-plugin`](webdriverio-plugin/README.md) | 1.3.0 | WebdriverIO - cura en vivo, `flush()` genera reporte JSON | `npm i -D @healify/webdriverio-plugin` |
+| [`@healify/cli`](cli/README.md) | 1.3.0 | CLI - diagnostica, configura, aplica fixes, guarda historial, y puentea `heal`/`probe-script` a otros lenguajes | `npm i -D @healify/cli` |
+| `reporter-core` | 1.3.0 | Motor heurístico - privado, bundleado | — |
 
 ### Instalación manual (si no querés usar `init`)
 
@@ -414,10 +421,10 @@ versión:** revisá qué versión tenés instalada de verdad.
 npx @healify/cli --version
 ```
 
-Los 6 paquetes de Healify están en `1.0.0`. Si venís de una instalación anterior a la
+Los 6 paquetes de Healify están en `1.3.0`. Si venís de una instalación anterior a la
 1.0.0, `doctor` te avisa si tu `package.json` todavía tiene un rango `^0.x.y` viejo (el
 gotcha de semver: `^0.4.1` significa "cualquier `0.4.x`", no te sube solo a `0.5.0`, y
-mucho menos a `1.0.0`). Actualizalo pidiendo la versión a mano:
+mucho menos a `1.x.x`). Actualizalo pidiendo la versión a mano:
 
 ```bash
 npm install --save-dev @healify/cli@latest @healify/test-runner@latest
@@ -451,10 +458,13 @@ para Selenium/WebdriverIO, que no interpretan la sintaxis de Playwright).
 Si nada coincide, el reporte lo dice: puede que el elemento ya no exista, y entonces el
 problema no es el selector sino que la funcionalidad no está.
 
-**A ciegas (Cypress).** Cypress corre dentro del navegador con su propio ciclo de vida — no
-hay un punto donde Healify tenga "el browser en la mano" para consultarlo en vivo. Sin ese
-dato, el motor decide solo por el texto del selector: sirve como punto de partida, pero
-conviene revisar antes de aplicar. Estas sugerencias aparecen sin la marca de verificado.
+**A ciegas por defecto, verificado si usás `cy.healifyGet` (Cypress).** El reporte pasivo
+(`after:spec`/`after:run`) decide solo por el texto del selector: Cypress corre el spec y el
+motor en procesos separados, así que no hay una consulta al DOM real gratis como con los
+otros tres. Si reemplazás `cy.get(selector)` por `cy.healifyGet(selector)` en el punto donde
+sabés que un selector es frágil, sí sondea el DOM real y verifica antes de reintentar — ver
+[`cypress-plugin/README.md`](cypress-plugin/README.md). Lo que no pase por `healifyGet`
+sigue apareciendo sin la marca de verificado.
 
 En todos los casos es comparación de strings contra datos que ya están en tu máquina: no hay
 IA, ni red, ni servidor.
@@ -510,12 +520,13 @@ de framework son más finos y algunos caminos solo se ejercitan contra un browse
 
 ```
 reporter-core/       # Motor heurístico (privado)
-test-runner/         # @healify/test-runner 1.0.0
-cypress-plugin/      # @healify/cypress-plugin 1.0.0
-selenium-plugin/     # @healify/selenium-plugin 1.0.0
-webdriverio-plugin/  # @healify/webdriverio-plugin 1.0.0
-cli/                 # @healify/cli 1.0.0 - init, doctor, fix, history
+test-runner/         # @healify/test-runner 1.3.0
+cypress-plugin/      # @healify/cypress-plugin 1.3.0 - reporte + cy.healifyGet en vivo
+selenium-plugin/     # @healify/selenium-plugin 1.3.0
+webdriverio-plugin/  # @healify/webdriverio-plugin 1.3.0
+cli/                 # @healify/cli 1.3.0 - init, doctor, fix, history, heal, probe-script
 gh-action/           # GitHub Action (privada, no es workspace de npm ni se publica)
+docs/adapters/       # Adapters de referencia para Python/Java/C# (no paquetes publicados)
 docs/guide/          # Manual detallado
 ```
 
