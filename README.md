@@ -140,13 +140,6 @@ docs/guide/          # Manual completo: instalación paso a paso, cómo funciona
                       # repertorio, modo interactivo, troubleshooting, cobertura
 ```
 
-## Historia
-
-Antes fue un SaaS completo con dashboard, auth y billing. Se recortó a solo paquetes
-locales porque el QA lo quiere en su PC, sin servidor ni cuenta. Ese código viejo vive en
-la rama de git [`archive/saas-full`](https://github.com/mescobar996/Healify/tree/archive/saas-full)
-(`git checkout archive/saas-full` para verlo) — no es una carpeta de la rama `main`.
-
 ## Licencia
 
 MIT. Ver [LICENSE](LICENSE). © 2026 Matías Escobar
