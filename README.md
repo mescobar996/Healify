@@ -1,6 +1,5 @@
 <div align="center">
   <img src="logo-healify.png" alt="Healify" width="120" />
-  <h1>Healify</h1>
   <p><strong>Cuando un selector se rompe, Healify te dice cómo arreglarlo, sin salir de tu máquina.</strong></p>
 
   <a href="https://github.com/mescobar996/Healify/actions/workflows/ci.yml"><img src="https://github.com/mescobar996/Healify/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
