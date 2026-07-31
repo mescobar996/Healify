@@ -14,7 +14,9 @@
     "build": "npm run build --workspaces",
     "test": "npm test --workspaces --if-present",
     "verify": "bash scripts/verify.sh",
-    "coverage": "bash scripts/coverage.sh"
+    "verify:win": "powershell -ExecutionPolicy Bypass -File scripts/verify.ps1",
+    "coverage": "bash scripts/coverage.sh",
+    "coverage:win": "powershell -ExecutionPolicy Bypass -File scripts/coverage.ps1"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^4.1.10"
