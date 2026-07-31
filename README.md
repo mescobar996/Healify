@@ -1,6 +1,5 @@
 <div align="center">
   <img src="logo-healify.png" alt="Healify" width="120" />
-  <h1>Healify</h1>
   <p><strong>Cuando un selector se rompe, Healify te dice cómo arreglarlo, sin salir de tu máquina.</strong></p>
 
   <a href="https://github.com/mescobar996/Healify/actions/workflows/ci.yml"><img src="https://github.com/mescobar996/Healify/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
@@ -140,13 +139,6 @@ docs/adapters/       # Solo C# como adapter de referencia (código para copiar, 
 docs/guide/          # Manual completo: instalación paso a paso, cómo funciona el motor,
                       # repertorio, modo interactivo, troubleshooting, cobertura
 ```
-
-## Historia
-
-Antes fue un SaaS completo con dashboard, auth y billing. Se recortó a solo paquetes
-locales porque el QA lo quiere en su PC, sin servidor ni cuenta. Ese código viejo vive en
-la rama de git [`archive/saas-full`](https://github.com/mescobar996/Healify/tree/archive/saas-full)
-(`git checkout archive/saas-full` para verlo) — no es una carpeta de la rama `main`.
 
 ## Licencia
 
