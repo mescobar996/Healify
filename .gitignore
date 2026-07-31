@@ -97,3 +97,6 @@ python/healify-selenium/build/
 python/healify-selenium/src/*.egg-info/
 __pycache__/
 *.pyc
+
+# java/healify-selenium — artefactos de build (mvn package/deploy), no fuente
+java/healify-selenium/target/

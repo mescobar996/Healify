@@ -101,13 +101,12 @@ El motor no está atado a JS: `npx @healify/cli heal` lo expone como un comando 
 JSON por stdin y devuelve JSON por stdout — heurística, verificación contra la página y
 repertorio incluidos. Cualquier lenguaje que pueda spawnear un subproceso lo usa.
 
-**Python** tiene un paquete real: `pip install healify-selenium` (verificado de punta a
-punta con Selenium real, wheel incluido). **Java** y **C#** son adapters de referencia
-(código para copiar y adaptar, no paquetes en Maven Central/NuGet): Java compila real y el
-puente a `heal` se verificó real, pero el driver en vivo no se pudo correr por una
-limitación del entorno donde se escribió (no del código); C# verificado de punta a punta con
-.NET 8 + Chrome real. Todo en [`docs/adapters/`](docs/adapters/) — el contrato completo está
-documentado en [`docs/adapters/README.md`](docs/adapters/README.md) por si tu lenguaje no
+**Python** y **Java** tienen paquete real: `pip install healify-selenium` y Maven
+`io.github.mescobar996:healify-selenium:0.1.0` (ambos verificados de punta a punta con
+Selenium real). **C#** es un adapter de referencia (código para copiar y adaptar, no un
+paquete en NuGet), verificado de punta a punta con .NET 8 + Chrome real igual. Todo en
+[`docs/adapters/`](docs/adapters/) — el contrato completo está documentado en
+[`docs/adapters/README.md`](docs/adapters/README.md) por si tu lenguaje no
 tiene uno todavía.
 
 ## Para quién es esto

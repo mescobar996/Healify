@@ -5,17 +5,27 @@ invocable desde JS/TS vía los cuatro paquetes npm. `@healify/cli` expone ese mi
 como dos comandos que hablan JSON por stdin/stdout, así que **cualquier lenguaje que pueda
 spawnear un subproceso lo puede usar**, sin reescribir un pedazo de la heurística.
 
-Java y C# no tienen paquete publicado (Maven Central/NuGet) — eso es un compromiso de
-mantenimiento aparte que no se asumió acá. Son **adapters de referencia**: código real,
+C# no tiene paquete publicado (NuGet) — es un **adapter de referencia**: código real,
 copiable, que adaptás a tu proyecto (mismo espíritu que
-`healify.selenium.example.ts`/`healify.wdio.example.ts` en la versión JS). **Python sí es un
-paquete real** (`pip install healify-selenium`) — ver [`python/`](../../python/healify-selenium/).
+`healify.selenium.example.ts`/`healify.wdio.example.ts` en la versión JS). **Python y Java sí
+son paquetes reales** — `pip install healify-selenium` y el groupId
+`io.github.mescobar996:healify-selenium` en Maven Central.
 
 | Lenguaje | Dónde | Verificado |
 |---|---|---|
 | Python | [`pip install healify-selenium`](../../python/healify-selenium/) | ✅ Selenium 4.46 + Chrome real, de punta a punta — incluido el wheel empaquetado, instalado en un venv limpio |
-| Java | [`java/HealifySeleniumWrapper.java`](java/HealifySeleniumWrapper.java) (copiar y adaptar) | ⚠️ Compila real contra selenium-java 4.27; el puente a `healify heal` (subproceso + parseo) se probó real; el `ChromeDriver` en vivo no se pudo correr en esa sesión por un bug de red del JDK 17 usado (`java.net.http` roto en ese sandbox, no algo de Selenium ni de Healify — ver el comentario de cabecera del archivo) |
+| Java | Maven: `io.github.mescobar996:healify-selenium:0.1.0` ([`java/healify-selenium/`](../../java/healify-selenium/)) | ✅ Publicado real en Maven Central (namespace `io.github.mescobar996` verificado, firmado con GPG). Compila real contra selenium-java 4.27; el puente a `healify heal` se probó real. El `ChromeDriver` en vivo no se pudo correr en la sesión donde se escribió el código por un bug de red del JDK 17 de esa máquina (`java.net.http` roto en ese sandbox, no algo de Selenium ni de Healify) — la publicación en sí (compilación, firma, deploy) sí se verificó de punta a punta |
 | C# | [`csharp/HealifySeleniumWrapper.cs`](csharp/HealifySeleniumWrapper.cs) (copiar y adaptar) | ✅ .NET 8 SDK portable + Selenium.WebDriver 4.27 + Chrome real, de punta a punta |
+
+### Java: `pom.xml`
+
+```xml
+<dependency>
+  <groupId>io.github.mescobar996</groupId>
+  <artifactId>healify-selenium</artifactId>
+  <version>0.1.0</version>
+</dependency>
+```
 
 ## El contrato: `healify heal` y `healify probe-script`
 

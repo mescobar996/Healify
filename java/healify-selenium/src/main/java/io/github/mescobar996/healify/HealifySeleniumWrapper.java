@@ -1,13 +1,11 @@
-package com.healify;
+package io.github.mescobar996.healify;
 
 /**
- * Adapter de referencia: Healify + Selenium (Java).
- *
- * No es un paquete publicado (no está en Maven Central) — es un archivo que copiás a tu
- * proyecto y adaptás, mismo espíritu que healify.selenium.example.ts en la versión JS. Llama
- * al motor real de Healify (reporter-core, el mismo que usan los cuatro adapters de JS) vía
- * `npx @healify/cli heal`, así que necesitás Node instalado y @healify/cli accesible por
- * npx — no hay heurística reimplementada acá, es un cliente delgado.
+ * Adapter de Healify + Selenium (Java), publicado en Maven Central como
+ * io.github.mescobar996:healify-selenium. Llama al motor real de Healify (reporter-core, el
+ * mismo que usan los cuatro adapters de JS) vía `npx @healify/cli heal`, así que necesitás
+ * Node instalado y @healify/cli accesible por npx — no hay heurística reimplementada acá, es
+ * un cliente delgado.
  *
  * Dependencia: org.seleniumhq.selenium:selenium-java (4.6+, trae Selenium Manager — resuelve
  * el driver solo). Sin dependencias de JSON: el parseo es manual y deliberadamente mínimo

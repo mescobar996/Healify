@@ -1,19 +1,37 @@
 # Changelog
 
-## Python empaquetado real + C# verificado (fuera del ciclo de versión npm)
+## Java en Maven Central (fuera del ciclo de versión npm)
 
-> Este bloque no toca ningún paquete npm (`python/healify-selenium/` y
-> `docs/adapters/csharp/` viven fuera de los 6 workspaces) — no le corresponde un número de
-> versión de Healify. `healify-selenium` tiene su propio versionado en PyPI (`0.1.0`).
+> Tampoco toca ningún paquete npm — `io.github.mescobar996:healify-selenium` tiene su propio
+> versionado en Maven Central (`0.1.0`), independiente de Healify.
 
+- **`healify-selenium` publicado en Maven Central** (`java/healify-selenium/`), coordenadas
+  `io.github.mescobar996:healify-selenium:0.1.0`. El adapter Java deja de ser solo un
+  archivo de referencia para copiar y pasa a ser una dependencia real de Maven.
+- Camino completo hecho de cero, sin nada preexistente: cuenta en el Central Publisher
+  Portal, namespace `io.github.mescobar996` verificado (repo público en GitHub con el
+  Verification Key como nombre), clave GPG 4096-bit generada y publicada a un keyserver,
+  `pom.xml` con jars de sources/javadoc/firma GPG/`central-publishing-maven-plugin`, Maven
+  instalado de forma permanente (Chocolatey) para que el usuario pueda repetir el proceso a
+  futuro.
+- **Dos bugs reales encontrados y arreglados en el camino** (ninguno del código de Healify,
+  ambos de la herramienta): el GPG que trae Git para Windows depende de un demonio
+  (`keyboxd`) pensado para correr dentro de git-bash — desde PowerShell nativo fallaba con
+  `No Keybox daemon running`; se resolvió instalando Gpg4win (el GPG estándar de Windows,
+  con `gpg-agent` propio). El plugin `central-publishing-maven-plugin` 0.7.0 no reconoce un
+  campo nuevo (`warnings`) que la API de Sonatype ahora devuelve al consultar el estado del
+  deployment — el `mvn deploy` fallaba en ese paso, pero el upload en sí ya había terminado
+  bien; se resolvió publicando manualmente desde la web del Central Portal.
+- Verificado real contra el registro: `repo1.maven.org` devuelve `200` para el `.pom` y el
+  `.jar` del paquete publicado.
 - **`healify-selenium` en PyPI** (`python/healify-selenium/`): el adapter de Python deja de
   ser solo un archivo de referencia para copiar y pasa a ser un paquete instalable
   (`pip install healify-selenium`), con `pyproject.toml`, licencia MIT y README propios.
   Verificado de punta a punta con el wheel real: construido (`python -m build`, pasa
   `twine check`), instalado en un venv limpio, y corrido contra Chrome real con Selenium
   4.46 — mismo resultado que el adapter de referencia (`verified: true`, click ejecutado).
-  Java y C# siguen siendo adapters de referencia (código para copiar), no paquetes en Maven
-  Central/NuGet — eso sigue siendo un compromiso de mantenimiento aparte, no asumido.
+  C# sigue siendo adapter de referencia (código para copiar), no paquete en NuGet — eso
+  sigue siendo un compromiso de mantenimiento aparte, no asumido.
 - **Adapter C# verificado de punta a punta, por primera vez**: con un .NET 8 SDK portable
   (zip, sin instalar nada en el sistema) + Selenium.WebDriver 4.27 vía NuGet + Chrome real.
   Un selector roto a propósito se curó en vivo y se verificó contra la página
