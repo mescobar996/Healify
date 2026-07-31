@@ -79,13 +79,12 @@ docker exec -it healify-ollama ollama pull llama3.2:3b
 ### 4. ¡Listo!
 
 ```bash
-# Healify detecta Ollama automáticamente
-npx @healify/cli fix
-
-# O usar comandos de IA directamente
 npx @healify/cli ai explain "[data-testid='btn']"
 npx @healify/cli ai chat
 ```
+
+`healify fix` (el motor heurístico) sigue siendo independiente de la IA — no
+la usa ni la necesita. Los comandos `ai *` son la única superficie de IA hoy.
 
 ## Modelos Recomendados
 
@@ -228,28 +227,6 @@ Crea `healify.config.json` en la raíz de tu proyecto:
 | `explainSeverity` | string | `all` | Severidad de explicaciones (`all`, `high`, `critical`) |
 | `ollamaUrl` | string | `http://localhost:11434` | URL de Ollama |
 
-## Integración con `fix`
-
-Cuando Ollama está corriendo, `healify fix` automáticamente enriquece las sugerencias:
-
-```bash
-npx @healify/cli fix
-```
-
-```
-Healify fix — healify-report.json
-
-✓ e2e/checkout.spec.ts — #submit-btn → role('button', {name: 'Enviar'})
-  🤖 IA: El botón cambió de data-testid a aria-label. 
-     role+name es más estable según buenas prácticas de Playwright.
-
-✓ e2e/login.spec.ts — .login-form → getByRole('form', {name: 'Login'})
-  🤖 IA: La clase CSS puede cambiar con refactorizaciones.
-     getByRole es preferido por Playwright.
-
-2 selectors aplicados · 0 saltados
-```
-
 ## Python (para equipos sin Node.js)
 
 Si tu equipo no usa Node.js, instala el paquete Python:
@@ -353,10 +330,15 @@ docker-compose restart ollama
 
 ## Seguridad
 
-- **100% local** - Ningún dato sale de tu máquina
+- **100% local** - Ningún dato sale de tu máquina; nada se manda a un LLM en la nube
 - **Sin API keys** - No necesitas cuentas externas
 - **Sin tracking** - No se envía información a terceros
 - **Código abierto** - Puedes revisar todo el código
+- **Puertos en loopback** - `docker-compose.yml` publica Ollama (11434) y Open
+  WebUI (3000) solo en `127.0.0.1`, no en toda la red — Ollama no tiene
+  autenticación propia, así que exponerlo a la LAN dejaría su API abierta a
+  cualquiera en la misma red. Open WebUI requiere login (cuenta creada en el
+  primer acceso).
 
 ## Próximos Pasos
 

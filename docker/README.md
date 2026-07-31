@@ -21,6 +21,11 @@ docker-compose up -d
 | Open WebUI | http://localhost:3000 |
 | Ollama API | http://localhost:11434 |
 
+Ambos puertos se publican solo en loopback (`127.0.0.1`), no en toda la red —
+Ollama no tiene autenticación propia, así que no conviene exponerlo a la LAN.
+Open WebUI pide crear una cuenta la primera vez que entrás a
+`http://localhost:3000`; esa cuenta queda como admin.
+
 ## Modelos por RAM
 
 | RAM | Modelo | Tamaño | Velocidad |
@@ -54,11 +59,9 @@ curl http://localhost:11434/api/tags | grep llama
 Una vez que Ollama está corriendo con un modelo descargado:
 
 ```bash
-# Healify detecta Ollama automáticamente
-npx @healify/cli ai --setup
-
-# O usar fix con IA automática
-npx @healify/cli fix
+npx @healify/cli ai setup
+npx @healify/cli ai explain "[data-testid='btn']"
+npx @healify/cli ai chat
 ```
 
 ## Comandos Útiles

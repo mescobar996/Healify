@@ -8,7 +8,8 @@
     "cypress-plugin",
     "cli",
     "selenium-plugin",
-    "webdriverio-plugin"
+    "webdriverio-plugin",
+    "ai-local"
   ],
   "scripts": {
     "build": "npm run build --workspaces",

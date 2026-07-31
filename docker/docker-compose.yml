@@ -13,9 +13,14 @@ services:
     container_name: healify-ollama
     restart: unless-stopped
     ports:
-      - "11434:11434"
+      # Solo loopback: Ollama no tiene autenticación propia, así que no se
+      # publica en todas las interfaces (evita exponer la API a la LAN).
+      - "127.0.0.1:11434:11434"
     volumes:
       - ollama_data:/root/.ollama
+    # deploy.resources SÍ aplica acá aunque no haya Swarm: Docker Compose V2
+    # (el plugin `docker compose` / `docker-compose` moderno, no el binario
+    # Python v1 deprecado) traduce esto a límites reales del contenedor.
     deploy:
       resources:
         limits:
@@ -23,6 +28,9 @@ services:
         reservations:
           memory: 2G
     environment:
+      # 0.0.0.0 es la interfaz DENTRO del contenedor (necesaria para que
+      # open-webui, en la red interna de Docker, la alcance) — el binding a
+      # loopback real pasa por el mapeo de puertos de arriba, no por esto.
       - OLLAMA_HOST=0.0.0.0
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
@@ -35,14 +43,21 @@ services:
     container_name: healify-open-webui
     restart: unless-stopped
     ports:
-      - "3000:8080"
+      - "127.0.0.1:3000:8080"
     depends_on:
       ollama:
         condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 2G
     environment:
       - OLLAMA_BASE_URL=http://ollama:11434
-      - WEBUI_AUTH=false
-      - ENABLE_SIGNUP=false
+      # Auth activado: sin esto, cualquiera con acceso al puerto 3000 tiene
+      # el panel de chat/administración de modelos sin login. La primera
+      # cuenta que se crea en http://localhost:3000 queda como admin.
+      - WEBUI_AUTH=true
+      - ENABLE_SIGNUP=true
     volumes:
       - webui_data:/app/backend/data
 

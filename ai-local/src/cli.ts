@@ -38,8 +38,11 @@ function saveConfig(config: any): void {
 async function cmdSetup(): Promise<void> {
   console.log('\n🔧 Healify AI Setup\n');
 
+  const config = loadConfig();
+  const ollamaUrl = config.ai?.ollamaUrl || 'http://localhost:11434';
+
   // 1. Verificar Ollama
-  const running = checkOllamaRunning();
+  const running = await checkOllamaRunning(ollamaUrl);
   if (!running) {
     console.log('❌ Ollama no está corriendo');
     console.log('\n💡 Para iniciar Ollama:');
@@ -48,7 +51,7 @@ async function cmdSetup(): Promise<void> {
     console.log('   ollama serve');
     process.exit(1);
   }
-  console.log('✅ Ollama detectado en http://localhost:11434');
+  console.log(`✅ Ollama detectado en ${ollamaUrl}`);
 
   // 2. Detectar RAM
   const ram = getSystemRAM();
@@ -59,9 +62,9 @@ async function cmdSetup(): Promise<void> {
   console.log(`   Descripción: ${suggested.description}`);
 
   // 3. Verificar modelos instalados
-  const installed = getInstalledModels();
+  const installed = await getInstalledModels(ollamaUrl);
   const installedNames = installed.map(m => m.name);
-  
+
   if (installed.length > 0) {
     console.log('\n📦 Modelos instalados:');
     installed.forEach(m => console.log(`   - ${m.name}`));
@@ -79,14 +82,13 @@ async function cmdSetup(): Promise<void> {
   }
 
   // 5. Guardar configuración
-  const config = loadConfig();
   config.ai = {
     enabled: true,
     model: suggested.name,
     language: config.ai?.language || 'es',
     autoFix: false,
     explainSeverity: 'all',
-    ollamaUrl: 'http://localhost:11434',
+    ollamaUrl,
   };
   saveConfig(config);
   console.log('\n✅ Configuración guardada en healify.config.json');
@@ -95,7 +97,9 @@ async function cmdSetup(): Promise<void> {
 async function cmdStatus(): Promise<void> {
   console.log('\n📊 Estado de Healify AI\n');
 
-  const running = checkOllamaRunning();
+  const config = loadConfig();
+  const ollamaUrl = config.ai?.ollamaUrl || 'http://localhost:11434';
+  const running = await checkOllamaRunning(ollamaUrl);
   console.log(`Ollama: ${running ? '✅ Corriendo' : '❌ No disponible'}`);
 
   if (running) {
@@ -104,14 +108,13 @@ async function cmdStatus(): Promise<void> {
     console.log(`RAM: ${ram}GB`);
     console.log(`Modelo sugerido: ${suggested.name}`);
 
-    const installed = getInstalledModels();
+    const installed = await getInstalledModels(ollamaUrl);
     if (installed.length > 0) {
       console.log('\nModelos instalados:');
       installed.forEach(m => console.log(`  - ${m.name}`));
     }
   }
 
-  const config = loadConfig();
   if (config.ai) {
     console.log('\nConfiguración:');
     console.log(`  Modelo: ${config.ai.model}`);
@@ -202,13 +205,15 @@ async function cmdChat(): Promise<void> {
 async function cmdModels(): Promise<void> {
   console.log('\n📦 Modelos de Ollama\n');
 
-  const running = checkOllamaRunning();
+  const config = loadConfig();
+  const ollamaUrl = config.ai?.ollamaUrl || 'http://localhost:11434';
+  const running = await checkOllamaRunning(ollamaUrl);
   if (!running) {
     console.log('❌ Ollama no está corriendo');
     process.exit(1);
   }
 
-  const installed = getInstalledModels();
+  const installed = await getInstalledModels(ollamaUrl);
   const ram = getSystemRAM();
 
   console.log(`RAM del sistema: ${ram}GB\n`);

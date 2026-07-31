@@ -14,6 +14,10 @@ class OllamaClient:
     """Cliente HTTP para Ollama"""
 
     def __init__(self, base_url: str = "http://localhost:11434"):
+        if requests is None:
+            raise ImportError(
+                "El paquete 'requests' no está instalado. Ejecuta: pip install requests"
+            )
         self.base_url = base_url.rstrip("/")
 
     def is_running(self) -> bool:

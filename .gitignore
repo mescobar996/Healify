@@ -77,6 +77,8 @@ cli/dist
 cli/node_modules
 selenium-plugin/dist
 selenium-plugin/node_modules
+ai-local/dist
+ai-local/node_modules
 cypress-plugin/tests/cypress/videos
 
 # Superpowers brainstorming companion artifacts (ephemeral, not project content)

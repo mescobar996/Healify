@@ -21,6 +21,7 @@
     "ts-morph": "^21.0.0"
   },
   "devDependencies": {
+    "@healify/ai-local": "*",
     "@healify/reporter-core": "*",
     "@types/node": "^25.5.0",
     "esbuild": "^0.28.1",

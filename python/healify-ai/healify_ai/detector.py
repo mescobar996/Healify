@@ -36,14 +36,18 @@ class SystemDetector:
         
         try:
             if system == "Windows":
-                # Windows
+                # Windows: wmic está deprecado y ausente en instalaciones nuevas
+                # de Windows 11 (23H2+); se usa PowerShell/CIM en su lugar.
                 output = subprocess.check_output(
-                    'wmic memorychip get capacity',
-                    shell=True,
-                    text=True
+                    [
+                        "powershell",
+                        "-NoProfile",
+                        "-Command",
+                        "(Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory",
+                    ],
+                    text=True,
                 )
-                lines = [l.strip() for l in output.split("\n") if l.strip().isdigit()]
-                total_bytes = sum(int(l) for l in lines)
+                total_bytes = int(output.strip())
                 return total_bytes // (1024 ** 3)
                 
             elif system == "Darwin":

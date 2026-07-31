@@ -42,6 +42,9 @@ export interface AIResponse {
 
 // ==================== Config por Defecto ====================
 
+const OLLAMA_REQUEST_TIMEOUT_MS = 120_000;
+const MAX_CHAT_HISTORY = 20;
+
 const DEFAULT_CONFIG: AIConfig = {
   enabled: false,
   model: 'llama3.2:3b',
@@ -66,18 +69,18 @@ export class HealifyAI {
    * Inicializa y verifica la conexión con Ollama
    */
   async init(): Promise<{ success: boolean; message: string }> {
-    // Verificar si Ollama está corriendo
-    this.ollamaAvailable = checkOllamaRunning();
-    
+    // Verificar si Ollama está corriendo (en la URL configurada, no hardcoded)
+    this.ollamaAvailable = await checkOllamaRunning(this.config.ollamaUrl);
+
     if (!this.ollamaAvailable) {
       return {
         success: false,
-        message: 'Ollama no está corriendo. Ejecuta: docker-compose up -d ollama',
+        message: `Ollama no está disponible en ${this.config.ollamaUrl}. Ejecuta: docker-compose up -d ollama`,
       };
     }
 
     // Obtener modelos instalados
-    const models = getInstalledModels();
+    const models = await getInstalledModels(this.config.ollamaUrl);
     this.installedModels = models.map(m => m.name);
 
     // Verificar si el modelo configurado está instalado
@@ -159,9 +162,13 @@ export class HealifyAI {
 Responde en ${this.config.language === 'es' ? 'español' : 'inglés'}.
 Sé conciso y técnico. Usa ejemplos de código cuando sea útil.`;
 
+    const trimmedHistory = history.length > MAX_CHAT_HISTORY
+      ? history.slice(history.length - MAX_CHAT_HISTORY)
+      : history;
+
     const messages = [
       { role: 'system', content: systemPrompt },
-      ...history,
+      ...trimmedHistory,
       { role: 'user', content: message },
     ];
 
@@ -226,74 +233,55 @@ Responde en formato JSON:
   }
 
   private async callOllama(prompt: string): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const data = JSON.stringify({
-        model: this.config.model,
-        prompt,
-        stream: false,
-      });
-
-      const req = http.request(
-        `${this.config.ollamaUrl}/api/generate`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Content-Length': Buffer.byteLength(data),
-          },
-        },
-        (res) => {
-          let body = '';
-          res.on('data', (chunk) => (body += chunk));
-          res.on('end', () => {
-            try {
-              const json = JSON.parse(body);
-              resolve(json.response);
-            } catch {
-              reject(new Error('Error parsing Ollama response'));
-            }
-          });
-        }
-      );
-
-      req.on('error', reject);
-      req.write(data);
-      req.end();
-    });
+    return this.postToOllama('/api/generate', { model: this.config.model, prompt, stream: false }, (json) => json.response);
   }
 
   private async callOllamaChat(messages: Array<{role: string; content: string}>): Promise<string> {
+    return this.postToOllama('/api/chat', { model: this.config.model, messages, stream: false }, (json) => json.message?.content || '');
+  }
+
+  private postToOllama(path: string, body: unknown, extract: (json: any) => string): Promise<string> {
     return new Promise((resolve, reject) => {
-      const data = JSON.stringify({
-        model: this.config.model,
-        messages,
-        stream: false,
-      });
+      const data = JSON.stringify(body);
+      let settled = false;
+      const settle = (fn: () => void) => {
+        if (settled) return;
+        settled = true;
+        fn();
+      };
 
       const req = http.request(
-        `${this.config.ollamaUrl}/api/chat`,
+        `${this.config.ollamaUrl}${path}`,
         {
           method: 'POST',
+          timeout: OLLAMA_REQUEST_TIMEOUT_MS,
           headers: {
             'Content-Type': 'application/json',
             'Content-Length': Buffer.byteLength(data),
           },
         },
         (res) => {
-          let body = '';
-          res.on('data', (chunk) => (body += chunk));
+          if (res.statusCode !== 200) {
+            res.resume();
+            settle(() => reject(new Error(`Ollama respondió ${res.statusCode} en ${path}`)));
+            return;
+          }
+          let responseBody = '';
+          res.on('data', (chunk) => (responseBody += chunk));
           res.on('end', () => {
-            try {
-              const json = JSON.parse(body);
-              resolve(json.message?.content || '');
-            } catch {
-              reject(new Error('Error parsing Ollama response'));
-            }
+            settle(() => {
+              try {
+                resolve(extract(JSON.parse(responseBody)));
+              } catch {
+                reject(new Error('Error parsing Ollama response'));
+              }
+            });
           });
         }
       );
 
-      req.on('error', reject);
+      req.on('timeout', () => req.destroy());
+      req.on('error', (err) => settle(() => reject(err)));
       req.write(data);
       req.end();
     });

@@ -1,11 +1,11 @@
 /**
  * @healify/ai-local - Detector de RAM y Modelo
- * 
+ *
  * Detecta la RAM del sistema y sugiere el modelo de Ollama óptimo
  */
 
 import * as os from 'os';
-import { execSync } from 'child_process';
+import * as http from 'http';
 
 // ==================== Tipos ====================
 
@@ -15,6 +15,9 @@ export interface ModelInfo {
   size: string;
   description: string;
 }
+
+const DEFAULT_OLLAMA_URL = 'http://localhost:11434';
+const REQUEST_TIMEOUT_MS = 5000;
 
 // ==================== Modelos ====================
 
@@ -42,7 +45,7 @@ export function getSystemRAM(): number {
 export function suggestModel(ramGB: number): ModelInfo {
   // Dejar 2GB para el sistema operativo
   const availableGB = ramGB - 2;
-  
+
   for (let i = MODELS.length - 1; i >= 0; i--) {
     if (availableGB >= MODELS[i].minRAM) {
       return MODELS[i];
@@ -52,32 +55,52 @@ export function suggestModel(ramGB: number): ModelInfo {
 }
 
 /**
- * Verifica si Ollama está corriendo
+ * Hace GET a /api/tags contra la URL de Ollama dada, con timeout real.
+ * Devuelve null si no responde, no da 200, o el body no es JSON válido.
  */
-export function checkOllamaRunning(): boolean {
-  try {
-    execSync('curl -s http://localhost:11434/api/tags', { 
-      timeout: 5000,
-      stdio: 'pipe' 
+function fetchTags(ollamaUrl: string): Promise<{ models?: Array<{ name: string; size: number }> } | null> {
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (value: { models?: Array<{ name: string; size: number }> } | null) => {
+      if (settled) return;
+      settled = true;
+      resolve(value);
+    };
+
+    const req = http.get(`${ollamaUrl}/api/tags`, { timeout: REQUEST_TIMEOUT_MS }, (res) => {
+      if (res.statusCode !== 200) {
+        res.resume();
+        finish(null);
+        return;
+      }
+      let body = '';
+      res.on('data', (chunk) => (body += chunk));
+      res.on('end', () => {
+        try {
+          finish(JSON.parse(body));
+        } catch {
+          finish(null);
+        }
+      });
     });
-    return true;
-  } catch {
-    return false;
-  }
+
+    req.on('timeout', () => req.destroy());
+    req.on('error', () => finish(null));
+  });
 }
 
 /**
- * Lista modelos instalados en Ollama
+ * Verifica si Ollama está corriendo en la URL configurada (default localhost:11434)
  */
-export function getInstalledModels(): Array<{ name: string; size: number }> {
-  try {
-    const output = execSync('curl -s http://localhost:11434/api/tags', { 
-      encoding: 'utf-8',
-      timeout: 5000 
-    });
-    const data = JSON.parse(output);
-    return data.models || [];
-  } catch {
-    return [];
-  }
+export async function checkOllamaRunning(ollamaUrl: string = DEFAULT_OLLAMA_URL): Promise<boolean> {
+  const data = await fetchTags(ollamaUrl);
+  return data !== null;
+}
+
+/**
+ * Lista modelos instalados en Ollama en la URL configurada
+ */
+export async function getInstalledModels(ollamaUrl: string = DEFAULT_OLLAMA_URL): Promise<Array<{ name: string; size: number }>> {
+  const data = await fetchTags(ollamaUrl);
+  return data?.models || [];
 }

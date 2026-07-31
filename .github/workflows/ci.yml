@@ -51,6 +51,9 @@ jobs:
       - name: Type check webdriverio-plugin
         run: npx tsc --noEmit -p webdriverio-plugin/tsconfig.json
 
+      - name: Type check ai-local
+        run: npx tsc --noEmit -p ai-local/tsconfig.json
+
   # ─── Unit Tests (multi-OS: Healify es sensible a Windows) ──────────────────
   test:
     name: Unit Tests
