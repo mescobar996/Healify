@@ -13,6 +13,7 @@ import { history, type HistoryReport } from './commands/history'
 import { runHeal } from './commands/heal'
 import { runExplain } from './commands/explain'
 import { getVersion } from './version'
+import { runAiSetup, runAiStatus, runAiExplain, runAiChat, runAiModels } from './commands/ai'
 
 function reasonText(outcome: Extract<FixOutcome, { status: 'skipped' }>, astUsed: boolean): string {
   switch (outcome.reason) {
@@ -310,6 +311,13 @@ Comandos:
   probe-script                               Imprime el script que hay que correr con execute_script() para sondear el DOM (insumo de "heal")
   explain [selector] [--json]                Explica POR QUÉ un selector es frágil y qué propone el motor. Sin args, analiza el último fallo del reporte
 
+Comandos IA (requiere Ollama):
+  ai setup                                   Configura IA local: detecta Ollama, sugiere modelo según RAM, guarda configuración
+  ai status                                  Muestra estado de Ollama y modelos instalados
+  ai explain <selector>                      Explica con IA por qué un selector es frágil (requiere Ollama)
+  ai chat                                    Chat interactivo con IA sobre tests
+  ai models                                  Lista modelos de Ollama disponibles y recomendados
+
 Flags globales:
   --version, -v                              Muestra la versión instalada de @healify/cli
   --help, -h                                 Muestra esta ayuda`)
@@ -336,6 +344,18 @@ function main(): void {
   if (command === 'heal') return runHealCommand()
   if (command === 'explain') return runExplainCommand(args.slice(1))
   if (command === 'probe-script') return console.log(BROWSER_PROBE_SCRIPT)
+  
+  // Comandos IA
+  if (command === 'ai') {
+    const aiCommand = args[1]
+    if (aiCommand === 'setup') { runAiSetup().then(() => {}); return }
+    if (aiCommand === 'status') { runAiStatus().then(() => {}); return }
+    if (aiCommand === 'explain') { runAiExplain(args.slice(2)).then(() => {}); return }
+    if (aiCommand === 'chat') { runAiChat().then(() => {}); return }
+    if (aiCommand === 'models') { runAiModels().then(() => {}); return }
+    console.log('Uso: healify ai <setup|status|explain|chat|models>')
+    process.exit(1)
+  }
 
   printHelp()
   if (command) process.exit(1)

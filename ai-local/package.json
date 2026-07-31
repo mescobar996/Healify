@@ -1,0 +1,37 @@
+{
+  "name": "@healify/ai-local",
+  "version": "1.5.0",
+  "description": "IA local para Healify usando Ollama. Explicaciones en lenguaje natural, sugerencias enriquecidas.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./detect": {
+      "types": "./dist/detect-ram.d.ts",
+      "default": "./dist/detect-ram.js"
+    }
+  },
+  "bin": {
+    "healify-ai": "dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc --emitDeclarationOnly && esbuild src/index.ts src/cli.ts src/detect-ram.ts --bundle --platform=node --outdir=dist --format=cjs",
+    "test": "vitest run"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "esbuild": "^0.28.1",
+    "typescript": "^5.4.0",
+    "vitest": "^4.0.18"
+  }
+}

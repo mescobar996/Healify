@@ -68,13 +68,37 @@ como JSON por stdin/stdout — cualquier lenguaje que spawnee un subproceso lo u
 **C#** es un adapter de referencia para copiar (sin paquete en NuGet todavía). Contrato
 completo en [`docs/adapters/README.md`](docs/adapters/README.md).
 
+## IA Local (Opcional)
+
+Healify ahora soporta **IA local via Ollama** para explicaciones en lenguaje natural y sugerencias enriquecidas:
+
+```bash
+# 1. Levantar Ollama + Open WebUI
+cd docker && docker-compose up -d
+
+# 2. Configurar IA
+npx @healify/cli ai setup
+
+# 3. Usar
+npx @healify/cli ai explain "[data-testid='btn']"
+npx @healify/cli ai chat
+```
+
+**Características:**
+- 100% local - sin API keys, sin costo
+- Auto-detección de RAM → modelo óptimo
+- Español o inglés configurable
+- Open WebUI para chat visual
+
+Documentación completa: [docs/ai/README.md](docs/ai/README.md)
+
 ## Para quién es esto
 
 **Si sos QA Manual, QA Automation o QC Engineer y se te rompe un test porque cambió un ID, una clase o un texto, esto es para vos.** No necesitás saber programar, cuenta, API key, ni internet.
 
-> **Qué NO es:** No es IA, no es un servicio en la nube, no manda tu código a ningún lado.
+> **Qué NO es:** No es un servicio en la nube, no manda tu código a ningún lado.
 > Es heurística local — y, donde puede, la confronta contra el DOM real de la página en
-> vez de solo adivinar por el texto del selector.
+> vez de solo adivinar por el texto del selector. La IA es 100% local via Ollama (opcional).
 
 ## Empezar
 
@@ -168,8 +192,10 @@ Reglas:
 | [`@healify/selenium-plugin`](selenium-plugin/README.md) | 1.5.0 | Selenium - cura en vivo, `flush()` genera reporte JSON | `npm i -D @healify/selenium-plugin` |
 | [`@healify/webdriverio-plugin`](webdriverio-plugin/README.md) | 1.5.0 | WebdriverIO - cura en vivo, `flush()` genera reporte JSON | `npm i -D @healify/webdriverio-plugin` |
 | [`@healify/cli`](cli/README.md) | 1.5.0 | CLI - diagnostica, configura, aplica fixes, explica selectores, guarda historial, y puentea `heal`/`probe-script` a otros lenguajes | `npm i -D @healify/cli` |
+| [`@healify/ai-local`](ai-local/README.md) | 1.5.0 | IA local via Ollama - explicaciones en lenguaje natural, chat interactivo | `npm i -D @healify/ai-local` |
 | `reporter-core` | 1.5.0 | Motor heurístico - privado, bundleado | — |
 | [`healify-selenium`](python/healify-selenium/) (PyPI) | 0.1.0 | Adapter Python | `pip install healify-selenium` |
+| [`healify-ai`](python/healify-ai/) (PyPI) | 1.5.0 | IA local Python (para equipos sin Node.js) | `pip install healify-ai` |
 | [`healify-selenium`](java/healify-selenium/) (Maven Central) | 0.1.0 | Adapter Java | `io.github.mescobar996:healify-selenium` |
 
 ## Comandos del CLI
@@ -182,6 +208,11 @@ Reglas:
 | `npx @healify/cli explain [selector] [--json]` | Explica por qué un selector es frágil/estable y qué propone el motor. Sin args lee el último reporte |
 | `npx @healify/cli history` | Selectores recurrentes y re-rotos de tu historial local |
 | `npx @healify/cli heal` / `probe-script` | Puente JSON para usar el motor desde otro lenguaje |
+| `npx @healify/cli ai setup` | Configura IA local: detecta Ollama, sugiere modelo según RAM |
+| `npx @healify/cli ai status` | Muestra estado de Ollama y modelos instalados |
+| `npx @healify/cli ai explain <selector>` | Explica con IA por qué un selector es frágil |
+| `npx @healify/cli ai chat` | Chat interactivo con IA sobre tests |
+| `npx @healify/cli ai models` | Lista modelos de Ollama disponibles y recomendados |
 
 Detalle de cada uno, con ejemplos, en la [guía](docs/guide/README.md).
 
@@ -194,10 +225,14 @@ cypress-plugin/      # @healify/cypress-plugin - reporte + cy.healifyGet en vivo
 selenium-plugin/     # @healify/selenium-plugin
 webdriverio-plugin/  # @healify/webdriverio-plugin
 cli/                 # @healify/cli - init, doctor, fix, history, explain, heal, probe-script
+ai-local/            # @healify/ai-local - IA local via Ollama
+docker/              # Docker Compose para Ollama + Open WebUI
 gh-action/           # GitHub Action (privada, no es workspace de npm ni se publica)
 python/healify-selenium/  # pip install healify-selenium — paquete real, verificado
+python/healify-ai/        # pip install healify-ai — IA local Python
 java/healify-selenium/    # io.github.mescobar996:healify-selenium (Maven Central) — paquete real, verificado
 docs/adapters/       # Solo C# como adapter de referencia (código para copiar, no paquete)
+docs/ai/             # Documentación de IA local
 docs/guide/          # Manual completo: instalación paso a paso, cómo funciona el motor,
                       # repertorio, modo interactivo, troubleshooting, cobertura
 ```

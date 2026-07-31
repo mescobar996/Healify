@@ -1,0 +1,51 @@
+## Healify AI - Docker Compose
+## Ollama (motor IA) + Open WebUI (interfaz)
+##
+## Uso:
+##   docker-compose up -d
+##   docker-compose down
+##
+## Requisitos: Docker Desktop corriendo
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: healify-ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+        reservations:
+          memory: 2G
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: healify-open-webui
+    restart: unless-stopped
+    ports:
+      - "3000:8080"
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - WEBUI_AUTH=false
+      - ENABLE_SIGNUP=false
+    volumes:
+      - webui_data:/app/backend/data
+
+volumes:
+  ollama_data:
+  webui_data:
