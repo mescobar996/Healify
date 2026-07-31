@@ -98,16 +98,77 @@ siempre gana. Y en vez de aplicar todo automático, `npx @healify/cli fix --inte
 te muestra cada sugerencia y te deja decidir caso por caso. Detalle en la
 [guía](docs/guide/README.md#el-repertorio-memoria-entre-corridas).
 
+## Nuevo en v1.5.0: debug y atributos custom
+
+### `healify explain` — por qué un selector es frágil
+
+El motor ya sabía por qué un selector es frágil, pero solo lo dejaba en el JSON. Ahora podés verlo sin abrir el reporte:
+
+```bash
+npx @healify/cli explain '[data-testid="btn-123"]'
+# Selector: [data-testid="btn-123"]
+# Clasificación: TESTID (estable)
+# Confidence: 0.95
+# Issue: Atributo estable pero valor con sufijo dinámico
+# Fix propuesto: [data-testid="btn"]
+
+npx @healify/cli explain
+# sin args -> lee healify-report.json y explica el último fallo
+
+npx @healify/cli explain '[data-cy-custom="x"]' --json
+# output machine-readable para el puente Python/Java/C#
+```
+
+No abre browser, es 100% heurístico y solo formatea lo que ya devuelve `analyzeAndHeal()`.
+
+### `customTestIds` — tus data-* propios
+
+Por defecto Healify reconoce como estables estos 5:
+
+`data-testid, data-cy, data-qa, data-test, data-e2e` → TESTID 0.95
+
+Si tu equipo usa `data-cy-custom`, `data-test-id`, `data-qa-custom`, etc., antes los marcaba como CSS frágil (0.75). Ahora los podés declarar:
+
+```json
+// healify.config.json
+{
+  "customTestIds": ["data-cy-custom", "data-test-id"]
+}
+```
+
+```json
+// o en package.json
+{
+  "healify": {
+    "customTestIds": ["data-cy-custom"]
+  }
+}
+```
+
+Reglas:
+- Solo `data-*`. Si pasás `id` o `class` tira error legible.
+- Se mergea con los 5 defaults, no los reemplaza.
+- `[]` o sin config → usa solo los 5.
+- Funciona también vía `healify heal` (JSON stdin) para Python/Java/C#.
+
+```bash
+# sin config: frágil
+# [data-cy-custom="x"] -> CSS 0.75
+
+# con config: estable
+# [data-cy-custom="x"] -> TESTID 0.95
+```
+
 ## Paquetes
 
 | Paquete | Versión | Para qué | Comando |
 |---|---|---|---|
-| [`@healify/test-runner`](test-runner/README.md) | 1.4.0 | Playwright - genera reporte al final | `npm i -D @healify/test-runner` |
-| [`@healify/cypress-plugin`](cypress-plugin/README.md) | 1.4.0 | Cypress - reporte + `cy.healifyGet` opcional en vivo | `npm i -D @healify/cypress-plugin` |
-| [`@healify/selenium-plugin`](selenium-plugin/README.md) | 1.4.0 | Selenium - cura en vivo, `flush()` genera reporte JSON | `npm i -D @healify/selenium-plugin` |
-| [`@healify/webdriverio-plugin`](webdriverio-plugin/README.md) | 1.4.0 | WebdriverIO - cura en vivo, `flush()` genera reporte JSON | `npm i -D @healify/webdriverio-plugin` |
-| [`@healify/cli`](cli/README.md) | 1.4.0 | CLI - diagnostica, configura, aplica fixes, guarda historial, y puentea `heal`/`probe-script` a otros lenguajes | `npm i -D @healify/cli` |
-| `reporter-core` | 1.4.0 | Motor heurístico - privado, bundleado | — |
+| [`@healify/test-runner`](test-runner/README.md) | 1.5.0 | Playwright - genera reporte al final | `npm i -D @healify/test-runner` |
+| [`@healify/cypress-plugin`](cypress-plugin/README.md) | 1.5.0 | Cypress - reporte + `cy.healifyGet` opcional en vivo | `npm i -D @healify/cypress-plugin` |
+| [`@healify/selenium-plugin`](selenium-plugin/README.md) | 1.5.0 | Selenium - cura en vivo, `flush()` genera reporte JSON | `npm i -D @healify/selenium-plugin` |
+| [`@healify/webdriverio-plugin`](webdriverio-plugin/README.md) | 1.5.0 | WebdriverIO - cura en vivo, `flush()` genera reporte JSON | `npm i -D @healify/webdriverio-plugin` |
+| [`@healify/cli`](cli/README.md) | 1.5.0 | CLI - diagnostica, configura, aplica fixes, explica selectores, guarda historial, y puentea `heal`/`probe-script` a otros lenguajes | `npm i -D @healify/cli` |
+| `reporter-core` | 1.5.0 | Motor heurístico - privado, bundleado | — |
 | [`healify-selenium`](python/healify-selenium/) (PyPI) | 0.1.0 | Adapter Python | `pip install healify-selenium` |
 | [`healify-selenium`](java/healify-selenium/) (Maven Central) | 0.1.0 | Adapter Java | `io.github.mescobar996:healify-selenium` |
 
@@ -118,6 +179,7 @@ te muestra cada sugerencia y te deja decidir caso por caso. Detalle en la
 | `npx @healify/cli doctor` | Revisa tu proyecto y te dice qué falta |
 | `npx @healify/cli init` | Detecta tu framework e instala/configura todo |
 | `npx @healify/cli fix [--dry-run\|--interactive]` | Aplica (o simula, o te deja decidir) los selectores curados |
+| `npx @healify/cli explain [selector] [--json]` | Explica por qué un selector es frágil/estable y qué propone el motor. Sin args lee el último reporte |
 | `npx @healify/cli history` | Selectores recurrentes y re-rotos de tu historial local |
 | `npx @healify/cli heal` / `probe-script` | Puente JSON para usar el motor desde otro lenguaje |
 
@@ -131,7 +193,7 @@ test-runner/         # @healify/test-runner
 cypress-plugin/      # @healify/cypress-plugin - reporte + cy.healifyGet en vivo
 selenium-plugin/     # @healify/selenium-plugin
 webdriverio-plugin/  # @healify/webdriverio-plugin
-cli/                 # @healify/cli - init, doctor, fix, history, heal, probe-script
+cli/                 # @healify/cli - init, doctor, fix, history, explain, heal, probe-script
 gh-action/           # GitHub Action (privada, no es workspace de npm ni se publica)
 python/healify-selenium/  # pip install healify-selenium — paquete real, verificado
 java/healify-selenium/    # io.github.mescobar996:healify-selenium (Maven Central) — paquete real, verificado
