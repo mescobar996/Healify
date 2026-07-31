@@ -16,6 +16,8 @@ export interface HealCommandInput {
    * lenguaje, vía su propio driver.execute_script()/executeScript() equivalente. Sin validar
    * acá: viene de JSON externo, `domContextFromProbeResult` es quien de verdad lo verifica. */
   pageElements?: unknown
+  /** Atributos de test-id adicionales del proyecto, para extender los 5 built-in. */
+  customTestIds?: string[]
 }
 
 export interface HealCommandOutput {
@@ -62,6 +64,7 @@ export function runHeal(rawInput: unknown, cwd: string = process.cwd()): HealCom
       errorMessage: rawInput.errorMessage,
       htmlContext,
       repertoire,
+      customTestIds: rawInput.customTestIds,
     })
 
     return {

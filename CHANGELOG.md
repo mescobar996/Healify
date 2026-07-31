@@ -42,6 +42,22 @@
   `MODULE_NOT_FOUND` interno de npm apenas se corre así. Arreglado invocando `cmd.exe /c npx
   ...` explícito, el patrón estándar de .NET para lanzar batch scripts sin una shell real.
 
+## 1.5.0 — 2026-07-31
+
+- **feat(cli): `healify explain <selector>`** — explica por qué un selector es frágil, su
+  clasificación (TESTID/ROLE/CSS/XPATH), confidence, issue detectado y fix propuesto. Reusa
+  100% `analyzeAndHeal()` de `healing-engine.ts`. Sin args, lee el último caso de
+  `healify-report.json`. Flag `--json` para output machine-readable (puente Python/Java/C#).
+- **feat(core): `customTestIds` configurable** — via `healify.config.json`
+  (`{ "customTestIds": ["data-cy-custom"] }`) o `package.json` (`{ "healify": { ... } }`).
+  Se mergea con los 5 defaults (`data-testid`, `data-cy`, `data-qa`, `data-test`,
+  `data-e2e`). Solo acepta atributos que empiecen con `data-`; los demás se descartan
+  silenciosamente. Disponible también vía el puente `healify heal` (JSON stdin).
+- **nuevo: `reporter-core/src/config.ts`** — `loadConfig(cwd)` lee `healify.config.json` o
+  `package.json → healify`, valida y retorna `HealifyConfig`.
+- **tests: 475 (+16)** — 6 en `healing-engine.test.ts` (customTestIds), 2 en
+  `heal-command.test.ts` (paso de customTestIds), 8 en `explain-command.test.ts` (nuevo).
+
 ## 1.4.0 — combinadores CSS compuestos
 
 Último hueco documentado como "fuera de alcance a propósito": el motor no reconocía

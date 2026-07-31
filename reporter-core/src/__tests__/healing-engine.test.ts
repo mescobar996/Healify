@@ -399,3 +399,54 @@ describe('repertorio (memoria de curaciones verificadas)', () => {
     expect(result.fromRepertoire).toBe(false)
   })
 })
+
+describe('customTestIds (healify.config.json)', () => {
+  it('un atributo custom data-cy-custom se reconoce como TESTID de alta confianza', () => {
+    const result = analyzeAndHeal({
+      selector: "[data-cy-custom='add-to-cart']",
+      customTestIds: ['data-cy-custom'],
+    })
+    expect(result.selectorType).toBe('TESTID')
+    expect(result.confidence).toBeGreaterThanOrEqual(0.9)
+  })
+
+  it('sin customTestIds, data-cy-custom NO es TESTID — se marca como frágil', () => {
+    const result = analyzeAndHeal({ selector: "[data-cy-custom='add-to-cart']" })
+    expect(result.selectorType).not.toBe('TESTID')
+    expect(result.confidence).toBeLessThan(0.9)
+  })
+
+  it('customTestIds vacío usa solo los defaults', () => {
+    const withEmpty = analyzeAndHeal({ selector: "[data-testid='x']", customTestIds: [] })
+    const without = analyzeAndHeal({ selector: "[data-testid='x']" })
+    expect(withEmpty.selectorType).toBe('TESTID')
+    expect(withEmpty.fixedSelector).toBe(without.fixedSelector)
+  })
+
+  it('un atributo que no empieza con data- se descarta silenciosamente', () => {
+    const result = analyzeAndHeal({
+      selector: "[data-cy-custom='x']",
+      customTestIds: ['id', 'class', 'data-cy-custom'],
+    })
+    expect(result.selectorType).toBe('TESTID')
+    expect(result.confidence).toBeGreaterThanOrEqual(0.9)
+  })
+
+  it('los 5 defaults siguen funcionando con customTestIds presente', () => {
+    const result = analyzeAndHeal({
+      selector: "[data-testid='x']",
+      customTestIds: ['data-cy-custom'],
+    })
+    expect(result.selectorType).toBe('TESTID')
+    expect(result.fixedSelector).toBe("[data-testid='x']")
+  })
+
+  it('data-test-id custom se reconoce como TESTID', () => {
+    const result = analyzeAndHeal({
+      selector: "[data-test-id='submit']",
+      customTestIds: ['data-test-id'],
+    })
+    expect(result.selectorType).toBe('TESTID')
+    expect(result.confidence).toBeGreaterThanOrEqual(0.9)
+  })
+})

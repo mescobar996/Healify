@@ -95,4 +95,26 @@ describe('runHeal', () => {
 
     expect(mockReadRepertoire).toHaveBeenCalledWith('/algun/proyecto')
   })
+
+  it('pasa customTestIds al motor — data-cy-custom se reconoce como TESTID', () => {
+    const result = runHeal({
+      selector: "[data-cy-custom='add-to-cart']",
+      customTestIds: ['data-cy-custom'],
+    })
+
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.output.selectorType).toBe('TESTID')
+      expect(result.output.confidence).toBeGreaterThanOrEqual(0.9)
+    }
+  })
+
+  it('sin customTestIds, data-cy-custom no es TESTID', () => {
+    const result = runHeal({ selector: "[data-cy-custom='add-to-cart']" })
+
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.output.selectorType).not.toBe('TESTID')
+    }
+  })
 })

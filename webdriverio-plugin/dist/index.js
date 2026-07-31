@@ -394,7 +394,27 @@ var require_healing_engine = __commonJS({
     }
     var TESTID_ATTRS = ["data-testid", "data-cy", "data-qa", "data-test", "data-e2e"];
     var NTH_POSITION_RE = /:nth-(?:child|of-type)\(/;
-    function analyzeSelector(selector) {
+    var TEXT_LIKE_SELECTOR_RE = /has-text\(|text=|getBy|^role\(/;
+    function maskQuotedContent(selector) {
+      return selector.replace(/'[^']*'|"[^"]*"/g, (match) => match[0] + "x".repeat(match.length - 2) + match[match.length - 1]);
+    }
+    var COMBINATOR_TOKEN_RE = /\s*[>+~]\s*|\s+/;
+    function hasCompoundCombinator(selector) {
+      if (selector.startsWith("//") || TEXT_LIKE_SELECTOR_RE.test(selector))
+        return false;
+      return COMBINATOR_TOKEN_RE.test(maskQuotedContent(selector));
+    }
+    function extractCombinatorTarget(selector) {
+      const masked = maskQuotedContent(selector);
+      const re = new RegExp(COMBINATOR_TOKEN_RE, "g");
+      let lastEnd = 0;
+      let match;
+      while ((match = re.exec(masked)) !== null) {
+        lastEnd = match.index + match[0].length;
+      }
+      return selector.slice(lastEnd).trim();
+    }
+    function analyzeSelector(selector, testIds = TESTID_ATTRS) {
       const analysis = {
         type: "CSS",
         issues: [],
@@ -424,7 +444,7 @@ var require_healing_engine = __commonJS({
           analysis.isDynamic = true;
           analysis.issues.push("Generated CSS class detected - unstable");
         }
-      } else if (TESTID_ATTRS.some((attr) => selector.includes(`[${attr}=`))) {
+      } else if (testIds.some((attr) => selector.includes(`[${attr}=`))) {
         analysis.type = "TESTID";
       } else if (selector.startsWith("//")) {
         analysis.type = "XPATH";
@@ -446,6 +466,11 @@ var require_healing_engine = __commonJS({
       if (NTH_POSITION_RE.test(selector)) {
         analysis.isFragile = true;
         analysis.issues.push("Position-based selector (nth-child/nth-of-type) depends on exact sibling order in the DOM");
+      }
+      if (hasCompoundCombinator(selector)) {
+        analysis.isFragile = true;
+        analysis.isCompoundCombinator = true;
+        analysis.issues.push("Compound selector with a CSS combinator (descendant/child/sibling) depends on the ancestor/sibling structure in the DOM");
       }
       if (/button|btn/i.test(selector)) {
         analysis.element = "button";
@@ -490,12 +515,13 @@ var require_healing_engine = __commonJS({
       }
       return "Field";
     }
-    function extractTestid(selector) {
-      const match = selector.match(/data-(?:testid|cy|qa|test|e2e)=['"]([^'"]+)['"]/);
+    function extractTestid(selector, testIds = TESTID_ATTRS) {
+      const suffixes = testIds.map((t) => t.replace("data-", ""));
+      const match = selector.match(new RegExp(`data-(?:${suffixes.join("|")})=['"]([^'"]+)['"]`));
       return match ? match[1] : "element";
     }
-    function testidAttributeName(selector) {
-      return TESTID_ATTRS.find((attr) => selector.includes(`[${attr}=`)) ?? "data-testid";
+    function testidAttributeName(selector, testIds = TESTID_ATTRS) {
+      return testIds.find((attr) => selector.includes(`[${attr}=`)) ?? "data-testid";
     }
     function extractBaseClass(selector) {
       return selector.replace(/[#.]/, "").replace(/[-_]?\d+/g, "").replace(/[-_][a-f0-9]{6,}/gi, "").toLowerCase();
@@ -506,7 +532,7 @@ var require_healing_engine = __commonJS({
       const volatileFragments = selector.match(/[a-f0-9]{4,}|\d{2,}/gi) ?? [];
       return volatileFragments.length > 3;
     }
-    function generateHealingStrategies(selector, analysis, actions, fields) {
+    function generateHealingStrategies(selector, analysis, actions, fields, testIds = TESTID_ATTRS) {
       if (analysis.isAlreadyModernLocator) {
         return [{
           selector,
@@ -595,9 +621,9 @@ var require_healing_engine = __commonJS({
         });
       }
       if (analysis.type === "TESTID") {
-        const attr = testidAttributeName(selector);
+        const attr = testidAttributeName(selector, testIds);
         strategies.push({
-          selector: `[${attr}='${extractTestid(selector)}']`,
+          selector: `[${attr}='${extractTestid(selector, testIds)}']`,
           type: "TESTID",
           confidence: 0.95,
           explanation: `El testid se mantiene pero se normaliza la sintaxis. Los atributos ${attr} son la opci\xF3n m\xE1s estable cuando est\xE1n disponibles.`,
@@ -655,6 +681,65 @@ var require_healing_engine = __commonJS({
             explanation: `Se detect\xF3 un ID din\xE1mico con hash o n\xFAmero aleatorio. Se propuso una clase estable como alternativa.`,
             robustnessGain: 38,
             technicalReason: "Dynamic IDs change between builds; stable classes are preferred",
+            priority: 6
+          });
+        }
+      }
+      if (analysis.isCompoundCombinator) {
+        const target = extractCombinatorTarget(selector);
+        const targetTestidAttr = testIds.find((attr) => target.includes(`[${attr}=`));
+        if (targetTestidAttr) {
+          strategies.push({
+            selector: `[${targetTestidAttr}='${extractTestid(target, testIds)}']`,
+            type: "TESTID",
+            confidence: 0.96,
+            explanation: `Selector compuesto con combinador CSS \u2014 depende de la ruta de ancestros, no solo del elemento buscado. Se conserva el testid del elemento objetivo (${target}), descartando la ruta.`,
+            robustnessGain: 50,
+            technicalReason: "Combinator-based selectors are brittle to markup restructuring; the target testid attribute is independent of ancestor structure",
+            priority: 1
+          });
+        } else if (target.startsWith(".") && !hasVolatileClassToken(target)) {
+          strategies.push({
+            selector: target,
+            type: "CSS",
+            confidence: 0.8,
+            explanation: `Selector compuesto con combinador CSS \u2014 depende de la relaci\xF3n exacta entre ancestro y elemento objetivo, se rompe si se agrega un wrapper o se reordena el markup. Se propone conservar solo el elemento objetivo (${target}), sin la ruta de ancestros.`,
+            robustnessGain: 35,
+            technicalReason: "Combinator-based selectors break when markup structure changes even if the target element itself is unchanged",
+            priority: 6
+          });
+        } else if (target.startsWith("#") && !VOLATILE_ID_RE.test(target)) {
+          strategies.push({
+            selector: target,
+            type: "CSS",
+            confidence: 0.8,
+            explanation: `Selector compuesto con combinador CSS \u2014 depende de la relaci\xF3n exacta entre ancestro y elemento objetivo. Se propone conservar solo el elemento objetivo (${target}), sin la ruta de ancestros.`,
+            robustnessGain: 35,
+            technicalReason: "Combinator-based selectors break when markup structure changes even if the target element itself is unchanged",
+            priority: 6
+          });
+        } else if (target.startsWith("#") && VOLATILE_ID_RE.test(target)) {
+          const baseClass = extractBaseClass(target);
+          if (!isUnstableClassCandidate(target, baseClass)) {
+            strategies.push({
+              selector: `.${baseClass}`,
+              type: "CSS",
+              confidence: 0.75,
+              explanation: `Selector compuesto con combinador CSS, y el elemento objetivo (${target}) tiene un ID din\xE1mico. Se propone una clase estable derivada, sin la ruta de ancestros.`,
+              robustnessGain: 35,
+              technicalReason: "Combinator-based selectors are brittle; the target ID is additionally dynamic, so a stable class is proposed instead",
+              priority: 6
+            });
+          }
+        }
+        if (strategies.length === 0) {
+          strategies.push({
+            selector: `role('button')`,
+            type: "ROLE",
+            confidence: 0.74,
+            explanation: `Selector compuesto con combinador CSS (\`${selector}\`) \u2014 depende de la ruta de ancestros/hermanos en el DOM, se rompe con cualquier cambio de markup aunque el elemento buscado no haya cambiado. El elemento objetivo (${target}) no tiene un atributo estable reconocible; se propone un selector de rol como punto de partida, revisar manualmente para afinar el name.`,
+            robustnessGain: 30,
+            technicalReason: "Combinator-based selectors depend on ancestor/sibling structure; no stable attribute was found on the target element",
             priority: 6
           });
         }
@@ -718,11 +803,12 @@ var require_healing_engine = __commonJS({
       return { strategies: survivors, sawPage: true };
     }
     function analyzeAndHeal2(request) {
-      const { selector, customSynonyms } = request;
-      const analysis = analyzeSelector(selector);
+      const { selector, customSynonyms, customTestIds } = request;
+      const allTestIds = customTestIds ? [...TESTID_ATTRS, ...customTestIds.filter((id) => id.startsWith("data-"))] : TESTID_ATTRS;
+      const analysis = analyzeSelector(selector, allTestIds);
       const actions = { ...ACTIONS, ...customSynonyms?.actions };
       const fields = { ...FIELDS, ...customSynonyms?.fields };
-      let strategies = generateHealingStrategies(selector, analysis, actions, fields);
+      let strategies = generateHealingStrategies(selector, analysis, actions, fields, allTestIds);
       const pageElements = (0, page_snapshot_1.parsePageSnapshot)(request.htmlContext);
       let verified = false;
       if (pageElements.length > 0) {
@@ -1748,12 +1834,65 @@ return results;
   }
 });
 
+// ../reporter-core/dist/config.js
+var require_config = __commonJS({
+  "../reporter-core/dist/config.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.loadConfig = loadConfig;
+    var node_fs_1 = require("node:fs");
+    var node_path_1 = require("node:path");
+    function loadConfig(cwd = process.cwd()) {
+      const fromJson = loadFromHealifyConfigJson(cwd);
+      if (fromJson)
+        return validateConfig(fromJson);
+      const fromPkg = loadFromPackageJson(cwd);
+      if (fromPkg)
+        return validateConfig(fromPkg);
+      return {};
+    }
+    function loadFromHealifyConfigJson(cwd) {
+      const path = (0, node_path_1.join)(cwd, "healify.config.json");
+      if (!(0, node_fs_1.existsSync)(path))
+        return null;
+      try {
+        return JSON.parse((0, node_fs_1.readFileSync)(path, "utf-8"));
+      } catch {
+        return null;
+      }
+    }
+    function loadFromPackageJson(cwd) {
+      const path = (0, node_path_1.join)(cwd, "package.json");
+      if (!(0, node_fs_1.existsSync)(path))
+        return null;
+      try {
+        const pkg = JSON.parse((0, node_fs_1.readFileSync)(path, "utf-8"));
+        return pkg.healify ?? null;
+      } catch {
+        return null;
+      }
+    }
+    function validateConfig(raw) {
+      const result = {};
+      if (Array.isArray(raw.customTestIds)) {
+        const valid = raw.customTestIds.filter((id) => typeof id === "string" && id.startsWith("data-"));
+        if (valid.length > 0)
+          result.customTestIds = valid;
+      }
+      if (raw.customSynonyms && typeof raw.customSynonyms === "object") {
+        result.customSynonyms = raw.customSynonyms;
+      }
+      return result;
+    }
+  }
+});
+
 // ../reporter-core/dist/index.js
 var require_dist = __commonJS({
   "../reporter-core/dist/index.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
-    exports2.findRepertoireMatch = exports2.readRepertoire = exports2.parseHistoryLines = exports2.domContextFromProbeResult = exports2.BROWSER_PROBE_SCRIPT = exports2.resolveLocatorStrategy = exports2.roleSuggestionToXPath = exports2.parseRoleSuggestion = exports2.selectorTokens = exports2.bestNameFor = exports2.bestElementFor = exports2.findMatches = exports2.existsInPage = exports2.formatPageElements = exports2.parsePageSnapshot = exports2.isPlaywrightOnlySelector = exports2.SEVERITY_LABEL = exports2.environmentRows = exports2.formatDuration = exports2.severityFor = exports2.buildDefectId = exports2.renderLocalReportMarkdown = exports2.statsFromCases = exports2.baseEnvironment = exports2.buildLocalRunFromEvents = exports2.printSummary = exports2.renderLocalReportJson = exports2.renderLocalReportHtml = exports2.runLocalHealing = exports2.analyzeAndHeal = exports2.extractSelectorFromError = void 0;
+    exports2.loadConfig = exports2.findRepertoireMatch = exports2.readRepertoire = exports2.parseHistoryLines = exports2.domContextFromProbeResult = exports2.BROWSER_PROBE_SCRIPT = exports2.resolveLocatorStrategy = exports2.roleSuggestionToXPath = exports2.parseRoleSuggestion = exports2.selectorTokens = exports2.bestNameFor = exports2.bestElementFor = exports2.findMatches = exports2.existsInPage = exports2.formatPageElements = exports2.parsePageSnapshot = exports2.isPlaywrightOnlySelector = exports2.SEVERITY_LABEL = exports2.environmentRows = exports2.formatDuration = exports2.severityFor = exports2.buildDefectId = exports2.renderLocalReportMarkdown = exports2.statsFromCases = exports2.baseEnvironment = exports2.buildLocalRunFromEvents = exports2.printSummary = exports2.renderLocalReportJson = exports2.renderLocalReportHtml = exports2.runLocalHealing = exports2.analyzeAndHeal = exports2.extractSelectorFromError = void 0;
     var selector_extractor_1 = require_selector_extractor();
     Object.defineProperty(exports2, "extractSelectorFromError", { enumerable: true, get: function() {
       return selector_extractor_1.extractSelectorFromError;
@@ -1856,6 +1995,10 @@ var require_dist = __commonJS({
     } });
     Object.defineProperty(exports2, "findRepertoireMatch", { enumerable: true, get: function() {
       return repertoire_1.findRepertoireMatch;
+    } });
+    var config_1 = require_config();
+    Object.defineProperty(exports2, "loadConfig", { enumerable: true, get: function() {
+      return config_1.loadConfig;
     } });
   }
 });

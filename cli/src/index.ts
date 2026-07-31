@@ -11,6 +11,7 @@ import { init, type InitReport, type FrameworkInitResult } from './commands/init
 import { doctor, type DoctorReport } from './commands/doctor'
 import { history, type HistoryReport } from './commands/history'
 import { runHeal } from './commands/heal'
+import { runExplain } from './commands/explain'
 import { getVersion } from './version'
 
 function reasonText(outcome: Extract<FixOutcome, { status: 'skipped' }>, astUsed: boolean): string {
@@ -286,6 +287,15 @@ function runHealCommand(): void {
   console.log(JSON.stringify(result.output))
 }
 
+function runExplainCommand(args: string[]): void {
+  const result = runExplain(args)
+  if (!result.ok) {
+    console.error(result.error)
+    process.exit(1)
+  }
+  console.log(result.humanText)
+}
+
 function printHelp(): void {
   console.log(`Uso: healify <comando>
 
@@ -298,6 +308,7 @@ Comandos:
   history                                    Muestra selectores recurrentes y re-rotos de .healify/history.jsonl (se graba en cada fix real, no en --dry-run)
   heal                                       Motor vía JSON por stdin/stdout, para usar desde Python/Java/C#/etc. Ver docs/adapters/README.md
   probe-script                               Imprime el script que hay que correr con execute_script() para sondear el DOM (insumo de "heal")
+  explain [selector] [--json]                Explica POR QUÉ un selector es frágil y qué propone el motor. Sin args, analiza el último fallo del reporte
 
 Flags globales:
   --version, -v                              Muestra la versión instalada de @healify/cli
@@ -323,6 +334,7 @@ function main(): void {
   if (command === 'fix') return runFix(args)
   if (command === 'history') return printHistoryReport(history())
   if (command === 'heal') return runHealCommand()
+  if (command === 'explain') return runExplainCommand(args.slice(1))
   if (command === 'probe-script') return console.log(BROWSER_PROBE_SCRIPT)
 
   printHelp()

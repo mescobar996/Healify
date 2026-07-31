@@ -8,3 +8,4 @@ export { parsePageSnapshot, formatPageElements, existsInPage, findMatches, bestE
 export { parseRoleSuggestion, roleSuggestionToXPath, resolveLocatorStrategy, type LocatorResolution } from './role-locator'
 export { BROWSER_PROBE_SCRIPT, domContextFromProbeResult } from './browser-probe'
 export { parseHistoryLines, readRepertoire, findRepertoireMatch, type HistoryEntry } from './repertoire'
+export { loadConfig, type HealifyConfig } from './config'

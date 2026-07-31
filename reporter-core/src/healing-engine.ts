@@ -35,6 +35,10 @@ export interface HealRequest {
   errorMessage?: string
   /** Sinónimos adicionales del proyecto — se mergean con los built-in EN/ES. */
   customSynonyms?: { actions?: Record<string, string>; fields?: Record<string, string> }
+  /** Atributos de test-id adicionales del proyecto — se extienden con los 5 built-in
+   * (data-testid, data-cy, data-qa, data-test, data-e2e). Solo se aceptan atributos que
+   * empiecen con "data-"; los que no matcheen se ignoran silenciosamente. */
+  customTestIds?: string[]
   /** Archivo donde vive el test — junto con `selector` es el criterio de coincidencia del
    * repertorio (mismo criterio que `defectId`). `undefined` en Selenium/WebdriverIO, que no
    * tienen esta granularidad en ningún otro lado del modelo. */
@@ -165,7 +169,7 @@ function extractCombinatorTarget(selector: string): string {
   return selector.slice(lastEnd).trim()
 }
 
-function analyzeSelector(selector: string): SelectorAnalysis {
+function analyzeSelector(selector: string, testIds: readonly string[] = TESTID_ATTRS): SelectorAnalysis {
   const analysis: SelectorAnalysis = {
     type: 'CSS',
     issues: [],
@@ -197,7 +201,7 @@ function analyzeSelector(selector: string): SelectorAnalysis {
       analysis.isDynamic = true
       analysis.issues.push('Generated CSS class detected - unstable')
     }
-  } else if (TESTID_ATTRS.some((attr) => selector.includes(`[${attr}=`))) {
+  } else if (testIds.some((attr) => selector.includes(`[${attr}=`))) {
     analysis.type = 'TESTID'
   } else if (selector.startsWith('//')) {
     analysis.type = 'XPATH'
@@ -284,15 +288,16 @@ function extractFieldName(selector: string, fields: Record<string, string>): str
   return 'Field'
 }
 
-function extractTestid(selector: string): string {
-  const match = selector.match(/data-(?:testid|cy|qa|test|e2e)=['"]([^'"]+)['"]/)
+function extractTestid(selector: string, testIds: readonly string[] = TESTID_ATTRS): string {
+  const suffixes = testIds.map((t) => t.replace('data-', ''))
+  const match = selector.match(new RegExp(`data-(?:${suffixes.join('|')})=['"]([^'"]+)['"]`))
   return match ? match[1] : 'element'
 }
 
 /** Cada framework/equipo tiene su propia convención (data-cy en Cypress, data-qa/data-test/data-e2e
  * en otros) — reescribir a otro atributo rompería el selector, se conserva el que ya está presente. */
-function testidAttributeName(selector: string): TestIdAttr {
-  return TESTID_ATTRS.find((attr) => selector.includes(`[${attr}=`)) ?? 'data-testid'
+function testidAttributeName(selector: string, testIds: readonly string[] = TESTID_ATTRS): string {
+  return testIds.find((attr) => selector.includes(`[${attr}=`)) ?? 'data-testid'
 }
 
 function extractBaseClass(selector: string): string {
@@ -311,7 +316,7 @@ function isUnstableClassCandidate(selector: string, candidate: string): boolean 
   return volatileFragments.length > 3
 }
 
-function generateHealingStrategies(selector: string, analysis: SelectorAnalysis, actions: Record<string, string>, fields: Record<string, string>): HealingStrategy[] {
+function generateHealingStrategies(selector: string, analysis: SelectorAnalysis, actions: Record<string, string>, fields: Record<string, string>, testIds: readonly string[] = TESTID_ATTRS): HealingStrategy[] {
   if (analysis.isAlreadyModernLocator) {
     return [{
       selector,
@@ -407,9 +412,9 @@ function generateHealingStrategies(selector: string, analysis: SelectorAnalysis,
   }
 
   if (analysis.type === 'TESTID') {
-    const attr = testidAttributeName(selector)
+    const attr = testidAttributeName(selector, testIds)
     strategies.push({
-      selector: `[${attr}='${extractTestid(selector)}']`,
+      selector: `[${attr}='${extractTestid(selector, testIds)}']`,
       type: 'TESTID',
       confidence: 0.95,
       explanation: `El testid se mantiene pero se normaliza la sintaxis. Los atributos ${attr} son la opción más estable cuando están disponibles.`,
@@ -496,7 +501,7 @@ function generateHealingStrategies(selector: string, analysis: SelectorAnalysis,
   // fallback genérico de abajo.
   if (analysis.isCompoundCombinator) {
     const target = extractCombinatorTarget(selector)
-    const targetTestidAttr = TESTID_ATTRS.find((attr) => target.includes(`[${attr}=`))
+    const targetTestidAttr = testIds.find((attr) => target.includes(`[${attr}=`))
 
     if (targetTestidAttr) {
       // Confianza más alta que el testid "plano" (0.95) a propósito: acá además se identificó
@@ -505,7 +510,7 @@ function generateHealingStrategies(selector: string, analysis: SelectorAnalysis,
       // (`[data-testid="card"] [data-testid="buy-btn"]`) extrae el del ancestro por error
       // (regex sin /g, toma el primer match de todo el string), no el del objetivo real.
       strategies.push({
-        selector: `[${targetTestidAttr}='${extractTestid(target)}']`,
+        selector: `[${targetTestidAttr}='${extractTestid(target, testIds)}']`,
         type: 'TESTID',
         confidence: 0.96,
         explanation: `Selector compuesto con combinador CSS — depende de la ruta de ancestros, no solo del elemento buscado. Se conserva el testid del elemento objetivo (${target}), descartando la ruta.`,
@@ -669,14 +674,20 @@ function applyPageEvidence(
  * sugerencias se confrontan contra lo que había de verdad en pantalla — ver `applyPageEvidence`.
  */
 export function analyzeAndHeal(request: HealRequest): HealResponse {
-  const { selector, customSynonyms } = request
-  const analysis = analyzeSelector(selector)
+  const { selector, customSynonyms, customTestIds } = request
+
+  // Filtrar solo atributos que empiecen con "data-"; silenciosamente ignorar los que no.
+  const allTestIds = customTestIds
+    ? [...TESTID_ATTRS, ...customTestIds.filter((id) => id.startsWith('data-'))]
+    : TESTID_ATTRS
+
+  const analysis = analyzeSelector(selector, allTestIds)
 
   // Merge built-in dictionaries with project-level custom synonyms.
   const actions = { ...ACTIONS, ...customSynonyms?.actions }
   const fields = { ...FIELDS, ...customSynonyms?.fields }
 
-  let strategies = generateHealingStrategies(selector, analysis, actions, fields)
+  let strategies = generateHealingStrategies(selector, analysis, actions, fields, allTestIds)
 
   // Sin árbol de página el comportamiento es exactamente el de siempre — de eso se encarga
   // el snapshot del corpus de selectores, que no debe moverse por este cambio.
