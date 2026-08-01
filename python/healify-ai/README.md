@@ -72,11 +72,14 @@ Crea `healify.config.json` en la raíz de tu proyecto:
 
 ## Modelos Recomendados
 
-| RAM | Modelo | Tamaño |
-|-----|--------|--------|
-| 4-6GB | phi3:mini | ~2GB |
-| 8-12GB | llama3.2:3b | ~2GB |
-| 16GB+ | llama3.1:8b | ~5GB |
+RAM total del sistema — `suggest_model()` reserva 2GB para el sistema operativo antes
+de elegir.
+
+| RAM total | Modelo | Tamaño |
+|-----------|--------|--------|
+| hasta 9GB | phi3:mini | ~2GB |
+| 10-17GB | llama3.2:3b | ~2GB |
+| 18GB+ | llama3.1:8b | ~5GB |
 
 ## Licencia
 

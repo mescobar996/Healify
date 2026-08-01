@@ -79,9 +79,9 @@ npx @healify/cli ai setup            # detecta RAM, sugiere modelo
 npx @healify/cli ai chat             # chat interactivo
 ```
 
-- 100% local, sin costo, auto-detección de RAM
-- Modelos: phi3:mini (4GB+), llama3.2:3b (8GB+), llama3.1:8b (16GB+)
-- Configuración: español/inglés, auto-fix opcional
+- 100% local, sin costo, auto-detección de RAM (deja 2GB de margen para el sistema)
+- Modelos: phi3:mini (hasta 9GB), llama3.2:3b (10-17GB), llama3.1:8b (18GB+)
+- Configuración: español/inglés
 
 Docs: [docs/ai/README.md](docs/ai/README.md)
 

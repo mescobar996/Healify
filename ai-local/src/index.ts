@@ -20,8 +20,6 @@ export interface AIConfig {
   enabled: boolean;
   model: string;
   language: 'es' | 'en';
-  autoFix: boolean;
-  explainSeverity: 'all' | 'high' | 'critical';
   ollamaUrl: string;
 }
 
@@ -49,8 +47,6 @@ const DEFAULT_CONFIG: AIConfig = {
   enabled: false,
   model: 'llama3.2:3b',
   language: 'es',
-  autoFix: false,
-  explainSeverity: 'all',
   ollamaUrl: 'http://localhost:11434',
 };
 

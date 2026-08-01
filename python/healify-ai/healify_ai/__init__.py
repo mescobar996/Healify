@@ -32,8 +32,6 @@ class HealifyAI:
             "enabled": False,
             "model": "llama3.2:3b",
             "language": "es",
-            "autoFix": False,
-            "explainSeverity": "all",
             "ollamaUrl": "http://localhost:11434",
         }
         

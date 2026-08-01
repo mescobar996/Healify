@@ -81,8 +81,6 @@ export async function runAiSetup(): Promise<void> {
     enabled: true,
     model: suggested.name,
     language: config.ai?.language || 'es',
-    autoFix: false,
-    explainSeverity: 'all',
     ollamaUrl,
   }
   saveConfig(config)
@@ -114,7 +112,6 @@ export async function runAiStatus(): Promise<void> {
     console.log('\nConfiguración:')
     console.log(`  Modelo: ${config.ai.model}`)
     console.log(`  Idioma: ${config.ai.language}`)
-    console.log(`  Auto-fix: ${config.ai.autoFix ? 'Sí' : 'No'}`)
   }
 }
 

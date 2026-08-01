@@ -5,7 +5,7 @@ IA local para Healify usando Ollama + Open WebUI.
 ## Requisitos
 
 - Docker Desktop (Windows/Mac/Linux)
-- 8GB+ RAM recomendado
+- 10GB+ RAM recomendado (`suggestModel` reserva 2GB para el sistema antes de elegir modelo)
 
 ## Instalación Rápida
 
@@ -28,11 +28,14 @@ Open WebUI pide crear una cuenta la primera vez que entrás a
 
 ## Modelos por RAM
 
-| RAM | Modelo | Tamaño | Velocidad |
-|-----|--------|--------|-----------|
-| 4-6GB | `phi3:mini` | ~2GB | Rápido |
-| 8-12GB | `llama3.2:3b` | ~2GB | Balanceado |
-| 16GB+ | `llama3.1:8b` | ~5GB | Calidad |
+RAM total del sistema (no "libre en este momento"): `suggestModel()` reserva 2GB para
+el sistema operativo antes de elegir.
+
+| RAM total | Modelo | Tamaño | Velocidad |
+|-----------|--------|--------|-----------|
+| hasta 9GB | `phi3:mini` | ~2GB | Rápido |
+| 10-17GB | `llama3.2:3b` | ~2GB | Balanceado |
+| 18GB+ | `llama3.1:8b` | ~5GB | Calidad |
 
 ## Descargar Modelo
 

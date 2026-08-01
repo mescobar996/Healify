@@ -40,7 +40,8 @@ Healify AI es un módulo opcional que agrega inteligencia artificial local a Hea
 
 - Node.js 18+
 - Docker Desktop (para Ollama + Open WebUI)
-- 8GB+ RAM recomendado
+- 10GB+ RAM recomendado (`suggestModel` reserva 2GB para el sistema antes de elegir
+  modelo — con 8GB reales el modelo sugerido es `phi3:mini`, no `llama3.2:3b`)
 
 ## Instalación Rápida
 
@@ -88,12 +89,15 @@ la usa ni la necesita. Los comandos `ai *` son la única superficie de IA hoy.
 
 ## Modelos Recomendados
 
-| RAM Disponible | Modelo | Tamaño | Velocidad | Calidad |
-|----------------|--------|--------|-----------|---------|
-| 4-6GB | `phi3:mini` | ~2GB | Rápido | Básica |
-| 8-12GB | `llama3.2:3b` | ~2GB | Balanceado | Buena |
-| 16GB+ | `llama3.1:8b` | ~5GB | Normal | Excelente |
-| 24GB+ | `llama3.1:13b` | ~8GB | Lento | Máxima |
+`suggestModel()` reserva 2GB de RAM total para el sistema operativo antes de elegir —
+la tabla ya lo tiene en cuenta, es RAM **total** de la máquina, no "libre en este momento":
+
+| RAM total del sistema | Modelo | Tamaño | Velocidad | Calidad |
+|------------------------|--------|--------|-----------|---------|
+| hasta 9GB | `phi3:mini` | ~2GB | Rápido | Básica |
+| 10-17GB | `llama3.2:3b` | ~2GB | Balanceado | Buena |
+| 18-25GB | `llama3.1:8b` | ~5GB | Normal | Excelente |
+| 26GB+ | `llama3.1:13b` | ~8GB | Lento | Máxima |
 
 **Recomendación:** Para la mayoría de usuarios, `llama3.2:3b` es el mejor balance.
 
@@ -112,7 +116,7 @@ Salida típica:
 
 ✅ Ollama detectado en http://localhost:11434
 
-💾 RAM del sistema: 16GB
+💾 RAM del sistema: 18GB
 
 🤖 Modelo sugerido: llama3.1:8b
    Tamaño: ~5GB
@@ -137,6 +141,13 @@ Explica con IA por qué un selector es frágil.
 ```bash
 npx @healify/cli ai explain "[data-testid='submit-btn']"
 ```
+
+> **Importante:** a diferencia del resto de Healify, esta "Confianza" y "Clasificación"
+> son **una opinión del modelo**, no una verificación. `explain` le manda al LLM solo el
+> texto del selector — nunca el DOM real de tu página ni el resultado de
+> `analyzeAndHeal()` — así que no tiene el mismo respaldo que `verified: true` en
+> `healify-report.json`. Tratalo como una segunda opinión legible, no como un dato
+> confirmado.
 
 Salida:
 ```
@@ -209,8 +220,6 @@ Crea `healify.config.json` en la raíz de tu proyecto:
     "enabled": true,
     "model": "llama3.2:3b",
     "language": "es",
-    "autoFix": false,
-    "explainSeverity": "all",
     "ollamaUrl": "http://localhost:11434"
   }
 }
@@ -223,8 +232,6 @@ Crea `healify.config.json` en la raíz de tu proyecto:
 | `enabled` | boolean | `false` | Habilitar IA |
 | `model` | string | `llama3.2:3b` | Modelo de Ollama a usar |
 | `language` | string | `es` | Idioma de respuestas (`es` o `en`) |
-| `autoFix` | boolean | `false` | Aplicar fixes automáticamente con IA |
-| `explainSeverity` | string | `all` | Severidad de explicaciones (`all`, `high`, `critical`) |
 | `ollamaUrl` | string | `http://localhost:11434` | URL de Ollama |
 
 ## Python (para equipos sin Node.js)
@@ -347,6 +354,9 @@ docker-compose restart ollama
 - [ ] Modo offline completo (sin Docker)
 - [ ] Análisis de screenshots
 - [ ] Aprendizaje de patrones del proyecto
+- [ ] `autoFix`: aplicar sugerencias de la IA automáticamente (config removida hasta
+      que exista el código que la use — no queríamos un campo que no hace nada)
+- [ ] `explainSeverity`: filtrar explicaciones por severidad (mismo motivo)
 
 ## Licencia
 

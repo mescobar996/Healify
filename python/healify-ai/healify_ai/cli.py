@@ -65,8 +65,6 @@ def cmd_setup(args):
         "enabled": True,
         "model": suggested.name,
         "language": config.get("ai", {}).get("language", "es"),
-        "autoFix": False,
-        "explainSeverity": "all",
         "ollamaUrl": "http://localhost:11434",
     }
     
@@ -110,7 +108,6 @@ def cmd_status(args):
             print("\nConfiguración:")
             print(f"  Modelo: {config['ai'].get('model')}")
             print(f"  Idioma: {config['ai'].get('language')}")
-            print(f"  Auto-fix: {'Sí' if config['ai'].get('autoFix') else 'No'}")
 
 
 def cmd_explain(args):

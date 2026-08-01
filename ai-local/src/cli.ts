@@ -86,8 +86,6 @@ async function cmdSetup(): Promise<void> {
     enabled: true,
     model: suggested.name,
     language: config.ai?.language || 'es',
-    autoFix: false,
-    explainSeverity: 'all',
     ollamaUrl,
   };
   saveConfig(config);
@@ -119,7 +117,6 @@ async function cmdStatus(): Promise<void> {
     console.log('\nConfiguración:');
     console.log(`  Modelo: ${config.ai.model}`);
     console.log(`  Idioma: ${config.ai.language}`);
-    console.log(`  Auto-fix: ${config.ai.autoFix ? 'Sí' : 'No'}`);
   }
 }
 
