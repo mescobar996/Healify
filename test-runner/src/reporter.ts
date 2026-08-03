@@ -83,6 +83,7 @@ export default class HealifyReporter implements Reporter {
 
     try {
       const domContext = readPageSnapshot(result)
+      const screenshotPath = readScreenshotPath(result)
       const healResult = runLocalHealing({
         testName,
         testFile,
@@ -117,7 +118,7 @@ export default class HealifyReporter implements Reporter {
               },
             },
             { selector: healResult.selector, testName, testFile },
-            { errorMessage, domSnippet: domContext, line: test.location.line },
+            { errorMessage, domSnippet: domContext, screenshotPath, line: test.location.line },
           ),
         )
       }
@@ -193,6 +194,20 @@ function readPageSnapshot(result: TestResult): string | undefined {
   } catch {
     return undefined
   }
+}
+
+/**
+ * Lee la ruta del screenshot capturado por captureScreenshot() desde los attachments del test.
+ *
+ * El helper captureScreenshot() guarda el archivo en disco y lo adjunta con el nombre
+ * 'healify-screenshot'. Esta función busca ese attachment y devuelve la ruta relativa al cwd.
+ */
+function readScreenshotPath(result: TestResult): string | undefined {
+  const attachment = (result.attachments ?? []).find(
+    (a) => a.name === 'healify-screenshot' && a.path
+  )
+  if (!attachment?.path) return undefined
+  return relative(process.cwd(), attachment.path).replace(/\\/g, '/')
 }
 
 /**
