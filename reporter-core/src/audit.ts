@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { existsSync, mkdirSync, appendFileSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdirSync, appendFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import type { HealResponse, SelectorType } from './healing-engine'
 
