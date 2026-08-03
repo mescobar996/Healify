@@ -8,7 +8,29 @@ export { parsePageSnapshot, formatPageElements, existsInPage, findMatches, bestE
 export { parseRoleSuggestion, roleSuggestionToXPath, resolveLocatorStrategy, type LocatorResolution } from './role-locator'
 export { BROWSER_PROBE_SCRIPT, domContextFromProbeResult } from './browser-probe'
 export { parseHistoryLines, readRepertoire, findRepertoireMatch, type HistoryEntry } from './repertoire'
-export { loadConfig, resolveThresholds, DEFAULT_THRESHOLDS, type HealifyConfig, type HealifyThresholds } from './config'
+export {
+  loadConfig,
+  resolveThresholds,
+  DEFAULT_THRESHOLDS,
+  resolveAgile,
+  defaultAgile,
+  DEFAULT_AGILE_PRIORITIES,
+  type HealifyConfig,
+  type HealifyThresholds,
+  type HealifyAgileConfig,
+  type ResolvedAgileConfig,
+  type AgileProvider,
+} from './config'
+export {
+  buildAgileDefects,
+  reportDefects,
+  type AgileDefect,
+  type AgileDefectSuggestion,
+  type AgileOutcome,
+  type AgileReportResult,
+} from './agile'
+export { createJiraClient } from './jira'
+export { postJson } from './webhook'
 export { buildAuditEntry, writeAuditReport, appendAuditEntry } from './audit'
 export type { AuditEntry, AuditReport, FailureContext } from './audit'
 export { buildAuditFromEvent, flushPlugin, type PluginHealingEvent } from './plugin-helpers'

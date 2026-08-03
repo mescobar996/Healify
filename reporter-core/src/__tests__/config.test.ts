@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { loadConfig, resolveThresholds, DEFAULT_THRESHOLDS } from '../config'
+import { loadConfig, resolveThresholds, resolveAgile, DEFAULT_THRESHOLDS, type HealifyConfig } from '../config'
 
 let dir: string
 const ENV_KEYS = [
@@ -10,6 +10,14 @@ const ENV_KEYS = [
   'HEALIFY_MIN_CONFIDENCE',
   'HEALIFY_REVIEW_CONFIDENCE',
   'HEALIFY_MAX_ALTERNATIVES',
+  'HEALIFY_AGILE_ENABLED',
+  'HEALIFY_AGILE_PROVIDER',
+  'JIRA_BASE_URL',
+  'JIRA_EMAIL',
+  'JIRA_API_TOKEN',
+  'JIRA_PROJECT',
+  'JIRA_ISSUE_TYPE',
+  'HEALIFY_WEBHOOK_URL',
 ] as const
 
 beforeEach(() => {
@@ -133,6 +141,135 @@ describe('loadConfig — overrides por entorno', () => {
     process.env.HEALIFY_MAX_ALTERNATIVES = '1'
 
     expect(loadConfig(dir)).toEqual({ maxAlternatives: 1 })
+  })
+})
+
+describe('loadConfig — bloque agile', () => {
+  it('un bloque agile válido en el .json se conserva', () => {
+    writeFileSync(
+      join(dir, 'healify.config.json'),
+      JSON.stringify({
+        agile: { enabled: true, provider: 'jira', baseUrl: 'https://acme.atlassian.net', project: 'QA' },
+      })
+    )
+
+    expect(loadConfig(dir).agile).toEqual({
+      enabled: true,
+      provider: 'jira',
+      baseUrl: 'https://acme.atlassian.net',
+      project: 'QA',
+    })
+  })
+
+  it('provider inválido se descarta — cae al default jira', () => {
+    writeFileSync(join(dir, 'healify.config.json'), JSON.stringify({ agile: { provider: 'linear' } }))
+
+    // Un bloque que queda vacío tras validar se descarta igual que una config vacía.
+    expect(loadConfig(dir).agile).toBeUndefined()
+    expect(resolveAgile(loadConfig(dir)).provider).toBe('jira')
+  })
+
+  it('valores no string (o vacíos) de baseUrl/email/apiToken se descartan', () => {
+    writeFileSync(
+      join(dir, 'healify.config.json'),
+      JSON.stringify({ agile: { baseUrl: 42, email: '', apiToken: null, project: 'QA' } })
+    )
+
+    expect(loadConfig(dir).agile).toEqual({ project: 'QA' })
+  })
+
+  it('issueType y labels se sanean', () => {
+    writeFileSync(
+      join(dir, 'healify.config.json'),
+      JSON.stringify({ agile: { issueType: '', labels: ['healify', '', 7] } })
+    )
+
+    expect(loadConfig(dir).agile).toEqual({ labels: ['healify'] })
+  })
+
+  it('priorityBySeverity conserva solo severidades conocidas con valores no vacíos', () => {
+    writeFileSync(
+      join(dir, 'healify.config.json'),
+      JSON.stringify({ agile: { priorityBySeverity: { blocker: 'Critical', major: '', nope: 'X' } } })
+    )
+
+    expect(loadConfig(dir).agile?.priorityBySeverity).toEqual({ blocker: 'Critical' })
+  })
+
+  it('HEALIFY_AGILE_ENABLED=true activa el reporte sin archivo de config', () => {
+    process.env.HEALIFY_AGILE_ENABLED = 'true'
+
+    expect(loadConfig(dir).agile).toEqual({ enabled: true })
+  })
+
+  it('JIRA_EMAIL / JIRA_API_TOKEN / JIRA_PROJECT / JIRA_BASE_URL pueblan el bloque', () => {
+    process.env.JIRA_EMAIL = 'qa@acme.com'
+    process.env.JIRA_API_TOKEN = 'un-secreto'
+    process.env.JIRA_PROJECT = 'QA'
+    process.env.JIRA_BASE_URL = 'https://acme.atlassian.net'
+
+    expect(loadConfig(dir).agile).toEqual({
+      email: 'qa@acme.com',
+      apiToken: 'un-secreto',
+      project: 'QA',
+      baseUrl: 'https://acme.atlassian.net',
+    })
+  })
+
+  it('HEALIFY_AGILE_PROVIDER=webhook pisa el provider del archivo', () => {
+    writeFileSync(join(dir, 'healify.config.json'), JSON.stringify({ agile: { provider: 'jira' } }))
+    process.env.HEALIFY_AGILE_PROVIDER = 'webhook'
+
+    expect(loadConfig(dir).agile?.provider).toBe('webhook')
+  })
+
+  it('HEALIFY_WEBHOOK_URL puebla webhookUrl', () => {
+    process.env.HEALIFY_WEBHOOK_URL = 'https://hooks.zapier.com/x'
+
+    expect(loadConfig(dir).agile?.webhookUrl).toBe('https://hooks.zapier.com/x')
+  })
+})
+
+describe('resolveAgile', () => {
+  it('sin config: apagado, provider jira, issueType Bug, prioridades default, sin labels', () => {
+    expect(resolveAgile({})).toEqual({
+      enabled: false,
+      provider: 'jira',
+      baseUrl: undefined,
+      email: undefined,
+      apiToken: undefined,
+      project: undefined,
+      issueType: 'Bug',
+      priorityBySeverity: { blocker: 'Highest', major: 'High', minor: 'Medium' },
+      labels: [],
+      webhookUrl: undefined,
+    })
+  })
+
+  it('aplica lo configurado', () => {
+    const config: HealifyConfig = {
+      agile: {
+        enabled: true,
+        provider: 'jira',
+        baseUrl: 'https://acme.atlassian.net',
+        email: 'qa@acme.com',
+        apiToken: 's3cret',
+        project: 'QA',
+        labels: ['healify'],
+      },
+    }
+
+    const resolved = resolveAgile(config)
+    expect(resolved.enabled).toBe(true)
+    expect(resolved.project).toBe('QA')
+    expect(resolved.labels).toEqual(['healify'])
+    expect(resolved.issueType).toBe('Bug')
+  })
+
+  it('priorityBySeverity parcial usa defaults para el resto', () => {
+    const resolved = resolveAgile({ agile: { priorityBySeverity: { blocker: 'Critical' } } })
+
+    expect(resolved.priorityBySeverity).toEqual({ blocker: 'Critical', major: 'High', minor: 'Medium' })
   })
 })
 

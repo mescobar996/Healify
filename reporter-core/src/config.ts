@@ -1,6 +1,68 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { join } from 'node:path'
+import type { Severity } from './qa-report'
+
+export type AgileProvider = 'jira' | 'webhook'
+
+/** Bloque `agile` de la config — reporte de defectos a herramientas ágiles. Siempre opt-in. */
+export interface HealifyAgileConfig {
+  /**
+   * Activa el reporte. Default: `false` — sin esto Healify nunca toca la red. La única salida
+   * de datos cuando está activo es el POST del usuario contra SU instancia (Jira/webhook) con
+   * SUS credenciales; nada pasa por una nube de Healify.
+   */
+  enabled?: boolean
+  /** `jira` (REST Cloud) o `webhook` (genérico: Zapier/n8n/automatización Jira hacen el
+   * create-or-update). Default: `jira`. */
+  provider?: AgileProvider
+  /** Base del Jira Cloud, ej. `https://acme.atlassian.net`. */
+  baseUrl?: string
+  /** Email del usuario de Jira (credencial del usuario contra su instancia). */
+  email?: string
+  /** Token API de Jira (credencial del usuario). Se lee de config o de `JIRA_API_TOKEN`. */
+  apiToken?: string
+  /** Key del proyecto, ej. `QA`. */
+  project?: string
+  /** Tipo de issue. Default: `Bug`. */
+  issueType?: string
+  /** Mapeo severidad de Healify → prioridad de Jira. Default: blocker→Highest, major→High, minor→Medium. */
+  priorityBySeverity?: Partial<Record<Severity, string>>
+  /** Labels extra para el ticket (ej. `healify`). */
+  labels?: string[]
+  /** URL del webhook (provider `webhook`). */
+  webhookUrl?: string
+}
+
+/** Config agile ya resuelta: todo presente, todo saneado. */
+export interface ResolvedAgileConfig {
+  enabled: boolean
+  provider: AgileProvider
+  baseUrl?: string
+  email?: string
+  apiToken?: string
+  project?: string
+  issueType: string
+  priorityBySeverity: Record<Severity, string>
+  labels: string[]
+  webhookUrl?: string
+}
+
+export const DEFAULT_AGILE_PRIORITIES: Record<Severity, string> = {
+  blocker: 'Highest',
+  major: 'High',
+  minor: 'Medium',
+}
+
+export function defaultAgile(): ResolvedAgileConfig {
+  return {
+    enabled: false,
+    provider: 'jira',
+    issueType: 'Bug',
+    priorityBySeverity: { ...DEFAULT_AGILE_PRIORITIES },
+    labels: [],
+  }
+}
 
 export interface HealifyConfig {
   /** Atributos de test-id adicionales del proyecto. Solo se aceptan los que empiecen con "data-". */
@@ -27,6 +89,8 @@ export interface HealifyConfig {
    * `recovery-tries` de Healenium. Default: `3`.
    */
   maxAlternatives?: number
+  /** Reporte de defectos a herramientas ágiles. Opt-in, off por default. */
+  agile?: HealifyAgileConfig
 }
 
 /** Umbrales ya resueltos: todo presente, todo saneado. Lo que consume el motor. */
@@ -136,6 +200,44 @@ function validateConfig(raw: HealifyConfig): HealifyConfig {
     result.maxAlternatives = Math.min(Math.floor(raw.maxAlternatives), 10)
   }
 
+  if (raw.agile && typeof raw.agile === 'object') {
+    const agile = validateAgile(raw.agile)
+    if (Object.keys(agile).length > 0) result.agile = agile
+  }
+
+  return result
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.trim().length > 0
+}
+
+/**
+ * Sanea el bloque `agile` igual que el resto de la config: lo que no tiene la forma esperada
+ * se descarta en vez de romper. Un `agile` vacío termina descartado (no se vuelve al config),
+ * que es la misma política de "config parcial funciona".
+ */
+function validateAgile(raw: HealifyAgileConfig): HealifyAgileConfig {
+  const result: HealifyAgileConfig = {}
+  if (typeof raw.enabled === 'boolean') result.enabled = raw.enabled
+  if (raw.provider === 'jira' || raw.provider === 'webhook') result.provider = raw.provider
+  if (isNonEmptyString(raw.baseUrl)) result.baseUrl = raw.baseUrl
+  if (isNonEmptyString(raw.email)) result.email = raw.email
+  if (isNonEmptyString(raw.apiToken)) result.apiToken = raw.apiToken
+  if (isNonEmptyString(raw.project)) result.project = raw.project
+  if (isNonEmptyString(raw.issueType)) result.issueType = raw.issueType
+  if (raw.priorityBySeverity && typeof raw.priorityBySeverity === 'object') {
+    const priorities: Partial<Record<Severity, string>> = {}
+    for (const severity of ['blocker', 'major', 'minor'] as const) {
+      if (isNonEmptyString(raw.priorityBySeverity[severity])) priorities[severity] = raw.priorityBySeverity[severity] as string
+    }
+    if (Object.keys(priorities).length > 0) result.priorityBySeverity = priorities
+  }
+  if (Array.isArray(raw.labels)) {
+    const labels = raw.labels.filter((label): label is string => typeof label === 'string' && label.trim().length > 0)
+    if (labels.length > 0) result.labels = labels
+  }
+  if (isNonEmptyString(raw.webhookUrl)) result.webhookUrl = raw.webhookUrl
   return result
 }
 
@@ -166,6 +268,37 @@ function withEnvOverrides(config: HealifyConfig, env: NodeJS.ProcessEnv = proces
   if (Number.isFinite(maxAlternatives) && maxAlternatives >= 0) {
     result.maxAlternatives = Math.min(Math.floor(maxAlternatives), 10)
   }
+
+  // Bloque agile: las credenciales Jira viven acá (JIRA_EMAIL/JIRA_API_TOKEN) para que jamás
+  // se commiteen en un archivo de config. El token no se loguea en ningún punto.
+  const agile: HealifyAgileConfig = { ...(config.agile ?? {}) }
+  let agileChanged = false
+
+  const agileEnabled = parseBooleanEnv(env.HEALIFY_AGILE_ENABLED)
+  if (agileEnabled !== undefined) {
+    agile.enabled = agileEnabled
+    agileChanged = true
+  }
+  if (env.HEALIFY_AGILE_PROVIDER === 'jira' || env.HEALIFY_AGILE_PROVIDER === 'webhook') {
+    agile.provider = env.HEALIFY_AGILE_PROVIDER
+    agileChanged = true
+  }
+  const agileStringFields: [keyof HealifyAgileConfig, string][] = [
+    ['baseUrl', env.JIRA_BASE_URL ?? ''],
+    ['email', env.JIRA_EMAIL ?? ''],
+    ['apiToken', env.JIRA_API_TOKEN ?? ''],
+    ['project', env.JIRA_PROJECT ?? ''],
+    ['issueType', env.JIRA_ISSUE_TYPE ?? ''],
+    ['webhookUrl', env.HEALIFY_WEBHOOK_URL ?? ''],
+  ]
+  for (const [field, value] of agileStringFields) {
+    if (isNonEmptyString(value)) {
+      ;(agile as Record<string, unknown>)[field] = value
+      agileChanged = true
+    }
+  }
+
+  if (agileChanged) result.agile = agile
 
   return result
 }
@@ -200,5 +333,27 @@ export function resolveThresholds(config: HealifyConfig = {}): HealifyThresholds
     minConfidence,
     reviewConfidence,
     maxAlternatives: config.maxAlternatives ?? DEFAULT_THRESHOLDS.maxAlternatives,
+  }
+}
+
+/**
+ * Config `agile` lista para consumir: defaults + lo que haya configurado el proyecto, saneado.
+ * `priorityBySeverity` parcial mergea con los defaults (una severidad sin mapear nunca queda
+ * sin prioridad).
+ */
+export function resolveAgile(config: HealifyConfig = {}): ResolvedAgileConfig {
+  const raw = config.agile ?? {}
+  const defaults = defaultAgile()
+  return {
+    enabled: raw.enabled ?? defaults.enabled,
+    provider: raw.provider ?? defaults.provider,
+    baseUrl: raw.baseUrl ?? defaults.baseUrl,
+    email: raw.email ?? defaults.email,
+    apiToken: raw.apiToken ?? defaults.apiToken,
+    project: raw.project ?? defaults.project,
+    issueType: raw.issueType ?? defaults.issueType,
+    priorityBySeverity: { ...defaults.priorityBySeverity, ...(raw.priorityBySeverity ?? {}) },
+    labels: raw.labels ?? defaults.labels,
+    webhookUrl: raw.webhookUrl ?? defaults.webhookUrl,
   }
 }
