@@ -42,6 +42,87 @@
   `MODULE_NOT_FOUND` interno de npm apenas se corre así. Arreglado invocando `cmd.exe /c npx
   ...` explícito, el patrón estándar de .NET para lanzar batch scripts sin una shell real.
 
+## 1.6.0 — 2026-08-03
+
+Tres features nuevas salidas de un gap analysis contra 15 proyectos del rubro
+(`docs/research/competitive-gaps.md`), más el hardening de release. 601 tests (43 archivos),
+0 warnings de lint.
+
+### Motor
+
+- **feat(probe): shadow DOM abierto e iframes same-origin.** `BROWSER_PROBE_SCRIPT` hacía un
+  `document.querySelectorAll` plano, que no ve nada dentro de un `shadowRoot` ni de un iframe.
+  En una app hecha con web components (Salesforce Lightning, Ionic, Lit, Vaadin) devolvía lista
+  vacía y el motor degradaba **en silencio** a la heurística a ciegas: toda sugerencia salía
+  `verified: false` justo donde más falta hacía la evidencia. Afectaba a 3 de los 4 adapters
+  (Selenium, WebdriverIO, Cypress); Playwright no lo sufre porque su snapshot ya pierce shadow
+  DOM. Ahora el scan es recursivo, con topes duros (`MAX_DEPTH=12`, `MAX_NODES=3000`) y los
+  iframes cross-origin envueltos en `try/catch` para que uno de ads no mate el scan entero.
+- **feat(core): `PageElement.frame`.** Lo que vive dentro de un iframe se marca como tal: un
+  locator a nivel top no lo encuentra, hay que entrar al frame primero. La sugerencia sigue
+  saliendo (es la mejor pista que hay) pero con confianza 0.88 y diciendo explícitamente que
+  falta el `frameLocator()` / `switchTo().frame()`. El shadow DOM **no** se marca: es el mismo
+  contexto de locator. `bestElementFor`/`bestNameFor` hacen dos pasadas — el documento principal
+  siempre le gana al iframe.
+
+### CLI
+
+- **feat(fix): fallback a page objects.** `fix()` buscaba el selector solo en `case.testFile`.
+  En cualquier proyecto con Page Object Model —la arquitectura estándar de e2e— el selector vive
+  en `pages/login.page.ts`, así que el **100%** de las curaciones se reportaba como
+  `saltado: ya no se encontró en el archivo`. Ahora, cuando no está en el spec, se busca en el
+  resto del código del proyecto con un walker propio (sin `glob`, sin dependencias nuevas),
+  determinista y con topes duros. Conservador con el mismo criterio de siempre: aplica solo si
+  hay **un** archivo con **una** ocurrencia; con dos candidatos reporta ambiguo. `outcome.appliedIn`
+  dice en qué archivo se tocó. Flag `--no-pom` para el comportamiento anterior.
+  - Limitación conocida: `fix-ast` (la reescritura `page.click` → `page.getByRole`) sigue mirando
+    solo el spec, porque el call site vive ahí aunque el string esté en el page object.
+
+### Configuración
+
+- **feat(config): umbrales configurables.** `healEnabled`, `minConfidence`, `reviewConfidence` y
+  `maxAlternatives` — los equivalentes de `heal-enabled`, `score-cap` y `recovery-tries` de
+  `healenium.properties`. Antes el 0.90 que decide si `fix` puede tocar un archivo era una
+  constante de módulo.
+- **feat(config): `healify.config.js` / `.cjs`** (CommonJS, carga síncrona con `createRequire`
+  para que sirva igual en el bundle ESM y en el CJS). Un `.js` que resulte ser ESM se captura y
+  cae al siguiente candidato en vez de romper la corrida de tests.
+- **feat(config): overrides por entorno.** `HEALIFY_HEAL_ENABLED`, `HEALIFY_MIN_CONFIDENCE`,
+  `HEALIFY_REVIEW_CONFIDENCE`, `HEALIFY_MAX_ALTERNATIVES` pisan el archivo — el análogo del
+  `-Dheal-enabled=false` de Healenium para un job de CI puntual. Un valor que no parsea se ignora.
+- **fix(core): la config del proyecto ahora llega al reporte.** `loadConfig()` solo lo llamaba
+  `explain`; los adapters usan `runLocalHealing()`, que nunca la recibía. O sea que
+  `customTestIds` y `customSynonyms`, documentados como config del proyecto, **no tenían ningún
+  efecto sobre el reporte real**. Bug silencioso, no feature faltante. Playwright y Cypress ahora
+  la cargan una vez por corrida y se la pasan al motor.
+
+### GitHub Action
+
+- **fix(gh-action): la action nunca podía arrancar.** `run.js` hacía
+  `await import('@octokit/action')` con un comentario que decía "bundled with the action runtime",
+  pero no estaba bundleada ni `gh-action/node_modules` versionado — y una action `node20` ejecuta
+  `main` directo, GitHub no corre `npm install`. La primera PR real que la usara moría con
+  `ERR_MODULE_NOT_FOUND`. Se reemplazó por un cliente de ~60 líneas sobre `fetch`: la action pasa
+  a tener **cero dependencias de runtime**, en línea con el resto del proyecto.
+- **fix(gh-action): paginación de comentarios.** Se leía solo la primera página (100): en una PR
+  larga no encontraba su propio comentario y publicaba uno nuevo en cada push.
+- **feat(gh-action): publicable en el Marketplace.** `action.yml` se movió a la raíz del repo
+  (requisito de GitHub para publicar; el código sigue en `gh-action/`). Se documentó el uso y el
+  permiso `pull-requests: write` en el README.
+- Errores de la API ahora incluyen el detalle que devuelve GitHub — sin eso, un permiso faltante
+  se veía como un 403 pelado.
+
+### CI / release
+
+- **CI: matriz de Node 18/20/22** en Ubuntu y Windows. `engines` prometía `>=18` sin que nadie lo
+  corriera; 22 además es donde cambia el `require()` de ESM, que es justo lo que hace el loader de
+  `healify.config.js`.
+- **CI: job de lint** con `--max-warnings=0`. "0 warnings" era una propiedad prometida sin nada que
+  la sostuviera en CI.
+- **Release con npm provenance** (`.github/workflows/release.yml`): npm firma de forma verificable
+  desde qué commit y qué workflow salió cada tarball. Requiere `repository.url` en cada
+  `package.json` — agregado en los 7 paquetes, junto con `homepage` y `bugs`.
+
 ## 1.5.0 — 2026-07-31
 
 - **feat(cli): `healify explain <selector>`** — explica por qué un selector es frágil, su

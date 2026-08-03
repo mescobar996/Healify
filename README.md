@@ -202,6 +202,41 @@ echo '{"testFile":"test.py","testName":"test_login","selector":"#old-btn","error
 
 ---
 
+## GitHub Action
+
+Comenta los selectores rotos directo en la PR. Corre `doctor` + `fix --dry-run`: **nunca modifica archivos**.
+
+```yaml
+# .github/workflows/healify.yml
+name: Healify
+on: pull_request
+
+permissions:
+  contents: read
+  pull-requests: write   # sin esto la API devuelve 403 al comentar
+
+jobs:
+  healify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: npm ci
+      - run: npx playwright test
+        continue-on-error: true   # queremos el reporte aunque la suite falle
+      - uses: mescobar996/Healify@v1
+```
+
+| Input | Default | Qué hace |
+|---|---|---|
+| `github-token` | `${{ github.token }}` | Token para comentar. Necesita `pull-requests: write`. |
+| `project-path` | `.` | Directorio donde correr Healify (monorepos). |
+
+El comentario se **actualiza** en cada push en vez de apilar uno nuevo. Cero dependencias de runtime: la action habla con la API de GitHub por `fetch`.
+
+---
+
 ## Configuración
 
 Opcional. Healify funciona sin nada configurado. Se lee de `healify.config.js` → `healify.config.cjs` → `healify.config.json` → la key `healify` de `package.json` (gana el primero que exista).
@@ -274,7 +309,7 @@ También genera `healify-report.json` (datos estructurados), `healify-report.md`
 
 - Landing: https://healify-sigma.vercel.app
 - npm: [`@healify/cli`](https://www.npmjs.com/package/@healify/cli), [`@healify/reporter-core`](https://www.npmjs.com/package/@healify/reporter-core), [`@healify/test-runner`](https://www.npmjs.com/package/@healify/test-runner), [`@healify/cypress-plugin`](https://www.npmjs.com/package/@healify/cypress-plugin), [`@healify/selenium-plugin`](https://www.npmjs.com/package/@healify/selenium-plugin), [`@healify/webdriverio-plugin`](https://www.npmjs.com/package/@healify/webdriverio-plugin), [`@healify/ai-local`](https://www.npmjs.com/package/@healify/ai-local)
-- Release: [v1.5.0](https://github.com/mescobar996/Healify/releases)
+- Release: [v1.6.0](https://github.com/mescobar996/Healify/releases)
 - Repo: https://github.com/mescobar996/Healify
 
 ---

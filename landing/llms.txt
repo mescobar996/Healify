@@ -2,8 +2,8 @@
 
 Healify es una herramienta open source (MIT) para sanar selectores de test que se rompen. Corre 100% local, sin IA, sin nube y sin cuenta. Lee tu DOM real cuando un locator falla y te sugiere el selector estable que sí funciona (roles ARIA, texto visible, estructura), generando un reporte HTML con la corrección copiable.
 
-- Version: 1.5.0 (Latest)
-- Estado: 538 tests passing, 7 paquetes publicados
+- Version: 1.6.0 (Latest)
+- Estado: 601 tests passing, 7 paquetes publicados
 - Lenguaje: TypeScript (engines >= 18.0.0)
 - Autor: Matías Escobar (Rosario, Argentina)
 - Licencia: MIT

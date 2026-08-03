@@ -4,7 +4,7 @@ Healify es una monorepo npm (workspaces) en TypeScript que sana selectores de te
 
 ## Datos verificados
 
-- Version actual: 1.5.0 (Latest) — 538 tests passing, 41 archivos de test
+- Version actual: 1.6.0 (Latest) — 601 tests passing, 43 archivos de test
 - 7 paquetes publicados (todos `publishConfig: { access: "public" }`): reporter-core, test-runner, cypress-plugin, selenium-plugin, webdriverio-plugin, ai-local, cli
 - Requiere Node >= 18.0.0 (.nvmrc / .node-version: 20.18.0)
 - Autor: Matías Escobar (Rosario, Argentina) · Licencia MIT
