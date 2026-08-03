@@ -6,6 +6,7 @@ import { history, type HistoryReport } from './commands/history'
 import { runHeal } from './commands/heal'
 import { runExplain } from './commands/explain'
 import { runFix } from './commands/fix-pr'
+import { runReport } from './commands/report'
 import { getVersion } from './version'
 import { runAiSetup, runAiStatus, runAiExplain, runAiChat, runAiModels } from './commands/ai'
 
@@ -190,6 +191,13 @@ async function runHealCommand(): Promise<void> {
   console.log(JSON.stringify(result.output))
 }
 
+function runReportCommand(args: string[]): void {
+  runReport(args).then((result) => {
+    console.log(result.lines.join('\n'))
+    if (!result.ok) process.exit(1)
+  })
+}
+
 function runExplainCommand(args: string[]): void {
   const result = runExplain(args)
   if (!result.ok) {
@@ -211,6 +219,8 @@ Comandos:
                                                         --no-pom no busca el selector en los page objects cuando no está en el archivo de test
                                                        --interactive pregunta caso por caso en vez de aplicar todo solo (necesita una terminal real)
   history                                    Muestra selectores recurrentes y re-rotos de .healify/history.jsonl (se graba en cada fix real, no en --dry-run)
+  report [reporte.json] [--dry-run]          Reporta los defectos de la corrida a tu Jira (o webhook) — dedupe por defectId, opt-in (agile.enabled: true)
+                                                        --dry-run imprime qué se reportaría sin tocar la red
   heal                                       Motor vía JSON por stdin/stdout, para usar desde Python/Java/C#/etc. Ver docs/adapters/README.md
   probe-script                               Imprime el script que hay que correr con execute_script() para sondear el DOM (insumo de "heal")
   explain [selector] [--json]                Explica POR QUÉ un selector es frágil y qué propone el motor. Sin args, analiza el último fallo del reporte
@@ -245,6 +255,7 @@ function main(): void {
   if (command === 'doctor') return printDoctorReport(doctor())
   if (command === 'fix') return runFix(args)
   if (command === 'history') return printHistoryReport(history())
+  if (command === 'report') return runReportCommand(args.slice(1))
   if (command === 'heal') { runHealCommand().then(() => {}); return }
   if (command === 'explain') return runExplainCommand(args.slice(1))
   if (command === 'probe-script') return console.log(BROWSER_PROBE_SCRIPT)
