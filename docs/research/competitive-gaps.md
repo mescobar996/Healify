@@ -41,8 +41,8 @@
 
 ## 2. Tabla de gaps
 
-> **Estado al 2026-08-03 (v1.7.0):** G1, G2, G3, G4, G5 y G6 cerrados. G18 (reporte ágil)
-> **cerrado** (MVP Jira + webhook, 638 tests). Siguen abiertos G7 (dashboard histórico), G8 (flakiness), G9 (`--watch`).
+> **Estado al 2026-08-03 (v1.8.0):** G1, G2, G3, G4, G5, G6 y G18 cerrados. G7 (dashboard
+> histórico) **cerrado** (662 tests). Siguen abiertos G8 (flakiness), G9 (`--watch`).
 
 | # | Feature | Healenium | Otros | Healify hoy | ¿Gap? | Prioridad |
 |---|---|---|---|---|---|---|
@@ -52,7 +52,7 @@
 | G4 | **Umbrales configurables** (`score-cap`, `heal-enabled`, `recovery-tries`) | ✅ `healenium.properties` | ✅ casi todos | ⚠️ solo `customTestIds` + `customSynonyms` en `healify.config.json`; el 0.90 de "healed" y el 0.80 de `needsReview` están **hardcodeados** | **SÍ, DX** | **P1** |
 | G5 | **Config en `.js`/`.mjs`** | n/a (properties) | ✅ estándar JS | ❌ solo JSON o key en `package.json` | SÍ, menor | P2 |
 | G6 | **GitHub Action oficial** | ❌ | ✅ `testomatio/check-tests@stable` | ⚠️ `gh-action/action.yml` existe (node20, doctor + fix --dry-run + comentario en PR) pero no está versionado/publicado ni documentado en el README | Parcial — distribución | P1 |
-| G7 | **Dashboard/histórico de healings** | ✅ reporte servido por el backend | ✅ Cypress Cloud | ⚠️ `healify history` es texto plano en consola; el HTML lindo (`healify-report.html`) es solo de la **última** corrida | SÍ, DX | P1 |
+| G7 | **Dashboard/histórico de healings** | ✅ reporte servido por el backend | ✅ Cypress Cloud | ✅ `healify dashboard` — vista offline del histórico (`healify-dashboard.html`), cerrado en v1.8.0 | — | — |
 | G8 | **Detección de flakiness** | ❌ | ✅ Cypress Cloud, cypress-flaky-test-audit | ⚠️ `computeRebroken()` es una aproximación cercana | Parcial | P2 |
 | G9 | **Modo `--watch`** | ❌ | ✅ Playwright `--ui` | ❌ | Menor (el runner ya lo da) | P3 |
 | G10 | **Screenshots/video en el reporte** | ✅ (guarda screenshots en la DB) | ✅ trace viewer | ✅ `AuditEntry.screenshotPath` + attachments de Playwright ya se leen | NO | — |

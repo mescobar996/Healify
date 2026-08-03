@@ -3,13 +3,13 @@
 
   <h3>Un selector se rompe. Healify sabe por qué — y con qué reemplazarlo.<br/>Sin mandar una sola línea de tu código a ningún lado.</h3>
 
-  <sub>601 tests · 0 dependencias en la GitHub Action · 0 bytes de tu DOM en un servidor ajeno</sub>
+  <sub>662 tests · 0 dependencias en la GitHub Action · 0 bytes de tu DOM en un servidor ajeno</sub>
 
   <br/><br/>
 
   <a href="https://www.npmjs.com/package/@healify/cli"><img src="https://img.shields.io/npm/v/@healify/cli" alt="npm" /></a>
   <a href="https://github.com/mescobar996/Healify/actions/workflows/ci.yml"><img src="https://github.com/mescobar996/Healify/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
-  <img src="https://img.shields.io/badge/tests-601%20passing-brightgreen" />
+  <img src="https://img.shields.io/badge/tests-662%20passing-brightgreen" />
   <img src="https://img.shields.io/badge/license-MIT-blue" />
   <img src="https://img.shields.io/badge/100%25%20local-true-blue" />
   <img src="https://img.shields.io/badge/node-%3E%3D18-green" />
@@ -96,7 +96,7 @@ No es que los demás estén mal hechos — Healenium, el referente del rubro, es
 | `@healify/selenium-plugin` | Selenium | Wrapper de WebDriver con cura en vivo. | `npm i -D @healify/selenium-plugin` |
 | `@healify/webdriverio-plugin` | WebdriverIO | Wrapper v8+ con auto-heal opcional en dev. | `npm i -D @healify/webdriverio-plugin` |
 | `@healify/ai-local` | AI Local | CLI local + `detect-ram` para IA opcional via Ollama. | `npm i -D @healify/ai-local` |
-| `@healify/cli` | CLI | `doctor`, `init`, `fix`, `history`, `heal`, `explain`, `probe-script`. | `npx @healify/cli@latest` |
+| `@healify/cli` | CLI | `doctor`, `init`, `fix`, `history`, `report`, `dashboard`, `heal`, `explain`, `probe-script`. | `npx @healify/cli@latest` |
 
 Todos dependen de `@healify/reporter-core`. Todos publicados con `publishConfig: { access: "public" }`.
 
@@ -200,6 +200,7 @@ plugin.flush()
 | `healify fix [reporte.json]` | Aplica las sugerencias de mayor confianza directo en tus archivos de test. |
 | `healify history` | Muestra selectores recurrentes y re-rotos de `.healify/history.jsonl`. |
 | `healify report [reporte.json]` | Reporta los defectos de la corrida a tu Jira (o webhook). Dedupe por `defectId`, opt-in. |
+| `healify dashboard [--out <path>]` | Genera `healify-dashboard.html`, la vista offline del histórico (misma estética que `healify-report.html`). |
 | `healify heal` | Motor vía JSON por stdin/stdout, para usar desde Python/Java/C#/etc. |
 | `healify probe-script` | Imprime el script para sondear el DOM con `execute_script()` (insumo de `heal`). |
 | `healify explain [selector]` | Explica por qué un selector es frágil y qué propone el motor. |
@@ -393,7 +394,7 @@ Cada versión queda firmada y anotada en el [transparency log público de Sigsto
 
 - **TypeScript 5** — todo el código.
 - **Build**: `tsc` + `esbuild` (bundles por paquete).
-- **Tests**: Vitest — 638 tests passing, 0 fails (46 archivos).
+- **Tests**: Vitest — 662 tests passing, 0 fails (47 archivos).
 - **Lint/Format**: ESLint flat config + Prettier.
 - **Node**: `>=18.0.0` para usar los paquetes (verificado en CI con un smoke que instala el tarball y corre el motor sobre Node 18). Para **desarrollar** hace falta `>=20`: Vitest 4 usa `styleText` de `node:util`, que no existe en 18.
 - **Monorepo**: pnpm/npm workspaces (7 paquetes).

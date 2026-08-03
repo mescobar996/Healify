@@ -42,6 +42,24 @@
   `MODULE_NOT_FOUND` interno de npm apenas se corre así. Arreglado invocando `cmd.exe /c npx
   ...` explícito, el patrón estándar de .NET para lanzar batch scripts sin una shell real.
 
+## 1.8.0 — 2026-08-03
+
+Cierra el gap G7 del análisis competitivo (`docs/research/competitive-gaps.md`): la vista
+visual del histórico de curaciones. 662 tests (47 archivos), 0 warnings de lint.
+
+### Dashboard / histórico de healings
+
+- **feat(core): `buildDashboardStats` + `renderDashboardHtml`** (`reporter-core/src/dashboard.ts`) —
+  la misma información que `healify history` muestra en texto plano, pero como HTML autocontenido
+  100% offline y con la misma estética dark/light que `healify-report.html`. Tarjetas de resumen
+  (total/curadas/en revisión/sin resolver/re-rotos), timeline apilado por día UTC y listas de
+  recurrentes/re-rotos con los selectores escapados.
+- **refactor(core): `computeTopRecurrent`/`computeRebroken` se mudan a reporter-core.** Antes
+  vivían en `cli/src/history.ts` (no testeables fuera del CLI, el mismo problema que se resolvió
+  moviendo el repertorio). `cli/src/history.ts` los re-exporta — `healify history` no cambia.
+- **feat(cli): `healify dashboard [--out <path>]`** — lee `.healify/history.jsonl` y escribe
+  `healify-dashboard.html` (o la ruta de `--out`). Sin historial, avisa y no escribe nada.
+
 ## 1.7.0 — 2026-08-03
 
 Cierra el gap G18 del análisis competitivo (`docs/research/competitive-gaps.md`): el loop
