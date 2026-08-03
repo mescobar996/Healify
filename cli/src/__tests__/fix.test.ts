@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { mkdtempSync, writeFileSync, readFileSync, rmSync } from 'node:fs'
+import { mkdtempSync, writeFileSync, readFileSync, rmSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { LocalRun, LocalCaseResult } from '@healify/reporter-core'
@@ -235,5 +235,15 @@ describe('fix', () => {
 
     expect(outcomes).toEqual([{ testFile: file, selector: '#old', status: 'skipped', reason: 'not-found' }])
     expect(readFileSync(file, 'utf-8')).toBe(original)
+  })
+
+  it('salta con not-found si el path intenta escapar del proyecto (path traversal)', () => {
+    const escaping = join('..', '..', 'escape.spec.ts')
+    const resolvedEscape = join(process.cwd(), '..', '..', 'escape.spec.ts')
+
+    const outcomes = fix(makeRun([makeCase({ testFile: escaping })]))
+
+    expect(outcomes).toEqual([{ testFile: escaping, selector: '#old', status: 'skipped', reason: 'not-found' }])
+    expect(existsSync(resolvedEscape)).toBe(false)
   })
 })

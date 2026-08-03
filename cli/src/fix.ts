@@ -10,7 +10,7 @@ import { isGitDirty } from './git-check'
  * Si el path ya es absoluto, se valida que no contenga componentes `..` peligrosos.
  * Si es relativo, se resuelve contra projectRoot y se verifica que no escape.
  */
-function validatePath(filePath: string, projectRoot: string): string {
+export function validatePath(filePath: string, projectRoot: string): string {
   // Reject paths with null bytes (common traversal technique)
   if (filePath.includes('\0')) {
     throw new Error(`Path traversal detected: '${filePath}' contains null byte`)

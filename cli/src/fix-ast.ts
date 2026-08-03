@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { Project, SyntaxKind, type CallExpression, type SourceFile } from 'ts-morph'
 import type { LocalRun, LocalCaseResult } from '@healify/reporter-core'
 import { isGitDirty } from './git-check'
-import { maskComments, countOccurrences, type FixOptions, type FixOutcome } from './fix'
+import { maskComments, countOccurrences, validatePath, type FixOptions, type FixOutcome } from './fix'
 
 /**
  * Solo `role('button', { name: 'X' })` necesita reescritura estructural — no es un valor
@@ -109,14 +109,22 @@ export function fixAst(run: LocalRun, options: FixOptions = {}): FixOutcome[] {
   const outcomes: FixOutcome[] = []
 
   for (const [testFile, cases] of casesByFile) {
-    if (!options.dryRun && !options.force && isGitDirty(testFile)) {
+    let resolvedFile: string
+    try {
+      resolvedFile = validatePath(testFile, process.cwd())
+    } catch {
+      for (const c of cases) outcomes.push({ testFile, selector: c.selector, status: 'skipped', reason: 'not-found' })
+      continue
+    }
+
+    if (!options.dryRun && !options.force && isGitDirty(resolvedFile)) {
       for (const c of cases) outcomes.push({ testFile, selector: c.selector, status: 'skipped', reason: 'dirty-git' })
       continue
     }
 
     let content: string
     try {
-      content = readFileSync(testFile, 'utf-8')
+      content = readFileSync(resolvedFile, 'utf-8')
     } catch {
       for (const c of cases) outcomes.push({ testFile, selector: c.selector, status: 'skipped', reason: 'not-found' })
       continue
@@ -147,12 +155,12 @@ export function fixAst(run: LocalRun, options: FixOptions = {}): FixOutcome[] {
         continue
       }
 
-      const rewritten = rewriteFileForSelector(testFile, c.selector, parsed.role, parsed.name)
+      const rewritten = rewriteFileForSelector(resolvedFile, c.selector, parsed.role, parsed.name)
       if (!rewritten) {
         outcomes.push({ testFile, selector: c.selector, status: 'skipped', reason: 'not-substitutable' })
         continue
       }
-      content = readFileSync(testFile, 'utf-8')
+      content = readFileSync(resolvedFile, 'utf-8')
       outcomes.push({ testFile, selector: c.selector, fixedSelector: c.fixedSelector, status: 'applied' })
     }
   }
