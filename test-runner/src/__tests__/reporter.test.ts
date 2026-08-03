@@ -57,6 +57,7 @@ vi.mock('@healify/reporter-core', () => ({
   })),
   readRepertoire: vi.fn(() => []),
   loadConfig: mockLoadConfig,
+  appendRunRecord: vi.fn(),
 }))
 
 import HealifyReporter from '../reporter'
@@ -232,5 +233,43 @@ describe('HealifyReporter', () => {
 
     expect(reporter['passed']).toBe(2)
     expect(reporter['failed']).toBe(1)
+  })
+
+  it('onEnd registra la corrida con los outcomes de cada test (pass y fail)', async () => {
+    const appendRun = vi.mocked((await import('@healify/reporter-core')).appendRunRecord)
+    const reporter = new HealifyReporter()
+    const config = { projects: [], version: '1.58.0' } as never
+    const suite = { allTests: () => [1, 2, 3] } as never
+    reporter.onBegin(config, suite)
+
+    reporter.onTestEnd(makeTest(), makeResult({ status: 'passed' }))
+    reporter.onTestEnd(makeTest(), makeResult())
+    reporter.onTestEnd(makeTest({ titlePath: () => ['root', 'skipped one'] }), makeResult({ status: 'skipped' }))
+    reporter.onEnd({ status: 'failed' } as unknown as FullResult)
+
+    expect(appendRun).toHaveBeenCalledTimes(1)
+    const record = appendRun.mock.calls[0][0]
+    expect(record.type).toBe('run')
+    expect(record.total).toBe(3)
+    expect(record.passed).toBe(1)
+    expect(record.failed).toBe(1)
+    expect(record.tests).toEqual([
+      { testName: 'root > should log in', testFile: 'tests/login.spec.ts', passed: true },
+      { testName: 'root > should log in', testFile: 'tests/login.spec.ts', passed: false },
+    ])
+    expect(appendRun.mock.calls[0][1]).toBe(process.cwd())
+  })
+
+  it('skipped/interrupted no entran al registro de corridas', async () => {
+    const appendRun = vi.mocked((await import('@healify/reporter-core')).appendRunRecord)
+    const reporter = new HealifyReporter()
+
+    reporter.onTestEnd(makeTest(), makeResult({ status: 'passed' }))
+    reporter.onTestEnd(makeTest(), makeResult({ status: 'interrupted' }))
+    reporter.onTestEnd(makeTest(), makeResult({ status: 'skipped' }))
+    reporter.onEnd({ status: 'passed' } as unknown as FullResult)
+
+    const record = appendRun.mock.calls[0][0]
+    expect(record.tests).toEqual([{ testName: 'root > should log in', testFile: 'tests/login.spec.ts', passed: true }])
   })
 })

@@ -13,12 +13,14 @@ import {
   readRepertoire,
   writeAuditReport,
   loadConfig,
+  appendRunRecord,
   type HealifyConfig,
   type LocalCaseResult,
   type CaseAttachment,
   type RunEnvironment,
   type HistoryEntry,
   type AuditEntry,
+  type RunOutcome,
 } from '@healify/reporter-core'
 
 /**
@@ -32,6 +34,7 @@ import {
 export default class HealifyReporter implements Reporter {
   private localResults: LocalCaseResult[] = []
   private auditEntries: AuditEntry[] = []
+  private outcomes: RunOutcome[] = []
   private total = 0
   private passed = 0
   private failed = 0
@@ -62,8 +65,24 @@ export default class HealifyReporter implements Reporter {
   }
 
   onTestEnd(test: TestCase, result: TestResult): void {
-    if (result.status === 'passed') this.passed++
+    const passed = result.status === 'passed'
+    if (passed) this.passed++
     else if (result.status === 'failed' || result.status === 'timedOut') this.failed++
+
+    // Nombre y archivo se calculan para TODOS los tests, no solo los fallidos: alimentan el
+    // registro de corridas (`.healify/runs.jsonl`) que `healify flake` usa para distinguir el
+    // test flaky (verde en unas corridas, rojo en otras) del siempre roto.
+    const testName = test.titlePath().filter(Boolean).join(' > ')
+    // Relativa al cwd, no absoluta: la ruta viaja dentro del reporte (que se comparte y se
+    // pega en tickets) y además alimenta el defectId. Con la ruta absoluta, dos personas del
+    // mismo equipo generaban IDs distintos para el mismo defecto, y el reporte filtraba la
+    // estructura de carpetas de quien lo corrió.
+    const testFile = relative(process.cwd(), test.location.file).replace(/\\/g, '/')
+
+    // Los tests skipped/interrupted no aportan ni pass ni fail — quedan fuera del registro.
+    if (passed || result.status === 'failed' || result.status === 'timedOut') {
+      this.outcomes.push({ testName, testFile, passed })
+    }
 
     if (result.status !== 'failed' && result.status !== 'timedOut') return
 
@@ -79,12 +98,6 @@ export default class HealifyReporter implements Reporter {
       result.error?.message ||
       result.error?.value ||
       'Unknown error'
-    const testName = test.titlePath().filter(Boolean).join(' > ')
-    // Relativa al cwd, no absoluta: la ruta viaja dentro del reporte (que se comparte y se
-    // pega en tickets) y además alimenta el defectId. Con la ruta absoluta, dos personas del
-    // mismo equipo generaban IDs distintos para el mismo defecto, y el reporte filtraba la
-    // estructura de carpetas de quien lo corrió.
-    const testFile = relative(process.cwd(), test.location.file).replace(/\\/g, '/')
 
     try {
       const domContext = readPageSnapshot(result)
@@ -140,6 +153,24 @@ export default class HealifyReporter implements Reporter {
         writeAuditReport(this.auditEntries, process.cwd(), 'Playwright suite', 'Playwright')
         console.log(`📝 Audit report written to healify-audit.json (${this.auditEntries.length} failures)`)
       }
+
+      // Registro de corridas para `healify flake`: lo que la suite entera vio, no solo lo
+      // que se curó. Complemento — si escribir el registro falla, la corrida ya reportó.
+      appendRunRecord(
+        {
+          type: 'run',
+          runId: new Date().toISOString(),
+          timestamp: new Date().toISOString(),
+          project: 'Playwright suite',
+          framework: 'Playwright',
+          total: this.total,
+          passed: this.passed,
+          failed: this.failed,
+          durationMs: Date.now() - this.startedAt,
+          tests: this.outcomes,
+        },
+        process.cwd(),
+      )
     } catch (err) {
       console.warn('healify: error writing report:', err instanceof Error ? err.message : String(err))
     }
