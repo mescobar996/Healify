@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { mockExecSync } = vi.hoisted(() => ({ mockExecSync: vi.fn() }))
-vi.mock('node:child_process', () => ({ execSync: mockExecSync }))
+const { mockExecFileSync } = vi.hoisted(() => ({ mockExecFileSync: vi.fn() }))
+vi.mock('node:child_process', () => ({ execFileSync: mockExecFileSync }))
 
 import { detectGitHubCLI, createBranch, createCommit, createPRInstructions, createPRWithGH } from '../pr'
 
@@ -10,62 +10,65 @@ describe('PR workflow', () => {
     vi.restoreAllMocks()
   })
 
-  it('detectGitHubCLI returns true when gh is available', async () => {
-    mockExecSync.mockImplementation((cmd: string) => {
-      if (cmd === 'gh --version') return 'gh version 2.50.0'
+  it('detectGitHubCLI returns true when gh is available', () => {
+    mockExecFileSync.mockImplementation((cmd: string) => {
+      if (cmd === 'gh') return 'gh version 2.50.0'
       throw new Error('Command not found')
     })
 
-    const result = await detectGitHubCLI()
+    const result = detectGitHubCLI()
     expect(result).toBe(true)
   })
 
-  it('detectGitHubCLI returns false when gh is not available', async () => {
-    mockExecSync.mockImplementation(() => {
+  it('detectGitHubCLI returns false when gh is not available', () => {
+    mockExecFileSync.mockImplementation(() => {
       throw new Error('Command not found')
     })
 
-    const result = await detectGitHubCLI()
+    const result = detectGitHubCLI()
     expect(result).toBe(false)
   })
 
-  it('createBranch creates branch with timestamp', async () => {
-    mockExecSync.mockImplementation(() => '')
+  it('createBranch creates branch with timestamp', () => {
+    mockExecFileSync.mockImplementation(() => '')
 
-    await createBranch()
+    createBranch()
     
-    expect(mockExecSync).toHaveBeenCalledWith(
-      expect.stringMatching(/^git checkout -b healify\/fix-\d{8}-\d{6}$/),
+    expect(mockExecFileSync).toHaveBeenCalledWith(
+      'git',
+      ['checkout', '-b', expect.stringMatching(/^healify\/fix-\d{8}-\d{6}$/)],
       { stdio: 'ignore' }
     )
   })
 
-  it('createCommit creates commit with correct message', async () => {
-    mockExecSync.mockImplementation(() => '')
+  it('createCommit creates commit with correct message', () => {
+    mockExecFileSync.mockImplementation(() => '')
 
-    await createCommit(3)
+    createCommit(3)
     
-    expect(mockExecSync).toHaveBeenCalledWith('git add -A', { stdio: 'ignore' })
-    expect(mockExecSync).toHaveBeenCalledWith(
-      expect.stringMatching(/^git commit -m "healify: auto-fix 3 broken selectors"$/),
+    expect(mockExecFileSync).toHaveBeenCalledWith('git', ['add', '-A'], { stdio: 'ignore' })
+    expect(mockExecFileSync).toHaveBeenCalledWith(
+      'git',
+      ['commit', '-m', 'healify: auto-fix 3 broken selectors'],
       { stdio: 'ignore' }
     )
   })
 
-  it('createPRInstructions returns instructions for manual PR', async () => {
-    const instructions = await createPRInstructions('healify/fix-20260802-143022')
+  it('createPRInstructions returns instructions for manual PR', () => {
+    const instructions = createPRInstructions('healify/fix-20260802-143022')
     
     expect(instructions).toContain('git push origin healify/fix-20260802-143022')
     expect(instructions).toContain('gh pr create')
   })
 
-  it('createPRWithGH creates PR using gh CLI', async () => {
-    mockExecSync.mockReturnValue('https://github.com/user/repo/pull/123')
+  it('createPRWithGH creates PR using gh CLI', () => {
+    mockExecFileSync.mockReturnValue('https://github.com/user/repo/pull/123')
 
-    const result = await createPRWithGH('healify: fix broken selectors', 'PR body')
+    const result = createPRWithGH('healify: fix broken selectors', 'PR body')
     
-    expect(mockExecSync).toHaveBeenCalledWith(
-      expect.stringContaining('gh pr create --title'),
+    expect(mockExecFileSync).toHaveBeenCalledWith(
+      'gh',
+      ['pr', 'create', '--title', 'healify: fix broken selectors', '--body', 'PR body'],
       { encoding: 'utf-8' }
     )
     expect(result).toBe('https://github.com/user/repo/pull/123')
