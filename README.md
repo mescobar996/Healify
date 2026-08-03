@@ -272,10 +272,10 @@ jobs:
       - run: npm ci
       - run: npx playwright test
         continue-on-error: true   # queremos el reporte aunque la suite falle
-      - uses: mescobar996/Healify@v1.6.0
+      - uses: mescobar996/Healify@v2.0.0
 ```
 
-Se referencia un tag exacto. `@v1` funciona como alias móvil de la última `1.x`, y ya está publicado.
+Se referencia un tag exacto. `@v2` funciona como alias móvil de la última `2.x`, y ya está publicado.
 
 | Input | Default | Qué hace |
 |---|---|---|
@@ -423,7 +423,7 @@ Cada versión queda firmada y anotada en el [transparency log público de Sigsto
 - Landing: https://healify-sigma.vercel.app
 - npm: [`@healify/cli`](https://www.npmjs.com/package/@healify/cli), [`@healify/reporter-core`](https://www.npmjs.com/package/@healify/reporter-core), [`@healify/test-runner`](https://www.npmjs.com/package/@healify/test-runner), [`@healify/cypress-plugin`](https://www.npmjs.com/package/@healify/cypress-plugin), [`@healify/selenium-plugin`](https://www.npmjs.com/package/@healify/selenium-plugin), [`@healify/webdriverio-plugin`](https://www.npmjs.com/package/@healify/webdriverio-plugin), [`@healify/ai-local`](https://www.npmjs.com/package/@healify/ai-local)
 - Procedencia firmada de cada release: [Sigstore transparency log](https://search.sigstore.dev/?packageName=%40healify)
-- Release: [v1.6.0](https://github.com/mescobar996/Healify/releases/tag/v1.6.0)
+- Release: [v2.0.0](https://github.com/mescobar996/Healify/releases/tag/v2.0.0)
 - Research de la competencia: [docs/research/competitive-gaps.md](docs/research/competitive-gaps.md)
 - Repo: https://github.com/mescobar996/Healify
 
