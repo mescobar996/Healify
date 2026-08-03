@@ -3,13 +3,13 @@
 
   <h3>Un selector se rompe. Healify sabe por qué — y con qué reemplazarlo.<br/>Sin mandar una sola línea de tu código a ningún lado.</h3>
 
-  <sub>674 tests · 0 dependencias en la GitHub Action · 0 bytes de tu DOM en un servidor ajeno</sub>
+  <sub>700 tests · 0 dependencias en la GitHub Action · 0 bytes de tu DOM en un servidor ajeno</sub>
 
   <br/><br/>
 
   <a href="https://www.npmjs.com/package/@healify/cli"><img src="https://img.shields.io/npm/v/@healify/cli" alt="npm" /></a>
   <a href="https://github.com/mescobar996/Healify/actions/workflows/ci.yml"><img src="https://github.com/mescobar996/Healify/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
-  <img src="https://img.shields.io/badge/tests-674%20passing-brightgreen" />
+  <img src="https://img.shields.io/badge/tests-700%20passing-brightgreen" />
   <img src="https://img.shields.io/badge/license-MIT-blue" />
   <img src="https://img.shields.io/badge/100%25%20local-true-blue" />
   <img src="https://img.shields.io/badge/node-%3E%3D18-green" />
@@ -216,7 +216,22 @@ plugin.flush()
 | `--pr` | Crea branch + commit + PR automáticamente (requiere `gh` CLI). |
 | `--no-ast` | Desactiva la reescritura de sugerencias `role(...)` (sustitución simple). |
 | `--no-pom` | No busca el selector en los page objects cuando no está en el archivo de test. |
+| `--watch` | Se queda vigilando el reporte y re-aplica en cada corrida nueva. `--interval <ms>` para ajustar (default 1000). |
 | `--interactive` | Pregunta caso por caso antes de aplicar. |
+
+#### Modo watch
+
+```bash
+npx @healify/cli@latest fix --watch
+```
+
+Se queda escuchando: cada vez que tus tests escriben un reporte nuevo, aplica solo. El equivalente
+del `--ui` de Playwright pero del lado de Healify — dejás la terminal abierta y no tenés que
+acordarte de nada.
+
+Si todavía no hay reporte, avisa una vez y espera. La primera pasada es inmediata, así que si ya
+había uno cuando arrancaste, lo aplica al toque. `--pr` y `--interactive` no aplican acá (crear
+una PR por cada corrida, o preguntarte algo mientras mirás otra cosa, no tiene sentido).
 
 #### Page Object Model
 
@@ -395,7 +410,7 @@ Cada versión queda firmada y anotada en el [transparency log público de Sigsto
 
 - **TypeScript 5** — todo el código.
 - **Build**: `tsc` + `esbuild` (bundles por paquete).
-- **Tests**: Vitest — 674 tests passing, 0 fails (51 archivos).
+- **Tests**: Vitest — 700 tests passing, 0 fails (53 archivos).
 - **Lint/Format**: ESLint flat config + Prettier.
 - **Node**: `>=18.0.0` para usar los paquetes (verificado en CI con un smoke que instala el tarball y corre el motor sobre Node 18). Para **desarrollar** hace falta `>=20`: Vitest 4 usa `styleText` de `node:util`, que no existe en 18.
 - **Monorepo**: pnpm/npm workspaces (7 paquetes).

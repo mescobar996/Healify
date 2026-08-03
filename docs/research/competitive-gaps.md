@@ -1,6 +1,6 @@
 # Healify vs. la competencia — gap analysis
 
-**Fecha:** 2026-08-03 · **Healify:** v1.6.0 (601 tests, 7 paquetes)
+**Fecha:** 2026-08-03 · **Healify:** v2.0.0 (700 tests, 7 paquetes)
 **Método:** búsqueda GitHub (`gh api search/repositories`, orden por stars) + docs oficiales + web (ventana ~30 días de actividad, motor `last30days` v3.18.4 + búsquedas dirigidas).
 
 > Restricción de diseño no negociable: Healify es **100% local, sin IA, sin nube, sin API key, sin telemetría**.
@@ -41,8 +41,10 @@
 
 ## 2. Tabla de gaps
 
-> **Estado al 2026-08-03 (v1.9.0):** G1, G2, G3, G4, G5, G6, G7, G8 y G18 cerrados. Sigue
-> abierto G9 (`--watch`).
+> **Estado al 2026-08-03 (v2.0.0):** todos los gaps accionables están cerrados — G1, G2, G3,
+> G4, G5, G6, G7, G8, G9 y G18. Los únicos que siguen sin implementar son G15, G16 y G17
+> (telemetría, backend y LLM), descartados a conciencia porque contradicen el pitch del
+> producto, no por falta de tiempo.
 
 | # | Feature | Healenium | Otros | Healify hoy | ¿Gap? | Prioridad |
 |---|---|---|---|---|---|---|
@@ -54,7 +56,7 @@
 | G6 | **GitHub Action oficial** | ❌ | ✅ `testomatio/check-tests@stable` | ⚠️ `gh-action/action.yml` existe (node20, doctor + fix --dry-run + comentario en PR) pero no está versionado/publicado ni documentado en el README | Parcial — distribución | P1 |
 | G7 | **Dashboard/histórico de healings** | ✅ reporte servido por el backend | ✅ Cypress Cloud | ✅ `healify dashboard` — vista offline del histórico (`healify-dashboard.html`), cerrado en v1.8.0 | — | — |
 | G8 | **Detección de flakiness** | ❌ | ✅ Cypress Cloud, cypress-flaky-test-audit | ✅ v1.9.0: `.healify/runs.jsonl` + `healify flake` (flaky vs siempre-roto) | **CERRADO** | P2 |
-| G9 | **Modo `--watch`** | ❌ | ✅ Playwright `--ui` | ❌ | Menor (el runner ya lo da) | P3 |
+| G9 | **Modo `--watch`** | ❌ | ✅ Playwright `--ui` | ✅ v2.0.0: `healify fix --watch [--interval <ms>]` — polling por `mtime + size`, re-aplica en cada corrida nueva | **CERRADO** | P3 |
 | G10 | **Screenshots/video en el reporte** | ✅ (guarda screenshots en la DB) | ✅ trace viewer | ✅ `AuditEntry.screenshotPath` + attachments de Playwright ya se leen | NO | — |
 | G11 | **Multi-locator / estrategias en cascada** | ✅ `recovery-tries` | ✅ selenium-ide | ✅ `alternatives[]` en `HealResponse` | NO | — |
 | G12 | **Memoria entre corridas** | ✅ Postgres | ❌ | ✅ `.healify/history.jsonl` + repertorio | NO (y sin DB) | — |

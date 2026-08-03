@@ -42,6 +42,51 @@
   `MODULE_NOT_FOUND` interno de npm apenas se corre así. Arreglado invocando `cmd.exe /c npx
   ...` explícito, el patrón estándar de .NET para lanzar batch scripts sin una shell real.
 
+## 2.0.0 — 2026-08-03
+
+**Hito, no ruptura.** El major marca que se cerró el análisis competitivo entero — los 18 gaps
+del `docs/research/competitive-gaps.md` están cerrados o descartados a conciencia — no un cambio
+incompatible de API. **Actualizar desde 1.x no requiere tocar una línea de tu código:** todo lo
+que entró desde 1.6.0 es aditivo (comandos nuevos, flags nuevos, bloques de config opcionales
+apagados por default). Si venías de 1.6.0, `npm i -D @healify/cli@2` y listo.
+
+Lo que entra en este major, acumulado desde la última versión publicada (1.6.0):
+
+| Gap | Qué salió | Versión interna |
+|---|---|---|
+| G18 | `healify report` — defectos a Jira/webhook, opt-in, dedupe por `defectId` | 1.7.0 |
+| G7 | `healify dashboard` — histórico de healings, 100% offline | 1.8.0 |
+| G8 | `healify flake` — flaky vs. siempre-roto, sobre `.healify/runs.jsonl` | 1.9.0 |
+| G9 | `healify fix --watch` — re-aplica en cada corrida nueva | 1.10.0 |
+
+700 tests (53 archivos), 0 warnings de lint, CI en verde.
+
+### G9 — `fix --watch` (lo último que faltaba)
+
+- **feat(cli): `healify fix --watch [--interval <ms>]`.** El análogo del `--ui` de Playwright
+  para el lado de Healify: en vez de correr los tests, esperar y acordarse de volver a tipear
+  `healify fix`, el loop vigila el reporte y re-aplica solo cada vez que el runner escribe una
+  corrida nueva. Polling por `mtime + size` en vez de `fs.watch`, que tiene semántica distinta
+  en cada sistema operativo (en algunos dispara dos veces por escritura, en otros no dispara si
+  el archivo se reemplaza por `rename` — que es exactamente cómo un runner escribe un reporte).
+  Cero dependencias nuevas.
+  - La primera pasada es inmediata: si ya hay un reporte al arrancar, se aplica ahí mismo.
+  - Sin reporte todavía, avisa **una sola vez** y se queda esperando — en un loop de 1 s,
+    repetirlo sería spam que taparía la salida útil cuando el reporte por fin aparezca.
+  - `--pr` y `--interactive` quedan fuera del loop a propósito (crear una PR por corrida, o
+    preguntar mientras el usuario mira otra cosa, no tienen sentido).
+- **refactor(cli): `applyRun()` compartido.** El núcleo de una aplicación (sustitución de texto
+  + reescritura AST de lo que no era sustituible) es ahora una sola función que usan tanto
+  `healify fix` como cada iteración del watch. Si estuviera duplicado, las dos ramas divergirían
+  en el primer bugfix que se aplicara a una sola.
+- **fix(cli): el valor de un flag ya no se confunde con el path del reporte.** `runFix` resolvía
+  el path posicional con `args.find(a => !a.startsWith('--'))`. Mientras ningún flag llevó valor
+  eso alcanzaba, pero con `fix --watch --interval 500` tomaba `500` como si fuera el nombre del
+  reporte, y el watch terminaba vigilando un archivo que nunca iba a existir. Encontrado
+  corriendo el comando de verdad — los tests con dependencias inyectadas no lo veían porque no
+  parsean `argv`. Ahora hay un `parseReportPath()` que sabe qué flags consumen el argumento
+  siguiente, con test de regresión.
+
 ## 1.9.0 — 2026-08-03
 
 Cierra el gap G8 del análisis competitivo (`docs/research/competitive-gaps.md`): detectar
