@@ -50,17 +50,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Node 22, no 20: `npm install -g npm@latest` de abajo instala npm 12.x, que a su vez
+      # exige Node >=22 — con Node 20 ese install fallaba con EBADENGINE antes de llegar
+      # siquiera a chequear la versión de npm. 22 ya está validado en la matriz de CI (job
+      # "Unit Tests · Node 22"), así que no es una combinación sin probar.
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
           registry-url: 'https://registry.npmjs.org'
 
-      # Trusted publishing existe recién desde npm 11.5.1 y Node 20 trae npm 10.x. Con la
-      # versión vieja npm ni intenta el intercambio OIDC: pide autenticación y falla con un
-      # error que no menciona nada de esto. Se verifica explícitamente para que, si algún día
-      # falla, el log diga por qué.
+      # Trusted publishing existe recién desde npm 11.5.1, y el npm que trae Node por defecto
+      # suele ir atrás de eso. Sin esto npm ni intenta el intercambio OIDC: pide autenticación
+      # y falla con un error que no menciona nada de esto. Se verifica explícitamente para que,
+      # si algún día vuelve a fallar (por ejemplo si npm@latest exige un Node más nuevo que el
+      # de este job), el log diga por qué en vez de un EBADENGINE críptico.
       - name: Actualizar npm (trusted publishing necesita >= 11.5.1)
         run: |
           npm install -g npm@latest
