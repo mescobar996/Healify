@@ -1,195 +1,13 @@
 #!/usr/bin/env node
-import { readFileSync } from 'node:fs'
-import type { LocalRun } from '@healify/reporter-core'
 import { BROWSER_PROBE_SCRIPT } from '@healify/reporter-core'
-import { fix, describeReadError, type FixOutcome } from './fix'
-import { fixAst } from './fix-ast'
-import { detectGitHubCLI, createBranch, createCommit, createPRInstructions, createPRWithGH } from './pr'
-import { appendHistory } from './history'
-import { runInteractiveFix } from './interactive'
-import { promptLine } from './prompt'
 import { init, type InitReport, type FrameworkInitResult } from './commands/init'
 import { doctor, type DoctorReport } from './commands/doctor'
 import { history, type HistoryReport } from './commands/history'
 import { runHeal } from './commands/heal'
 import { runExplain } from './commands/explain'
+import { runFix } from './commands/fix-pr'
 import { getVersion } from './version'
 import { runAiSetup, runAiStatus, runAiExplain, runAiChat, runAiModels } from './commands/ai'
-
-function reasonText(outcome: Extract<FixOutcome, { status: 'skipped' }>, astUsed: boolean): string {
-  switch (outcome.reason) {
-    case 'ambiguous':
-      return `'${outcome.selector}' aparece más de una vez, ambiguo`
-    case 'dirty-git':
-      return 'cambios sin commitear (usá --force para ignorar)'
-    case 'not-found':
-      return 'ya no se encontró en el archivo'
-    case 'not-substitutable':
-      return astUsed
-        ? 'la sugerencia no es un rol reescribible (método sin mapeo, o no es una llamada de page/locator) — revisar y aplicar a mano'
-        : 'la sugerencia no es un valor de selector sustituible directamente (formato de rol legible) — sacá --no-ast para que se reescriba sola, o revisá y aplicá a mano'
-    case 'declined':
-      return 'vos decidiste no aplicarlo'
-  }
-}
-
-function printOutcomes(outcomes: FixOutcome[], run: LocalRun, astUsed: boolean): void {
-  // Desde que el reporte se escribe también cuando la suite pasa entera, `fix` se encuentra
-  // con reportes de 0 casos. "0 aplicados · 0 salteados" es correcto pero no dice nada; este
-  // es el camino feliz y merece decirlo.
-  if (run.cases.length === 0) {
-    console.log('Ningún selector roto en la última corrida — no hay nada que aplicar.')
-    return
-  }
-
-  let applied = 0
-  let skipped = 0
-
-  for (const outcome of outcomes) {
-    if (outcome.status === 'applied') {
-      applied++
-      console.log(`✓ ${outcome.testFile} — ${outcome.selector} → ${outcome.fixedSelector}`)
-    } else {
-      skipped++
-      console.log(`⚠ ${outcome.testFile} — saltado: ${reasonText(outcome, astUsed)}`)
-    }
-  }
-
-  const reviewCount = run.cases.filter((c) => c.status === 'review').length
-  const reviewSuffix = reviewCount > 0
-    ? ` · ${reviewCount} caso${reviewCount === 1 ? '' : 's'} "review" sin tocar (ver healify-report.html)`
-    : ''
-
-  console.log(`\n${applied} selector${applied === 1 ? '' : 'es'} aplicado${applied === 1 ? '' : 's'} · ${skipped} salteado${skipped === 1 ? '' : 's'}${reviewSuffix}`)
-}
-
-function runFix(args: string[]): void {
-  const dryRun = args.includes('--dry-run')
-  const force = args.includes('--force')
-  const pr = args.includes('--pr')
-  // La reescritura estructural pasó a ser el default: las sugerencias role(...) son las que
-  // el motor propone en la mayoría de los casos, y hasta ahora quedaban todas sin aplicar
-  // salvo que el usuario supiera del flag `--ast`. Se puede desactivar con `--no-ast`.
-  // `--ast` se sigue aceptando (lo usa la gh-action y puede estar en scripts) y no hace nada.
-  const ast = !args.includes('--no-ast')
-  const interactive = args.includes('--interactive')
-  const reportPath = args.slice(1).find((a) => !a.startsWith('--')) ?? 'healify-report.json'
-
-  let run: LocalRun
-  try {
-    run = JSON.parse(readFileSync(reportPath, 'utf-8'))
-  } catch (error) {
-    const { message, exitCode, stream } = describeReadError(reportPath, error)
-    if (stream === 'log') console.log(message)
-    else console.error(message)
-    process.exit(exitCode)
-  }
-
-  // Sin TTY no hay quién responda un prompt — mismo criterio que promptLine(). Avisar y
-  // seguir en modo automático es mejor que colgarse esperando un stdin que nunca llega
-  // (rompería cualquier script/CI que por error tenga --interactive puesto).
-  const canPrompt = interactive && !!process.stdin.isTTY
-  if (interactive && !canPrompt) {
-    console.log('--interactive pedido, pero no hay una terminal para preguntar — sigo en modo automático.\n')
-  }
-
-  console.log(`Healify fix — ${reportPath}${ast ? '' : ' (--no-ast)'}${canPrompt ? ' (interactivo)' : ''}\n`)
-
-  // Se graba ANTES de aplicar los fixes, con el estado real del reporte (todos los casos,
-  // no solo lo que fix() termina aplicando) — así "recurrente"/"re-roto" reflejan selectores
-  // rotos de verdad, no solo los auto-aplicables. --dry-run nunca graba: el gh-action corre
-  // `fix --dry-run` en cada PR, y si eso grabara el historial se llenaría de ruido de CI que
-  // no representa corridas reales de un dev.
-  if (!dryRun) appendHistory(run, process.cwd())
-
-  // Modo interactivo: el desarrollador decide caso por caso en vez de que se aplique todo
-  // solo. Los casos aprobados se fuerzan a 'healed' para que el pipeline de siempre los
-  // procese igual que hoy; los declinados se sacan de lo que ve fix()/fixAst() — dejarlos
-  // con su status 'healed' original haría que se aplicaran de todas formas.
-  let runForFix = run
-  let declinedOutcomes: FixOutcome[] = []
-  if (canPrompt) {
-    const { approved, declined } = runInteractiveFix(run.cases, promptLine)
-    declinedOutcomes = declined
-    const declinedKeys = new Set(declined.map((d) => `${d.testFile}::${d.selector}`))
-    runForFix = {
-      ...run,
-      cases: run.cases
-        .filter((c) => !declinedKeys.has(`${c.testFile}::${c.selector}`))
-        .map((c) => (approved.has(`${c.testFile}::${c.selector}`) ? { ...c, status: 'healed' as const } : c)),
-    }
-  }
-
-  // --ast es aditivo, no reemplaza a fix(): primero corre el reemplazo de texto normal
-  // (cubre TESTID/CSS/TEXT, que ya son valores de selector pegables tal cual), y solo
-  // reintenta con reescritura AST los casos que ese primer paso saltó como
-  // 'not-substitutable' (los role(...), que fix() nunca puede aplicar). Si --ast
-  // reemplazara a fix() en vez de complementarlo, los casos TEXT/CSS quedarían sin
-  // procesar en silencio.
-  const outcomes = fix(runForFix, { dryRun, force })
-  if (ast) {
-    const notSubstitutableKeys = new Set(
-      outcomes
-        .filter((o): o is Extract<FixOutcome, { status: 'skipped' }> => o.status === 'skipped' && o.reason === 'not-substitutable')
-        .map((o) => `${o.testFile}::${o.selector}`)
-    )
-    const astRun: LocalRun = { ...runForFix, cases: runForFix.cases.filter((c) => notSubstitutableKeys.has(`${c.testFile}::${c.selector}`)) }
-    const astByKey = new Map(fixAst(astRun, { dryRun, force }).map((o) => [`${o.testFile}::${o.selector}`, o]))
-    for (let i = 0; i < outcomes.length; i++) {
-      const key = `${outcomes[i].testFile}::${outcomes[i].selector}`
-      const astOutcome = astByKey.get(key)
-      if (astOutcome) outcomes[i] = astOutcome
-    }
-  }
-
-  if (pr && outcomes.some(o => o.status === 'applied')) {
-    const appliedCount = outcomes.filter(o => o.status === 'applied').length
-
-    try {
-      const branchName = createBranch()
-      createCommit(appliedCount)
-
-      const hasGH = detectGitHubCLI()
-      if (hasGH) {
-        const appliedOutcomes = outcomes.filter(o => o.status === 'applied')
-        const lowConfidence = appliedOutcomes.filter(o => o.confidence < 90)
-        const reviewCount = lowConfidence.length
-        
-        const tableRows = appliedOutcomes.map(o => 
-          `| ${o.originalSelector} | ${o.fixedSelector} | ${o.confidence}% | ${o.verified ? '✅' : '⚠️'} |`
-        ).join('\n')
-        
-        const reviewRows = lowConfidence.map(o => 
-          `| ${o.originalSelector} | ${o.fixedSelector} | ${o.confidence}% | ⚠️ |`
-        ).join('\n')
-        
-        const prBody = `## Healify Auto-Fix
-
-Resumen: ${appliedCount} selectores arreglados, ${reviewCount} necesitan revisión
-
-### Selectores aplicados
-| Original | Propuesto | Confianza | Verificado |
-|----------|-----------|-----------|------------|
-${tableRows}
-
-${reviewCount > 0 ? `### Selectores que necesitan revisión
-(los que confidence < 90%)
-
-${reviewRows}
-` : ''}Audit completo: healify-audit.json`
-        const prURL = createPRWithGH('healify: fix broken selectors', prBody)
-        console.log(`✅ PR created: ${prURL}`)
-      } else {
-        const instructions = createPRInstructions(branchName)
-        console.log(instructions)
-      }
-    } catch (error) {
-      console.error(`❌ Error creating PR: ${error instanceof Error ? error.message : String(error)}`)
-    }
-  }
-
-  printOutcomes([...outcomes, ...declinedOutcomes], run, ast)
-}
 
 /** Mensaje final por framework — ninguno asume que ya hay algo para "correr": init no genera tests. */
 function nextStepFor(result: FrameworkInitResult): string {
@@ -306,15 +124,51 @@ function printHistoryReport(report: HistoryReport): void {
   }
 }
 
+function readStdinWithTimeout(timeoutMs: number = 5000): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = []
+    let resolved = false
+
+    const timeout = setTimeout(() => {
+      if (!resolved) {
+        resolved = true
+        process.stdin.destroy()
+        reject(new Error(`stdin timeout after ${timeoutMs}ms — pipe JSON data or use a file`))
+      }
+    }, timeoutMs)
+
+    process.stdin.on('data', (chunk: Buffer) => chunks.push(chunk))
+    process.stdin.on('end', () => {
+      if (!resolved) {
+        resolved = true
+        clearTimeout(timeout)
+        resolve(Buffer.concat(chunks).toString('utf-8'))
+      }
+    })
+    process.stdin.on('error', (err) => {
+      if (!resolved) {
+        resolved = true
+        clearTimeout(timeout)
+        reject(err)
+      }
+    })
+
+    // If stdin is already closed (piped and finished), resolve immediately
+    if (process.stdin.readableEnded || process.stdin.readableFlowing === false && process.stdin.readableLength > 0) {
+      // Already has data or ended — let events handle it
+    }
+  })
+}
+
 /**
  * `healify heal` — el motor expuesto para cualquier lenguaje que pueda spawnear un
  * subproceso: JSON por stdin, JSON por stdout. Ver `commands/heal.ts` para el contrato
  * completo y `docs/adapters/README.md` para ejemplos de integración.
  */
-function runHealCommand(): void {
+async function runHealCommand(): Promise<void> {
   let raw: string
   try {
-    raw = readFileSync(0, 'utf-8')
+    raw = await readStdinWithTimeout(5000)
   } catch (error) {
     console.log(JSON.stringify({ error: `No se pudo leer stdin: ${error instanceof Error ? error.message : String(error)}` }))
     process.exit(1)
@@ -390,7 +244,7 @@ function main(): void {
   if (command === 'doctor') return printDoctorReport(doctor())
   if (command === 'fix') return runFix(args)
   if (command === 'history') return printHistoryReport(history())
-  if (command === 'heal') return runHealCommand()
+  if (command === 'heal') { runHealCommand().then(() => {}); return }
   if (command === 'explain') return runExplainCommand(args.slice(1))
   if (command === 'probe-script') return console.log(BROWSER_PROBE_SCRIPT)
   

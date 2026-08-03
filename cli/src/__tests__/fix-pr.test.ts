@@ -44,9 +44,10 @@ describe('PR workflow', () => {
   it('createCommit creates commit with correct message', () => {
     mockExecFileSync.mockImplementation(() => '')
 
-    createCommit(3)
+    createCommit(3, ['a.spec.ts', 'b.spec.ts'])
     
-    expect(mockExecFileSync).toHaveBeenCalledWith('git', ['add', '-A'], { stdio: 'ignore' })
+    expect(mockExecFileSync).toHaveBeenCalledWith('git', ['add', 'a.spec.ts'], { stdio: 'ignore' })
+    expect(mockExecFileSync).toHaveBeenCalledWith('git', ['add', 'b.spec.ts'], { stdio: 'ignore' })
     expect(mockExecFileSync).toHaveBeenCalledWith(
       'git',
       ['commit', '-m', 'healify: auto-fix 3 broken selectors'],

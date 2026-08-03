@@ -1,23 +1,18 @@
 import type { WebDriver } from 'selenium-webdriver'
-import { writeFileSync } from 'node:fs'
-import { join } from 'node:path'
 import {
-  renderLocalReportJson,
-  buildLocalRunFromEvents,
   readRepertoire,
-  buildAuditEntry,
-  writeAuditReport,
+  buildAuditFromEvent,
+  flushPlugin,
   type HistoryEntry,
   type AuditEntry,
-  type HealResponse,
-  type SelectorType,
+  type PluginHealingEvent,
 } from '@healify/reporter-core'
 import { wrapDriver } from './wrap'
-import type { HealifySeleniumOptions, HealingEvent } from './types'
+import type { HealifySeleniumOptions } from './types'
 
 export class HealifySeleniumPlugin {
   private readonly options: HealifySeleniumOptions
-  private readonly events: HealingEvent[] = []
+  private readonly events: PluginHealingEvent[] = []
   private readonly auditEntries: AuditEntry[] = []
   // Se lee una sola vez, al construir el plugin — no por cada findElement() que falla. Solo
   // entra en juego cuando esta corrida no pudo verificar nada por su cuenta (ver el comentario
@@ -27,50 +22,17 @@ export class HealifySeleniumPlugin {
   constructor(options: HealifySeleniumOptions = {}) {
     this.options = {
       ...options,
-      onEvent: (event: HealingEvent) => {
+      onEvent: (event) => {
         this.events.push(event)
-        this.buildAuditFromEvent(event)
+        try {
+          buildAuditFromEvent(event, this.auditEntries)
+        } catch {
+          // Nunca romper la corrida por un fallo del audit.
+        }
         options.onEvent?.(event)
       },
     }
     this.repertoire = readRepertoire(process.cwd())
-  }
-
-  private buildAuditFromEvent(event: HealingEvent): void {
-    try {
-      const selectorType: SelectorType = event.fixedSelector
-        ? event.fixedSelector.startsWith('//') || event.fixedSelector.startsWith('(')
-          ? 'XPATH'
-          : 'CSS'
-        : 'CSS'
-
-      const response: HealResponse = {
-        fixedSelector: event.fixedSelector ?? event.originalSelector,
-        confidence: event.confidence ?? 0,
-        verified: event.verified ?? false,
-        fromRepertoire: false,
-        explanation: event.explanation ?? '',
-        selectorType,
-        needsReview: false,
-        robustnessImprovement: 0,
-        alternatives: [],
-        technicalDetails: {
-          detectedIssue: `${event.type}: ${event.originalSelector}`,
-          proposedSolution: event.explanation ?? '',
-          accessibilityCompliant: false,
-          stableAgainstDOMChanges: false,
-        },
-      }
-
-      const entry = buildAuditEntry(
-        response,
-        { selector: event.originalSelector },
-        { errorMessage: `${event.type}: ${event.originalSelector}` }
-      )
-      this.auditEntries.push(entry)
-    } catch {
-      // Nunca romper la corrida por un fallo del audit.
-    }
   }
 
   /** Devuelve un proxy sobre el driver — el original nunca se muta. */
@@ -85,27 +47,12 @@ export class HealifySeleniumPlugin {
    * Devuelve la cantidad de casos escritos.
    */
   flush(cwd: string = process.cwd()): number {
-    if (this.events.length === 0) return 0
-
-    const run = buildLocalRunFromEvents(this.events, {
-      project: this.options.projectName ?? 'selenium-project',
-      framework: 'Selenium',
-    })
-
-    writeFileSync(join(cwd, 'healify-report.json'), renderLocalReportJson(run))
-    const count = run.cases.length
-    this.events.length = 0
-
-    if (this.auditEntries.length > 0) {
-      writeAuditReport(
-        [...this.auditEntries],
-        cwd,
-        this.options.projectName ?? 'selenium-project',
-        'Selenium'
-      )
-      this.auditEntries.length = 0
-    }
-
-    return count
+    return flushPlugin(
+      this.events,
+      this.auditEntries,
+      cwd,
+      this.options.projectName ?? 'selenium-project',
+      'Selenium'
+    )
   }
 }

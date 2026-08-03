@@ -134,8 +134,8 @@ export default class HealifyReporter implements Reporter {
         writeAuditReport(this.auditEntries, process.cwd(), 'Playwright suite', 'Playwright')
         console.log(`📝 Audit report written to healify-audit.json (${this.auditEntries.length} failures)`)
       }
-    } catch {
-      // Fire-and-forget: el reporte local nunca debe romper la corrida.
+    } catch (err) {
+      console.warn('healify: error writing report:', err instanceof Error ? err.message : String(err))
     }
     printSummary(this.localResults)
   }

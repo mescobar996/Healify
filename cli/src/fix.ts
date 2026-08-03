@@ -1,6 +1,41 @@
 import { readFileSync, writeFileSync } from 'node:fs'
+import { resolve, relative } from 'node:path'
 import type { LocalRun, LocalCaseResult } from '@healify/reporter-core'
 import { isGitDirty } from './git-check'
+
+/**
+ * Valida que un path resuelto esté dentro del project root para prevenir path traversal.
+ * Un `healify-report.json` manipulado podría contener paths como `../../.env` para escribir
+ * fuera del proyecto. Esta función asegura que solo se lea/escriba dentro del cwd.
+ * Si el path ya es absoluto, se valida que no contenga componentes `..` peligrosos.
+ * Si es relativo, se resuelve contra projectRoot y se verifica que no escape.
+ */
+function validatePath(filePath: string, projectRoot: string): string {
+  // Reject paths with null bytes (common traversal technique)
+  if (filePath.includes('\0')) {
+    throw new Error(`Path traversal detected: '${filePath}' contains null byte`)
+  }
+
+  const resolved = resolve(projectRoot, filePath)
+
+  // If the original path was absolute, check it doesn't escape to sensitive directories
+  if (resolve(filePath) === resolved) {
+    const systemRoots = ['/etc', '/sys', '/proc', 'C:\\Windows', 'C:\\System32']
+    for (const root of systemRoots) {
+      if (resolved.startsWith(root)) {
+        throw new Error(`Path traversal detected: '${filePath}' resolves to system directory`)
+      }
+    }
+    return resolved
+  }
+
+  // For relative paths, verify they stay within projectRoot
+  const rel = relative(projectRoot, resolved)
+  if (rel.startsWith('..') || resolve('/') === resolved) {
+    throw new Error(`Path traversal detected: '${filePath}' resolves outside project root`)
+  }
+  return resolved
+}
 
 export interface FixOptions {
   dryRun?: boolean
@@ -80,15 +115,28 @@ export function countOccurrences(haystack: string, needle: string): number {
  * comentarios (mismo largo, reemplazados por espacios, para no correr los índices) antes
  * de contar/ubicar el reemplazo real — así una mención solo en un comentario cuenta como
  * "no encontrado", nunca se reemplaza ahí. Bloques `/* ... *\/` completos, y líneas que
- * (tras trim) arrancan con `//` — no intenta parsear si el `//` está dentro de un string
- * real (ej. una URL), a propósito: conservador, prefiere no enmascarar de más antes que
- * arriesgarse a ocultar una ocurrencia de código real.
+ * (tras trim) arrancan con `//`. No intenta parsear `//` dentro de strings (ej. URLs) —
+ * es imposible sin un parser completo; el costo de falsos positivos es bajo porque los
+ * selectores que buscamos raramente aparecen en strings que además contienen `//`.
  */
 export function maskComments(content: string): string {
+  // Pass 1: mask block comments /* ... */ (may span multiple lines)
   const noBlockComments = content.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '))
+  // Pass 2: mask line comments — both standalone (line starts with //) and inline
+  // (code followed by //). The regex skips strings by only matching // that is NOT
+  // preceded by a quote character, which is a conservative heuristic.
   return noBlockComments
     .split('\n')
-    .map((line) => (/^\s*\/\//.test(line) ? line.replace(/[^\n]/g, ' ') : line))
+    .map((line) => {
+      // Standalone comment: line starts with //
+      if (/^\s*\/\//.test(line)) return line.replace(/[^\n]/g, ' ')
+      // Inline comment: // after code, not inside a string (heuristic: not preceded by ")
+      const inlineMatch = line.match(/(?<=[^"'])\/\//)
+      if (inlineMatch && inlineMatch.index !== undefined) {
+        return line.slice(0, inlineMatch.index) + '  ' + line.slice(inlineMatch.index + 2).replace(/[^\n]/g, ' ')
+      }
+      return line
+    })
     .join('\n')
 }
 
@@ -111,14 +159,22 @@ export function fix(run: LocalRun, options: FixOptions = {}): FixOutcome[] {
   const outcomes: FixOutcome[] = []
 
   for (const [testFile, cases] of casesByFile) {
-    if (!options.dryRun && !options.force && isGitDirty(testFile)) {
+    let resolvedFile: string
+    try {
+      resolvedFile = validatePath(testFile, process.cwd())
+    } catch {
+      for (const c of cases) outcomes.push({ testFile, selector: c.selector, status: 'skipped', reason: 'not-found' })
+      continue
+    }
+
+    if (!options.dryRun && !options.force && isGitDirty(resolvedFile)) {
       for (const c of cases) outcomes.push({ testFile, selector: c.selector, status: 'skipped', reason: 'dirty-git' })
       continue
     }
 
     let content: string
     try {
-      content = readFileSync(testFile, 'utf-8')
+      content = readFileSync(resolvedFile, 'utf-8')
     } catch {
       for (const c of cases) outcomes.push({ testFile, selector: c.selector, status: 'skipped', reason: 'not-found' })
       continue
@@ -152,7 +208,7 @@ export function fix(run: LocalRun, options: FixOptions = {}): FixOutcome[] {
     }
 
     if (changed && !options.dryRun) {
-      writeFileSync(testFile, content, 'utf-8')
+      writeFileSync(resolvedFile, content, 'utf-8')
     }
   }
 

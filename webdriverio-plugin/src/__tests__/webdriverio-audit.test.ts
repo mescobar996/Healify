@@ -3,11 +3,14 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-const { mockAnalyzeAndHeal, mockRenderLocalReportJson, mockBuildAuditEntry, mockWriteAuditReport } = vi.hoisted(() => ({
+const { mockAnalyzeAndHeal, mockRenderLocalReportJson, mockBuildAuditEntry, mockWriteAuditReport, mockBuildAuditFromEvent, mockFlushPlugin, mockReadRepertoire } = vi.hoisted(() => ({
   mockAnalyzeAndHeal: vi.fn(),
   mockRenderLocalReportJson: vi.fn(),
   mockBuildAuditEntry: vi.fn(),
   mockWriteAuditReport: vi.fn(),
+  mockBuildAuditFromEvent: vi.fn(),
+  mockFlushPlugin: vi.fn(),
+  mockReadRepertoire: vi.fn().mockReturnValue([]),
 }))
 
 vi.mock('@healify/reporter-core', async (importOriginal) => {
@@ -18,6 +21,9 @@ vi.mock('@healify/reporter-core', async (importOriginal) => {
     renderLocalReportJson: mockRenderLocalReportJson,
     buildAuditEntry: mockBuildAuditEntry,
     writeAuditReport: mockWriteAuditReport,
+    buildAuditFromEvent: mockBuildAuditFromEvent,
+    flushPlugin: mockFlushPlugin,
+    readRepertoire: mockReadRepertoire,
   }
 })
 
@@ -26,7 +32,14 @@ import { HealifyWebdriverIOPlugin } from '../plugin'
 let dir: string
 
 beforeEach(() => {
-  vi.clearAllMocks()
+  mockAnalyzeAndHeal.mockReset()
+  mockRenderLocalReportJson.mockReset()
+  mockBuildAuditEntry.mockReset()
+  mockWriteAuditReport.mockReset()
+  mockBuildAuditFromEvent.mockReset()
+  mockFlushPlugin.mockReset()
+  mockReadRepertoire.mockReset()
+  mockReadRepertoire.mockReturnValue([])
   dir = mkdtempSync(join(tmpdir(), 'healify-wdio-audit-'))
   mockBuildAuditEntry.mockImplementation((_response: any, request: any, context: any) => ({
     timestamp: '2026-01-01T00:00:00.000Z',
@@ -83,6 +96,9 @@ describe('WebdriverIO Audit Integration', () => {
       },
     })
     mockRenderLocalReportJson.mockReturnValue('{}')
+    mockFlushPlugin.mockImplementation((_events, _auditEntries, cwd, project, framework) => {
+      return _events.length
+    })
 
     const plugin = new HealifyWebdriverIOPlugin()
     const wrapped = plugin.wrap(makeBrowser(findImpl))
@@ -91,17 +107,14 @@ describe('WebdriverIO Audit Integration', () => {
 
     plugin.flush(dir)
 
-    expect(mockBuildAuditEntry).toHaveBeenCalledTimes(1)
-    expect(mockBuildAuditEntry).toHaveBeenCalledWith(
+    expect(mockBuildAuditFromEvent).toHaveBeenCalledTimes(1)
+    expect(mockBuildAuditFromEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         fixedSelector: '[data-testid="submit"]',
         confidence: 0.95,
         verified: true,
       }),
-      expect.objectContaining({
-        selector: '#submit',
-      }),
-      expect.any(Object)
+      expect.any(Array)
     )
   })
 
@@ -124,6 +137,9 @@ describe('WebdriverIO Audit Integration', () => {
       },
     })
     mockRenderLocalReportJson.mockReturnValue('{}')
+    mockFlushPlugin.mockImplementation((_events, _auditEntries, cwd, project, framework) => {
+      return _events.length
+    })
 
     const plugin = new HealifyWebdriverIOPlugin()
     const wrapped = plugin.wrap(browser)
@@ -132,15 +148,12 @@ describe('WebdriverIO Audit Integration', () => {
 
     plugin.flush(dir)
 
-    expect(mockBuildAuditEntry).toHaveBeenCalledTimes(1)
-    expect(mockBuildAuditEntry).toHaveBeenCalledWith(
+    expect(mockBuildAuditFromEvent).toHaveBeenCalledTimes(1)
+    expect(mockBuildAuditFromEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         confidence: 0.5,
       }),
-      expect.objectContaining({
-        selector: '#old',
-      }),
-      expect.any(Object)
+      expect.any(Array)
     )
   })
 
@@ -166,6 +179,7 @@ describe('WebdriverIO Audit Integration', () => {
       },
     })
     mockRenderLocalReportJson.mockReturnValue('{}')
+    mockFlushPlugin.mockReturnValue(1)
 
     const plugin = new HealifyWebdriverIOPlugin({ projectName: 'test-project' })
     const wrapped = plugin.wrap(makeBrowser(findImpl))
@@ -174,13 +188,10 @@ describe('WebdriverIO Audit Integration', () => {
 
     plugin.flush(dir)
 
-    expect(mockWriteAuditReport).toHaveBeenCalledTimes(1)
-    expect(mockWriteAuditReport).toHaveBeenCalledWith(
-      expect.arrayContaining([
-        expect.objectContaining({
-          originalSelector: '#submit',
-        }),
-      ]),
+    expect(mockFlushPlugin).toHaveBeenCalledTimes(1)
+    expect(mockFlushPlugin).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.any(Array),
       dir,
       'test-project',
       'WebdriverIO'
@@ -189,11 +200,19 @@ describe('WebdriverIO Audit Integration', () => {
 
   it('should not write audit report when there are no entries', async () => {
     mockRenderLocalReportJson.mockReturnValue('{}')
+    mockFlushPlugin.mockReturnValue(0)
 
     const plugin = new HealifyWebdriverIOPlugin()
     plugin.flush(dir)
 
-    expect(mockWriteAuditReport).not.toHaveBeenCalled()
+    // flushPlugin is called but returns 0 because events array is empty
+    expect(mockFlushPlugin).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.any(Array),
+      dir,
+      'webdriverio-project',
+      'WebdriverIO'
+    )
   })
 
   it('should handle multiple audit entries from different failures', async () => {
@@ -220,6 +239,7 @@ describe('WebdriverIO Audit Integration', () => {
       },
     })
     mockRenderLocalReportJson.mockReturnValue('{}')
+    mockFlushPlugin.mockReturnValue(2)
 
     const plugin = new HealifyWebdriverIOPlugin()
     const wrapped = plugin.wrap(makeBrowser(findImpl))
@@ -230,20 +250,20 @@ describe('WebdriverIO Audit Integration', () => {
 
     plugin.flush(dir)
 
-    expect(mockBuildAuditEntry).toHaveBeenCalledTimes(2)
-    expect(mockWriteAuditReport).toHaveBeenCalledWith(
-      expect.arrayContaining([
-        expect.objectContaining({ originalSelector: '#first' }),
-        expect.objectContaining({ originalSelector: '#second' }),
-      ]),
+    expect(mockBuildAuditFromEvent).toHaveBeenCalledTimes(2)
+    expect(mockFlushPlugin).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.any(Array),
       dir,
       'webdriverio-project',
       'WebdriverIO'
     )
   })
 
-  it('should not crash if buildAuditEntry throws', async () => {
-    mockBuildAuditEntry.mockImplementationOnce(() => {
+  it('should not crash if buildAuditFromEvent encounters an error', async () => {
+    // The plugin's onEvent callback wraps buildAuditFromEvent in try/catch,
+    // so errors are swallowed. Test that the plugin continues to work.
+    mockBuildAuditFromEvent.mockImplementation(() => {
       throw new Error('audit build failed')
     })
 
@@ -265,12 +285,14 @@ describe('WebdriverIO Audit Integration', () => {
       },
     })
     mockRenderLocalReportJson.mockReturnValue('{}')
+    mockFlushPlugin.mockReturnValue(0)
 
     const plugin = new HealifyWebdriverIOPlugin()
     const wrapped = plugin.wrap(browser)
     const el = wrapped.$('#submit')
     await el.click()
 
+    // Plugin should not crash even though buildAuditFromEvent threw
     expect(() => plugin.flush(dir)).not.toThrow()
   })
 
@@ -296,6 +318,7 @@ describe('WebdriverIO Audit Integration', () => {
       },
     })
     mockRenderLocalReportJson.mockReturnValue('{}')
+    mockFlushPlugin.mockReturnValue(1)
 
     const plugin = new HealifyWebdriverIOPlugin()
     const wrapped = plugin.wrap(makeBrowser(findImpl))
@@ -304,7 +327,8 @@ describe('WebdriverIO Audit Integration', () => {
 
     plugin.flush(dir)
 
-    expect(mockWriteAuditReport).toHaveBeenCalledWith(
+    expect(mockFlushPlugin).toHaveBeenCalledWith(
+      expect.any(Array),
       expect.any(Array),
       dir,
       'webdriverio-project',

@@ -25,11 +25,14 @@ export function createBranch(): string {
   return branchName
 }
 
-export function createCommit(selectorCount: number): void {
-  try {
-    execFileSync('git', ['add', '-A'], { stdio: 'ignore' })
-  } catch (err) {
-    throw new Error(`Failed to stage files: ${(err as Error).message}`)
+export function createCommit(selectorCount: number, files: string[]): void {
+  if (files.length === 0) return
+  for (const file of files) {
+    try {
+      execFileSync('git', ['add', file], { stdio: 'ignore' })
+    } catch (err) {
+      throw new Error(`Failed to stage file '${file}': ${(err as Error).message}`)
+    }
   }
   try {
     execFileSync('git', ['commit', '-m', `healify: auto-fix ${selectorCount} broken selectors`], { stdio: 'ignore' })

@@ -94,7 +94,7 @@ export function runLocalHealing(input: LocalCaseInput): LocalCaseResult {
       confidence: 0,
       explanation: 'No se pudo extraer un selector del mensaje de error.',
       selectorType: 'UNKNOWN',
-      defectId: buildDefectId(input.testFile, `${input.testName}:${selector}`),
+      defectId: buildDefectId(input.testFile, selector),
       severity: severityFor('unresolved'),
       expected: `El test "${input.testName}" termina sin errores.`,
       actual: firstLine(input.errorMessage),

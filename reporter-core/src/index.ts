@@ -11,3 +11,4 @@ export { parseHistoryLines, readRepertoire, findRepertoireMatch, type HistoryEnt
 export { loadConfig, type HealifyConfig } from './config'
 export { buildAuditEntry, writeAuditReport, appendAuditEntry } from './audit'
 export type { AuditEntry, AuditReport, FailureContext } from './audit'
+export { buildAuditFromEvent, flushPlugin, type PluginHealingEvent } from './plugin-helpers'

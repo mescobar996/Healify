@@ -5,14 +5,24 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-const { mockAnalyzeAndHeal, mockRenderLocalReportJson } = vi.hoisted(() => ({
+const { mockAnalyzeAndHeal, mockRenderLocalReportJson, mockBuildAuditFromEvent, mockFlushPlugin, mockReadRepertoire } = vi.hoisted(() => ({
   mockAnalyzeAndHeal: vi.fn(),
   mockRenderLocalReportJson: vi.fn(),
+  mockBuildAuditFromEvent: vi.fn(),
+  mockFlushPlugin: vi.fn().mockReturnValue(0),
+  mockReadRepertoire: vi.fn().mockReturnValue([]),
 }))
 
 vi.mock('@healify/reporter-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@healify/reporter-core')>()
-  return { ...actual, analyzeAndHeal: mockAnalyzeAndHeal, renderLocalReportJson: mockRenderLocalReportJson }
+  return {
+    ...actual,
+    analyzeAndHeal: mockAnalyzeAndHeal,
+    renderLocalReportJson: mockRenderLocalReportJson,
+    buildAuditFromEvent: mockBuildAuditFromEvent,
+    flushPlugin: mockFlushPlugin,
+    readRepertoire: mockReadRepertoire,
+  }
 })
 
 import { HealifySeleniumPlugin } from '../plugin'
@@ -75,12 +85,20 @@ describe('HealifySeleniumPlugin', () => {
 
 describe('flush()', () => {
   it('devuelve 0 y no escribe archivo cuando no hay eventos', () => {
-    mockRenderLocalReportJson.mockReturnValue('{}')
+    mockFlushPlugin.mockReturnValue(0)
     const plugin = new HealifySeleniumPlugin()
 
     const count = plugin.flush(dir)
 
     expect(count).toBe(0)
+    // flushPlugin is called with empty arrays — it returns 0 because there's nothing to write
+    expect(mockFlushPlugin).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.any(Array),
+      dir,
+      'selenium-project',
+      'Selenium'
+    )
   })
 
   it('escribe healify-report.json con los eventos acumulados', async () => {
@@ -99,6 +117,7 @@ describe('flush()', () => {
       selectorType: 'TESTID',
     })
     mockRenderLocalReportJson.mockReturnValue('{"mock":true}')
+    mockFlushPlugin.mockReturnValue(1)
 
     const plugin = new HealifySeleniumPlugin({ projectName: 'mi-proyecto' })
     const wrapped = plugin.wrap(driver)
@@ -107,20 +126,12 @@ describe('flush()', () => {
     const count = plugin.flush(dir)
 
     expect(count).toBe(1)
-    const written = readFileSync(join(dir, 'healify-report.json'), 'utf-8')
-    expect(written).toBe('{"mock":true}')
-    expect(mockRenderLocalReportJson).toHaveBeenCalledWith(
-      expect.objectContaining({
-        project: 'mi-proyecto',
-        framework: 'Selenium',
-        cases: expect.arrayContaining([
-          expect.objectContaining({
-            selector: '#old',
-            fixedSelector: '[data-testid="real"]',
-            confidence: 0.95,
-          }),
-        ]),
-      })
+    expect(mockFlushPlugin).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.any(Array),
+      dir,
+      'mi-proyecto',
+      'Selenium'
     )
   })
 
@@ -137,6 +148,7 @@ describe('flush()', () => {
       selectorType: 'CSS',
     })
     mockRenderLocalReportJson.mockReturnValue('{}')
+    mockFlushPlugin.mockReturnValueOnce(1).mockReturnValueOnce(0)
 
     const plugin = new HealifySeleniumPlugin()
     const wrapped = plugin.wrap(driver)
@@ -163,6 +175,7 @@ describe('flush()', () => {
       selectorType: 'CSS',
     })
     mockRenderLocalReportJson.mockReturnValue('{}')
+    mockFlushPlugin.mockReturnValue(2)
 
     const plugin = new HealifySeleniumPlugin()
     const wrapped = plugin.wrap(driver)
@@ -185,6 +198,7 @@ describe('flush()', () => {
       selectorType: 'CSS',
     })
     mockRenderLocalReportJson.mockReturnValue('{}')
+    mockFlushPlugin.mockReturnValue(1)
 
     const plugin = new HealifySeleniumPlugin()
     const wrapped = plugin.wrap(driver)
@@ -192,8 +206,12 @@ describe('flush()', () => {
 
     plugin.flush(dir)
 
-    expect(mockRenderLocalReportJson).toHaveBeenCalledWith(
-      expect.objectContaining({ project: 'selenium-project' })
+    expect(mockFlushPlugin).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.any(Array),
+      dir,
+      'selenium-project',
+      'Selenium'
     )
   })
 
@@ -212,6 +230,7 @@ describe('flush()', () => {
       selectorType: 'CSS',
     })
     mockRenderLocalReportJson.mockReturnValue('{}')
+    mockFlushPlugin.mockReturnValue(1)
     const userOnEvent = vi.fn()
 
     const plugin = new HealifySeleniumPlugin({ onEvent: userOnEvent })
