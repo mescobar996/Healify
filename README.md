@@ -1,6 +1,11 @@
 <div align="center">
   <img src="logo-healify.png" alt="Healify" width="120" />
-  <p><strong>Cuando un selector se rompe, Healify te dice cómo arreglarlo. Sin salir de tu máquina.</strong></p>
+
+  <h3>Un selector se rompe. Healify sabe por qué — y con qué reemplazarlo.<br/>Sin mandar una sola línea de tu código a ningún lado.</h3>
+
+  <sub>601 tests · 0 dependencias en la GitHub Action · 0 bytes de tu DOM en un servidor ajeno</sub>
+
+  <br/><br/>
 
   <a href="https://www.npmjs.com/package/@healify/cli"><img src="https://img.shields.io/npm/v/@healify/cli" alt="npm" /></a>
   <a href="https://github.com/mescobar996/Healify/actions/workflows/ci.yml"><img src="https://github.com/mescobar996/Healify/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
@@ -10,6 +15,17 @@
   <img src="https://img.shields.io/badge/node-%3E%3D18-green" />
   <a href="https://healify-sigma.vercel.app"><img src="https://img.shields.io/badge/Live%20Demo-healify--sigma.vercel.app-blue" /></a>
 </div>
+
+---
+
+## ¿Quién sos?
+
+| | |
+|---|---|
+| **QA / Test Engineer** | Andá directo a [el reporte con evidencia](#reporte-html) — el que le mandás al equipo cuando algo se rompe. |
+| **Dev integrando CI** | [30 segundos](#en-30-segundos) y listo, o la [GitHub Action](#github-action) si querés que comente solo en cada PR. |
+| **Stakeholder evaluando esto** | [La comparación](#la-comparación) — por qué no hace falta pedirle presupuesto a nadie para usarlo. |
+| **El que audita todo antes de aprobar una dependencia** | [Nada sale de tu máquina](#100-local--garantía) y la [firma verificable de cada release](#cadena-de-custodia). |
 
 ---
 
@@ -31,19 +47,32 @@ Cada corrida genera `healify-report.html` (dark/light, interactivo, 100% offline
 
 ---
 
-## Qué es
+## El problema
 
-**Healify** es un heal local de selectores rotos para **Playwright, Cypress, Selenium y WebdriverIO**. Cuando un test falla porque un selector ya no existe, Healify analiza tu DOM real y propone una alternativa verificada contra la página.
+Un botón cambió de `id` en el último deploy. No cambió nada del producto — cambió un atributo que nunca debió importar. Y aun así tu suite de 200 tests se pinta de rojo, alguien tiene que frenar lo que estaba haciendo, abrir el DOM a mano y encontrar la única línea que hay que tocar.
 
-Sin IA, sin nube, sin cuenta, sin API key, sin tracking. El análisis corre 100% en tu máquina con heurística determinista.
+Eso no es un bug de tu app. Es un selector frágil. Y pasa todos los días.
+
+**Healify** es un heal local de selectores rotos para **Playwright, Cypress, Selenium y WebdriverIO**. Cuando un test falla porque el selector ya no existe, Healify no adivina: mira el DOM real que capturó tu framework en el momento exacto del fallo, y te da el reemplazo estable, verificado contra esa evidencia — no contra lo que un modelo de lenguaje cree que probablemente esté ahí.
+
+Sin IA generativa, sin nube, sin cuenta, sin API key, sin tracking. Heurística determinista, 100% en tu máquina: mismo input, mismo output, siempre.
 
 ---
 
-## Por qué existe
+## La comparación
 
-Los selectores frágiles rompen CI sin razón. Un `#add-to-cart-btn` cambió de id y el build muere. Healify prioriza lo que ya es estable —roles ARIA, texto accesible, estructura semántica— en vez de posiciones o clases volátiles.
+Antes de escribir una línea, se investigaron 15 herramientas del rubro ([research completo acá](docs/research/competitive-gaps.md)). El patrón se repite: o pedís un backend, o pedís una cuenta en la nube, o le pedís a un LLM que adivine — y un LLM adivina distinto cada vez, aunque el input sea idéntico.
 
-El motor rankea cada selector por estabilidad y te da el mejor alternativo posible, verificado contra tu DOM real.
+| | Healify | El resto del mercado |
+|---|---|---|
+| **Infraestructura** | Un `npx` | Docker + Postgres, o una cuenta en la nube |
+| **Motor** | Heurística determinista — mismo input, mismo output | LLM (no determinista), o backend propietario que no podés auditar |
+| **Qué sale de tu máquina** | Nada | El DOM de tu app, camino a un servidor de un tercero |
+| **Código** | MIT, 100% open source, vive en tu repo | Cerrado, o SaaS con login |
+| **Procedencia de cada release** | Firmada y trazable a un commit público ([Sigstore](https://search.sigstore.dev/?packageName=%40healify)) | — |
+| **Costo** | Cero, para siempre | Backend a mantener, o suscripción |
+
+No es que los demás estén mal hechos — Healenium, el referente del rubro, es sólido. Es que resuelve un problema distinto al que tenés vos: el tuyo no necesita una base de datos, necesita que alguien te diga "usá esto en vez de eso" antes de que termines el café.
 
 ---
 
@@ -228,18 +257,14 @@ jobs:
       - uses: mescobar996/Healify@v1.6.0
 ```
 
-Se referencia un tag exacto. `@v1` funciona solo si existe el alias móvil, que se re-apunta en cada release:
-
-```bash
-git tag -f v1 v1.6.0 && git push -f origin v1
-```
+Se referencia un tag exacto. `@v1` funciona como alias móvil de la última `1.x`, y ya está publicado.
 
 | Input | Default | Qué hace |
 |---|---|---|
 | `github-token` | `${{ github.token }}` | Token para comentar. Necesita `pull-requests: write`. |
 | `project-path` | `.` | Directorio donde correr Healify (monorepos). |
 
-El comentario se **actualiza** en cada push en vez de apilar uno nuevo. Cero dependencias de runtime: la action habla con la API de GitHub por `fetch`.
+El comentario se **actualiza** en cada push en vez de apilar uno nuevo. Cero dependencias de runtime: la action habla con la API de GitHub por `fetch`, nada más.
 
 ---
 
@@ -280,13 +305,16 @@ HEALIFY_HEAL_ENABLED=false npx playwright test
 
 ## Reporte HTML
 
+Esto es lo que un QA se lleva de acá: no un log de consola, un entregable.
+
 `healify-report.html` es un reporte visual interactivo (dark/light, 100% offline) con:
 
-- Antes/después de cada selector curado
-- Selector original vs sugerido con nivel de confianza
-- Contexto del DOM y del fallo
+- Antes/después de cada selector curado, con nivel de confianza
+- **Verificado vs heurístico**: si la sugerencia se confrontó contra el DOM real de esa corrida (`verified: true`) o es una deducción sobre el texto del selector (`verified: false`) — nunca se presenta una adivinanza como un hecho
+- Contexto del DOM y del mensaje de error original
+- `defectId` estable (mismo selector roto, mismo archivo → mismo ID en cada corrida) y severidad, para cruzar contra tu tracker de bugs sin reinventar la rueda
 
-También genera `healify-report.json` (datos estructurados), `healify-report.md` (para PRs) y `healify-audit.json` (trail completo de cada selector).
+También genera `healify-report.json` (datos estructurados para integrarlo a tu propio dashboard), `healify-report.md` (pegalo tal cual en una PR o un ticket) y `healify-audit.json` (el trail completo de cada selector, por si alguien pregunta "¿y esto de dónde salió?").
 
 ---
 
@@ -296,6 +324,14 @@ También genera `healify-report.json` (datos estructurados), `healify-report.md`
 - Sin API key, sin cuenta, sin telemetría.
 - La heurística es determinista: mismo input, mismo resultado.
 - `healify ai` es opcional y también 100% local (Ollama corriendo en tu máquina).
+
+---
+
+## Cadena de custodia
+
+Los 7 paquetes se publican con **[npm Trusted Publishing](https://docs.npmjs.com/generating-provenance-statements)**: no hay ningún token de por medio. npm autoriza cada `npm publish` verificando directamente contra el workflow de GitHub Actions que lo dispara — no hay secreto que se pueda filtrar, vencer, ni usar desde otro lado para publicar algo en nombre de `@healify`.
+
+Cada versión queda firmada y anotada en el [transparency log público de Sigstore](https://search.sigstore.dev/?packageName=%40healify): podés verificar, para cualquier release, de qué commit exacto y de qué corrida de CI salió el tarball que estás instalando. Lo mismo que le pedís a Healify que haga con tus selectores — no confiar a ciegas, verificar contra la evidencia — se lo aplicamos a nosotros mismos.
 
 ---
 
@@ -315,7 +351,9 @@ También genera `healify-report.json` (datos estructurados), `healify-report.md`
 
 - Landing: https://healify-sigma.vercel.app
 - npm: [`@healify/cli`](https://www.npmjs.com/package/@healify/cli), [`@healify/reporter-core`](https://www.npmjs.com/package/@healify/reporter-core), [`@healify/test-runner`](https://www.npmjs.com/package/@healify/test-runner), [`@healify/cypress-plugin`](https://www.npmjs.com/package/@healify/cypress-plugin), [`@healify/selenium-plugin`](https://www.npmjs.com/package/@healify/selenium-plugin), [`@healify/webdriverio-plugin`](https://www.npmjs.com/package/@healify/webdriverio-plugin), [`@healify/ai-local`](https://www.npmjs.com/package/@healify/ai-local)
-- Release: [v1.6.0](https://github.com/mescobar996/Healify/releases)
+- Procedencia firmada de cada release: [Sigstore transparency log](https://search.sigstore.dev/?packageName=%40healify)
+- Release: [v1.6.0](https://github.com/mescobar996/Healify/releases/tag/v1.6.0)
+- Research de la competencia: [docs/research/competitive-gaps.md](docs/research/competitive-gaps.md)
 - Repo: https://github.com/mescobar996/Healify
 
 ---
