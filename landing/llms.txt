@@ -24,7 +24,7 @@ npx @healify/cli init
 
 ## Enlaces
 
-- Landing: https://healify-sigma.vercel.app/
-- Repositorio: https://github.com/mescobar996/Healify
-- npm CLI: https://www.npmjs.com/package/@healify/cli
-- Reporte de errores: https://github.com/mescobar996/Healify/issues
+- [Landing](https://healify-sigma.vercel.app/)
+- [Repositorio](https://github.com/mescobar996/Healify)
+- [npm CLI](https://www.npmjs.com/package/@healify/cli)
+- [Reporte de errores](https://github.com/mescobar996/Healify/issues)
