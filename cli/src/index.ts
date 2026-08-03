@@ -151,7 +151,32 @@ function runFix(args: string[]): void {
 
       const hasGH = detectGitHubCLI()
       if (hasGH) {
-        const prBody = `## Healify Auto-Fix\n\nResumen: ${appliedCount} selectores arreglados\n\nAudit completo: healify-audit.json`
+        const appliedOutcomes = outcomes.filter(o => o.status === 'applied')
+        const lowConfidence = appliedOutcomes.filter(o => o.confidence < 90)
+        const reviewCount = lowConfidence.length
+        
+        const tableRows = appliedOutcomes.map(o => 
+          `| ${o.originalSelector} | ${o.fixedSelector} | ${o.confidence}% | ${o.verified ? '✅' : '⚠️'} |`
+        ).join('\n')
+        
+        const reviewRows = lowConfidence.map(o => 
+          `| ${o.originalSelector} | ${o.fixedSelector} | ${o.confidence}% | ⚠️ |`
+        ).join('\n')
+        
+        const prBody = `## Healify Auto-Fix
+
+Resumen: ${appliedCount} selectores arreglados, ${reviewCount} necesitan revisión
+
+### Selectores aplicados
+| Original | Propuesto | Confianza | Verificado |
+|----------|-----------|-----------|------------|
+${tableRows}
+
+${reviewCount > 0 ? `### Selectores que necesitan revisión
+(los que confidence < 90%)
+
+${reviewRows}
+` : ''}Audit completo: healify-audit.json`
         const prURL = createPRWithGH('healify: fix broken selectors', prBody)
         console.log(`✅ PR created: ${prURL}`)
       } else {
