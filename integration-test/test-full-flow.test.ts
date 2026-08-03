@@ -310,4 +310,143 @@ describe('Healify Full Flow Integration', () => {
     expect(output).toContain('init')
     expect(output).toContain('doctor')
   })
+
+  it('should handle --pr flag without crashing (mock git)', () => {
+    const specFile = join(testDir, 'pr-test.spec.ts')
+    writeFileSync(specFile, `test('pr test', async ({ page }) => {\n  await page.click('#pr-btn')\n})`, 'utf-8')
+
+    const reportPath = makeHealifyReport(testDir, [
+      {
+        testName: 'pr test',
+        testFile: specFile,
+        selector: '#pr-btn',
+        errorMessage: "Element not found",
+        status: 'healed',
+        fixedSelector: "[data-testid='pr-btn']",
+        confidence: 0.95,
+        explanation: '',
+        selectorType: 'TESTID',
+      },
+    ])
+
+    let exitCode = 0
+    try {
+      execSync(`node "${cliPath}" fix "${reportPath}" --pr --force`, {
+        cwd: testDir,
+        encoding: 'utf-8',
+      })
+    } catch (err: any) {
+      exitCode = err.status
+    }
+
+    expect(exitCode).toBe(0)
+  })
+
+  it('should chain fix command and verify healify-report.json structure', () => {
+    const specFile = join(testDir, 'chain-test.spec.ts')
+    writeFileSync(specFile, `test('chain test', async ({ page }) => {\n  await page.click('#chain-btn')\n})`, 'utf-8')
+
+    const reportPath = makeHealifyReport(testDir, [
+      {
+        testName: 'chain test',
+        testFile: specFile,
+        selector: '#chain-btn',
+        errorMessage: "Element not found",
+        status: 'healed',
+        fixedSelector: "[data-testid='chain-btn']",
+        confidence: 0.95,
+        explanation: '',
+        selectorType: 'TESTID',
+      },
+    ])
+
+    execSync(`node "${cliPath}" fix "${reportPath}" --force`, {
+      cwd: testDir,
+      encoding: 'utf-8',
+    })
+
+    const reportContent = readFileSync(reportPath, 'utf-8')
+    const report = JSON.parse(reportContent)
+
+    expect(report).toHaveProperty('project')
+    expect(report).toHaveProperty('framework')
+    expect(report).toHaveProperty('generatedAt')
+    expect(report).toHaveProperty('cases')
+    expect(Array.isArray(report.cases)).toBe(true)
+    expect(report.cases.length).toBe(1)
+    expect(report.cases[0]).toHaveProperty('testName')
+    expect(report.cases[0]).toHaveProperty('selector')
+    expect(report.cases[0]).toHaveProperty('status')
+    expect(report.cases[0]).toHaveProperty('fixedSelector')
+  })
+
+  it('should verify audit report structure after fix with multiple cases', () => {
+    const specFile = join(testDir, 'audit-structure.spec.ts')
+    writeFileSync(specFile, [
+      `test('audit a', async ({ page }) => {`,
+      `  await page.click('#audit-a')`,
+      `})`,
+      `test('audit b', async ({ page }) => {`,
+      `  await page.click('#audit-b')`,
+      `})`,
+    ].join('\n'), 'utf-8')
+
+    const reportPath = makeHealifyReport(testDir, [
+      {
+        testName: 'audit a',
+        testFile: specFile,
+        selector: '#audit-a',
+        errorMessage: "Selector not found",
+        status: 'healed',
+        fixedSelector: "[data-testid='audit-a']",
+        confidence: 0.95,
+        explanation: '',
+        selectorType: 'TESTID',
+      },
+      {
+        testName: 'audit b',
+        testFile: specFile,
+        selector: '#audit-b',
+        errorMessage: "Selector not found",
+        status: 'healed',
+        fixedSelector: "[data-testid='audit-b']",
+        confidence: 0.92,
+        explanation: '',
+        selectorType: 'TESTID',
+      },
+    ])
+
+    const output = execSync(`node "${cliPath}" fix "${reportPath}" --force`, {
+      cwd: testDir,
+      encoding: 'utf-8',
+    })
+
+    expect(output).toContain('Healify')
+    expect(output).toContain('2')
+
+    const reportContent = readFileSync(reportPath, 'utf-8')
+    const report = JSON.parse(reportContent)
+
+    expect(report.project).toBe('integration-test')
+    expect(report.framework).toBe('Playwright')
+    expect(report.generatedAt).toBeTruthy()
+    expect(report.cases.length).toBe(2)
+
+    for (const c of report.cases) {
+      expect(c).toHaveProperty('testName')
+      expect(c).toHaveProperty('testFile')
+      expect(c).toHaveProperty('selector')
+      expect(c).toHaveProperty('errorMessage')
+      expect(c).toHaveProperty('status')
+      expect(c).toHaveProperty('fixedSelector')
+      expect(c).toHaveProperty('confidence')
+      expect(c).toHaveProperty('selectorType')
+    }
+
+    const content = readFileSync(specFile, 'utf-8')
+    expect(content).toContain("[data-testid='audit-a']")
+    expect(content).toContain("[data-testid='audit-b']")
+    expect(content).not.toContain('#audit-a')
+    expect(content).not.toContain('#audit-b')
+  })
 })
