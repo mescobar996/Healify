@@ -2418,6 +2418,406 @@ var require_agile = __commonJS({
   }
 });
 
+// ../reporter-core/dist/dashboard.js
+var require_dashboard = __commonJS({
+  "../reporter-core/dist/dashboard.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.computeTopRecurrent = computeTopRecurrent;
+    exports2.computeRebroken = computeRebroken;
+    exports2.buildDashboardStats = buildDashboardStats;
+    exports2.renderDashboardHtml = renderDashboardHtml;
+    function computeTopRecurrent(entries, limit = 10) {
+      const counts = /* @__PURE__ */ new Map();
+      for (const e of entries)
+        counts.set(e.selector, (counts.get(e.selector) ?? 0) + 1);
+      return [...counts.entries()].map(([selector, count]) => ({ selector, count })).sort((a, b) => b.count - a.count).slice(0, limit);
+    }
+    function computeRebroken(entries) {
+      const bySelector = /* @__PURE__ */ new Map();
+      for (const e of entries) {
+        const list = bySelector.get(e.selector) ?? [];
+        list.push(e);
+        bySelector.set(e.selector, list);
+      }
+      const result = [];
+      for (const [selector, list] of bySelector) {
+        if (list.length < 2)
+          continue;
+        const sorted = [...list].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+        if (sorted[0].status !== "healed")
+          continue;
+        const rebrokeAgain = sorted.slice(1).some((e) => e.status !== "healed");
+        if (!rebrokeAgain)
+          continue;
+        result.push({ selector, count: list.length, firstHealedAt: sorted[0].timestamp });
+      }
+      return result.sort((a, b) => b.count - a.count);
+    }
+    function countByStatus(entries) {
+      const counts = { healed: 0, review: 0, unresolved: 0 };
+      for (const e of entries) {
+        if (e.status === "healed")
+          counts.healed += 1;
+        else if (e.status === "review")
+          counts.review += 1;
+        else
+          counts.unresolved += 1;
+      }
+      return counts;
+    }
+    function buildTimeline(entries) {
+      const byDate = /* @__PURE__ */ new Map();
+      for (const e of entries) {
+        const parsed = new Date(e.timestamp);
+        if (Number.isNaN(parsed.getTime()))
+          continue;
+        const date = parsed.toISOString().slice(0, 10);
+        let point = byDate.get(date);
+        if (!point) {
+          point = { date, healed: 0, review: 0, unresolved: 0 };
+          byDate.set(date, point);
+        }
+        if (e.status === "healed")
+          point.healed += 1;
+        else if (e.status === "review")
+          point.review += 1;
+        else
+          point.unresolved += 1;
+      }
+      return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
+    }
+    function buildDashboardStats(entries) {
+      const { healed, review, unresolved } = countByStatus(entries);
+      const total = entries.length;
+      let firstSeen = null;
+      let lastSeen = null;
+      for (const e of entries) {
+        if (firstSeen === null || e.timestamp < firstSeen)
+          firstSeen = e.timestamp;
+        if (lastSeen === null || e.timestamp > lastSeen)
+          lastSeen = e.timestamp;
+      }
+      return {
+        total,
+        healed,
+        review,
+        unresolved,
+        healedRate: total === 0 ? 0 : healed / total,
+        firstSeen,
+        lastSeen,
+        topRecurrent: computeTopRecurrent(entries),
+        rebroken: computeRebroken(entries),
+        timeline: buildTimeline(entries)
+      };
+    }
+    function escapeHtml(value) {
+      return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+    function pct(value) {
+      return `${Math.round(value * 1e3) / 10}%`;
+    }
+    function renderSummaryCards(stats) {
+      const cards = [
+        { label: "Curaciones totales", value: String(stats.total) },
+        { label: "Curadas", value: pct(stats.healedRate) },
+        { label: "En revisi\xF3n", value: String(stats.review) },
+        { label: "Sin resolver", value: String(stats.unresolved) },
+        { label: "Re-rotos", value: String(stats.rebroken.length) }
+      ];
+      return cards.map((c) => `<div class="meta-cell"><div class="label">${c.label}</div><div class="value">${c.value}</div></div>`).join("");
+    }
+    function renderTimeline(timeline) {
+      if (timeline.length === 0) {
+        return '<p class="empty">Todav\xEDa no hay curaciones que graficar \u2014 corr\xE9 healify fix (sin --dry-run) al menos una vez.</p>';
+      }
+      const max = Math.max(1, ...timeline.map((p) => Math.max(p.healed, p.review, p.unresolved)));
+      const bars = timeline.map((p) => {
+        const segments = p.healed + p.review + p.unresolved === 0 ? '<div class="seg seg-empty"></div>' : [
+          p.healed > 0 ? `<div class="seg seg-healed" style="height:${pct(p.healed / max)}"></div>` : "",
+          p.review > 0 ? `<div class="seg seg-review" style="height:${pct(p.review / max)}"></div>` : "",
+          p.unresolved > 0 ? `<div class="seg seg-unresolved" style="height:${pct(p.unresolved / max)}"></div>` : ""
+        ].join("");
+        return `<div class="bar-col" title="${p.date}">${segments}<div class="bar-date">${p.date.slice(5)}</div></div>`;
+      }).join("");
+      return `<div class="legend"><span class="lg lg-healed">Curadas</span><span class="lg lg-review">En revisi\xF3n</span><span class="lg lg-unresolved">Sin resolver</span></div><div class="bars">${bars}</div>`;
+    }
+    function renderRecurrentList(stats) {
+      if (stats.topRecurrent.length === 0)
+        return '<p class="empty">Sin selectores recurrentes todav\xEDa.</p>';
+      return `<ul>${stats.topRecurrent.map((r) => `<li><span class="count">${r.count}x</span> <code>${escapeHtml(r.selector)}</code></li>`).join("")}</ul>`;
+    }
+    function renderRebrokenList(stats) {
+      if (stats.rebroken.length === 0)
+        return '<p class="empty">Ninguno todav\xEDa \u2014 los selectores curados se mantienen curados.</p>';
+      return `<ul>${stats.rebroken.map((r) => `<li><span class="count">${r.count}x</span> <code>${escapeHtml(r.selector)}</code> <span class="meta">curado por primera vez ${escapeHtml(r.firstHealedAt)}</span></li>`).join("")}</ul>`;
+    }
+    function renderDashboardHtml(stats) {
+      return `<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Healify \u2014 Dashboard de curaciones</title>
+<style>
+  :root {
+    --background: #000000;
+    --card: #0A0A0A;
+    --card-elevated: #111111;
+    --foreground: #EDEDED;
+    --muted: #8A8A8A;
+    --border: rgba(255,255,255,0.08);
+    --border-strong: rgba(255,255,255,0.16);
+    --ring: rgba(139,92,246,0.5);
+    --ring-soft: rgba(139,92,246,0.12);
+    --healed: #34D399;
+    --healed-soft: rgba(52,211,153,0.12);
+    --review: #E8B94D;
+    --review-soft: rgba(232,185,77,0.12);
+    --unresolved: #E85C4A;
+    --unresolved-soft: rgba(232,92,74,0.12);
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --background: #FFFFFF;
+      --card: #FAFAFA;
+      --card-elevated: #FFFFFF;
+      --foreground: #0A0A0A;
+      --muted: #6B6B6B;
+      --border: rgba(0,0,0,0.08);
+      --border-strong: rgba(0,0,0,0.16);
+      --healed: #047857;
+      --healed-soft: rgba(5,150,105,0.09);
+      --review: #B45309;
+      --review-soft: rgba(180,83,9,0.09);
+      --unresolved: #B91C1C;
+      --unresolved-soft: rgba(185,28,28,0.08);
+    }
+  }
+  :root[data-theme="dark"] { --background:#000; --card:#0A0A0A; --card-elevated:#111; --foreground:#EDEDED; --muted:#8A8A8A; --border:rgba(255,255,255,0.08); --border-strong:rgba(255,255,255,0.16); --healed:#34D399; --healed-soft:rgba(52,211,153,0.12); --review:#E8B94D; --review-soft:rgba(232,185,77,0.12); --unresolved:#E85C4A; --unresolved-soft:rgba(232,92,74,0.12); }
+  :root[data-theme="light"] { --background:#FFF; --card:#FAFAFA; --card-elevated:#FFF; --foreground:#0A0A0A; --muted:#6B6B6B; --border:rgba(0,0,0,0.08); --border-strong:rgba(0,0,0,0.16); --healed:#047857; --healed-soft:rgba(5,150,105,0.09); --review:#B45309; --review-soft:rgba(180,83,9,0.09); --unresolved:#B91C1C; --unresolved-soft:rgba(185,28,28,0.08); }
+
+  * { box-sizing: border-box; }
+  @media (prefers-reduced-motion: reduce) { * { animation-duration:.001ms !important; transition-duration:.001ms !important; } }
+
+  body {
+    margin: 0;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.55;
+    padding: clamp(20px, 4vw, 56px);
+  }
+  button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+  code { font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace; font-size: 13px; background: var(--card-elevated); border: 1px solid var(--border); border-radius: 6px; padding: 1px 6px; }
+  .sheet { max-width: 900px; margin: 0 auto; }
+
+  .masthead { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; flex-wrap: wrap; padding-bottom: 20px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+  .masthead .id { display: flex; align-items: center; gap: 12px; }
+  .masthead .glyph { width: 34px; height: 34px; border-radius: 8px; background: linear-gradient(180deg,#fff 0%,#d7d7d7 100%); color: #0A0A0A; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; flex: none; }
+  .masthead .sub { color: var(--muted); font-size: 13px; margin-top: 3px; }
+  .masthead-right { display: flex; align-items: center; gap: 8px; }
+  .local-badge, .theme-btn { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .local-badge { background: var(--ring-soft); color: #C4B5FD; border: 1px solid var(--ring); padding: 6px 12px; }
+  .local-badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #A78BFA; }
+  .theme-btn { background: var(--card); border: 1px solid var(--border); color: var(--foreground); padding: 6px 12px; transition: border-color 150ms ease; }
+  .theme-btn:hover { border-color: var(--border-strong); }
+
+  h1 { font-size: 24px; margin: 0; letter-spacing: -0.02em; font-weight: 600; }
+
+  .meta-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); background: var(--card); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 26px; overflow-x: auto; }
+  .meta-cell { padding: 13px 16px; border-right: 1px solid var(--border); }
+  .meta-cell:last-child { border-right: none; }
+  .meta-cell .label { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 4px; }
+  .meta-cell .value { font-size: 20px; font-weight: 600; }
+
+  section { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 26px; }
+  section h2 { margin: 0 0 14px; font-size: 15px; letter-spacing: -0.01em; }
+
+  .legend { display: flex; gap: 16px; margin-bottom: 12px; font-size: 12px; color: var(--muted); }
+  .lg { display: inline-flex; align-items: center; gap: 6px; }
+  .lg::before { content: ""; width: 10px; height: 10px; border-radius: 3px; }
+  .lg-healed::before { background: var(--healed); }
+  .lg-review::before { background: var(--review); }
+  .lg-unresolved::before { background: var(--unresolved); }
+
+  .bars { display: flex; align-items: flex-end; gap: 4px; height: 180px; padding-top: 8px; overflow-x: auto; }
+  .bar-col { display: flex; flex-direction: column-reverse; justify-content: flex-end; width: 100%; min-width: 24px; height: 100%; gap: 1px; }
+  .seg { width: 100%; border-radius: 2px; }
+  .seg-healed { background: var(--healed); }
+  .seg-review { background: var(--review); }
+  .seg-unresolved { background: var(--unresolved); }
+  .seg-empty { height: 2px; background: var(--border); }
+  .bar-date { margin-top: 6px; text-align: center; font-size: 10px; color: var(--muted); }
+
+  ul { list-style: none; margin: 0; padding: 0; }
+  li { display: flex; align-items: baseline; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  li:last-child { border-bottom: none; }
+  .count { font-weight: 600; min-width: 44px; }
+  .meta { color: var(--muted); font-size: 12px; margin-left: auto; white-space: nowrap; }
+  .empty { color: var(--muted); margin: 0; }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <div class="masthead">
+    <div class="id">
+      <div class="glyph">H</div>
+      <div>
+        <h1>Healify \u2014 Dashboard de curaciones</h1>
+        <div class="sub">${stats.total} entradas \xB7 de ${stats.firstSeen ?? "\u2014"} a ${stats.lastSeen ?? "\u2014"}</div>
+      </div>
+    </div>
+    <div class="masthead-right">
+      <span class="local-badge">100% local</span>
+      <button class="theme-btn" id="theme-toggle">Tema</button>
+    </div>
+  </div>
+
+  <div class="meta-strip">${renderSummaryCards(stats)}</div>
+
+  <section>
+    <h2>Curaciones por d\xEDa</h2>
+    ${renderTimeline(stats.timeline)}
+  </section>
+
+  <section>
+    <h2>Selectores m\xE1s recurrentes</h2>
+    ${renderRecurrentList(stats)}
+  </section>
+
+  <section>
+    <h2>Selectores re-rotos</h2>
+    ${renderRebrokenList(stats)}
+  </section>
+</div>
+<script>
+(function(){
+  var root = document.documentElement;
+  var saved = localStorage.getItem('healify-theme');
+  if (saved === 'dark' || saved === 'light') root.dataset.theme = saved;
+  document.getElementById('theme-toggle').addEventListener('click', function () {
+    var next = root.dataset.theme === 'light' ? 'dark' : 'light';
+    root.dataset.theme = next;
+    localStorage.setItem('healify-theme', next);
+  });
+})();
+</script>
+</body>
+</html>
+`;
+    }
+  }
+});
+
+// ../reporter-core/dist/runs.js
+var require_runs = __commonJS({
+  "../reporter-core/dist/runs.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.serializeRunRecord = serializeRunRecord;
+    exports2.parseRunLines = parseRunLines;
+    exports2.readRunRecords = readRunRecords;
+    exports2.appendRunRecord = appendRunRecord;
+    var node_fs_1 = require("node:fs");
+    var node_path_1 = require("node:path");
+    var RUNS_RELATIVE_PATH = (0, node_path_1.join)(".healify", "runs.jsonl");
+    function serializeRunRecord(run) {
+      return JSON.stringify(run);
+    }
+    function parseRunLines(raw) {
+      const records = [];
+      for (const line of raw.split("\n")) {
+        if (!line.trim())
+          continue;
+        try {
+          const parsed = JSON.parse(line);
+          if (parsed?.type === "run")
+            records.push(parsed);
+        } catch {
+        }
+      }
+      return records;
+    }
+    function readRunRecords(cwd = process.cwd()) {
+      const fullPath = (0, node_path_1.join)(cwd, RUNS_RELATIVE_PATH);
+      if (!(0, node_fs_1.existsSync)(fullPath))
+        return [];
+      let raw;
+      try {
+        raw = (0, node_fs_1.readFileSync)(fullPath, "utf-8");
+      } catch {
+        return [];
+      }
+      return parseRunLines(raw);
+    }
+    function appendRunRecord(run, cwd = process.cwd()) {
+      const fullPath = (0, node_path_1.join)(cwd, RUNS_RELATIVE_PATH);
+      try {
+        (0, node_fs_1.mkdirSync)((0, node_path_1.dirname)(fullPath), { recursive: true });
+        (0, node_fs_1.appendFileSync)(fullPath, serializeRunRecord(run) + "\n", "utf-8");
+      } catch (error) {
+        console.warn(`\u26A0 no se pudo escribir el registro de corridas (${RUNS_RELATIVE_PATH}): ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+  }
+});
+
+// ../reporter-core/dist/flake.js
+var require_flake = __commonJS({
+  "../reporter-core/dist/flake.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.detectFlakyTests = detectFlakyTests;
+    var VERDICT_RANK = {
+      flaky: 0,
+      "always-failing": 1,
+      healthy: 2,
+      "insufficient-data": 3
+    };
+    function detectFlakyTests(runs, opts = {}) {
+      const minRuns = opts.minRuns ?? 2;
+      const byKey = /* @__PURE__ */ new Map();
+      for (const run of runs) {
+        for (const outcome of run.tests) {
+          const key = `${outcome.testFile ?? ""}\0${outcome.testName}`;
+          const group = byKey.get(key) ?? { testName: outcome.testName, testFile: outcome.testFile, passed: 0, failed: 0 };
+          if (outcome.passed)
+            group.passed++;
+          else
+            group.failed++;
+          byKey.set(key, group);
+        }
+      }
+      const tests = [];
+      for (const group of byKey.values()) {
+        const total = group.passed + group.failed;
+        const verdict = total < minRuns ? "insufficient-data" : group.failed === 0 ? "healthy" : group.failed === total ? "always-failing" : "flaky";
+        tests.push({
+          testName: group.testName,
+          testFile: group.testFile,
+          runs: total,
+          passed: group.passed,
+          failed: group.failed,
+          flakeRate: total === 0 ? 0 : group.failed / total,
+          verdict
+        });
+      }
+      return tests.sort((a, b) => {
+        const rank = VERDICT_RANK[a.verdict] - VERDICT_RANK[b.verdict];
+        if (rank !== 0)
+          return rank;
+        const rate = b.flakeRate - a.flakeRate;
+        if (rate !== 0)
+          return rate;
+        const byName = (a.testName + (a.testFile ?? "")).localeCompare(b.testName + (b.testFile ?? ""));
+        return byName;
+      });
+    }
+  }
+});
+
 // ../reporter-core/dist/audit.js
 var require_audit = __commonJS({
   "../reporter-core/dist/audit.js"(exports2) {
@@ -2535,7 +2935,8 @@ var require_dist = __commonJS({
   "../reporter-core/dist/index.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
-    exports2.flushPlugin = exports2.buildAuditFromEvent = exports2.appendAuditEntry = exports2.writeAuditReport = exports2.buildAuditEntry = exports2.postJson = exports2.createJiraClient = exports2.reportDefects = exports2.buildAgileDefects = exports2.DEFAULT_AGILE_PRIORITIES = exports2.defaultAgile = exports2.resolveAgile = exports2.DEFAULT_THRESHOLDS = exports2.resolveThresholds = exports2.loadConfig = exports2.findRepertoireMatch = exports2.readRepertoire = exports2.parseHistoryLines = exports2.domContextFromProbeResult = exports2.BROWSER_PROBE_SCRIPT = exports2.resolveLocatorStrategy = exports2.roleSuggestionToXPath = exports2.parseRoleSuggestion = exports2.selectorTokens = exports2.bestNameFor = exports2.bestElementFor = exports2.findMatches = exports2.existsInPage = exports2.formatPageElements = exports2.parsePageSnapshot = exports2.isPlaywrightOnlySelector = exports2.SEVERITY_LABEL = exports2.environmentRows = exports2.formatDuration = exports2.severityFor = exports2.buildDefectId = exports2.renderLocalReportMarkdown = exports2.statsFromCases = exports2.baseEnvironment = exports2.buildLocalRunFromEvents = exports2.printSummary = exports2.renderLocalReportJson = exports2.renderLocalReportHtml = exports2.runLocalHealing = exports2.analyzeAndHeal = exports2.extractSelectorFromError = void 0;
+    exports2.postJson = exports2.createJiraClient = exports2.detectFlakyTests = exports2.serializeRunRecord = exports2.parseRunLines = exports2.readRunRecords = exports2.appendRunRecord = exports2.computeRebroken = exports2.computeTopRecurrent = exports2.renderDashboardHtml = exports2.buildDashboardStats = exports2.reportDefects = exports2.buildAgileDefects = exports2.DEFAULT_AGILE_PRIORITIES = exports2.defaultAgile = exports2.resolveAgile = exports2.DEFAULT_THRESHOLDS = exports2.resolveThresholds = exports2.loadConfig = exports2.findRepertoireMatch = exports2.readRepertoire = exports2.parseHistoryLines = exports2.domContextFromProbeResult = exports2.BROWSER_PROBE_SCRIPT = exports2.resolveLocatorStrategy = exports2.roleSuggestionToXPath = exports2.parseRoleSuggestion = exports2.selectorTokens = exports2.bestNameFor = exports2.bestElementFor = exports2.findMatches = exports2.existsInPage = exports2.formatPageElements = exports2.parsePageSnapshot = exports2.isPlaywrightOnlySelector = exports2.SEVERITY_LABEL = exports2.environmentRows = exports2.formatDuration = exports2.severityFor = exports2.buildDefectId = exports2.renderLocalReportMarkdown = exports2.statsFromCases = exports2.baseEnvironment = exports2.buildLocalRunFromEvents = exports2.printSummary = exports2.renderLocalReportJson = exports2.renderLocalReportHtml = exports2.runLocalHealing = exports2.analyzeAndHeal = exports2.extractSelectorFromError = void 0;
+    exports2.flushPlugin = exports2.buildAuditFromEvent = exports2.appendAuditEntry = exports2.writeAuditReport = exports2.buildAuditEntry = void 0;
     var selector_extractor_1 = require_selector_extractor();
     Object.defineProperty(exports2, "extractSelectorFromError", { enumerable: true, get: function() {
       return selector_extractor_1.extractSelectorFromError;
@@ -2664,6 +3065,36 @@ var require_dist = __commonJS({
     } });
     Object.defineProperty(exports2, "reportDefects", { enumerable: true, get: function() {
       return agile_1.reportDefects;
+    } });
+    var dashboard_1 = require_dashboard();
+    Object.defineProperty(exports2, "buildDashboardStats", { enumerable: true, get: function() {
+      return dashboard_1.buildDashboardStats;
+    } });
+    Object.defineProperty(exports2, "renderDashboardHtml", { enumerable: true, get: function() {
+      return dashboard_1.renderDashboardHtml;
+    } });
+    Object.defineProperty(exports2, "computeTopRecurrent", { enumerable: true, get: function() {
+      return dashboard_1.computeTopRecurrent;
+    } });
+    Object.defineProperty(exports2, "computeRebroken", { enumerable: true, get: function() {
+      return dashboard_1.computeRebroken;
+    } });
+    var runs_1 = require_runs();
+    Object.defineProperty(exports2, "appendRunRecord", { enumerable: true, get: function() {
+      return runs_1.appendRunRecord;
+    } });
+    Object.defineProperty(exports2, "readRunRecords", { enumerable: true, get: function() {
+      return runs_1.readRunRecords;
+    } });
+    Object.defineProperty(exports2, "parseRunLines", { enumerable: true, get: function() {
+      return runs_1.parseRunLines;
+    } });
+    Object.defineProperty(exports2, "serializeRunRecord", { enumerable: true, get: function() {
+      return runs_1.serializeRunRecord;
+    } });
+    var flake_1 = require_flake();
+    Object.defineProperty(exports2, "detectFlakyTests", { enumerable: true, get: function() {
+      return flake_1.detectFlakyTests;
     } });
     var jira_1 = require_jira();
     Object.defineProperty(exports2, "createJiraClient", { enumerable: true, get: function() {
