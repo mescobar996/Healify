@@ -42,6 +42,44 @@
   `MODULE_NOT_FOUND` interno de npm apenas se corre así. Arreglado invocando `cmd.exe /c npx
   ...` explícito, el patrón estándar de .NET para lanzar batch scripts sin una shell real.
 
+## 1.7.0 — 2026-08-03
+
+Cierra el gap G18 del análisis competitivo (`docs/research/competitive-gaps.md`): el loop
+"selector roto → ticket en Jira". 638 tests (46 archivos), 0 warnings de lint.
+
+### Reporte a herramientas ágiles
+
+- **feat(core): `reportDefects`** — orquestador en `reporter-core/src/agile.ts` que traduce cada
+  `LocalCaseResult` a un defecto y lo reporta a Jira o a un webhook. **Opt-in, off por default**:
+  sin `agile.enabled: true` no hace ningún fetch. Mismo estándar que "Cadena de custodia": las
+  credenciales son del usuario contra su instancia, la única salida de datos es el POST hacia su
+  Jira/webhook, y el token jamás se loguea.
+- **feat(core): dedupe por `defectId`.** Cada defecto lleva el `defectId` estable de Healify
+  (`HLF-XXXXXXXX`, sha1 de archivo+selector) en el título y la descripción. Antes de crear,
+  Healify pregunta a tu Jira (`text ~ "HLF-XXXXXXXX" AND project = QA`); si el defecto ya existe,
+  no crea nada (`existing`), que es lo que elimina el ruido de tickets duplicados que la
+  investigación de campo encontró en todos los equipos QA.
+- **feat(core): la sugerencia viaja como comentario del ticket, nunca reemplaza el hallazgo.** El
+  issue se crea con expected/actual/pasos/selector/evidencia/entorno, y la sugerencia
+  (fixedSelector + confidence + verified + explanation + alternativas) se agrega como comentario
+  — contexto, no reemplazo. Un 503 de tu Jira falla ese defecto, no la corrida: el reporte local
+  nunca se pierde por un error de red.
+- **feat(core): `createJiraClient`** (`reporter-core/src/jira.ts`) — cliente mínimo de la API
+  Cloud v3 con `fetch` puro (cero deps, patrón `gh-action/github-api.js`): Basic auth
+  `base64(email:token)`, `searchByDefectId` con JQL escapado, `createIssue`, `addComment`. Un
+  no-2xx tira error con status + snippet del cuerpo (el de Jira explica permisos).
+- **feat(core): provider `webhook`** (`reporter-core/src/webhook.ts`) — `postJson` POSTea el
+  payload JSON y el receptor decide crear-o-actualizar, el patrón que la competencia ya
+  estableció ("webhook → JQL lookup por clave estable → crear si no existe / comentar si existe").
+- **feat(config): bloque `agile`** — `enabled`, `provider` (`jira`|`webhook`), `baseUrl`,
+  `email`, `apiToken`, `project`, `issueType`, `priorityBySeverity` (blocker→Highest, major→High,
+  minor→Medium, pisable), `labels`, `webhookUrl`. Env overrides para CI sin commitear secretos:
+  `HEALIFY_AGILE_ENABLED`, `HEALIFY_AGILE_PROVIDER`, `JIRA_BASE_URL`, `JIRA_EMAIL`,
+  `JIRA_API_TOKEN`, `JIRA_PROJECT`, `JIRA_ISSUE_TYPE`, `HEALIFY_WEBHOOK_URL`.
+- **feat(cli): `healify report [reporte.json] [--dry-run]`** — cierra el loop desde la terminal.
+  `--dry-run` imprime qué se reportaría sin tocar la red. Sin config `agile`, avisa que está
+  desactivado y no hace nada.
+
 ## 1.6.0 — 2026-08-03
 
 Tres features nuevas salidas de un gap analysis contra 15 proyectos del rubro

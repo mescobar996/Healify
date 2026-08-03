@@ -1,7 +1,7 @@
 # Healify vs. la competencia — gap analysis
 
-**Fecha:** 2026-08-03 · **Healify:** v1.5.0 (538 tests, 7 paquetes)
-**Método:** búsqueda GitHub (`gh api search/repositories`, orden por stars) + docs oficiales + web (ventana ~90 días de actividad).
+**Fecha:** 2026-08-03 · **Healify:** v1.6.0 (601 tests, 7 paquetes)
+**Método:** búsqueda GitHub (`gh api search/repositories`, orden por stars) + docs oficiales + web (ventana ~30 días de actividad, motor `last30days` v3.18.4 + búsquedas dirigidas).
 
 > Restricción de diseño no negociable: Healify es **100% local, sin IA, sin nube, sin API key, sin telemetría**.
 > Todo gap se evalúa contra esa restricción — lo que exige backend, DB o LLM queda descartado por definición,
@@ -41,8 +41,8 @@
 
 ## 2. Tabla de gaps
 
-> **Estado al 2026-08-03 (v1.6.0):** G1, G2, G3, G4, G5 y G6 cerrados. Sigue abierto G7
-> (dashboard histórico), G8 (flakiness), G9 (`--watch`).
+> **Estado al 2026-08-03 (v1.7.0):** G1, G2, G3, G4, G5 y G6 cerrados. G18 (reporte ágil)
+> **cerrado** (MVP Jira + webhook, 638 tests). Siguen abiertos G7 (dashboard histórico), G8 (flakiness), G9 (`--watch`).
 
 | # | Feature | Healenium | Otros | Healify hoy | ¿Gap? | Prioridad |
 |---|---|---|---|---|---|---|
@@ -63,6 +63,7 @@
 | G15 | **Telemetría local / stats** | ✅ backend | ✅ SaaS | ❌ a propósito (no hay tracking) | NO — contradice el pitch | ❌ descartado |
 | G16 | **Backend/DB para el histórico** | ✅ | ✅ | ❌ a propósito | NO — contradice el pitch | ❌ descartado |
 | G17 | **LLM para elegir el locator** | ⚠️ ML propio | ✅ autoheal-locator, cy.prompt | ❌ a propósito | NO — contradice el pitch | ❌ descartado |
+| G18 | **Reporte a herramientas ágiles (Jira / webhook)** | ❌ solo reporte HTML servido por el backend, sin issue tracker | ✅ test managers SaaS (TestCollab, Testiny, TestRail) y plugins CI (`atlassian/gajira-create`) | ✅ v1.7.0: `healify report` + dedupe por `defectId` (opt-in, 100% local) | **CERRADO** | — |
 
 ---
 
@@ -84,6 +85,22 @@
 
 ---
 
+## 4. Cerrado — G18: reporte de defectos a herramientas ágiles (opt-in, 100% local)
+
+**Por qué era ahora:** el reporte Markdown de Healify terminaba con "listo para pegar en un ticket de Jira/Redmine". Ese pegado manual era el punto donde el loop se cortaba: el defecto salía del motor y moría en un archivo. La investigación de campo (foros + docs, ventana 30 días) mostró que el problema real de los equipos **no** es "cómo generar un reporte" sino el **ruido**: tickets duplicados (el mismo fallo reportado N veces), cascadas de fallos que inundan el backlog y cero traceability del hallazgo a la resolución.
+
+Patrones que la competencia ya estableció y que el diseño debe respetar:
+
+1. **Dedupe por clave estable en la fuente, no por texto.** El patrón dominante documentado es "webhook → JQL lookup por campo estable → crear si no existe / comentar si existe"
+   (Atlassian Support KB: `summary ~ "{{issue.summary}}"` para cerrar duplicados; community threads que ramifican en el issue existente en vez de crear otro). El `defectId` de Healify (`HLF-XXXXXXXX`, hash sha1 estable archivo+selector) es exactamente esa clave: un JQL `text ~ "HLF-XXXXXX"` la encuentra igual en cada corrida.
+2. **Solo feedback accionable, sin ruido verde.** La guía de integración QA→Jira recomienda explícitamente no reportar pasadas ("if the test passed, the absence of an error is usually enough") y agrupar fallos en cascada para no crear cientos de tickets (smart failure grouping). Healify ya agrupa por selector roto — un ticket por defecto, no por aserción.
+3. **Traceability: el hallazgo y su resolución viven juntos.** Los test managers (TestCollab, Testiny, TestRail) sincronizan el estado del defecto de ida y vuelta. El MVP de Healify va un paso más simple: **el ticket se crea ANTES o junto con la sugerencia, y la sugerencia viaja como comentario/contexto del ticket** — nunca borra el rastro; el auto-heal queda como opción aparte.
+4. **Opt-in, off por default, credenciales del usuario contra SU instancia.** Todo lo que la competencia hace vive en la nube (TestCollab/Testiny son SaaS, gajira corre en CI). Healify mantiene el pitch: cero backend, cero nube intermedia. El único tráfico de salida es el POST del usuario hacia su propio Jira/webhook.
+
+**MVP implementado (plan `docs/superpowers/plans/2026-08-03-agile-reporting.md`, v1.7.0):** config `agile` opt-in (default `enabled: false`), cliente Jira Cloud REST puro con `fetch` (sin SDKs), webhook genérico como fallback (Zapier/n8n/automatización de Jira hacen el create-or-update con su JQL), dedupe por `defectId`, mapeo severidad→prioridad, comando `healify report [reporte.json] [--dry-run]`. Cero datos fuera de la máquina del usuario salvo los POSTs a su propia instancia. 638 tests, lint 0 warnings.
+
+---
+
 ## Fuentes
 
 - https://github.com/healenium/healenium-web · https://healenium.io/docs/download_and_install/hlm_web
@@ -95,3 +112,10 @@
 - https://github.com/SanjayPG/autoheal-locator · https://github.com/headout/autoheal
 - https://github.com/testomatio/check-tests
 - https://www.browserstack.com/docs/automate-self-hosted/playwright/self-healing
+- G18 (reporte ágil):
+  - https://support.atlassian.com/jira/kb/close-duplicate-issues-with-automation/ · https://community.atlassian.com/forums/Jira-questions/Automation-to-create-issue-if-no-existing-issue-has-a-matching/qaq-p/1527087
+  - https://community.atlassian.com/forums/Jira-questions/How-to-use-condition-in-rule-based-on-webhook/qaq-p/3133639 · https://confluence.atlassian.com/automation073/triggers-1093013541.html
+  - https://testcollab.com/integrations · https://www.testiny.io/integrations/
+  - https://github.com/Balvajs/pr-beacon · https://github.com/marocchino/sticky-pull-request-comment
+  - https://qa-automation.hashnode.dev/optimizing-jira-workflows-for-qa-a-guide-to-test-automation-integration · https://testquality.com/test-management-and-jira-integration-tools-best-practices/
+  - https://bugasura.io/release-notes/avoid-duplicate-defects-by-linking-existing-bugs/
