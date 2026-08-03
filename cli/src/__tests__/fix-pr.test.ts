@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const { mockExecSync } = vi.hoisted(() => ({ mockExecSync: vi.fn() }))
 vi.mock('node:child_process', () => ({ execSync: mockExecSync }))
 
-import { detectGitHubCLI, createBranch, createCommit, createPRInstructions } from '../pr'
+import { detectGitHubCLI, createBranch, createCommit, createPRInstructions, createPRWithGH } from '../pr'
 
 describe('PR workflow', () => {
   beforeEach(() => {
@@ -57,5 +57,17 @@ describe('PR workflow', () => {
     
     expect(instructions).toContain('git push origin healify/fix-20260802-143022')
     expect(instructions).toContain('gh pr create')
+  })
+
+  it('createPRWithGH creates PR using gh CLI', async () => {
+    mockExecSync.mockReturnValue('https://github.com/user/repo/pull/123')
+
+    const result = await createPRWithGH('healify: fix broken selectors', 'PR body')
+    
+    expect(mockExecSync).toHaveBeenCalledWith(
+      expect.stringContaining('gh pr create --title'),
+      { encoding: 'utf-8' }
+    )
+    expect(result).toBe('https://github.com/user/repo/pull/123')
   })
 })
