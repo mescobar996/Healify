@@ -1,9 +1,17 @@
 import { existsSync, mkdirSync, appendFileSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import type { LocalRun } from '@healify/reporter-core'
-import { parseHistoryLines, type HistoryEntry } from '@healify/reporter-core'
+import {
+  parseHistoryLines,
+  computeTopRecurrent,
+  computeRebroken,
+  type HistoryEntry,
+  type RecurrentSelector,
+  type RebrokenSelector,
+} from '@healify/reporter-core'
 
-export type { HistoryEntry }
+export type { HistoryEntry, RecurrentSelector, RebrokenSelector }
+export { computeTopRecurrent, computeRebroken }
 
 const HISTORY_RELATIVE_PATH = join('.healify', 'history.jsonl')
 
@@ -55,54 +63,4 @@ export function readHistory(cwd: string = process.cwd()): HistoryEntry[] {
   }
 
   return parseHistoryLines(raw)
-}
-
-export interface RecurrentSelector {
-  selector: string
-  count: number
-}
-
-/** Agrupa por selector exacto, cuenta apariciones en todo el historial, top N desc. */
-export function computeTopRecurrent(entries: HistoryEntry[], limit: number = 10): RecurrentSelector[] {
-  const counts = new Map<string, number>()
-  for (const e of entries) counts.set(e.selector, (counts.get(e.selector) ?? 0) + 1)
-  return [...counts.entries()]
-    .map(([selector, count]) => ({ selector, count }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, limit)
-}
-
-export interface RebrokenSelector {
-  selector: string
-  /** Apariciones totales en el historial, no re-roturas confirmadas — ver el comentario de computeRebroken(). */
-  count: number
-  firstHealedAt: string
-}
-
-/**
- * Aproximación, no medición exacta: el historial no sabe si fix() realmente aplicó el
- * selector al archivo (pudo saltarse por ambiguous/dirty-git/not-substitutable) — solo
- * sabe que el motor lo curó con confianza suficiente (status 'healed') la primera vez que
- * apareció, y que el mismo selector volvió a aparecer roto después.
- */
-export function computeRebroken(entries: HistoryEntry[]): RebrokenSelector[] {
-  const bySelector = new Map<string, HistoryEntry[]>()
-  for (const e of entries) {
-    const list = bySelector.get(e.selector) ?? []
-    list.push(e)
-    bySelector.set(e.selector, list)
-  }
-
-  const result: RebrokenSelector[] = []
-  for (const [selector, list] of bySelector) {
-    if (list.length < 2) continue
-    const sorted = [...list].sort((a, b) => a.timestamp.localeCompare(b.timestamp))
-    if (sorted[0].status !== 'healed') continue
-    // Debe haber vuelto a aparecer roto (no-healed) después de la primera curación —
-    // dos apariciones 'healed' seguidas no son un re-roto, son dos curaciones.
-    const rebrokeAgain = sorted.slice(1).some((e) => e.status !== 'healed')
-    if (!rebrokeAgain) continue
-    result.push({ selector, count: list.length, firstHealedAt: sorted[0].timestamp })
-  }
-  return result.sort((a, b) => b.count - a.count)
 }
