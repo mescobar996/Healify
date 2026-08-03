@@ -1059,12 +1059,28 @@ var require_config = __commonJS({
   "../reporter-core/dist/config.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
-    exports2.DEFAULT_THRESHOLDS = void 0;
+    exports2.DEFAULT_THRESHOLDS = exports2.DEFAULT_AGILE_PRIORITIES = void 0;
+    exports2.defaultAgile = defaultAgile;
     exports2.loadConfig = loadConfig;
     exports2.resolveThresholds = resolveThresholds;
+    exports2.resolveAgile = resolveAgile;
     var node_fs_1 = require("node:fs");
     var node_module_1 = require("node:module");
     var node_path_1 = require("node:path");
+    exports2.DEFAULT_AGILE_PRIORITIES = {
+      blocker: "Highest",
+      major: "High",
+      minor: "Medium"
+    };
+    function defaultAgile() {
+      return {
+        enabled: false,
+        provider: "jira",
+        issueType: "Bug",
+        priorityBySeverity: { ...exports2.DEFAULT_AGILE_PRIORITIES },
+        labels: []
+      };
+    }
     exports2.DEFAULT_THRESHOLDS = {
       healEnabled: true,
       minConfidence: 0.9,
@@ -1137,6 +1153,48 @@ var require_config = __commonJS({
       if (typeof raw.maxAlternatives === "number" && Number.isFinite(raw.maxAlternatives) && raw.maxAlternatives >= 0) {
         result.maxAlternatives = Math.min(Math.floor(raw.maxAlternatives), 10);
       }
+      if (raw.agile && typeof raw.agile === "object") {
+        const agile = validateAgile(raw.agile);
+        if (Object.keys(agile).length > 0)
+          result.agile = agile;
+      }
+      return result;
+    }
+    function isNonEmptyString(value) {
+      return typeof value === "string" && value.trim().length > 0;
+    }
+    function validateAgile(raw) {
+      const result = {};
+      if (typeof raw.enabled === "boolean")
+        result.enabled = raw.enabled;
+      if (raw.provider === "jira" || raw.provider === "webhook")
+        result.provider = raw.provider;
+      if (isNonEmptyString(raw.baseUrl))
+        result.baseUrl = raw.baseUrl;
+      if (isNonEmptyString(raw.email))
+        result.email = raw.email;
+      if (isNonEmptyString(raw.apiToken))
+        result.apiToken = raw.apiToken;
+      if (isNonEmptyString(raw.project))
+        result.project = raw.project;
+      if (isNonEmptyString(raw.issueType))
+        result.issueType = raw.issueType;
+      if (raw.priorityBySeverity && typeof raw.priorityBySeverity === "object") {
+        const priorities = {};
+        for (const severity of ["blocker", "major", "minor"]) {
+          if (isNonEmptyString(raw.priorityBySeverity[severity]))
+            priorities[severity] = raw.priorityBySeverity[severity];
+        }
+        if (Object.keys(priorities).length > 0)
+          result.priorityBySeverity = priorities;
+      }
+      if (Array.isArray(raw.labels)) {
+        const labels = raw.labels.filter((label) => typeof label === "string" && label.trim().length > 0);
+        if (labels.length > 0)
+          result.labels = labels;
+      }
+      if (isNonEmptyString(raw.webhookUrl))
+        result.webhookUrl = raw.webhookUrl;
       return result;
     }
     function isProbability(value) {
@@ -1157,6 +1215,34 @@ var require_config = __commonJS({
       if (Number.isFinite(maxAlternatives) && maxAlternatives >= 0) {
         result.maxAlternatives = Math.min(Math.floor(maxAlternatives), 10);
       }
+      const agile = { ...config.agile ?? {} };
+      let agileChanged = false;
+      const agileEnabled = parseBooleanEnv(env.HEALIFY_AGILE_ENABLED);
+      if (agileEnabled !== void 0) {
+        agile.enabled = agileEnabled;
+        agileChanged = true;
+      }
+      if (env.HEALIFY_AGILE_PROVIDER === "jira" || env.HEALIFY_AGILE_PROVIDER === "webhook") {
+        agile.provider = env.HEALIFY_AGILE_PROVIDER;
+        agileChanged = true;
+      }
+      const agileStringFields = [
+        ["baseUrl", env.JIRA_BASE_URL ?? ""],
+        ["email", env.JIRA_EMAIL ?? ""],
+        ["apiToken", env.JIRA_API_TOKEN ?? ""],
+        ["project", env.JIRA_PROJECT ?? ""],
+        ["issueType", env.JIRA_ISSUE_TYPE ?? ""],
+        ["webhookUrl", env.HEALIFY_WEBHOOK_URL ?? ""]
+      ];
+      for (const [field, value] of agileStringFields) {
+        if (isNonEmptyString(value)) {
+          ;
+          agile[field] = value;
+          agileChanged = true;
+        }
+      }
+      if (agileChanged)
+        result.agile = agile;
       return result;
     }
     function parseBooleanEnv(value) {
@@ -1183,6 +1269,22 @@ var require_config = __commonJS({
         minConfidence,
         reviewConfidence,
         maxAlternatives: config.maxAlternatives ?? exports2.DEFAULT_THRESHOLDS.maxAlternatives
+      };
+    }
+    function resolveAgile(config = {}) {
+      const raw = config.agile ?? {};
+      const defaults = defaultAgile();
+      return {
+        enabled: raw.enabled ?? defaults.enabled,
+        provider: raw.provider ?? defaults.provider,
+        baseUrl: raw.baseUrl ?? defaults.baseUrl,
+        email: raw.email ?? defaults.email,
+        apiToken: raw.apiToken ?? defaults.apiToken,
+        project: raw.project ?? defaults.project,
+        issueType: raw.issueType ?? defaults.issueType,
+        priorityBySeverity: { ...defaults.priorityBySeverity, ...raw.priorityBySeverity ?? {} },
+        labels: raw.labels ?? defaults.labels,
+        webhookUrl: raw.webhookUrl ?? defaults.webhookUrl
       };
     }
   }
@@ -2060,6 +2162,262 @@ return results;
   }
 });
 
+// ../reporter-core/dist/jira.js
+var require_jira = __commonJS({
+  "../reporter-core/dist/jira.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.createJiraClient = createJiraClient;
+    function apiBase(config) {
+      return (config.baseUrl ?? "").replace(/\/+$/, "");
+    }
+    function basicAuth(config) {
+      return `Basic ${Buffer.from(`${config.email}:${config.apiToken}`).toString("base64")}`;
+    }
+    function jqlEscape(value) {
+      return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+    }
+    function createJiraClient(config, fetchImpl = globalThis.fetch) {
+      async function request(method, path, body) {
+        const response = await fetchImpl(`${apiBase(config)}${path}`, {
+          method,
+          headers: {
+            authorization: basicAuth(config),
+            accept: "application/json",
+            ...body !== void 0 ? { "content-type": "application/json" } : {}
+          },
+          ...body !== void 0 ? { body: JSON.stringify(body) } : {}
+        });
+        if (!response.ok) {
+          const detail = await response.text().catch(() => "");
+          throw new Error(`Jira API ${method} ${path} respondi\xF3 ${response.status}: ${detail.slice(0, 300)}`);
+        }
+        return response.status === 204 ? null : response.json();
+      }
+      return {
+        /**
+         * Busca un issue por defectId (que ya viene en el título y en la descripción). Es la clave
+         * de dedupe: el mismo selector roto produce el mismo `HLF-XXXXXXXX` en cada corrida, así que
+         * este JQL lo encuentra igual siempre y no se duplican tickets.
+         */
+        async searchByDefectId(project, defectId) {
+          const jql = `text ~ "${jqlEscape(defectId)}" AND project = ${project}`;
+          const data = await request("GET", `/rest/api/3/search?jql=${encodeURIComponent(jql)}&maxResults=1&fields=key`);
+          if (!Array.isArray(data?.issues) || data.issues.length === 0 || !data.issues[0]?.key)
+            return null;
+          return data.issues[0].key;
+        },
+        async createIssue(input) {
+          const data = await request("POST", "/rest/api/3/issue", {
+            fields: {
+              project: { key: input.project },
+              issuetype: { name: input.issueType },
+              summary: input.summary,
+              description: input.description,
+              priority: { name: input.priority },
+              labels: input.labels
+            }
+          });
+          if (!data?.key)
+            throw new Error("Jira no devolvi\xF3 una key al crear el issue.");
+          return data.key;
+        },
+        async addComment(issueKey, body) {
+          await request("POST", `/rest/api/3/issue/${encodeURIComponent(issueKey)}/comment`, { body });
+        }
+      };
+    }
+  }
+});
+
+// ../reporter-core/dist/webhook.js
+var require_webhook = __commonJS({
+  "../reporter-core/dist/webhook.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.postJson = postJson;
+    async function postJson(url, body, fetchImpl = globalThis.fetch) {
+      const response = await fetchImpl(url, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "user-agent": "healify"
+        },
+        body: JSON.stringify(body)
+      });
+      if (!response.ok) {
+        const detail = await response.text().catch(() => "");
+        throw new Error(`Webhook POST ${url} respondi\xF3 ${response.status}: ${detail.slice(0, 300)}`);
+      }
+    }
+  }
+});
+
+// ../reporter-core/dist/agile.js
+var require_agile = __commonJS({
+  "../reporter-core/dist/agile.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.buildAgileDefects = buildAgileDefects;
+    exports2.reportDefects = reportDefects;
+    var qa_report_1 = require_qa_report();
+    var config_1 = require_config();
+    var jira_1 = require_jira();
+    var webhook_1 = require_webhook();
+    function buildAgileDefects(run, config = {}) {
+      const agile = (0, config_1.resolveAgile)(config);
+      const rows = (0, qa_report_1.environmentRows)(run);
+      return run.cases.map((c) => {
+        const hasSuggestion = c.status !== "unresolved" && Boolean(c.fixedSelector);
+        const suggestion = hasSuggestion ? {
+          fixedSelector: c.fixedSelector,
+          confidence: c.confidence,
+          verified: c.verified ?? false,
+          explanation: c.explanation || void 0,
+          alternatives: c.healResponse?.alternatives ?? []
+        } : void 0;
+        return {
+          defectId: c.defectId,
+          severity: c.severity,
+          title: `[${c.defectId}] ${c.testName}`,
+          description: buildDescription(c, rows),
+          priority: agile.priorityBySeverity[c.severity] ?? "Highest",
+          labels: [...agile.labels],
+          selector: c.selector,
+          testFile: c.testFile,
+          expected: c.expected,
+          actual: c.actual,
+          steps: c.steps ?? [],
+          environmentRows: rows,
+          suggestion
+        };
+      });
+    }
+    function buildDescription(c, rows) {
+      const lines = [];
+      if (c.testFile)
+        lines.push(`**Archivo:** \`${c.testFile}\``);
+      lines.push(`**Selector que fall\xF3:** \`${c.selector}\``);
+      if (c.expected)
+        lines.push("", `**Resultado esperado:** ${c.expected}`);
+      if (c.actual)
+        lines.push("", `**Resultado obtenido:** ${c.actual}`);
+      if (c.steps && c.steps.length > 0) {
+        lines.push("", "**Pasos para reproducir:**");
+        c.steps.forEach((step, i) => lines.push(`${i + 1}. ${step}`));
+      }
+      if (rows.length > 0) {
+        lines.push("", "**Entorno:**");
+        for (const row of rows)
+          lines.push(`- ${row.label}: ${row.value}`);
+      }
+      if (c.attachments && c.attachments.length > 0) {
+        lines.push("", "**Evidencia:**");
+        for (const a of c.attachments)
+          lines.push(`- [${a.name}](${a.path})`);
+      }
+      lines.push("", `**defectId:** ${c.defectId}`);
+      return lines.join("\n");
+    }
+    function buildSuggestionComment(c) {
+      const lines = ["**Sugerencia de Healify**", ""];
+      if (c.status === "unresolved" || !c.fixedSelector) {
+        lines.push("Sin candidato confiable \u2014 el defecto requiere an\xE1lisis manual.", "");
+        return lines.join("\n");
+      }
+      const origen = c.verified ? "verificada contra la p\xE1gina real" : "heur\xEDstica sobre el texto del selector, sin comprobar contra la p\xE1gina";
+      lines.push(`Selector sugerido (${origen}, ${Math.round(c.confidence * 100)}% de confianza):`);
+      lines.push("", "```", c.fixedSelector, "```", "");
+      if (c.explanation)
+        lines.push("", `> ${c.explanation}`);
+      if (c.healResponse?.alternatives && c.healResponse.alternatives.length > 0) {
+        lines.push("", "Alternativas:");
+        for (const alt of c.healResponse.alternatives) {
+          lines.push(`- \`${alt.selector}\` (${Math.round(alt.confidence * 100)}% de confianza)`);
+        }
+      }
+      lines.push("", "_Healify es heur\xEDstica local, sin IA. La sugerencia es contexto del defecto._");
+      return lines.join("\n");
+    }
+    function webhookPayload(defect) {
+      return {
+        defectId: defect.defectId,
+        severity: defect.severity,
+        title: defect.title,
+        description: defect.description,
+        priority: defect.priority,
+        labels: defect.labels,
+        selector: defect.selector,
+        testFile: defect.testFile,
+        expected: defect.expected,
+        actual: defect.actual,
+        steps: defect.steps,
+        environment: Object.fromEntries(defect.environmentRows.map((row) => [row.label, row.value])),
+        suggestion: defect.suggestion
+      };
+    }
+    async function reportDefects(run, config = {}, fetchImpl = globalThis.fetch) {
+      const agile = (0, config_1.resolveAgile)(config);
+      if (!agile.enabled)
+        return { enabled: false, provider: agile.provider, outcomes: [] };
+      const defects = buildAgileDefects(run, config);
+      const outcomes = [];
+      const failAll = (message) => ({
+        enabled: true,
+        provider: agile.provider,
+        outcomes: defects.map((_, i) => ({ case: run.cases[i], action: "failed", message }))
+      });
+      if (agile.provider === "webhook") {
+        if (!agile.webhookUrl) {
+          return failAll("Falta agile.webhookUrl para el provider webhook.");
+        }
+        for (const defect of defects) {
+          try {
+            await (0, webhook_1.postJson)(agile.webhookUrl, webhookPayload(defect), fetchImpl);
+            outcomes.push({ case: run.cases[defects.indexOf(defect)], action: "sent" });
+          } catch (error) {
+            outcomes.push({
+              case: run.cases[defects.indexOf(defect)],
+              action: "failed",
+              message: error instanceof Error ? error.message : String(error)
+            });
+          }
+        }
+        return { enabled: true, provider: agile.provider, outcomes };
+      }
+      if (!agile.baseUrl || !agile.email || !agile.apiToken) {
+        const missing = [!agile.baseUrl ? "baseUrl" : "", !agile.email ? "email" : "", !agile.apiToken ? "apiToken" : ""].filter(Boolean).join("/");
+        return failAll(`Falta agile.${missing} para reportar a Jira.`);
+      }
+      const client = (0, jira_1.createJiraClient)(agile, fetchImpl);
+      for (let i = 0; i < defects.length; i++) {
+        const defect = defects[i];
+        const c = run.cases[i];
+        try {
+          const existing = await client.searchByDefectId(agile.project ?? "", defect.defectId);
+          if (existing) {
+            outcomes.push({ case: c, action: "existing", key: existing });
+          } else {
+            const key = await client.createIssue({
+              project: agile.project ?? "",
+              issueType: agile.issueType,
+              summary: defect.title,
+              description: defect.description,
+              priority: defect.priority,
+              labels: defect.labels
+            });
+            await client.addComment(key, buildSuggestionComment(c));
+            outcomes.push({ case: c, action: "created", key });
+          }
+        } catch (error) {
+          outcomes.push({ case: c, action: "failed", message: error instanceof Error ? error.message : String(error) });
+        }
+      }
+      return { enabled: true, provider: "jira", outcomes };
+    }
+  }
+});
+
 // ../reporter-core/dist/audit.js
 var require_audit = __commonJS({
   "../reporter-core/dist/audit.js"(exports2) {
@@ -2177,7 +2535,7 @@ var require_dist = __commonJS({
   "../reporter-core/dist/index.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
-    exports2.flushPlugin = exports2.buildAuditFromEvent = exports2.appendAuditEntry = exports2.writeAuditReport = exports2.buildAuditEntry = exports2.DEFAULT_THRESHOLDS = exports2.resolveThresholds = exports2.loadConfig = exports2.findRepertoireMatch = exports2.readRepertoire = exports2.parseHistoryLines = exports2.domContextFromProbeResult = exports2.BROWSER_PROBE_SCRIPT = exports2.resolveLocatorStrategy = exports2.roleSuggestionToXPath = exports2.parseRoleSuggestion = exports2.selectorTokens = exports2.bestNameFor = exports2.bestElementFor = exports2.findMatches = exports2.existsInPage = exports2.formatPageElements = exports2.parsePageSnapshot = exports2.isPlaywrightOnlySelector = exports2.SEVERITY_LABEL = exports2.environmentRows = exports2.formatDuration = exports2.severityFor = exports2.buildDefectId = exports2.renderLocalReportMarkdown = exports2.statsFromCases = exports2.baseEnvironment = exports2.buildLocalRunFromEvents = exports2.printSummary = exports2.renderLocalReportJson = exports2.renderLocalReportHtml = exports2.runLocalHealing = exports2.analyzeAndHeal = exports2.extractSelectorFromError = void 0;
+    exports2.flushPlugin = exports2.buildAuditFromEvent = exports2.appendAuditEntry = exports2.writeAuditReport = exports2.buildAuditEntry = exports2.postJson = exports2.createJiraClient = exports2.reportDefects = exports2.buildAgileDefects = exports2.DEFAULT_AGILE_PRIORITIES = exports2.defaultAgile = exports2.resolveAgile = exports2.DEFAULT_THRESHOLDS = exports2.resolveThresholds = exports2.loadConfig = exports2.findRepertoireMatch = exports2.readRepertoire = exports2.parseHistoryLines = exports2.domContextFromProbeResult = exports2.BROWSER_PROBE_SCRIPT = exports2.resolveLocatorStrategy = exports2.roleSuggestionToXPath = exports2.parseRoleSuggestion = exports2.selectorTokens = exports2.bestNameFor = exports2.bestElementFor = exports2.findMatches = exports2.existsInPage = exports2.formatPageElements = exports2.parsePageSnapshot = exports2.isPlaywrightOnlySelector = exports2.SEVERITY_LABEL = exports2.environmentRows = exports2.formatDuration = exports2.severityFor = exports2.buildDefectId = exports2.renderLocalReportMarkdown = exports2.statsFromCases = exports2.baseEnvironment = exports2.buildLocalRunFromEvents = exports2.printSummary = exports2.renderLocalReportJson = exports2.renderLocalReportHtml = exports2.runLocalHealing = exports2.analyzeAndHeal = exports2.extractSelectorFromError = void 0;
     var selector_extractor_1 = require_selector_extractor();
     Object.defineProperty(exports2, "extractSelectorFromError", { enumerable: true, get: function() {
       return selector_extractor_1.extractSelectorFromError;
@@ -2290,6 +2648,30 @@ var require_dist = __commonJS({
     } });
     Object.defineProperty(exports2, "DEFAULT_THRESHOLDS", { enumerable: true, get: function() {
       return config_1.DEFAULT_THRESHOLDS;
+    } });
+    Object.defineProperty(exports2, "resolveAgile", { enumerable: true, get: function() {
+      return config_1.resolveAgile;
+    } });
+    Object.defineProperty(exports2, "defaultAgile", { enumerable: true, get: function() {
+      return config_1.defaultAgile;
+    } });
+    Object.defineProperty(exports2, "DEFAULT_AGILE_PRIORITIES", { enumerable: true, get: function() {
+      return config_1.DEFAULT_AGILE_PRIORITIES;
+    } });
+    var agile_1 = require_agile();
+    Object.defineProperty(exports2, "buildAgileDefects", { enumerable: true, get: function() {
+      return agile_1.buildAgileDefects;
+    } });
+    Object.defineProperty(exports2, "reportDefects", { enumerable: true, get: function() {
+      return agile_1.reportDefects;
+    } });
+    var jira_1 = require_jira();
+    Object.defineProperty(exports2, "createJiraClient", { enumerable: true, get: function() {
+      return jira_1.createJiraClient;
+    } });
+    var webhook_1 = require_webhook();
+    Object.defineProperty(exports2, "postJson", { enumerable: true, get: function() {
+      return webhook_1.postJson;
     } });
     var audit_1 = require_audit();
     Object.defineProperty(exports2, "buildAuditEntry", { enumerable: true, get: function() {
