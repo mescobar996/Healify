@@ -48,6 +48,7 @@ vi.mock('@healify/reporter-core', () => ({
   BROWSER_PROBE_SCRIPT: 'return [];',
   buildDefectId: vi.fn((testFile: string | undefined, selector: string) => `DEF-${testFile ?? 'x'}-${selector}`),
   severityFor: vi.fn((status: string) => (status === 'unresolved' ? 'blocker' : 'minor')),
+  appendRunRecord: vi.fn(),
 }))
 
 vi.mock('node:fs', () => ({
@@ -176,6 +177,47 @@ describe('HealifyCypressPlugin', () => {
   it('devuelve la config sin modificar', () => {
     const { on } = createOnCapture()
     expect(HealifyCypressPlugin(on, fakeConfig)).toBe(fakeConfig)
+  })
+
+  it('after:run registra la corrida con los outcomes de cada test (pass y fail)', async () => {
+    const { on, handlers } = createOnCapture()
+    HealifyCypressPlugin(on, fakeConfig)
+
+    handlers['after:spec'](makeSpec(), makeResults([
+      makeTest({ state: 'passed' }),
+      makeTest(),
+      makeTest({ title: ['login', 'pendiente'], state: 'pending' }),
+    ]))
+    handlers['after:run']()
+
+    const appendRun = vi.mocked((await import('@healify/reporter-core')).appendRunRecord)
+    expect(appendRun).toHaveBeenCalledTimes(1)
+    const record = appendRun.mock.calls[0][0]
+    expect(record.type).toBe('run')
+    expect(record.framework).toBe('Cypress')
+    expect(record.tests).toEqual([
+      { testName: 'login > muestra error con credenciales inválidas', testFile: 'e2e/login.cy.ts', passed: true },
+      { testName: 'login > muestra error con credenciales inválidas', testFile: 'e2e/login.cy.ts', passed: false },
+    ])
+    expect(appendRun.mock.calls[0][1]).toBe(process.cwd())
+  })
+
+  it('skipped/pending no entran al registro de corridas', async () => {
+    const { on, handlers } = createOnCapture()
+    HealifyCypressPlugin(on, fakeConfig)
+
+    handlers['after:spec'](makeSpec(), makeResults([
+      makeTest({ state: 'passed' }),
+      makeTest({ state: 'skipped' }),
+      makeTest({ state: 'pending' }),
+    ]))
+    handlers['after:run']()
+
+    const appendRun = vi.mocked((await import('@healify/reporter-core')).appendRunRecord)
+    const record = appendRun.mock.calls[0][0]
+    expect(record.tests).toEqual([
+      { testName: 'login > muestra error con credenciales inválidas', testFile: 'e2e/login.cy.ts', passed: true },
+    ])
   })
 })
 

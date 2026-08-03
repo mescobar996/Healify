@@ -18,11 +18,13 @@ import {
   buildAuditEntry,
   writeAuditReport,
   loadConfig,
+  appendRunRecord,
   type LocalCaseResult,
   type CaseAttachment,
   type AuditEntry,
   type HealResponse,
   type SelectorType,
+  type RunOutcome,
 } from '@healify/reporter-core'
 import type { HealTaskInput, HealTaskOutput, RecordEventInput } from './support-protocol'
 
@@ -47,6 +49,9 @@ export function HealifyCypressPlugin(
   // fallido. Sin este array esos casos quedarían invisibles en el reporte, a pesar de haber
   // curado un selector roto de verdad.
   const liveResults: LocalCaseResult[] = []
+  // Resultados por test de TODA la corrida (no solo fallidos) — alimentan `.healify/runs.jsonl`
+  // que `healify flake` usa para distinguir el test flaky del siempre roto.
+  const outcomes: RunOutcome[] = []
   const auditEntries: AuditEntry[] = []
   let total = 0
   let passed = 0
@@ -158,6 +163,14 @@ export function HealifyCypressPlugin(
     passed += results.stats?.passes ?? 0
     failed += results.stats?.failures ?? 0
 
+    // Outcomes para `healify flake`: los tests que terminaron passed/failed (los skipped y
+    // pending no aportan ni pass ni fail).
+    for (const test of results.tests ?? []) {
+      if (test.state === 'passed' || test.state === 'failed') {
+        outcomes.push({ testName: test.title.join(' > '), testFile: spec.relative, passed: test.state === 'passed' })
+      }
+    }
+
     for (const test of results.tests ?? []) {
       if (test.state !== 'failed') continue
       try {
@@ -203,6 +216,22 @@ export function HealifyCypressPlugin(
       if (auditEntries.length > 0) {
         writeAuditReport(auditEntries, process.cwd(), 'Cypress suite', 'Cypress')
       }
+      // Registro de corridas para `healify flake` — complemento, si falla no rompe la corrida.
+      appendRunRecord(
+        {
+          type: 'run',
+          runId: new Date().toISOString(),
+          timestamp: new Date().toISOString(),
+          project: 'Cypress suite',
+          framework: 'Cypress',
+          total,
+          passed,
+          failed,
+          durationMs,
+          tests: outcomes,
+        },
+        process.cwd(),
+      )
     } catch {
       // Fire-and-forget: el reporte local nunca debe romper la corrida.
     }
