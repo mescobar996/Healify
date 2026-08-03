@@ -227,11 +227,12 @@ function printHelp(): void {
 Comandos:
   init                                       Detecta tu framework (o te pregunta cuál armar si no hay ninguno), instala lo que falte y configura el reporter/plugin (sin generar tests)
   doctor                                     Verifica que Healify esté instalado y bien configurado
-  fix [reporte.json] [--dry-run] [--force] [--pr] [--no-ast] [--no-pom] [--interactive]   Aplica las sugerencias de mayor confianza directo en tus archivos de test
+  fix [reporte.json] [--dry-run] [--force] [--pr] [--no-ast] [--no-pom] [--interactive] [--watch]   Aplica las sugerencias de mayor confianza directo en tus archivos de test
                                                         --pr crea branch, commit y PR con los cambios
                                                         --no-ast desactiva la reescritura de sugerencias role(...) (page.click → page.getByRole)
                                                         --no-pom no busca el selector en los page objects cuando no está en el archivo de test
                                                        --interactive pregunta caso por caso en vez de aplicar todo solo (necesita una terminal real)
+                                                        --watch [--interval <ms>] se queda vigilando el reporte y re-aplica en cada corrida nueva (Ctrl+C para salir)
   history                                    Muestra selectores recurrentes y re-rotos de .healify/history.jsonl (se graba en cada fix real, no en --dry-run)
   report [reporte.json] [--dry-run]          Reporta los defectos de la corrida a tu Jira (o webhook) — dedupe por defectId, opt-in (agile.enabled: true)
                                                         --dry-run imprime qué se reportaría sin tocar la red

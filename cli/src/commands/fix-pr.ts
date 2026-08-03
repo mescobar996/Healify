@@ -6,6 +6,7 @@ import { detectGitHubCLI, createBranch, createCommit, createPRInstructions, crea
 import { appendHistory } from '../history'
 import { runInteractiveFix } from '../interactive'
 import { promptLine } from '../prompt'
+import { runFixWatch, parseInterval, parseReportPath } from './watch'
 
 /** Escapa caracteres especiales de Markdown que podrían romper el formato de tabla. */
 function sanitizeMarkdownCell(value: string): string {
@@ -29,7 +30,7 @@ function reasonText(outcome: Extract<FixOutcome, { status: 'skipped' }>, astUsed
   }
 }
 
-function printOutcomes(outcomes: FixOutcome[], run: LocalRun, astUsed: boolean): void {
+export function printOutcomes(outcomes: FixOutcome[], run: LocalRun, astUsed: boolean): void {
   if (run.cases.length === 0) {
     console.log('Ningún selector roto en la última corrida — no hay nada que aplicar.')
     return
@@ -61,6 +62,63 @@ function printOutcomes(outcomes: FixOutcome[], run: LocalRun, astUsed: boolean):
   console.log(`\n${applied} selector${applied === 1 ? '' : 'es'} aplicado${applied === 1 ? '' : 's'} · ${skipped} salteado${skipped === 1 ? '' : 's'}${reviewSuffix}`)
 }
 
+export interface ApplyOptions {
+  dryRun: boolean
+  force: boolean
+  /** Reescribir las sugerencias `role(...)` con AST (`page.click` → `page.getByRole`). */
+  ast: boolean
+  pageObjects: boolean
+}
+
+/**
+ * Núcleo de una aplicación: sustitución de texto y, para lo que no era sustituible, reescritura
+ * por AST. Es lo único con lógica no trivial de `runFix`, y está acá afuera para que cada
+ * iteración de `fix --watch` sea **exactamente** la misma pasada que un `healify fix` suelto —
+ * si esto se duplicara, las dos ramas divergirían en el primer bugfix que se aplique a una sola.
+ *
+ * `run` es el reporte tal como se leyó (lo usa el armado del PR, que necesita confidence y
+ * verified originales); `runForFix` puede diferir cuando `--interactive` filtró casos.
+ */
+export function applyRun(run: LocalRun, runForFix: LocalRun, opts: ApplyOptions): FixOutcome[] {
+  const { dryRun, force, ast, pageObjects } = opts
+  const outcomes = fix(runForFix, { dryRun, force, pageObjects })
+
+  if (!ast) return outcomes
+
+  const notSubstitutableKeys = new Set(
+    outcomes
+      .filter((o): o is Extract<FixOutcome, { status: 'skipped' }> => o.status === 'skipped' && o.reason === 'not-substitutable')
+      .map((o) => `${o.testFile}::${o.selector}`)
+  )
+  const astRun: LocalRun = { ...runForFix, cases: runForFix.cases.filter((c) => notSubstitutableKeys.has(`${c.testFile}::${c.selector}`)) }
+  const astByKey = new Map(fixAst(astRun, { dryRun, force }).map((o) => [`${o.testFile}::${o.selector}`, o]))
+
+  for (let i = 0; i < outcomes.length; i++) {
+    const astOutcome = astByKey.get(`${outcomes[i].testFile}::${outcomes[i].selector}`)
+    if (astOutcome) outcomes[i] = astOutcome
+  }
+
+  return outcomes
+}
+
+/**
+ * Una pasada completa contra un reporte en disco: leer → grabar historial → aplicar → imprimir.
+ * Devuelve `false` si el reporte no se pudo leer, sin terminar el proceso — en `--watch` eso no
+ * es un error, es "todavía no corriste los tests".
+ */
+export function applyFixOnce(reportPath: string, opts: ApplyOptions): boolean {
+  let run: LocalRun
+  try {
+    run = JSON.parse(readFileSync(reportPath, 'utf-8'))
+  } catch {
+    return false
+  }
+
+  if (!opts.dryRun) appendHistory(run, process.cwd())
+  printOutcomes(applyRun(run, run, opts), run, opts.ast)
+  return true
+}
+
 export function runFix(args: string[]): void {
   const dryRun = args.includes('--dry-run')
   const force = args.includes('--force')
@@ -68,7 +126,14 @@ export function runFix(args: string[]): void {
   const ast = !args.includes('--no-ast')
   const pageObjects = !args.includes('--no-pom')
   const interactive = args.includes('--interactive')
-  const reportPath = args.slice(1).find((a) => !a.startsWith('--')) ?? 'healify-report.json'
+  const reportPath = parseReportPath(args)
+
+  // --watch es un loop: no termina, y --pr/--interactive no tienen sentido adentro (crear una
+  // PR por cada corrida, o preguntar mientras el usuario está mirando otra cosa). Se delega
+  // antes de leer nada, porque en watch el reporte puede todavía no existir.
+  if (args.includes('--watch')) {
+    return runFixWatch(reportPath, { dryRun, force, ast, pageObjects }, parseInterval(args))
+  }
 
   let run: LocalRun
   try {
@@ -103,24 +168,10 @@ export function runFix(args: string[]): void {
     }
   }
 
-  const outcomes = fix(runForFix, { dryRun, force, pageObjects })
+  const outcomes = applyRun(run, runForFix, { dryRun, force, ast, pageObjects })
 
   // Map original case data for PR body (confidence, originalSelector, verified come from run.cases)
   const caseByKey = new Map(run.cases.map(c => [`${c.testFile}::${c.selector}`, c]))
-  if (ast) {
-    const notSubstitutableKeys = new Set(
-      outcomes
-        .filter((o): o is Extract<FixOutcome, { status: 'skipped' }> => o.status === 'skipped' && o.reason === 'not-substitutable')
-        .map((o) => `${o.testFile}::${o.selector}`)
-    )
-    const astRun: LocalRun = { ...runForFix, cases: runForFix.cases.filter((c) => notSubstitutableKeys.has(`${c.testFile}::${c.selector}`)) }
-    const astByKey = new Map(fixAst(astRun, { dryRun, force }).map((o) => [`${o.testFile}::${o.selector}`, o]))
-    for (let i = 0; i < outcomes.length; i++) {
-      const key = `${outcomes[i].testFile}::${outcomes[i].selector}`
-      const astOutcome = astByKey.get(key)
-      if (astOutcome) outcomes[i] = astOutcome
-    }
-  }
 
   if (pr && outcomes.some(o => o.status === 'applied')) {
     const appliedCount = outcomes.filter(o => o.status === 'applied').length
