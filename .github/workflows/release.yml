@@ -81,7 +81,7 @@ jobs:
           if [ "${{ inputs.dry-run }}" = "true" ]; then DRY="--dry-run"; fi
           for pkg in reporter-core test-runner cypress-plugin selenium-plugin webdriverio-plugin ai-local cli; do
             echo "::group::publish $pkg"
-            npm publish --workspace="$pkg" --provenance --access public $DRY --loglevel=verbose
+            npm publish --workspace="$pkg" --provenance --access public $DRY
             echo "::endgroup::"
           done
         env:
