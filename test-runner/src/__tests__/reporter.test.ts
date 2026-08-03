@@ -4,8 +4,9 @@ import type { FullResult, TestCase, TestResult } from '@playwright/test/reporter
 const { mockWriteFileSync } = vi.hoisted(() => ({ mockWriteFileSync: vi.fn() }))
 vi.mock('node:fs', () => ({ writeFileSync: mockWriteFileSync }))
 
-const { mockRunLocalHealing } = vi.hoisted(() => {
-  const mockRunLocalHealing = vi.fn((input: { testName: string; testFile?: string; errorMessage: string }) => ({
+const { mockRunLocalHealing, mockLoadConfig } = vi.hoisted(() => {
+  const mockLoadConfig = vi.fn(() => ({ minConfidence: 0.95 }))
+  const mockRunLocalHealing = vi.fn((input: { testName: string; testFile?: string; errorMessage: string }, _config?: unknown) => ({
     testName: input.testName,
     testFile: input.testFile,
     selector: 'Unknown selector',
@@ -16,7 +17,7 @@ const { mockRunLocalHealing } = vi.hoisted(() => {
     explanation: '',
     selectorType: 'UNKNOWN',
   }))
-  return { mockRunLocalHealing }
+  return { mockRunLocalHealing, mockLoadConfig }
 })
 
 vi.mock('@healify/reporter-core', () => ({
@@ -55,6 +56,7 @@ vi.mock('@healify/reporter-core', () => ({
     unresolved: 0,
   })),
   readRepertoire: vi.fn(() => []),
+  loadConfig: mockLoadConfig,
 }))
 
 import HealifyReporter from '../reporter'
@@ -104,6 +106,20 @@ describe('HealifyReporter', () => {
     expect(payload.testName).toBe('root > should log in')
     expect(payload.testFile).toBe('tests/login.spec.ts')
     expect(payload.errorMessage).toContain('Timed out waiting')
+  })
+
+  it('carga la config del proyecto una sola vez en onBegin y se la pasa al motor', () => {
+    const reporter = new HealifyReporter()
+    const config = { projects: [], version: '1.58.0' } as never
+    const suite = { allTests: () => [] } as never
+
+    reporter.onBegin(config, suite)
+    reporter.onTestEnd(makeTest(), makeResult())
+    reporter.onTestEnd(makeTest(), makeResult())
+
+    expect(mockLoadConfig).toHaveBeenCalledTimes(1)
+    expect(mockRunLocalHealing.mock.calls[0][1]).toEqual({ minConfidence: 0.95 })
+    expect(mockRunLocalHealing.mock.calls[1][1]).toEqual({ minConfidence: 0.95 })
   })
 
   it('corre la heurística local para un test fallido', () => {

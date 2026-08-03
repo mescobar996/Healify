@@ -46,6 +46,9 @@ export interface HealRequest {
   /** Historial de curaciones ya confirmadas (`.healify/history.jsonl`), leído por el adapter.
    * `reporter-core` no toca el disco acá — el caller decide qué repertorio pasar. */
   repertoire?: HistoryEntry[]
+  /** Cuántas alternativas devolver además de la principal (`recovery-tries` de Healenium).
+   * Default: 3. */
+  maxAlternatives?: number
 }
 
 export type SelectorType = 'CSS' | 'XPATH' | 'TESTID' | 'ROLE' | 'TEXT' | 'MIXED'
@@ -759,7 +762,7 @@ export function analyzeAndHeal(request: HealRequest): HealResponse {
     confidence: Math.round(adjustedConfidence * 100) / 100,
     explanation: bestStrategy.explanation,
     selectorType: bestStrategy.type,
-    alternatives: strategies.slice(1, 4).map((s) => ({
+    alternatives: strategies.slice(1, 1 + (request.maxAlternatives ?? 3)).map((s) => ({
       selector: s.selector,
       confidence: Math.round(s.confidence * 100) / 100,
     })),

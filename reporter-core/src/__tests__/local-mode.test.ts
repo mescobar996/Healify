@@ -93,3 +93,64 @@ describe('runLocalHealing', () => {
     expect(['minor', 'major', 'blocker']).toContain(healed.severity)
   })
 })
+
+describe('runLocalHealing — config del proyecto', () => {
+  const testidError = 'Expected to find element: `[data-testid="add-to-cart"]`, but never found it.'
+
+  it('sin config se comporta igual que siempre (0.90 / 0.80 / 3 alternativas)', () => {
+    expect(runLocalHealing({ testName: 't', errorMessage: testidError })).toEqual(
+      runLocalHealing({ testName: 't', errorMessage: testidError }, {})
+    )
+  })
+
+  it('minConfidence más exigente baja un caso de healed a review', () => {
+    const base = runLocalHealing({ testName: 't', errorMessage: testidError })
+    expect(base.status).toBe('healed')
+
+    const strict = runLocalHealing({ testName: 't', errorMessage: testidError }, { minConfidence: 0.999 })
+
+    expect(strict.status).toBe('review')
+    expect(strict.confidence).toBe(base.confidence)
+  })
+
+  it('reviewConfidence mueve la frontera review/unresolved', () => {
+    const result = runLocalHealing(
+      { testName: 't', errorMessage: testidError },
+      { minConfidence: 0.999, reviewConfidence: 0.998 }
+    )
+
+    expect(result.status).toBe('unresolved')
+  })
+
+  it('healEnabled:false reporta el fallo pero no propone nada ni corre el motor', () => {
+    const result = runLocalHealing({ testName: 't', errorMessage: testidError }, { healEnabled: false })
+
+    expect(result.status).toBe('unresolved')
+    expect(result.fixedSelector).toBe('')
+    expect(result.confidence).toBe(0)
+    expect(result.healResponse).toBeUndefined()
+    expect(result.explanation).toContain('desactivado')
+    // El selector se sigue extrayendo: apagar el sanado no es apagar el reporte.
+    expect(result.selector).toBe('[data-testid="add-to-cart"]')
+  })
+
+  it('maxAlternatives recorta la lista de alternativas', () => {
+    const error = 'Expected to find element: `#login-btn-a1b2c3`, but never found it.'
+
+    const base = runLocalHealing({ testName: 't', errorMessage: error })
+    const capped = runLocalHealing({ testName: 't', errorMessage: error }, { maxAlternatives: 1 })
+
+    expect(base.healResponse?.alternatives?.length).toBeGreaterThan(1)
+    expect(capped.healResponse?.alternatives?.length).toBe(1)
+  })
+
+  it('customTestIds del proyecto llega al motor — antes la config no tenía efecto en el reporte', () => {
+    const error = 'Expected to find element: `[data-qa-id="submit"]`, but never found it.'
+
+    const sinConfig = runLocalHealing({ testName: 't', errorMessage: error })
+    const conConfig = runLocalHealing({ testName: 't', errorMessage: error }, { customTestIds: ['data-qa-id'] })
+
+    expect(sinConfig.selectorType).not.toBe('TESTID')
+    expect(conConfig.selectorType).toBe('TESTID')
+  })
+})

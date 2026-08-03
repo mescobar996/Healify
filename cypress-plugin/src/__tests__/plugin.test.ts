@@ -41,6 +41,7 @@ vi.mock('@healify/reporter-core', () => ({
     unresolved: 0,
   })),
   readRepertoire: vi.fn(() => []),
+  loadConfig: vi.fn(() => ({})),
   analyzeAndHeal: mockAnalyzeAndHeal,
   resolveLocatorStrategy: mockResolveLocatorStrategy,
   domContextFromProbeResult: vi.fn((raw: unknown) => (Array.isArray(raw) && raw.length > 0 ? 'button "Comprar"' : undefined)),

@@ -8,7 +8,7 @@ export { parsePageSnapshot, formatPageElements, existsInPage, findMatches, bestE
 export { parseRoleSuggestion, roleSuggestionToXPath, resolveLocatorStrategy, type LocatorResolution } from './role-locator'
 export { BROWSER_PROBE_SCRIPT, domContextFromProbeResult } from './browser-probe'
 export { parseHistoryLines, readRepertoire, findRepertoireMatch, type HistoryEntry } from './repertoire'
-export { loadConfig, type HealifyConfig } from './config'
+export { loadConfig, resolveThresholds, DEFAULT_THRESHOLDS, type HealifyConfig, type HealifyThresholds } from './config'
 export { buildAuditEntry, writeAuditReport, appendAuditEntry } from './audit'
 export type { AuditEntry, AuditReport, FailureContext } from './audit'
 export { buildAuditFromEvent, flushPlugin, type PluginHealingEvent } from './plugin-helpers'

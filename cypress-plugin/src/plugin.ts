@@ -17,6 +17,7 @@ import {
   severityFor,
   buildAuditEntry,
   writeAuditReport,
+  loadConfig,
   type LocalCaseResult,
   type CaseAttachment,
   type AuditEntry,
@@ -56,6 +57,8 @@ export function HealifyCypressPlugin(
   // mano como Selenium/WebdriverIO — es el adapter donde el repertorio más aporta, porque
   // sin él la heurística siempre está a ciegas. Se lee una sola vez por registro del plugin.
   const repertoire = readRepertoire(process.cwd())
+  // Umbrales, testIds y sinónimos del proyecto — una sola lectura por registro del plugin.
+  const healifyConfig = loadConfig(process.cwd())
 
   // `cy.healifyGet` (support.ts) corre en el browser, sin acceso a analyzeAndHeal() ni al
   // repertorio (viven en Node) — dos tasks lo puentean. 'healify:probe-script'/'healify:heal'
@@ -71,6 +74,9 @@ export function HealifyCypressPlugin(
         testFile: input.testFile,
         htmlContext: domContextFromProbeResult(input.pageElements),
         repertoire,
+        customTestIds: healifyConfig.customTestIds,
+        customSynonyms: healifyConfig.customSynonyms,
+        maxAlternatives: healifyConfig.maxAlternatives,
       })
       return {
         fixedSelector: result.fixedSelector,
@@ -163,7 +169,7 @@ export function HealifyCypressPlugin(
             durationMs: test.duration,
             attachments: collectAttachments(results),
             repertoire,
-          })
+          }, healifyConfig)
         )
       } catch {
         // Nunca romper la corrida real por un fallo del healing local.

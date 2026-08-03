@@ -12,6 +12,8 @@ import {
   statsFromCases,
   readRepertoire,
   writeAuditReport,
+  loadConfig,
+  type HealifyConfig,
   type LocalCaseResult,
   type CaseAttachment,
   type RunEnvironment,
@@ -36,10 +38,14 @@ export default class HealifyReporter implements Reporter {
   private startedAt = Date.now()
   private environment: RunEnvironment = baseEnvironment('Playwright')
   private repertoire: HistoryEntry[] = []
+  private healifyConfig: HealifyConfig = {}
 
   onBegin(config: FullConfig, suite: Suite): void {
     this.startedAt = Date.now()
     this.total = suite.allTests().length
+    // Una sola lectura por corrida: umbrales, testIds y sinónimos del proyecto no cambian
+    // mientras la suite corre.
+    this.healifyConfig = loadConfig(process.cwd())
     // Se lee una sola vez por corrida, no por test — el archivo no cambia mientras la suite
     // corre. Solo entra en juego cuando esta corrida no pudo verificar nada por su cuenta
     // (ver el comentario de cabecera de reporter-core/src/repertoire.ts).
@@ -93,7 +99,7 @@ export default class HealifyReporter implements Reporter {
         attachments: collectAttachments(result),
         domContext,
         repertoire: this.repertoire,
-      })
+      }, this.healifyConfig)
       this.localResults.push(healResult)
 
       if (healResult.selector !== 'Unknown selector' && healResult.healResponse) {

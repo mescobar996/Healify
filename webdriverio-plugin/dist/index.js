@@ -881,7 +881,7 @@ var require_healing_engine = __commonJS({
         confidence: Math.round(adjustedConfidence * 100) / 100,
         explanation: bestStrategy.explanation,
         selectorType: bestStrategy.type,
-        alternatives: strategies.slice(1, 4).map((s) => ({
+        alternatives: strategies.slice(1, 1 + (request.maxAlternatives ?? 3)).map((s) => ({
           selector: s.selector,
           confidence: Math.round(s.confidence * 100) / 100
         })),
@@ -1054,6 +1054,140 @@ var require_qa_report = __commonJS({
   }
 });
 
+// ../reporter-core/dist/config.js
+var require_config = __commonJS({
+  "../reporter-core/dist/config.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.DEFAULT_THRESHOLDS = void 0;
+    exports2.loadConfig = loadConfig;
+    exports2.resolveThresholds = resolveThresholds;
+    var node_fs_1 = require("node:fs");
+    var node_module_1 = require("node:module");
+    var node_path_1 = require("node:path");
+    exports2.DEFAULT_THRESHOLDS = {
+      healEnabled: true,
+      minConfidence: 0.9,
+      reviewConfidence: 0.8,
+      maxAlternatives: 3
+    };
+    function loadConfig(cwd = process.cwd()) {
+      const fromJs = loadFromModule(cwd, "healify.config.js") ?? loadFromModule(cwd, "healify.config.cjs");
+      if (fromJs)
+        return withEnvOverrides(validateConfig(fromJs));
+      const fromJson = loadFromHealifyConfigJson(cwd);
+      if (fromJson)
+        return withEnvOverrides(validateConfig(fromJson));
+      const fromPkg = loadFromPackageJson(cwd);
+      if (fromPkg)
+        return withEnvOverrides(validateConfig(fromPkg));
+      return withEnvOverrides({});
+    }
+    function loadFromModule(cwd, filename) {
+      const path = (0, node_path_1.join)(cwd, filename);
+      if (!(0, node_fs_1.existsSync)(path))
+        return null;
+      try {
+        const require2 = (0, node_module_1.createRequire)((0, node_path_1.join)(cwd, "healify-config-loader.cjs"));
+        delete require2.cache[require2.resolve(path)];
+        const loaded = require2(path);
+        const config = loaded?.default ?? loaded;
+        return config && typeof config === "object" ? config : null;
+      } catch {
+        return null;
+      }
+    }
+    function loadFromHealifyConfigJson(cwd) {
+      const path = (0, node_path_1.join)(cwd, "healify.config.json");
+      if (!(0, node_fs_1.existsSync)(path))
+        return null;
+      try {
+        return JSON.parse((0, node_fs_1.readFileSync)(path, "utf-8"));
+      } catch {
+        return null;
+      }
+    }
+    function loadFromPackageJson(cwd) {
+      const path = (0, node_path_1.join)(cwd, "package.json");
+      if (!(0, node_fs_1.existsSync)(path))
+        return null;
+      try {
+        const pkg = JSON.parse((0, node_fs_1.readFileSync)(path, "utf-8"));
+        return pkg.healify ?? null;
+      } catch {
+        return null;
+      }
+    }
+    function validateConfig(raw) {
+      const result = {};
+      if (Array.isArray(raw.customTestIds)) {
+        const valid = raw.customTestIds.filter((id) => typeof id === "string" && id.startsWith("data-"));
+        if (valid.length > 0)
+          result.customTestIds = valid;
+      }
+      if (raw.customSynonyms && typeof raw.customSynonyms === "object") {
+        result.customSynonyms = raw.customSynonyms;
+      }
+      if (typeof raw.healEnabled === "boolean")
+        result.healEnabled = raw.healEnabled;
+      if (isProbability(raw.minConfidence))
+        result.minConfidence = raw.minConfidence;
+      if (isProbability(raw.reviewConfidence))
+        result.reviewConfidence = raw.reviewConfidence;
+      if (typeof raw.maxAlternatives === "number" && Number.isFinite(raw.maxAlternatives) && raw.maxAlternatives >= 0) {
+        result.maxAlternatives = Math.min(Math.floor(raw.maxAlternatives), 10);
+      }
+      return result;
+    }
+    function isProbability(value) {
+      return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1;
+    }
+    function withEnvOverrides(config, env = process.env) {
+      const result = { ...config };
+      const healEnabled = parseBooleanEnv(env.HEALIFY_HEAL_ENABLED);
+      if (healEnabled !== void 0)
+        result.healEnabled = healEnabled;
+      const min = parseProbabilityEnv(env.HEALIFY_MIN_CONFIDENCE);
+      if (min !== void 0)
+        result.minConfidence = min;
+      const review = parseProbabilityEnv(env.HEALIFY_REVIEW_CONFIDENCE);
+      if (review !== void 0)
+        result.reviewConfidence = review;
+      const maxAlternatives = env.HEALIFY_MAX_ALTERNATIVES !== void 0 ? Number(env.HEALIFY_MAX_ALTERNATIVES) : NaN;
+      if (Number.isFinite(maxAlternatives) && maxAlternatives >= 0) {
+        result.maxAlternatives = Math.min(Math.floor(maxAlternatives), 10);
+      }
+      return result;
+    }
+    function parseBooleanEnv(value) {
+      if (value === void 0)
+        return void 0;
+      const normalized = value.trim().toLowerCase();
+      if (normalized === "false" || normalized === "0")
+        return false;
+      if (normalized === "true" || normalized === "1")
+        return true;
+      return void 0;
+    }
+    function parseProbabilityEnv(value) {
+      if (value === void 0)
+        return void 0;
+      const parsed = Number(value);
+      return isProbability(parsed) ? parsed : void 0;
+    }
+    function resolveThresholds(config = {}) {
+      const minConfidence = config.minConfidence ?? exports2.DEFAULT_THRESHOLDS.minConfidence;
+      const reviewConfidence = Math.min(config.reviewConfidence ?? exports2.DEFAULT_THRESHOLDS.reviewConfidence, minConfidence);
+      return {
+        healEnabled: config.healEnabled ?? exports2.DEFAULT_THRESHOLDS.healEnabled,
+        minConfidence,
+        reviewConfidence,
+        maxAlternatives: config.maxAlternatives ?? exports2.DEFAULT_THRESHOLDS.maxAlternatives
+      };
+    }
+  }
+});
+
 // ../reporter-core/dist/local-mode.js
 var require_local_mode = __commonJS({
   "../reporter-core/dist/local-mode.js"(exports2) {
@@ -1063,8 +1197,7 @@ var require_local_mode = __commonJS({
     var healing_engine_1 = require_healing_engine();
     var selector_extractor_1 = require_selector_extractor();
     var qa_report_1 = require_qa_report();
-    var HEALED_THRESHOLD = 0.9;
-    var REVIEW_THRESHOLD = 0.8;
+    var config_1 = require_config();
     function firstLine(errorMessage) {
       return errorMessage.split("\n")[0].trim();
     }
@@ -1076,8 +1209,27 @@ var require_local_mode = __commonJS({
         attachments: input.attachments
       };
     }
-    function runLocalHealing(input) {
+    function runLocalHealing(input, config = {}) {
       const selector = (0, selector_extractor_1.extractSelectorFromError)(input.errorMessage);
+      const thresholds = (0, config_1.resolveThresholds)(config);
+      if (!thresholds.healEnabled) {
+        return {
+          testName: input.testName,
+          testFile: input.testFile,
+          selector,
+          errorMessage: input.errorMessage,
+          status: "unresolved",
+          fixedSelector: "",
+          confidence: 0,
+          explanation: "Sanado desactivado por configuraci\xF3n (healEnabled: false / HEALIFY_HEAL_ENABLED=false). El fallo se reporta igual, pero no se propone ninguna correcci\xF3n.",
+          selectorType: "UNKNOWN",
+          defectId: (0, qa_report_1.buildDefectId)(input.testFile, selector),
+          severity: (0, qa_report_1.severityFor)("unresolved"),
+          expected: `El test "${input.testName}" termina sin errores.`,
+          actual: firstLine(input.errorMessage),
+          ...passthrough(input)
+        };
+      }
       if (selector === "Unknown selector") {
         return {
           testName: input.testName,
@@ -1102,9 +1254,12 @@ var require_local_mode = __commonJS({
         testName: input.testName,
         errorMessage: input.errorMessage,
         testFile: input.testFile,
-        repertoire: input.repertoire
+        repertoire: input.repertoire,
+        customTestIds: config.customTestIds,
+        customSynonyms: config.customSynonyms,
+        maxAlternatives: thresholds.maxAlternatives
       });
-      const status = heal.confidence >= HEALED_THRESHOLD ? "healed" : heal.confidence >= REVIEW_THRESHOLD ? "review" : "unresolved";
+      const status = heal.confidence >= thresholds.minConfidence ? "healed" : heal.confidence >= thresholds.reviewConfidence ? "review" : "unresolved";
       return {
         testName: input.testName,
         testFile: input.testFile,
@@ -1905,59 +2060,6 @@ return results;
   }
 });
 
-// ../reporter-core/dist/config.js
-var require_config = __commonJS({
-  "../reporter-core/dist/config.js"(exports2) {
-    "use strict";
-    Object.defineProperty(exports2, "__esModule", { value: true });
-    exports2.loadConfig = loadConfig;
-    var node_fs_1 = require("node:fs");
-    var node_path_1 = require("node:path");
-    function loadConfig(cwd = process.cwd()) {
-      const fromJson = loadFromHealifyConfigJson(cwd);
-      if (fromJson)
-        return validateConfig(fromJson);
-      const fromPkg = loadFromPackageJson(cwd);
-      if (fromPkg)
-        return validateConfig(fromPkg);
-      return {};
-    }
-    function loadFromHealifyConfigJson(cwd) {
-      const path = (0, node_path_1.join)(cwd, "healify.config.json");
-      if (!(0, node_fs_1.existsSync)(path))
-        return null;
-      try {
-        return JSON.parse((0, node_fs_1.readFileSync)(path, "utf-8"));
-      } catch {
-        return null;
-      }
-    }
-    function loadFromPackageJson(cwd) {
-      const path = (0, node_path_1.join)(cwd, "package.json");
-      if (!(0, node_fs_1.existsSync)(path))
-        return null;
-      try {
-        const pkg = JSON.parse((0, node_fs_1.readFileSync)(path, "utf-8"));
-        return pkg.healify ?? null;
-      } catch {
-        return null;
-      }
-    }
-    function validateConfig(raw) {
-      const result = {};
-      if (Array.isArray(raw.customTestIds)) {
-        const valid = raw.customTestIds.filter((id) => typeof id === "string" && id.startsWith("data-"));
-        if (valid.length > 0)
-          result.customTestIds = valid;
-      }
-      if (raw.customSynonyms && typeof raw.customSynonyms === "object") {
-        result.customSynonyms = raw.customSynonyms;
-      }
-      return result;
-    }
-  }
-});
-
 // ../reporter-core/dist/audit.js
 var require_audit = __commonJS({
   "../reporter-core/dist/audit.js"(exports2) {
@@ -2075,7 +2177,7 @@ var require_dist = __commonJS({
   "../reporter-core/dist/index.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
-    exports2.flushPlugin = exports2.buildAuditFromEvent = exports2.appendAuditEntry = exports2.writeAuditReport = exports2.buildAuditEntry = exports2.loadConfig = exports2.findRepertoireMatch = exports2.readRepertoire = exports2.parseHistoryLines = exports2.domContextFromProbeResult = exports2.BROWSER_PROBE_SCRIPT = exports2.resolveLocatorStrategy = exports2.roleSuggestionToXPath = exports2.parseRoleSuggestion = exports2.selectorTokens = exports2.bestNameFor = exports2.bestElementFor = exports2.findMatches = exports2.existsInPage = exports2.formatPageElements = exports2.parsePageSnapshot = exports2.isPlaywrightOnlySelector = exports2.SEVERITY_LABEL = exports2.environmentRows = exports2.formatDuration = exports2.severityFor = exports2.buildDefectId = exports2.renderLocalReportMarkdown = exports2.statsFromCases = exports2.baseEnvironment = exports2.buildLocalRunFromEvents = exports2.printSummary = exports2.renderLocalReportJson = exports2.renderLocalReportHtml = exports2.runLocalHealing = exports2.analyzeAndHeal = exports2.extractSelectorFromError = void 0;
+    exports2.flushPlugin = exports2.buildAuditFromEvent = exports2.appendAuditEntry = exports2.writeAuditReport = exports2.buildAuditEntry = exports2.DEFAULT_THRESHOLDS = exports2.resolveThresholds = exports2.loadConfig = exports2.findRepertoireMatch = exports2.readRepertoire = exports2.parseHistoryLines = exports2.domContextFromProbeResult = exports2.BROWSER_PROBE_SCRIPT = exports2.resolveLocatorStrategy = exports2.roleSuggestionToXPath = exports2.parseRoleSuggestion = exports2.selectorTokens = exports2.bestNameFor = exports2.bestElementFor = exports2.findMatches = exports2.existsInPage = exports2.formatPageElements = exports2.parsePageSnapshot = exports2.isPlaywrightOnlySelector = exports2.SEVERITY_LABEL = exports2.environmentRows = exports2.formatDuration = exports2.severityFor = exports2.buildDefectId = exports2.renderLocalReportMarkdown = exports2.statsFromCases = exports2.baseEnvironment = exports2.buildLocalRunFromEvents = exports2.printSummary = exports2.renderLocalReportJson = exports2.renderLocalReportHtml = exports2.runLocalHealing = exports2.analyzeAndHeal = exports2.extractSelectorFromError = void 0;
     var selector_extractor_1 = require_selector_extractor();
     Object.defineProperty(exports2, "extractSelectorFromError", { enumerable: true, get: function() {
       return selector_extractor_1.extractSelectorFromError;
@@ -2182,6 +2284,12 @@ var require_dist = __commonJS({
     var config_1 = require_config();
     Object.defineProperty(exports2, "loadConfig", { enumerable: true, get: function() {
       return config_1.loadConfig;
+    } });
+    Object.defineProperty(exports2, "resolveThresholds", { enumerable: true, get: function() {
+      return config_1.resolveThresholds;
+    } });
+    Object.defineProperty(exports2, "DEFAULT_THRESHOLDS", { enumerable: true, get: function() {
+      return config_1.DEFAULT_THRESHOLDS;
     } });
     var audit_1 = require_audit();
     Object.defineProperty(exports2, "buildAuditEntry", { enumerable: true, get: function() {

@@ -40,6 +40,7 @@ vi.mock('@healify/reporter-core', () => ({
   baseEnvironment: vi.fn(() => ({ os: 'test', node: 'v20', framework: 'Cypress' })),
   statsFromCases: vi.fn(() => ({ total: 0, passed: 0, failed: 0, healed: 0, review: 0, unresolved: 0 })),
   readRepertoire: vi.fn(() => []),
+  loadConfig: vi.fn(() => ({})),
   analyzeAndHeal: vi.fn(() => ({
     fixedSelector: "role('button', { name: 'Submit' })",
     confidence: 0.95,

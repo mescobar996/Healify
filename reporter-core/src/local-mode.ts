@@ -1,6 +1,7 @@
 import { analyzeAndHeal, type HealResponse } from './healing-engine'
 import { extractSelectorFromError } from './selector-extractor'
 import { buildDefectId, severityFor, type Severity } from './qa-report'
+import { resolveThresholds, type HealifyConfig } from './config'
 import type { HistoryEntry } from './repertoire'
 
 /** Evidencia que el framework ya generó por su cuenta (screenshot, video, trace). Se
@@ -60,9 +61,6 @@ export interface LocalCaseResult {
   healResponse?: HealResponse
 }
 
-const HEALED_THRESHOLD = 0.9
-const REVIEW_THRESHOLD = 0.8
-
 /** Primera línea del error, que es la que describe qué pasó realmente. El resto suele ser
  * call log y stack — útil en el detalle, ruido en el campo "resultado obtenido". */
 function firstLine(errorMessage: string): string {
@@ -79,9 +77,38 @@ function passthrough(input: LocalCaseInput) {
   }
 }
 
-/** Corre la heurística de sanado en el mismo proceso, sin red. */
-export function runLocalHealing(input: LocalCaseInput): LocalCaseResult {
+/**
+ * Corre la heurística de sanado en el mismo proceso, sin red.
+ *
+ * `config` es la del proyecto (`loadConfig()`), y el adapter la pasa una sola vez por corrida —
+ * `reporter-core` no toca el disco acá. Sin ella el comportamiento es exactamente el default de
+ * siempre (0.90 / 0.80 / 3 alternativas).
+ */
+export function runLocalHealing(input: LocalCaseInput, config: HealifyConfig = {}): LocalCaseResult {
   const selector = extractSelectorFromError(input.errorMessage)
+  const thresholds = resolveThresholds(config)
+
+  // Sanado apagado (`healEnabled: false` o `HEALIFY_HEAL_ENABLED=false`, el análogo del
+  // `-Dheal-enabled=false` de Healenium): el fallo se sigue reportando —apagar el sanado no es
+  // apagar el reporte— pero no se propone nada ni se corre el motor.
+  if (!thresholds.healEnabled) {
+    return {
+      testName: input.testName,
+      testFile: input.testFile,
+      selector,
+      errorMessage: input.errorMessage,
+      status: 'unresolved',
+      fixedSelector: '',
+      confidence: 0,
+      explanation: 'Sanado desactivado por configuración (healEnabled: false / HEALIFY_HEAL_ENABLED=false). El fallo se reporta igual, pero no se propone ninguna corrección.',
+      selectorType: 'UNKNOWN',
+      defectId: buildDefectId(input.testFile, selector),
+      severity: severityFor('unresolved'),
+      expected: `El test "${input.testName}" termina sin errores.`,
+      actual: firstLine(input.errorMessage),
+      ...passthrough(input),
+    }
+  }
 
   if (selector === 'Unknown selector') {
     return {
@@ -102,6 +129,9 @@ export function runLocalHealing(input: LocalCaseInput): LocalCaseResult {
     }
   }
 
+  // customTestIds/customSynonyms venían documentados como config del proyecto pero nunca
+  // llegaban al motor desde acá (solo `explain` los usaba): la config no tenía ningún efecto
+  // sobre el reporte real, que es donde importa.
   const heal = analyzeAndHeal({
     selector,
     htmlContext: input.domContext,
@@ -109,10 +139,17 @@ export function runLocalHealing(input: LocalCaseInput): LocalCaseResult {
     errorMessage: input.errorMessage,
     testFile: input.testFile,
     repertoire: input.repertoire,
+    customTestIds: config.customTestIds,
+    customSynonyms: config.customSynonyms,
+    maxAlternatives: thresholds.maxAlternatives,
   })
 
   const status: LocalCaseStatus =
-    heal.confidence >= HEALED_THRESHOLD ? 'healed' : heal.confidence >= REVIEW_THRESHOLD ? 'review' : 'unresolved'
+    heal.confidence >= thresholds.minConfidence
+      ? 'healed'
+      : heal.confidence >= thresholds.reviewConfidence
+        ? 'review'
+        : 'unresolved'
 
   return {
     testName: input.testName,
