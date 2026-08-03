@@ -39,6 +39,15 @@ export {
   type RecurrentSelector,
   type RebrokenSelector,
 } from './dashboard'
+export {
+  appendRunRecord,
+  readRunRecords,
+  parseRunLines,
+  serializeRunRecord,
+  type RunRecord,
+  type RunOutcome,
+} from './runs'
+export { detectFlakyTests, type FlakyTest, type FlakeVerdict } from './flake'
 export { createJiraClient } from './jira'
 export { postJson } from './webhook'
 export { buildAuditEntry, writeAuditReport, appendAuditEntry } from './audit'
