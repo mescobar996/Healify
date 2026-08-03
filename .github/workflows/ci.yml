@@ -106,6 +106,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Los paquetes se importan entre sí como `@healify/reporter-core`, que resuelve al
+      # `dist/` del workspace — y `dist/` está gitignorado. Sin buildear primero, vitest falla
+      # con "Failed to resolve entry for package @healify/reporter-core" en todos los adapters.
+      # Localmente no se notaba porque el dist ya estaba de un build anterior.
+      - name: Build workspaces (los tests importan los dist/)
+        run: npm run build
+
       - name: Run tests (all workspaces)
         run: npm test
 
@@ -150,6 +157,10 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      # Mismo motivo que en el job de tests: los adapters importan el dist/ de reporter-core.
+      - name: Build workspaces
+        run: npm run build
 
       - name: Coverage (por paquete)
         run: npm run coverage

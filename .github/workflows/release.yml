@@ -51,13 +51,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Build ANTES que test: los adapters se importan entre sí como `@healify/reporter-core`,
+      # que resuelve al `dist/` del workspace (gitignorado). Invertido, vitest no resuelve nada.
+      - name: Build all packages
+        run: npm run build
+
       # La suite completa antes de publicar. Un paquete roto en npm no se puede "arreglar":
       # hay que quemar una versión nueva.
       - name: Run tests
         run: npm test
-
-      - name: Build all packages
-        run: npm run build
 
       - name: Publish
         # El orden importa: reporter-core primero porque todos lo bundlean.
