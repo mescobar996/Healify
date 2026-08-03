@@ -1,4 +1,5 @@
 import { readFileSync, writeFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import { join, relative } from 'node:path'
 import type { FullConfig, FullResult, Reporter, Suite, TestCase, TestResult, TestStep } from '@playwright/test/reporter'
 import {
@@ -10,10 +11,12 @@ import {
   baseEnvironment,
   statsFromCases,
   readRepertoire,
+  writeAuditReport,
   type LocalCaseResult,
   type CaseAttachment,
   type RunEnvironment,
   type HistoryEntry,
+  type AuditEntry,
 } from '@healify/reporter-core'
 
 /**
@@ -26,6 +29,7 @@ import {
  */
 export default class HealifyReporter implements Reporter {
   private localResults: LocalCaseResult[] = []
+  private auditEntries: AuditEntry[] = []
   private total = 0
   private passed = 0
   private failed = 0
@@ -77,19 +81,44 @@ export default class HealifyReporter implements Reporter {
     const testFile = relative(process.cwd(), test.location.file).replace(/\\/g, '/')
 
     try {
-      this.localResults.push(
-        runLocalHealing({
+      const healResult = runLocalHealing({
+        testName,
+        testFile,
+        errorMessage,
+        line: test.location.line,
+        durationMs: result.duration,
+        steps: describeSteps(result.steps),
+        attachments: collectAttachments(result),
+        domContext: readPageSnapshot(result),
+        repertoire: this.repertoire,
+      })
+      this.localResults.push(healResult)
+
+      if (healResult.selector !== 'Unknown selector') {
+        const domContext = readPageSnapshot(result)
+        this.auditEntries.push({
+          timestamp: new Date().toISOString(),
           testName,
           testFile,
-          errorMessage,
           line: test.location.line,
-          durationMs: result.duration,
-          steps: describeSteps(result.steps),
-          attachments: collectAttachments(result),
-          domContext: readPageSnapshot(result),
-          repertoire: this.repertoire,
+          originalSelector: healResult.selector,
+          fixedSelector: healResult.fixedSelector,
+          selectorType: healResult.selectorType as AuditEntry['selectorType'],
+          confidence: healResult.confidence,
+          verified: healResult.verified ?? false,
+          fromRepertoire: healResult.fromRepertoire ?? false,
+          errorMessage,
+          domSnippet: domContext,
+          domHash: domContext ? createHash('sha256').update(domContext).digest('hex') : undefined,
+          alternatives: [],
+          technicalDetails: {
+            detectedIssue: `Selector ${healResult.selector} failed`,
+            proposedSolution: healResult.explanation,
+            accessibilityCompliant: healResult.selectorType === 'ROLE' || healResult.selectorType === 'TEXT',
+            stableAgainstDOMChanges: healResult.selectorType !== 'XPATH',
+          },
         })
-      )
+      }
     } catch {
       // Nunca romper la corrida real por un fallo del healing local.
     }
@@ -114,6 +143,11 @@ export default class HealifyReporter implements Reporter {
       writeFileSync(join(process.cwd(), 'healify-report.html'), renderLocalReportHtml(run))
       writeFileSync(join(process.cwd(), 'healify-report.json'), renderLocalReportJson(run))
       writeFileSync(join(process.cwd(), 'healify-report.md'), renderLocalReportMarkdown(run))
+
+      if (this.auditEntries.length > 0) {
+        writeAuditReport(this.auditEntries, process.cwd(), 'Playwright suite', 'Playwright')
+        console.log(`📝 Audit report written to healify-audit.json (${this.auditEntries.length} failures)`)
+      }
     } catch {
       // Fire-and-forget: el reporte local nunca debe romper la corrida.
     }
