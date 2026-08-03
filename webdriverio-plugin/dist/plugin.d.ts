@@ -2,6 +2,7 @@ import type { HealifyWebdriverIOOptions } from './types';
 export declare class HealifyWebdriverIOPlugin {
     private readonly options;
     private readonly events;
+    private readonly auditEntries;
     private readonly repertoire;
     constructor(options?: HealifyWebdriverIOOptions);
     /**
@@ -14,8 +15,9 @@ export declare class HealifyWebdriverIOPlugin {
      */
     wrap<T extends object>(browser: T): T;
     /**
-     * Escribe healify-report.json con todos los eventos acumulados desde la última llamada.
-     * Mismo formato que Playwright/Cypress/Selenium.
+     * Escribe healify-report.json con todos los eventos acumulados desde la última llamada
+     * (o desde el inicio si nunca se llamó). Mismo formato que Playwright/Cypress/Selenium.
+     * También escribe healify-audit.json si hay entradas de auditoría.
      * Devuelve la cantidad de casos escritos.
      */
     flush(cwd?: string): number;

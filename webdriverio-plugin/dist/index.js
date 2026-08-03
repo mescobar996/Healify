@@ -1062,7 +1062,7 @@ var require_local_mode = __commonJS({
           confidence: 0,
           explanation: "No se pudo extraer un selector del mensaje de error.",
           selectorType: "UNKNOWN",
-          defectId: (0, qa_report_1.buildDefectId)(input.testFile, `${input.testName}:${selector}`),
+          defectId: (0, qa_report_1.buildDefectId)(input.testFile, selector),
           severity: (0, qa_report_1.severityFor)("unresolved"),
           expected: `El test "${input.testName}" termina sin errores.`,
           actual: firstLine(input.errorMessage),
@@ -1094,7 +1094,8 @@ var require_local_mode = __commonJS({
         severity: (0, qa_report_1.severityFor)(status),
         expected: `El selector ${selector} encuentra un elemento en la p\xE1gina.`,
         actual: firstLine(input.errorMessage),
-        ...passthrough(input)
+        ...passthrough(input),
+        healResponse: heal
       };
     }
   }
@@ -1106,10 +1107,10 @@ var require_local_report = __commonJS({
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.statsFromCases = exports2.baseEnvironment = void 0;
-    exports2.buildLocalRunFromEvents = buildLocalRunFromEvents2;
+    exports2.buildLocalRunFromEvents = buildLocalRunFromEvents;
     exports2.printSummary = printSummary;
     exports2.renderLocalReportHtml = renderLocalReportHtml;
-    exports2.renderLocalReportJson = renderLocalReportJson2;
+    exports2.renderLocalReportJson = renderLocalReportJson;
     var qa_report_1 = require_qa_report();
     Object.defineProperty(exports2, "baseEnvironment", { enumerable: true, get: function() {
       return qa_report_1.baseEnvironment;
@@ -1117,7 +1118,7 @@ var require_local_report = __commonJS({
     Object.defineProperty(exports2, "statsFromCases", { enumerable: true, get: function() {
       return qa_report_1.statsFromCases;
     } });
-    function buildLocalRunFromEvents2(events, options) {
+    function buildLocalRunFromEvents(events, options) {
       const cases = events.map((e) => {
         const status = e.type === "healed" ? "healed" : e.type === "no-suggestion" || e.type === "failed" ? "unresolved" : "review";
         return {
@@ -1738,7 +1739,7 @@ var require_local_report = __commonJS({
 </html>
 `;
     }
-    function renderLocalReportJson2(rawRun) {
+    function renderLocalReportJson(rawRun) {
       const run = (0, qa_report_1.normalizeRun)(rawRun);
       return JSON.stringify({
         project: run.project,
@@ -1887,12 +1888,124 @@ var require_config = __commonJS({
   }
 });
 
+// ../reporter-core/dist/audit.js
+var require_audit = __commonJS({
+  "../reporter-core/dist/audit.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.buildAuditEntry = buildAuditEntry;
+    exports2.writeAuditReport = writeAuditReport;
+    exports2.appendAuditEntry = appendAuditEntry;
+    var node_crypto_1 = require("node:crypto");
+    var node_fs_1 = require("node:fs");
+    var node_path_1 = require("node:path");
+    function hashDom(domSnippet) {
+      if (!domSnippet)
+        return void 0;
+      return (0, node_crypto_1.createHash)("sha256").update(domSnippet).digest("hex");
+    }
+    function buildAuditEntry(response, request, context) {
+      return {
+        timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+        testName: request.testName ?? "unknown",
+        testFile: request.testFile,
+        line: context.line,
+        originalSelector: request.selector,
+        fixedSelector: response.fixedSelector,
+        selectorType: response.selectorType,
+        confidence: response.confidence,
+        verified: response.verified,
+        fromRepertoire: response.fromRepertoire,
+        errorMessage: context.errorMessage,
+        domSnippet: context.domSnippet,
+        domHash: hashDom(context.domSnippet),
+        screenshotPath: context.screenshotPath,
+        alternatives: response.alternatives ?? [],
+        technicalDetails: response.technicalDetails
+      };
+    }
+    function writeAuditReport(entries, outputDir, project, framework) {
+      const report = {
+        project,
+        framework,
+        generatedAt: (/* @__PURE__ */ new Date()).toISOString(),
+        totalCases: entries.length,
+        entries
+      };
+      const fullPath = (0, node_path_1.join)(outputDir, "healify-audit.json");
+      (0, node_fs_1.mkdirSync)((0, node_path_1.dirname)(fullPath), { recursive: true });
+      (0, node_fs_1.writeFileSync)(fullPath, JSON.stringify(report, null, 2), "utf-8");
+      return fullPath;
+    }
+    function appendAuditEntry(entry, outputDir) {
+      const fullPath = (0, node_path_1.join)(outputDir, "healify-audit.jsonl");
+      (0, node_fs_1.mkdirSync)((0, node_path_1.dirname)(fullPath), { recursive: true });
+      (0, node_fs_1.appendFileSync)(fullPath, JSON.stringify(entry) + "\n", "utf-8");
+    }
+  }
+});
+
+// ../reporter-core/dist/plugin-helpers.js
+var require_plugin_helpers = __commonJS({
+  "../reporter-core/dist/plugin-helpers.js"(exports2) {
+    "use strict";
+    Object.defineProperty(exports2, "__esModule", { value: true });
+    exports2.buildAuditFromEvent = buildAuditFromEvent2;
+    exports2.flushPlugin = flushPlugin2;
+    var node_fs_1 = require("node:fs");
+    var node_path_1 = require("node:path");
+    var audit_1 = require_audit();
+    var local_report_1 = require_local_report();
+    var MAX_AUDIT_ENTRIES = 1e3;
+    function buildAuditFromEvent2(event, existingEntries) {
+      if (existingEntries.length >= MAX_AUDIT_ENTRIES)
+        return;
+      try {
+        const selectorType = event.fixedSelector ? event.fixedSelector.startsWith("//") || event.fixedSelector.startsWith("(") ? "XPATH" : "CSS" : "CSS";
+        const response = {
+          fixedSelector: event.fixedSelector ?? event.originalSelector,
+          confidence: event.confidence ?? 0,
+          verified: event.verified ?? false,
+          fromRepertoire: false,
+          explanation: event.explanation ?? "",
+          selectorType,
+          needsReview: false,
+          robustnessImprovement: 0,
+          alternatives: [],
+          technicalDetails: {
+            detectedIssue: `${event.type}: ${event.originalSelector}`,
+            proposedSolution: event.explanation ?? "",
+            accessibilityCompliant: false,
+            stableAgainstDOMChanges: false
+          }
+        };
+        const entry = (0, audit_1.buildAuditEntry)(response, { selector: event.originalSelector }, { errorMessage: `${event.type}: ${event.originalSelector}` });
+        existingEntries.push(entry);
+      } catch {
+      }
+    }
+    function flushPlugin2(events, auditEntries, cwd, projectName, framework) {
+      if (events.length === 0)
+        return 0;
+      const run = (0, local_report_1.buildLocalRunFromEvents)(events, { project: projectName, framework });
+      (0, node_fs_1.writeFileSync)((0, node_path_1.join)(cwd, "healify-report.json"), (0, local_report_1.renderLocalReportJson)(run));
+      const count = run.cases.length;
+      events.length = 0;
+      if (auditEntries.length > 0) {
+        (0, audit_1.writeAuditReport)([...auditEntries], cwd, projectName, framework);
+        auditEntries.length = 0;
+      }
+      return count;
+    }
+  }
+});
+
 // ../reporter-core/dist/index.js
 var require_dist = __commonJS({
   "../reporter-core/dist/index.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
-    exports2.loadConfig = exports2.findRepertoireMatch = exports2.readRepertoire = exports2.parseHistoryLines = exports2.domContextFromProbeResult = exports2.BROWSER_PROBE_SCRIPT = exports2.resolveLocatorStrategy = exports2.roleSuggestionToXPath = exports2.parseRoleSuggestion = exports2.selectorTokens = exports2.bestNameFor = exports2.bestElementFor = exports2.findMatches = exports2.existsInPage = exports2.formatPageElements = exports2.parsePageSnapshot = exports2.isPlaywrightOnlySelector = exports2.SEVERITY_LABEL = exports2.environmentRows = exports2.formatDuration = exports2.severityFor = exports2.buildDefectId = exports2.renderLocalReportMarkdown = exports2.statsFromCases = exports2.baseEnvironment = exports2.buildLocalRunFromEvents = exports2.printSummary = exports2.renderLocalReportJson = exports2.renderLocalReportHtml = exports2.runLocalHealing = exports2.analyzeAndHeal = exports2.extractSelectorFromError = void 0;
+    exports2.flushPlugin = exports2.buildAuditFromEvent = exports2.appendAuditEntry = exports2.writeAuditReport = exports2.buildAuditEntry = exports2.loadConfig = exports2.findRepertoireMatch = exports2.readRepertoire = exports2.parseHistoryLines = exports2.domContextFromProbeResult = exports2.BROWSER_PROBE_SCRIPT = exports2.resolveLocatorStrategy = exports2.roleSuggestionToXPath = exports2.parseRoleSuggestion = exports2.selectorTokens = exports2.bestNameFor = exports2.bestElementFor = exports2.findMatches = exports2.existsInPage = exports2.formatPageElements = exports2.parsePageSnapshot = exports2.isPlaywrightOnlySelector = exports2.SEVERITY_LABEL = exports2.environmentRows = exports2.formatDuration = exports2.severityFor = exports2.buildDefectId = exports2.renderLocalReportMarkdown = exports2.statsFromCases = exports2.baseEnvironment = exports2.buildLocalRunFromEvents = exports2.printSummary = exports2.renderLocalReportJson = exports2.renderLocalReportHtml = exports2.runLocalHealing = exports2.analyzeAndHeal = exports2.extractSelectorFromError = void 0;
     var selector_extractor_1 = require_selector_extractor();
     Object.defineProperty(exports2, "extractSelectorFromError", { enumerable: true, get: function() {
       return selector_extractor_1.extractSelectorFromError;
@@ -2000,6 +2113,23 @@ var require_dist = __commonJS({
     Object.defineProperty(exports2, "loadConfig", { enumerable: true, get: function() {
       return config_1.loadConfig;
     } });
+    var audit_1 = require_audit();
+    Object.defineProperty(exports2, "buildAuditEntry", { enumerable: true, get: function() {
+      return audit_1.buildAuditEntry;
+    } });
+    Object.defineProperty(exports2, "writeAuditReport", { enumerable: true, get: function() {
+      return audit_1.writeAuditReport;
+    } });
+    Object.defineProperty(exports2, "appendAuditEntry", { enumerable: true, get: function() {
+      return audit_1.appendAuditEntry;
+    } });
+    var plugin_helpers_1 = require_plugin_helpers();
+    Object.defineProperty(exports2, "buildAuditFromEvent", { enumerable: true, get: function() {
+      return plugin_helpers_1.buildAuditFromEvent;
+    } });
+    Object.defineProperty(exports2, "flushPlugin", { enumerable: true, get: function() {
+      return plugin_helpers_1.flushPlugin;
+    } });
   }
 });
 
@@ -2012,8 +2142,6 @@ __export(index_exports, {
 module.exports = __toCommonJS(index_exports);
 
 // src/plugin.ts
-var import_node_fs = require("node:fs");
-var import_node_path = require("node:path");
 var import_reporter_core3 = __toESM(require_dist());
 
 // src/wrap.ts
@@ -2151,10 +2279,15 @@ function wrapBrowser(browser, options = {}, repertoire = []) {
 var HealifyWebdriverIOPlugin = class {
   constructor(options = {}) {
     this.events = [];
+    this.auditEntries = [];
     this.options = {
       ...options,
       onEvent: (event) => {
         this.events.push(event);
+        try {
+          (0, import_reporter_core3.buildAuditFromEvent)(event, this.auditEntries);
+        } catch {
+        }
         options.onEvent?.(event);
       }
     };
@@ -2172,20 +2305,19 @@ var HealifyWebdriverIOPlugin = class {
     return wrapBrowser(browser, this.options, this.repertoire);
   }
   /**
-   * Escribe healify-report.json con todos los eventos acumulados desde la última llamada.
-   * Mismo formato que Playwright/Cypress/Selenium.
+   * Escribe healify-report.json con todos los eventos acumulados desde la última llamada
+   * (o desde el inicio si nunca se llamó). Mismo formato que Playwright/Cypress/Selenium.
+   * También escribe healify-audit.json si hay entradas de auditoría.
    * Devuelve la cantidad de casos escritos.
    */
   flush(cwd = process.cwd()) {
-    if (this.events.length === 0) return 0;
-    const run = (0, import_reporter_core3.buildLocalRunFromEvents)(this.events, {
-      project: this.options.projectName ?? "webdriverio-project",
-      framework: "WebdriverIO"
-    });
-    (0, import_node_fs.writeFileSync)((0, import_node_path.join)(cwd, "healify-report.json"), (0, import_reporter_core3.renderLocalReportJson)(run));
-    const count = run.cases.length;
-    this.events.length = 0;
-    return count;
+    return (0, import_reporter_core3.flushPlugin)(
+      this.events,
+      this.auditEntries,
+      cwd,
+      this.options.projectName ?? "webdriverio-project",
+      "WebdriverIO"
+    );
   }
 };
 // Annotate the CommonJS export names for ESM import in node:
