@@ -24,6 +24,23 @@ const { mockRunLocalHealing } = vi.hoisted(() => {
     fromRepertoire: false,
     defectId: 'defect-1',
     severity: 'low' as const,
+    healResponse: {
+      verified: true,
+      fromRepertoire: false,
+      fixedSelector: "role('button', { name: 'Login' })",
+      confidence: 0.92,
+      explanation: 'Selector replaced with ARIA role',
+      selectorType: 'ROLE',
+      alternatives: [],
+      needsReview: false,
+      robustnessImprovement: 45,
+      technicalDetails: {
+        detectedIssue: 'ID selectors are brittle and can change',
+        proposedSolution: 'ARIA roles are stable across refactors',
+        accessibilityCompliant: true,
+        stableAgainstDOMChanges: true,
+      },
+    },
   }))
   return { mockRunLocalHealing }
 })

@@ -1,4 +1,4 @@
-import { analyzeAndHeal } from './healing-engine'
+import { analyzeAndHeal, type HealResponse } from './healing-engine'
 import { extractSelectorFromError } from './selector-extractor'
 import { buildDefectId, severityFor, type Severity } from './qa-report'
 import type { HistoryEntry } from './repertoire'
@@ -55,6 +55,9 @@ export interface LocalCaseResult {
   durationMs?: number
   steps?: string[]
   attachments?: CaseAttachment[]
+  /** Respuesta completa del motor de healing — los adapters la pasan directo a
+   * `buildAuditEntry()` sin reconstruir manualmente. */
+  healResponse?: HealResponse
 }
 
 const HEALED_THRESHOLD = 0.9
@@ -128,5 +131,6 @@ export function runLocalHealing(input: LocalCaseInput): LocalCaseResult {
     expected: `El selector ${selector} encuentra un elemento en la página.`,
     actual: firstLine(input.errorMessage),
     ...passthrough(input),
+    healResponse: heal,
   }
 }

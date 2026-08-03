@@ -16,7 +16,6 @@ import {
   type CaseAttachment,
   type RunEnvironment,
   type HistoryEntry,
-  type HealResponse,
   type AuditEntry,
 } from '@healify/reporter-core'
 
@@ -97,26 +96,10 @@ export default class HealifyReporter implements Reporter {
       })
       this.localResults.push(healResult)
 
-      if (healResult.selector !== 'Unknown selector') {
+      if (healResult.selector !== 'Unknown selector' && healResult.healResponse) {
         this.auditEntries.push(
           buildAuditEntry(
-            {
-              verified: healResult.verified ?? false,
-              fromRepertoire: healResult.fromRepertoire ?? false,
-              fixedSelector: healResult.fixedSelector,
-              confidence: healResult.confidence,
-              explanation: healResult.explanation,
-              selectorType: healResult.selectorType as HealResponse['selectorType'],
-              alternatives: [],
-              needsReview: false,
-              robustnessImprovement: 0,
-              technicalDetails: {
-                detectedIssue: `Selector ${healResult.selector} failed`,
-                proposedSolution: healResult.explanation,
-                accessibilityCompliant: healResult.selectorType === 'ROLE' || healResult.selectorType === 'TEXT',
-                stableAgainstDOMChanges: healResult.selectorType !== 'XPATH',
-              },
-            },
+            healResult.healResponse,
             { selector: healResult.selector, testName, testFile },
             { errorMessage, domSnippet: domContext, screenshotPath, line: test.location.line },
           ),
