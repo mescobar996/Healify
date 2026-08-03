@@ -29,6 +29,16 @@ export {
   type AgileOutcome,
   type AgileReportResult,
 } from './agile'
+export {
+  buildDashboardStats,
+  renderDashboardHtml,
+  computeTopRecurrent,
+  computeRebroken,
+  type DashboardStats,
+  type TimelinePoint,
+  type RecurrentSelector,
+  type RebrokenSelector,
+} from './dashboard'
 export { createJiraClient } from './jira'
 export { postJson } from './webhook'
 export { buildAuditEntry, writeAuditReport, appendAuditEntry } from './audit'
