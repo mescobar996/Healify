@@ -7,6 +7,9 @@
   "scripts": {
     "test": "vitest run"
   },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "@octokit/action": "^7.0.0"
   },

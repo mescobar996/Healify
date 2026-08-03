@@ -21,6 +21,9 @@
     "build": "tsc --emitDeclarationOnly && esbuild src/index.ts src/reporter.ts --bundle --platform=node --outdir=dist --format=cjs --external:@playwright/test",
     "test": "vitest run"
   },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "publishConfig": {
     "access": "public"
   },
