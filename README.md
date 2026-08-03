@@ -65,6 +65,32 @@ Detalle con ejemplos: [cli/README.md](cli/README.md)
 
 Playwright, Cypress, Selenium y WebdriverIO — todos sobre el mismo motor (`reporter-core`). Los cuatro verifican la sugerencia contra el DOM real; Cypress necesita `cy.healifyGet(selector)` (opt-in).
 
+### Cypress Support
+
+Healify provides first-class support for Cypress with automatic selector healing and audit logging.
+
+**Quick Start:**
+
+```bash
+npm install @healify/cypress-plugin --save-dev
+```
+
+Then add to your `cypress.config.ts`:
+
+```typescript
+import { HealifyCypressPlugin } from '@healify/cypress-plugin'
+
+export default defineConfig({
+  e2e: {
+    setupNodeEvents(on, config) {
+      return HealifyCypressPlugin(on, config)
+    },
+  },
+})
+```
+
+For detailed documentation, see [docs/cypress-plugin.md](docs/cypress-plugin.md).
+
 ## Multi-lenguaje
 
 `healify heal` expone el motor como JSON por stdin/stdout. **Python** (`pip install healify-selenium`) y **Java** (`io.github.mescobar996:healify-selenium:0.1.0`) son paquetes reales. **C#** es adapter de referencia. Contrato: [docs/adapters/README.md](docs/adapters/README.md).
