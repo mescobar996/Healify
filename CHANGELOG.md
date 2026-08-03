@@ -42,6 +42,40 @@
   `MODULE_NOT_FOUND` interno de npm apenas se corre así. Arreglado invocando `cmd.exe /c npx
   ...` explícito, el patrón estándar de .NET para lanzar batch scripts sin una shell real.
 
+## 1.9.0 — 2026-08-03
+
+Cierra el gap G8 del análisis competitivo (`docs/research/competitive-gaps.md`): detectar
+tests flaky. 674 tests (51 archivos), 0 warnings de lint.
+
+### Detección de flakiness
+
+El historial (`history.jsonl`) solo guarda selectores rotos, así que "apareció roto N veces"
+no puede distinguir el test flaky del siempre roto. La solución: un registro de corridas
+`.healify/runs.jsonl` con el resultado de CADA test (no solo los fallidos), y un comando que
+lee ese registro con denominador.
+
+- **feat(core): registro de corridas** (`reporter-core/src/runs.ts`) — `RunRecord`/`RunOutcome`,
+  `serializeRunRecord`/`parseRunLines` (tolerante a líneas basura) y `appendRunRecord`
+  (crea `.healify/` si no existe; ante cualquier error avisa por `console.warn` y no rompe la
+  corrida). El archivo se guarda sin BOM — en Windows `Set-Content -Encoding utf8` lo escribiría
+  y `JSON.parse` explotaría; hay test que lo verifica.
+- **feat(core): `detectFlakyTests`** (`reporter-core/src/flake.ts`) — agrupa los outcomes por
+  `testFile + testName`, computa `flakeRate` (fallos / corridas) y dictamina
+  `healthy | flaky | always-failing | insufficient-data` (con `minRuns` configurable, default 2).
+  El mismo test en dos archivos distintos no se mezcla.
+- **feat(test-runner)**: el reporter de Playwright ahora registra la corrida en `onEnd`
+  (`project: 'Playwright suite'`) con los outcomes de cada test en `onTestEnd` — `testName`
+  de `titlePath().join(' > ')`, `testFile` relativo al `cwd`. `skipped`/`interrupted` no
+  entran: ni pasan ni fallan.
+- **feat(cypress-plugin)**: mismo registro en `after:run` (`project: 'Cypress suite'`), con
+  outcomes en `after:spec` — solo tests `passed`/`failed`, nunca `skipped`/`pending`.
+- **feat(cli): `healify flake [--min-runs <n>]`** — lee `.healify/runs.jsonl` e imprime la
+  tabla de flaky (verde en unas corridas, rojo en otras) y siempre-roto (falló en todas),
+  con el resumen "X flaky de Y tests con datos · N corridas registradas". Sin corridas, avisa
+  y no rompe. `--min-runs` sube el piso para opinar (default 2).
+- **fuera de alcance**: Selenium/WebdriverIO no registran corridas — curan en vivo y no tienen
+  suite propia, así que no hay denominador que leer.
+
 ## 1.8.0 — 2026-08-03
 
 Cierra el gap G7 del análisis competitivo (`docs/research/competitive-gaps.md`): la vista
