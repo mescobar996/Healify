@@ -19,21 +19,23 @@ Flujo de Trabajo con la IA
 4. Devuelve solo el código modificado o nuevo, no repitas código intacto.
 5. Comandos AI: `healify ai setup|status|explain|chat|models` — requieren Ollama corriendo.
 
-## Skills de Auditoría Instalados
+## Skills de Auditoría Instalados (TOP last30days)
 
-| Skill | Para qué sirve | Cuándo usarlo |
-|-------|----------------|---------------|
-| security-reviewer | Identifica vulnerabilidades de seguridad, genera reportes con severidad (OWASP, SAST, secrets) | Cuando pedís "security review", "audit de seguridad", "chequear vulnerabilidades" |
-| code-reviewer | Revisión de código: bugs, code smells, N+1 queries, problemas de arquitectura | Cuando pedís "code review", "revisar PR", "chequear calidad" |
-| deep-review | Pipeline multi-etapa: corre revisión paralela de correctness, security, performance, architecture | Cuando pedís "deep review", "audit completo", "revisión pre-merge" |
-| performance-audit | Detecta cuellos de botella: N+1 queries, memory leaks, rendering innecesario | Cuando pedís "check performance", "find bottlenecks", "optimize" |
-| architecture-review | Evalúa SOLID, coupling, cohesion, patrones de diseño | Cuando pedís "review architecture", "check design patterns", "evaluate structure" |
+| Skill | Stars | Updated | Para qué sirve | Comando | Repo |
+|-------|-------|---------|----------------|---------|------|
+| code-review-excellence | 38,442 | 2026-07-22 | Mejores prácticas de code review: feedback constructivo, bugs tempranos, mentoring | "code review", "review standards" | wshobson/agents |
+| open-code-review | 18,232 | 2026-08-03 | Code review con IA sobre cambios Git vía CLI `ocr` (alibaba) | "review this PR/commit/diff" | alibaba/open-code-review |
+| security-audit | 2,730 | 2026-07-06 | Auditoría de seguridad real (web/API/CLI/libs), issues explotables, no teóricos | "security audit", "find security bugs" | cloudflare/security-audit-skill |
+| owasp-security | 317 | 2026-07-28 | OWASP Top 10:2025, ASVS 5.0, LLM Top 10, Agentic AI; por-language quirks | "security review", "implement auth" | agamm/claude-code-owasp |
+| code-review (port OpenCode) | 455 | 2026-08-03 | Review de PR/diff multi-agente con confidence filtering | "review this PR", "audit changes" | waybarrios/opencode-power-pack |
 
-### Regla de Auditoría
+**Skills pre-existentes** (instaladas antes, sin repo >100⭐): security-reviewer, code-reviewer, deep-review, performance-audit, architecture-review.
 
-Cada vez que el usuario diga **/audit**, correr en orden:
-1. `deep-review` — Revisión completa del código
-2. `security-reviewer` — Auditoría de seguridad
-3. `code-reviewer` — Revisión de calidad
+### Regla de Auditoría (/audit-perfect)
 
-Generar reporte en `.claude/audits/` con timestamp.
+Cada vez que el usuario diga **/audit-perfect**, correr en orden:
+1. `blindspot`-style architecture pass → `code-review` (opencode-power-pack) para diff/PR
+2. `security-audit` (cloudflare) → `owasp-security` (agamm) para severidad/OWASP
+3. `code-review-excellence` (wshobson) → `performance-audit` para pulido
+
+Generar reporte en `.claude/audits/<YYYY-MM-DD>-perfect.md` con fecha, separando Críticos / Mayores / Menores. `/audit` sigue usando deep-review → security-reviewer → code-reviewer.
