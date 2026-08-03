@@ -17,6 +17,7 @@ import {
   type RunEnvironment,
   type HistoryEntry,
   type HealResponse,
+  type AuditEntry,
 } from '@healify/reporter-core'
 
 /**
@@ -81,6 +82,7 @@ export default class HealifyReporter implements Reporter {
     const testFile = relative(process.cwd(), test.location.file).replace(/\\/g, '/')
 
     try {
+      const domContext = readPageSnapshot(result)
       const healResult = runLocalHealing({
         testName,
         testFile,
@@ -89,13 +91,12 @@ export default class HealifyReporter implements Reporter {
         durationMs: result.duration,
         steps: describeSteps(result.steps),
         attachments: collectAttachments(result),
-        domContext: readPageSnapshot(result),
+        domContext,
         repertoire: this.repertoire,
       })
       this.localResults.push(healResult)
 
       if (healResult.selector !== 'Unknown selector') {
-        const domContext = readPageSnapshot(result)
         this.auditEntries.push(
           buildAuditEntry(
             {
