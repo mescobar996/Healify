@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import type { FullResult, TestCase, TestResult } from '@playwright/test/reporter'
 
 const { mockWriteFileSync, mockReadFileSync } = vi.hoisted(() => ({
   mockWriteFileSync: vi.fn(),
@@ -91,15 +92,15 @@ vi.mock('@healify/reporter-core', () => ({
 
 import HealifyReporter from '../reporter'
 
-function makeTest(overrides?: Record<string, unknown>) {
+function makeTest(overrides?: Record<string, unknown>): TestCase {
   return {
     titlePath: () => ['root', 'should log in'],
     location: { file: 'tests/login.spec.ts', line: 10 },
     ...overrides,
-  } as any
+  } as unknown as TestCase
 }
 
-function makeResult(overrides?: Record<string, unknown>) {
+function makeResult(overrides?: Record<string, unknown>): TestResult {
   return {
     status: 'failed',
     error: { message: "Waiting for selector '#login-btn' failed" },
@@ -107,7 +108,7 @@ function makeResult(overrides?: Record<string, unknown>) {
     attachments: [],
     duration: 100,
     ...overrides,
-  } as any
+  } as unknown as TestResult
 }
 
 describe('Playwright Audit Integration', () => {
@@ -119,7 +120,7 @@ describe('Playwright Audit Integration', () => {
     const reporter = new HealifyReporter()
 
     reporter.onTestEnd(makeTest(), makeResult())
-    reporter.onEnd({ status: 'failed' } as any)
+    reporter.onEnd({ status: 'failed' } as unknown as FullResult)
 
     expect(mockWriteAuditReport).toHaveBeenCalledTimes(1)
     const [entries, outputDir, project, framework] = mockWriteAuditReport.mock.calls[0]
@@ -157,7 +158,7 @@ describe('Playwright Audit Integration', () => {
     const reporter = new HealifyReporter()
 
     reporter.onTestEnd(makeTest(), makeResult())
-    reporter.onEnd({ status: 'failed' } as any)
+    reporter.onEnd({ status: 'failed' } as unknown as FullResult)
 
     expect(mockWriteAuditReport).not.toHaveBeenCalled()
   })
@@ -166,7 +167,7 @@ describe('Playwright Audit Integration', () => {
     const reporter = new HealifyReporter()
 
     reporter.onTestEnd(makeTest(), makeResult({ status: 'passed' }))
-    reporter.onEnd({ status: 'passed' } as any)
+    reporter.onEnd({ status: 'passed' } as unknown as FullResult)
 
     expect(mockWriteAuditReport).not.toHaveBeenCalled()
   })
@@ -179,7 +180,7 @@ describe('Playwright Audit Integration', () => {
       makeTest({ titlePath: () => ['root', 'should sign up'] }),
       makeResult()
     )
-    reporter.onEnd({ status: 'failed' } as any)
+    reporter.onEnd({ status: 'failed' } as unknown as FullResult)
 
     expect(mockWriteAuditReport).toHaveBeenCalledTimes(1)
     const [entries] = mockWriteAuditReport.mock.calls[0]
@@ -192,7 +193,7 @@ describe('Playwright Audit Integration', () => {
     const reporter = new HealifyReporter()
 
     reporter.onTestEnd(makeTest({ location: { file: 'tests/login.spec.ts', line: 42 } }), makeResult())
-    reporter.onEnd({ status: 'failed' } as any)
+    reporter.onEnd({ status: 'failed' } as unknown as FullResult)
 
     const [entries] = mockWriteAuditReport.mock.calls[0]
     expect(entries[0].line).toBe(42)
@@ -210,7 +211,7 @@ describe('Playwright Audit Integration', () => {
         attachments: [{ name: 'error-context', path: attachmentPath }],
       })
     )
-    reporter.onEnd({ status: 'failed' } as any)
+    reporter.onEnd({ status: 'failed' } as unknown as FullResult)
 
     const [entries] = mockWriteAuditReport.mock.calls[0]
     expect(entries[0]).toHaveProperty('domHash')
@@ -221,7 +222,7 @@ describe('Playwright Audit Integration', () => {
     const reporter = new HealifyReporter()
 
     reporter.onTestEnd(makeTest(), makeResult())
-    reporter.onEnd({ status: 'failed' } as any)
+    reporter.onEnd({ status: 'failed' } as unknown as FullResult)
 
     const [entries] = mockWriteAuditReport.mock.calls[0]
     expect(Array.isArray(entries[0].alternatives)).toBe(true)

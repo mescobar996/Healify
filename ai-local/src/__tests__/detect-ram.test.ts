@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { EventEmitter } from 'events'
+import type { IncomingMessage, RequestOptions } from 'node:http'
 
 const totalmemMock = vi.fn(() => 16 * 1024 * 1024 * 1024)
 const httpGetMock = vi.fn()
@@ -14,10 +15,10 @@ vi.mock('http', () => ({
 
 const { getSystemRAM, suggestModel, checkOllamaRunning, getInstalledModels, MODELS } = await import('../detect-ram')
 
-function fakeResponse(statusCode: number, body: string) {
-  const res: any = new EventEmitter()
+function fakeResponse(statusCode: number, body: string): IncomingMessage {
+  const res = new EventEmitter() as unknown as IncomingMessage
   res.statusCode = statusCode
-  res.resume = vi.fn()
+  res.resume = vi.fn() as unknown as () => IncomingMessage
   queueMicrotask(() => {
     res.emit('data', body)
     res.emit('end')
@@ -54,7 +55,7 @@ describe('suggestModel', () => {
 
 describe('checkOllamaRunning / getInstalledModels', () => {
   it('devuelve true cuando Ollama responde 200 con JSON válido', async () => {
-    httpGetMock.mockImplementation((_url: any, _opts: any, cb: any) => {
+    httpGetMock.mockImplementation((_url: string, _opts: RequestOptions, cb: (res: IncomingMessage) => void) => {
       cb(fakeResponse(200, JSON.stringify({ models: [{ name: 'llama3.2:3b' }] })))
       return new EventEmitter()
     })
@@ -63,7 +64,7 @@ describe('checkOllamaRunning / getInstalledModels', () => {
   })
 
   it('devuelve false si Ollama responde con status != 200', async () => {
-    httpGetMock.mockImplementation((_url: any, _opts: any, cb: any) => {
+    httpGetMock.mockImplementation((_url: string, _opts: RequestOptions, cb: (res: IncomingMessage) => void) => {
       cb(fakeResponse(500, ''))
       return new EventEmitter()
     })
@@ -72,8 +73,8 @@ describe('checkOllamaRunning / getInstalledModels', () => {
   })
 
   it('devuelve false ante error de red', async () => {
-    httpGetMock.mockImplementation((_url: any) => {
-      const req = new EventEmitter() as any
+    httpGetMock.mockImplementation((_url: string) => {
+      const req = new EventEmitter()
       queueMicrotask(() => req.emit('error', new Error('ECONNREFUSED')))
       return req
     })
@@ -82,7 +83,7 @@ describe('checkOllamaRunning / getInstalledModels', () => {
   })
 
   it('devuelve false si el body no es JSON válido', async () => {
-    httpGetMock.mockImplementation((_url: any, _opts: any, cb: any) => {
+    httpGetMock.mockImplementation((_url: string, _opts: RequestOptions, cb: (res: IncomingMessage) => void) => {
       cb(fakeResponse(200, 'no es json'))
       return new EventEmitter()
     })
@@ -92,7 +93,7 @@ describe('checkOllamaRunning / getInstalledModels', () => {
 
   it('usa la URL configurada, no un valor hardcoded', async () => {
     let requestedUrl = ''
-    httpGetMock.mockImplementation((url: any, _opts: any, cb: any) => {
+    httpGetMock.mockImplementation((url: string, _opts: RequestOptions, cb: (res: IncomingMessage) => void) => {
       requestedUrl = String(url)
       cb(fakeResponse(200, JSON.stringify({ models: [] })))
       return new EventEmitter()
@@ -103,7 +104,7 @@ describe('checkOllamaRunning / getInstalledModels', () => {
   })
 
   it('getInstalledModels devuelve la lista de modelos', async () => {
-    httpGetMock.mockImplementation((_url: any, _opts: any, cb: any) => {
+    httpGetMock.mockImplementation((_url: string, _opts: RequestOptions, cb: (res: IncomingMessage) => void) => {
       cb(fakeResponse(200, JSON.stringify({ models: [{ name: 'phi3:mini' }] })))
       return new EventEmitter()
     })
@@ -112,8 +113,8 @@ describe('checkOllamaRunning / getInstalledModels', () => {
   })
 
   it('getInstalledModels devuelve [] si Ollama no responde', async () => {
-    httpGetMock.mockImplementation((_url: any) => {
-      const req = new EventEmitter() as any
+    httpGetMock.mockImplementation((_url: string) => {
+      const req = new EventEmitter()
       queueMicrotask(() => req.emit('error', new Error('ECONNREFUSED')))
       return req
     })

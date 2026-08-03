@@ -1,7 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import type { HealResponse, HealRequest, FailureContext } from '@healify/reporter-core'
+
+type TaskHandler = (...args: unknown[]) => unknown
 
 const { mockBuildAuditEntry, mockWriteAuditReport, mockWriteFileSync } = vi.hoisted(() => {
-  const mockBuildAuditEntry = vi.fn((_response: any, request: any, context: any) => ({
+  const mockBuildAuditEntry = vi.fn((_response: HealResponse, request: HealRequest, context: FailureContext) => ({
     timestamp: '2026-01-01T00:00:00.000Z',
     testName: request.testName ?? 'unknown',
     originalSelector: request.selector,
@@ -62,28 +65,11 @@ vi.mock('node:fs', () => ({
 import { HealifyCypressPlugin } from '../plugin'
 
 function createOnCapture() {
-  const handlers: Record<string, (...args: any[]) => any> = {}
-  const on = vi.fn((event: string, handler: (...args: any[]) => any) => {
+  const handlers: Record<string, TaskHandler> = {}
+  const on = vi.fn((event: string, handler: TaskHandler) => {
     handlers[event] = handler
   }) as unknown as Cypress.PluginEvents
   return { on, handlers }
-}
-
-function makeSpec(overrides?: Record<string, unknown>) {
-  return { relative: 'e2e/login.cy.ts', ...overrides } as any
-}
-
-function makeResults(tests: Record<string, unknown>[]) {
-  return { tests } as any
-}
-
-function makeTest(overrides?: Record<string, unknown>) {
-  return {
-    title: ['login', 'shows error with invalid credentials'],
-    state: 'failed',
-    displayError: "Expected to find element: `button.submit`, but never found it.",
-    ...overrides,
-  }
 }
 
 const fakeConfig = {} as Cypress.PluginConfigOptions
@@ -97,7 +83,7 @@ describe('Cypress Audit Integration', () => {
     const { on, handlers } = createOnCapture()
     HealifyCypressPlugin(on, fakeConfig)
 
-    const tasks = handlers['task'] as Record<string, (...args: any[]) => any>
+    const tasks = handlers['task'] as Record<string, TaskHandler>
     tasks['healify:audit-entry']({
       selector: 'button.submit',
       error: 'Element not found',
@@ -127,7 +113,7 @@ describe('Cypress Audit Integration', () => {
     const { on, handlers } = createOnCapture()
     HealifyCypressPlugin(on, fakeConfig)
 
-    const tasks = handlers['task'] as Record<string, (...args: any[]) => any>
+    const tasks = handlers['task'] as Record<string, TaskHandler>
     tasks['healify:audit-entry']({
       selector: 'button.submit',
       error: 'Element not found',
@@ -161,7 +147,7 @@ describe('Cypress Audit Integration', () => {
     const { on, handlers } = createOnCapture()
     HealifyCypressPlugin(on, fakeConfig)
 
-    const tasks = handlers['task'] as Record<string, (...args: any[]) => any>
+    const tasks = handlers['task'] as Record<string, TaskHandler>
     tasks['healify:audit-entry']({
       selector: 'button.submit',
       error: 'First failure',
@@ -193,7 +179,7 @@ describe('Cypress Audit Integration', () => {
     const { on, handlers } = createOnCapture()
     HealifyCypressPlugin(on, fakeConfig)
 
-    const tasks = handlers['task'] as Record<string, (...args: any[]) => any>
+    const tasks = handlers['task'] as Record<string, TaskHandler>
     expect(() =>
       tasks['healify:audit-entry']({
         selector: 'button.submit',
@@ -206,7 +192,7 @@ describe('Cypress Audit Integration', () => {
     const { on, handlers } = createOnCapture()
     HealifyCypressPlugin(on, fakeConfig)
 
-    const tasks = handlers['task'] as Record<string, (...args: any[]) => any>
+    const tasks = handlers['task'] as Record<string, TaskHandler>
     tasks['healify:audit-entry']({
       selector: 'button.submit',
       error: 'Element not found',

@@ -39,7 +39,7 @@ const CASES: Case[] = [
   { name: 'webdriverio-ts', files: scaffoldWebdriverio('ts') },
 ]
 
-function tsconfigFor(caseName: string): string {
+function tsconfigFor(_caseName: string): string {
   return JSON.stringify(
     {
       compilerOptions: {

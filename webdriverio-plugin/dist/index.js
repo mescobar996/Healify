@@ -2197,13 +2197,13 @@ function wrapBrowser(browser, options = {}, repertoire = []) {
             const result = el[prop].apply(el, args);
             if (result && typeof result.then === "function") {
               return result.catch((err) => {
-                if (!isHealed && isNoElementError(err)) return tryHeal(originalSelector, prop, args);
+                if (!isHealed && isNoElementError(err)) return tryHeal(originalSelector);
                 throw err;
               });
             }
             return result;
           } catch (err) {
-            if (!isHealed && isNoElementError(err)) return tryHeal(originalSelector, prop, args);
+            if (!isHealed && isNoElementError(err)) return tryHeal(originalSelector);
             throw err;
           }
         };
@@ -2216,7 +2216,7 @@ function wrapBrowser(browser, options = {}, repertoire = []) {
     }
     return wrapped;
   }
-  async function tryHeal(originalSelector, method, args) {
+  async function tryHeal(originalSelector) {
     const start = Date.now();
     const selector = wdioSelectorToSelector(originalSelector);
     if (selector === null) {

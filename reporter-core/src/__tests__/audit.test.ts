@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { buildAuditEntry, writeAuditReport, appendAuditEntry } from '../audit'
 import type { HealResponse, HealRequest } from '../healing-engine'
-import type { FailureContext, AuditEntry } from '../audit'
+import type { FailureContext } from '../audit'
 
 describe('audit module', () => {
   const mockResponse: HealResponse = {

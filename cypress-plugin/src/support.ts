@@ -136,7 +136,6 @@ function healAndRetry(selector: string, timeout: number, confidenceThreshold: nu
         // documento real de la página. Mismo cuerpo ES5 que reporter-core ya usa con
         // Selenium/WebdriverIO vía executeScript — acá corre en la misma ventana bajo test,
         // no en contenido de terceros.
-        // eslint-disable-next-line no-new-func
         pageElements = new win.Function(script)()
       } catch {
         pageElements = []

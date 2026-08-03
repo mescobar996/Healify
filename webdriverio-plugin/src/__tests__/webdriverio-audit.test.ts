@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import type { HealResponse, HealRequest, FailureContext } from '@healify/reporter-core'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -41,7 +42,7 @@ beforeEach(() => {
   mockReadRepertoire.mockReset()
   mockReadRepertoire.mockReturnValue([])
   dir = mkdtempSync(join(tmpdir(), 'healify-wdio-audit-'))
-  mockBuildAuditEntry.mockImplementation((_response: any, request: any, context: any) => ({
+  mockBuildAuditEntry.mockImplementation((_response: HealResponse, request: HealRequest, context: FailureContext) => ({
     timestamp: '2026-01-01T00:00:00.000Z',
     testName: 'unknown',
     originalSelector: request.selector,
@@ -96,7 +97,7 @@ describe('WebdriverIO Audit Integration', () => {
       },
     })
     mockRenderLocalReportJson.mockReturnValue('{}')
-    mockFlushPlugin.mockImplementation((_events, _auditEntries, cwd, project, framework) => {
+    mockFlushPlugin.mockImplementation((_events, _auditEntries, _cwd, _project, _framework) => {
       return _events.length
     })
 
@@ -137,7 +138,7 @@ describe('WebdriverIO Audit Integration', () => {
       },
     })
     mockRenderLocalReportJson.mockReturnValue('{}')
-    mockFlushPlugin.mockImplementation((_events, _auditEntries, cwd, project, framework) => {
+    mockFlushPlugin.mockImplementation((_events, _auditEntries, _cwd, _project, _framework) => {
       return _events.length
     })
 

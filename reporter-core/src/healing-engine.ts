@@ -122,7 +122,6 @@ function hasVolatileClassToken(selector: string): boolean {
 // un selector (raro, pero posible) trae más de uno — data-testid/data-cy ya soportados,
 // data-qa/data-test/data-e2e son convenciones equivalentes usadas por otros equipos/frameworks.
 const TESTID_ATTRS = ['data-testid', 'data-cy', 'data-qa', 'data-test', 'data-e2e'] as const
-type TestIdAttr = (typeof TESTID_ATTRS)[number]
 
 const NTH_POSITION_RE = /:nth-(?:child|of-type)\(/
 

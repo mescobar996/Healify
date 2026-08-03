@@ -56,20 +56,22 @@ vi.mock('node:fs', () => ({
 import { HealifyCypressPlugin } from '../plugin'
 
 /** Captura los handlers que el plugin registra vía on(event, handler), para invocarlos a mano. */
+type TaskHandler = (...args: unknown[]) => unknown
+
 function createOnCapture() {
-  const handlers: Record<string, (...args: any[]) => any> = {}
-  const on = vi.fn((event: string, handler: (...args: any[]) => any) => {
+  const handlers: Record<string, TaskHandler> = {}
+  const on = vi.fn((event: string, handler: TaskHandler) => {
     handlers[event] = handler
   }) as unknown as Cypress.PluginEvents
   return { on, handlers }
 }
 
 function makeSpec(overrides?: Record<string, unknown>) {
-  return { relative: 'e2e/login.cy.ts', ...overrides } as any
+  return { relative: 'e2e/login.cy.ts', ...overrides }
 }
 
 function makeResults(tests: Record<string, unknown>[]) {
-  return { tests } as any
+  return { tests }
 }
 
 function makeTest(overrides?: Record<string, unknown>) {
@@ -181,9 +183,9 @@ describe('HealifyCypressPlugin — tasks de cy.healifyGet (live)', () => {
     vi.clearAllMocks()
   })
 
-  function taskHandlers(on: Cypress.PluginEvents, handlers: Record<string, any>) {
+  function taskHandlers(on: Cypress.PluginEvents, handlers: Record<string, TaskHandler>) {
     HealifyCypressPlugin(on, fakeConfig)
-    return handlers['task'] as Record<string, (...args: any[]) => any>
+    return handlers['task'] as Record<string, TaskHandler>
   }
 
   it("'healify:probe-script' devuelve BROWSER_PROBE_SCRIPT tal cual", () => {

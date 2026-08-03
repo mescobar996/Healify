@@ -46,7 +46,7 @@ function checkFrameworkConfig(cwd: string, framework: Framework): DoctorCheck {
   }
 }
 
-function checkSemverCaret(cwd: string, pkgManager: string): DoctorCheck[] {
+function checkSemverCaret(cwd: string): DoctorCheck[] {
   const checks: DoctorCheck[] = []
   let raw: { dependencies?: Record<string, string>; devDependencies?: Record<string, string> }
   try {
@@ -138,7 +138,7 @@ export function doctor(cwd: string = process.cwd()): DoctorReport {
     checks.push({ label: 'Selenium/WebdriverIO curan en vivo, no generan reporte', ok: true, info: true })
   }
 
-  checks.push(...checkSemverCaret(cwd, packageManager))
+  checks.push(...checkSemverCaret(cwd))
 
   return { checks }
 }

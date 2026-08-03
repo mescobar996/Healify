@@ -68,13 +68,13 @@ export function wrapBrowser(browser: WdioBrowser, options: HealifyWebdriverIOOpt
             // WebdriverIO v9 returns thenables — catch rejections
             if (result && typeof (result as Promise<unknown>).then === 'function') {
               return (result as Promise<unknown>).catch((err: unknown) => {
-                if (!isHealed && isNoElementError(err)) return tryHeal(originalSelector, prop, args)
+                if (!isHealed && isNoElementError(err)) return tryHeal(originalSelector)
                 throw err
               })
             }
             return result
           } catch (err) {
-            if (!isHealed && isNoElementError(err)) return tryHeal(originalSelector, prop, args)
+            if (!isHealed && isNoElementError(err)) return tryHeal(originalSelector)
             throw err
           }
         }
@@ -91,7 +91,7 @@ export function wrapBrowser(browser: WdioBrowser, options: HealifyWebdriverIOOpt
     return wrapped as WdioElement
   }
 
-  async function tryHeal(originalSelector: string, method: string, args: unknown[]): Promise<unknown> {
+  async function tryHeal(originalSelector: string): Promise<unknown> {
     const start = Date.now()
     const selector = wdioSelectorToSelector(originalSelector)
     if (selector === null) {

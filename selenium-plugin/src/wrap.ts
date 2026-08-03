@@ -126,7 +126,7 @@ export function wrapDriver(driver: WebDriver, options: HealifySeleniumOptions = 
           latencyMs: Date.now() - start,
         })
         return healedElement
-      } catch (retryErr) {
+      } catch {
         emit({
           type: 'failed',
           originalSelector: selector,

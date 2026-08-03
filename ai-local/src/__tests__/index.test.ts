@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { EventEmitter } from 'events'
+import type { ClientRequest, IncomingMessage, RequestOptions } from 'node:http'
 
 const checkOllamaRunningMock = vi.fn()
 const getInstalledModelsMock = vi.fn()
@@ -19,10 +20,10 @@ vi.mock('http', () => ({
 
 const { HealifyAI } = await import('../index')
 
-function fakeResponse(statusCode: number, body: string) {
-  const res: any = new EventEmitter()
+function fakeResponse(statusCode: number, body: string): IncomingMessage {
+  const res = new EventEmitter() as unknown as IncomingMessage
   res.statusCode = statusCode
-  res.resume = vi.fn()
+  res.resume = vi.fn() as unknown as () => IncomingMessage
   queueMicrotask(() => {
     res.emit('data', body)
     res.emit('end')
@@ -30,11 +31,11 @@ function fakeResponse(statusCode: number, body: string) {
   return res
 }
 
-function fakeRequest() {
-  const req: any = new EventEmitter()
-  req.write = vi.fn()
-  req.end = vi.fn()
-  req.destroy = vi.fn()
+function fakeRequest(): ClientRequest {
+  const req = new EventEmitter() as unknown as ClientRequest
+  req.write = vi.fn() as unknown as ClientRequest['write']
+  req.end = vi.fn() as unknown as ClientRequest['end']
+  req.destroy = vi.fn() as unknown as ClientRequest['destroy']
   return req
 }
 
@@ -93,7 +94,7 @@ describe('HealifyAI - llamadas a Ollama', () => {
   })
 
   it('explainSelector devuelve la respuesta de Ollama en éxito', async () => {
-    httpRequestMock.mockImplementation((_url: any, _opts: any, cb: any) => {
+    httpRequestMock.mockImplementation((_url: string, _opts: RequestOptions, cb: (res: IncomingMessage) => void) => {
       cb(fakeResponse(200, JSON.stringify({ response: 'explicación de prueba' })))
       return fakeRequest()
     })
@@ -104,7 +105,7 @@ describe('HealifyAI - llamadas a Ollama', () => {
   })
 
   it('rechaza con error claro si Ollama responde status != 200', async () => {
-    httpRequestMock.mockImplementation((_url: any, _opts: any, cb: any) => {
+    httpRequestMock.mockImplementation((_url: string, _opts: RequestOptions, cb: (res: IncomingMessage) => void) => {
       cb(fakeResponse(500, ''))
       return fakeRequest()
     })
@@ -115,11 +116,11 @@ describe('HealifyAI - llamadas a Ollama', () => {
   })
 
   it('rechaza en vez de colgarse cuando la request hace timeout', async () => {
-    httpRequestMock.mockImplementation((_url: any, _opts: any) => {
+    httpRequestMock.mockImplementation((_url: string, _opts: RequestOptions) => {
       const req = fakeRequest()
       req.destroy = vi.fn(() => {
         queueMicrotask(() => req.emit('error', new Error('socket hang up')))
-      })
+      }) as unknown as ClientRequest['destroy']
       queueMicrotask(() => req.emit('timeout'))
       return req
     })
@@ -130,12 +131,12 @@ describe('HealifyAI - llamadas a Ollama', () => {
   })
 
   it('chat trunca el historial a los últimos 20 mensajes antes de mandarlo', async () => {
-    let sentMessages: any[] = []
-    httpRequestMock.mockImplementation((_url: any, _opts: any, cb: any) => {
+    let sentMessages: Array<{ role: string; content: string }> = []
+    httpRequestMock.mockImplementation((_url: string, _opts: RequestOptions, cb: (res: IncomingMessage) => void) => {
       const req = fakeRequest()
       req.write = vi.fn((data: string) => {
         sentMessages = JSON.parse(data).messages
-      })
+      }) as unknown as ClientRequest['write']
       queueMicrotask(() => cb(fakeResponse(200, JSON.stringify({ message: { content: 'ok' } }))))
       return req
     })

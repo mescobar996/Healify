@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import type { FullResult, TestCase, TestResult } from '@playwright/test/reporter'
 
 const { mockWriteFileSync } = vi.hoisted(() => ({ mockWriteFileSync: vi.fn() }))
 vi.mock('node:fs', () => ({ writeFileSync: mockWriteFileSync }))
@@ -58,22 +59,22 @@ vi.mock('@healify/reporter-core', () => ({
 
 import HealifyReporter from '../reporter'
 
-function makeTest(overrides?: Record<string, unknown>) {
+function makeTest(overrides?: Record<string, unknown>): TestCase {
   return {
     titlePath: () => ['root', 'should log in'],
     location: { file: 'tests/login.spec.ts' },
     ...overrides,
-  } as any
+  } as unknown as TestCase
 }
 
-function makeResult(overrides?: Record<string, unknown>) {
+function makeResult(overrides?: Record<string, unknown>): TestResult {
   return {
     status: 'failed',
     error: { message: "Waiting for selector '#login-btn' failed" },
     errors: [],
     attachments: [],
     ...overrides,
-  } as any
+  } as unknown as TestResult
 }
 
 describe('HealifyReporter', () => {
@@ -189,7 +190,7 @@ describe('HealifyReporter', () => {
     // aparece cuando algo se rompe no permite distinguir "salió todo bien" de "no se corrió".
     const reporter = new HealifyReporter()
 
-    reporter.onEnd({ status: 'passed' } as any)
+    reporter.onEnd({ status: 'passed' } as unknown as FullResult)
 
     const paths = mockWriteFileSync.mock.calls.map((call) => String(call[0]))
     expect(paths.some((p) => p.endsWith('healify-report.html'))).toBe(true)
@@ -201,7 +202,7 @@ describe('HealifyReporter', () => {
     const reporter = new HealifyReporter()
     const renderJson = vi.mocked((await import('@healify/reporter-core')).renderLocalReportJson)
 
-    reporter.onEnd({ status: 'failed' } as any)
+    reporter.onEnd({ status: 'failed' } as unknown as FullResult)
 
     expect(renderJson.mock.calls[0][0].verdict).toBe('failed')
   })

@@ -13,6 +13,7 @@ import {
   checkOllamaRunning,
   getInstalledModels,
   MODELS,
+  type AIConfig,
 } from '@healify/ai-local'
 
 // ==================== Configuración ====================
@@ -20,16 +21,20 @@ import {
 const CONFIG_PATH = join(process.cwd(), 'healify.config.json')
 const DEFAULT_OLLAMA_URL = 'http://localhost:11434'
 
-function loadConfig(): Record<string, any> {
+interface LocalConfig {
+  ai?: Partial<AIConfig>
+}
+
+function loadConfig(): LocalConfig {
   try {
     if (existsSync(CONFIG_PATH)) {
-      return JSON.parse(readFileSync(CONFIG_PATH, 'utf-8'))
+      return JSON.parse(readFileSync(CONFIG_PATH, 'utf-8')) as LocalConfig
     }
   } catch {}
   return {}
 }
 
-function saveConfig(config: Record<string, any>): void {
+function saveConfig(config: LocalConfig): void {
   writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2) + '\n')
 }
 

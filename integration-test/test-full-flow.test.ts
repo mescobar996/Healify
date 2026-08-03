@@ -335,8 +335,8 @@ describe('Healify Full Flow Integration', () => {
         cwd: testDir,
         encoding: 'utf-8',
       })
-    } catch (err: any) {
-      exitCode = err.status
+    } catch (err) {
+      exitCode = (err as { status?: number }).status ?? 1
     }
 
     expect(exitCode).toBe(0)

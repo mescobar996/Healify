@@ -9,9 +9,8 @@
  * - Idioma configurable
  */
 
-import { getSystemRAM, suggestModel, checkOllamaRunning, getInstalledModels, type ModelInfo } from './detect-ram';
+import { getSystemRAM, suggestModel, checkOllamaRunning, getInstalledModels } from './detect-ram';
 import * as fs from 'fs';
-import * as path from 'path';
 import * as http from 'http';
 
 // ==================== Tipos ====================
@@ -42,6 +41,14 @@ export interface AIResponse {
 
 const OLLAMA_REQUEST_TIMEOUT_MS = 120_000;
 const MAX_CHAT_HISTORY = 20;
+
+interface OllamaGenerateResponse {
+  response?: string;
+}
+
+interface OllamaChatResponse {
+  message?: { content?: string };
+}
 
 const DEFAULT_CONFIG: AIConfig = {
   enabled: false,
@@ -173,7 +180,7 @@ Sé conciso y técnico. Usa ejemplos de código cuando sea útil.`;
 
   // ==================== Métodos Privados ====================
 
-  private buildAnalysisPrompt(report: any): string {
+  private buildAnalysisPrompt(report: unknown): string {
     const lang = this.config.language === 'es' ? 'español' : 'inglés';
     
     return `Analiza este reporte de Healify y proporciona sugerencias en ${lang}:
@@ -229,14 +236,14 @@ Responde en formato JSON:
   }
 
   private async callOllama(prompt: string): Promise<string> {
-    return this.postToOllama('/api/generate', { model: this.config.model, prompt, stream: false }, (json) => json.response);
+    return this.postToOllama<OllamaGenerateResponse>('/api/generate', { model: this.config.model, prompt, stream: false }, (json) => json.response ?? '');
   }
 
   private async callOllamaChat(messages: Array<{role: string; content: string}>): Promise<string> {
-    return this.postToOllama('/api/chat', { model: this.config.model, messages, stream: false }, (json) => json.message?.content || '');
+    return this.postToOllama<OllamaChatResponse>('/api/chat', { model: this.config.model, messages, stream: false }, (json) => json.message?.content || '');
   }
 
-  private postToOllama(path: string, body: unknown, extract: (json: any) => string): Promise<string> {
+  private postToOllama<T extends object>(path: string, body: unknown, extract: (json: T) => string): Promise<string> {
     return new Promise((resolve, reject) => {
       const data = JSON.stringify(body);
       let settled = false;
@@ -267,7 +274,7 @@ Responde en formato JSON:
           res.on('end', () => {
             settle(() => {
               try {
-                resolve(extract(JSON.parse(responseBody)));
+                resolve(extract(JSON.parse(responseBody) as T));
               } catch {
                 reject(new Error('Error parsing Ollama response'));
               }

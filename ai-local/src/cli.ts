@@ -11,7 +11,7 @@
  *   healify-ai models    - Lista modelos disponibles
  */
 
-import { HealifyAI, getSystemRAM, suggestModel, checkOllamaRunning, getInstalledModels } from './index';
+import { HealifyAI, getSystemRAM, suggestModel, checkOllamaRunning, getInstalledModels, type AIConfig } from './index';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as readline from 'readline';
@@ -20,16 +20,20 @@ import * as readline from 'readline';
 
 const CONFIG_PATH = path.join(process.cwd(), 'healify.config.json');
 
-function loadConfig(): any {
+interface LocalConfig {
+  ai?: Partial<AIConfig>;
+}
+
+function loadConfig(): LocalConfig {
   try {
     if (fs.existsSync(CONFIG_PATH)) {
-      return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
+      return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8')) as LocalConfig;
     }
   } catch {}
   return {};
 }
 
-function saveConfig(config: any): void {
+function saveConfig(config: LocalConfig): void {
   fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2) + '\n');
 }
 
