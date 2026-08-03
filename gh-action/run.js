@@ -1,5 +1,6 @@
 import { execSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
+import { createClient } from './github-api.js'
 
 const MARKER = '<!-- healify-report -->'
 
@@ -110,23 +111,20 @@ function splitEntry(entry) {
   return [entry.slice(0, idx), entry.slice(idx + 3)]
 }
 
-export async function findOrCreateComment(octokit, owner, repo, issueNumber) {
-  const { data: comments } = await octokit.rest.issues.listComments({
-    owner,
-    repo,
-    issue_number: issueNumber,
-    per_page: 100,
-  })
+/** El comentario que ya dejó Healify en esta PR, reconocido por el marcador HTML invisible. */
+export async function findOrCreateComment(client, owner, repo, issueNumber) {
+  const comments = await client.listComments(owner, repo, issueNumber)
   return comments.find((c) => c.body?.includes(MARKER))
 }
 
-export async function postComment(octokit, owner, repo, issueNumber, body) {
-  const existing = await findOrCreateComment(octokit, owner, repo, issueNumber)
+/** Actualiza el comentario existente en vez de apilar uno nuevo por cada push a la PR. */
+export async function postComment(client, owner, repo, issueNumber, body) {
+  const existing = await findOrCreateComment(client, owner, repo, issueNumber)
   if (existing) {
-    await octokit.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body })
+    await client.updateComment(owner, repo, existing.id, body)
     return 'updated'
   }
-  await octokit.rest.issues.createComment({ owner, repo, issue_number: issueNumber, body })
+  await client.createComment(owner, repo, issueNumber, body)
   return 'created'
 }
 
@@ -166,11 +164,7 @@ async function main() {
   // Build comment
   const comment = buildComment(doctorOutput, fixOutput)
 
-  // Dynamic import of @octokit/action (bundled with the action runtime)
-  const { Octokit } = await import('@octokit/action')
-  const octokit = new Octokit({ auth: token })
-
-  const result = await postComment(octokit, owner, repo, prNumber, comment)
+  const result = await postComment(createClient(token), owner, repo, prNumber, comment)
   console.log(`Healify PR comment ${result}.`)
 }
 

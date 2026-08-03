@@ -4,6 +4,7 @@ const { mockExecSync } = vi.hoisted(() => ({ mockExecSync: vi.fn() }))
 vi.mock('node:child_process', () => ({ execSync: mockExecSync }))
 
 const { formatDoctor, formatFixOutput, buildComment, findOrCreateComment, postComment, run } = await import('./run.js')
+const { createClient } = await import('./github-api.js')
 
 beforeEach(() => {
   mockExecSync.mockReset()
@@ -178,6 +179,15 @@ describe('buildComment', () => {
   })
 })
 
+/** Cliente falso con la misma forma que devuelve `createClient()`. */
+function fakeClient(comments = [], calls = { created: [], updated: [] }) {
+  return {
+    listComments: async () => comments,
+    createComment: async (owner, repo, issueNumber, body) => { calls.created.push({ owner, repo, issueNumber, body }); return {} },
+    updateComment: async (owner, repo, commentId, body) => { calls.updated.push({ owner, repo, commentId, body }); return {} },
+  }
+}
+
 describe('findOrCreateComment', () => {
   it('finds existing Healify comment by marker', async () => {
     const comments = [
@@ -186,72 +196,123 @@ describe('findOrCreateComment', () => {
       { id: 3, body: 'Another comment' },
     ]
 
-    const octokit = {
-      rest: {
-        issues: {
-          listComments: async () => ({ data: comments }),
-        },
-      },
-    }
-
-    const result = await findOrCreateComment(octokit, 'owner', 'repo', 1)
+    const result = await findOrCreateComment(fakeClient(comments), 'owner', 'repo', 1)
     expect(result).toBe(comments[1])
   })
 
   it('returns undefined when no Healify comment exists', async () => {
-    const comments = [
-      { id: 1, body: 'Some comment' },
-    ]
-
-    const octokit = {
-      rest: {
-        issues: {
-          listComments: async () => ({ data: comments }),
-        },
-      },
-    }
-
-    const result = await findOrCreateComment(octokit, 'owner', 'repo', 1)
+    const result = await findOrCreateComment(fakeClient([{ id: 1, body: 'Some comment' }]), 'owner', 'repo', 1)
     expect(result).toBeUndefined()
   })
 })
 
 describe('postComment', () => {
   it('creates a new comment when none exists', async () => {
-    const created = []
-    const octokit = {
-      rest: {
-        issues: {
-          listComments: async () => ({ data: [] }),
-          createComment: async (args) => { created.push(args); return {} },
-          updateComment: async () => { throw new Error('should not be called') },
-        },
-      },
-    }
+    const calls = { created: [], updated: [] }
 
-    const result = await postComment(octokit, 'owner', 'repo', 1, 'body')
+    const result = await postComment(fakeClient([], calls), 'owner', 'repo', 1, 'body')
+
     expect(result).toBe('created')
-    expect(created).toHaveLength(1)
-    expect(created[0].body).toBe('body')
+    expect(calls.created).toEqual([{ owner: 'owner', repo: 'repo', issueNumber: 1, body: 'body' }])
+    expect(calls.updated).toHaveLength(0)
   })
 
   it('updates existing Healify comment', async () => {
-    const updated = []
-    const octokit = {
-      rest: {
-        issues: {
-          listComments: async () => ({ data: [{ id: 42, body: '<!-- healify-report --> old' }] }),
-          updateComment: async (args) => { updated.push(args); return {} },
-          createComment: async () => { throw new Error('should not be called') },
-        },
-      },
-    }
+    const calls = { created: [], updated: [] }
+    const comments = [{ id: 42, body: '<!-- healify-report --> old' }]
 
-    const result = await postComment(octokit, 'owner', 'repo', 1, 'body')
+    const result = await postComment(fakeClient(comments, calls), 'owner', 'repo', 1, 'body')
+
     expect(result).toBe('updated')
-    expect(updated).toHaveLength(1)
-    expect(updated[0].comment_id).toBe(42)
-    expect(updated[0].body).toBe('body')
+    expect(calls.updated).toEqual([{ owner: 'owner', repo: 'repo', commentId: 42, body: 'body' }])
+    expect(calls.created).toHaveLength(0)
+  })
+})
+
+describe('createClient', () => {
+  function fakeFetch(responses) {
+    const calls = []
+    const fetchImpl = async (url, init) => {
+      calls.push({ url, init })
+      const next = responses.shift()
+      return {
+        ok: next.status < 400,
+        status: next.status,
+        json: async () => next.body,
+        text: async () => JSON.stringify(next.body ?? ''),
+      }
+    }
+    return { fetchImpl, calls }
+  }
+
+  it('autentica con el token y manda los headers que pide la API', async () => {
+    const { fetchImpl, calls } = fakeFetch([{ status: 200, body: [] }])
+
+    await createClient('tok123', fetchImpl).listComments('o', 'r', 7)
+
+    expect(calls[0].url).toBe('https://api.github.com/repos/o/r/issues/7/comments?per_page=100&page=1')
+    expect(calls[0].init.headers.authorization).toBe('Bearer tok123')
+    expect(calls[0].init.headers['x-github-api-version']).toBe('2022-11-28')
+  })
+
+  it('pagina hasta juntar todos los comentarios', async () => {
+    const full = Array.from({ length: 100 }, (_, i) => ({ id: i, body: 'x' }))
+    const { fetchImpl, calls } = fakeFetch([
+      { status: 200, body: full },
+      { status: 200, body: [{ id: 999, body: '<!-- healify-report -->' }] },
+    ])
+
+    const comments = await createClient('t', fetchImpl).listComments('o', 'r', 7)
+
+    expect(comments).toHaveLength(101)
+    expect(calls).toHaveLength(2)
+    expect(calls[1].url).toContain('page=2')
+  })
+
+  it('corta la paginación cuando la página viene incompleta', async () => {
+    const { fetchImpl, calls } = fakeFetch([{ status: 200, body: [{ id: 1, body: 'x' }] }])
+
+    await createClient('t', fetchImpl).listComments('o', 'r', 7)
+
+    expect(calls).toHaveLength(1)
+  })
+
+  it('un error de la API incluye el detalle: sin eso el usuario solo ve un 403 pelado', async () => {
+    const { fetchImpl } = fakeFetch([{ status: 403, body: { message: 'Resource not accessible by integration' } }])
+
+    await expect(createClient('t', fetchImpl).createComment('o', 'r', 7, 'hola')).rejects.toThrow(
+      /403.*Resource not accessible by integration/
+    )
+  })
+
+  it('createComment y updateComment mandan el método y el body correctos', async () => {
+    const { fetchImpl, calls } = fakeFetch([
+      { status: 201, body: {} },
+      { status: 200, body: {} },
+    ])
+    const client = createClient('t', fetchImpl)
+
+    await client.createComment('o', 'r', 7, 'nuevo')
+    await client.updateComment('o', 'r', 42, 'editado')
+
+    expect(calls[0].init.method).toBe('POST')
+    expect(JSON.parse(calls[0].init.body)).toEqual({ body: 'nuevo' })
+    expect(calls[1].url).toBe('https://api.github.com/repos/o/r/issues/comments/42')
+    expect(calls[1].init.method).toBe('PATCH')
+    expect(JSON.parse(calls[1].init.body)).toEqual({ body: 'editado' })
+  })
+
+  it('respeta GITHUB_API_URL (GitHub Enterprise)', async () => {
+    const original = process.env.GITHUB_API_URL
+    process.env.GITHUB_API_URL = 'https://ghe.example.com/api/v3'
+    try {
+      const { fetchImpl, calls } = fakeFetch([{ status: 200, body: [] }])
+      await createClient('t', fetchImpl).listComments('o', 'r', 1)
+      expect(calls[0].url).toContain('https://ghe.example.com/api/v3/repos/o/r/')
+    } finally {
+      if (original === undefined) delete process.env.GITHUB_API_URL
+      else process.env.GITHUB_API_URL = original
+    }
   })
 })
 

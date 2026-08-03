@@ -1,0 +1,20 @@
+# Vive en la RAÍZ del repo a propósito: GitHub Marketplace solo publica actions cuyo
+# `action.yml` está en el directorio raíz. El código sigue viviendo en `gh-action/`.
+name: 'Healify — Check broken selectors'
+description: 'Runs Healify doctor + fix --dry-run and posts a PR comment with broken selectors and suggestions. 100% local, no AI, no cloud. Never modifies files.'
+author: 'Matías Escobar'
+branding:
+  icon: 'search'
+  color: 'green'
+inputs:
+  github-token:
+    description: 'GitHub token for posting PR comments. Needs `pull-requests: write` permission.'
+    required: false
+    default: ${{ github.token }}
+  project-path:
+    description: 'Directory to run Healify in (for monorepos where the test project is not at the repo root)'
+    required: false
+    default: '.'
+runs:
+  using: 'node20'
+  main: 'gh-action/run.js'
