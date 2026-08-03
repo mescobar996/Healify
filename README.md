@@ -65,17 +65,17 @@ Detalle con ejemplos: [cli/README.md](cli/README.md)
 
 Playwright, Cypress, Selenium y WebdriverIO — todos sobre el mismo motor (`reporter-core`). Los cuatro verifican la sugerencia contra el DOM real; Cypress necesita `cy.healifyGet(selector)` (opt-in).
 
-### Cypress Support
+### Soporte en Cypress
 
-Healify provides first-class support for Cypress with automatic selector healing and audit logging.
+Healify ofrece soporte de primera clase para Cypress con curación automática de selectores y registro de auditoría.
 
-**Quick Start:**
+**Inicio rápido:**
 
 ```bash
 npm install @healify/cypress-plugin --save-dev
 ```
 
-Then add to your `cypress.config.ts`:
+Luego agregá en tu `cypress.config.ts`:
 
 ```typescript
 import { HealifyCypressPlugin } from '@healify/cypress-plugin'
@@ -89,7 +89,7 @@ export default defineConfig({
 })
 ```
 
-For detailed documentation, see [docs/cypress-plugin.md](docs/cypress-plugin.md).
+Documentación detallada: [docs/cypress-plugin.md](docs/cypress-plugin.md).
 
 ## Multi-lenguaje
 

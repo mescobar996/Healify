@@ -1,18 +1,18 @@
 # Healify Cypress Plugin
 
-## Installation
+## Instalación
 
 ```bash
 npm install @healify/cypress-plugin --save-dev
 ```
 
-Requires `cypress >= 13.0.0` as a peer dependency.
+Requiere `cypress >= 13.0.0` como dependencia peer.
 
-## Configuration
+## Configuración
 
-### 1. Register the plugin
+### 1. Registrar el plugin
 
-In your `cypress.config.ts`:
+En tu `cypress.config.ts`:
 
 ```typescript
 import { defineConfig } from 'cypress'
@@ -27,61 +27,61 @@ export default defineConfig({
 })
 ```
 
-### 2. Import support code (optional, for live healing)
+### 2. Importar soporte (opcional, para curación en vivo)
 
-In your `cypress/support/e2e.ts`:
+En tu `cypress/support/e2e.ts`:
 
 ```typescript
 import '@healify/cypress-plugin/support'
 ```
 
-This imports the browser-side support code that:
-- Registers a global `Cypress.on('fail')` handler for audit logging.
-- Adds the `cy.healifyGet()` command for live selector healing.
+Esto importa el código de soporte del lado del navegador que:
+- Registra un handler global `Cypress.on('fail')` para registro de auditoría.
+- Agrega el comando `cy.healifyGet()` para curación en vivo de selectores.
 
-## Usage
+## Uso
 
-### Automatic Report Generation
+### Generación automática de reportes
 
-Once configured, Healify automatically intercepts failed tests and generates a report at the end of the Cypress run:
+Una vez configurado, Healify intercepta automáticamente los tests fallidos y genera un reporte al finalizar la ejecución de Cypress:
 
-- `healify-report.html` — interactive HTML report (dark/light, offline)
-- `healify-report.json` — machine-readable JSON report
-- `healify-report.md` — markdown summary
+- `healify-report.html` — reporte HTML interactivo (dark/light, offline)
+- `healify-report.json` — reporte JSON legible por máquina
+- `healify-report.md` — resumen en markdown
 
-If any selectors failed and were healed via `cy.healifyGet()`, an audit log is also written:
+Si algún selector falló y fue curado vía `cy.healifyGet()`, también se escribe un registro de auditoría:
 
-- `healify-audit.json` — detailed audit trail of healing events
+- `healify-audit.json` — registro detallado de eventos de curación
 
-### Live Healing with `cy.healifyGet`
+### Curación en vivo con `cy.healifyGet`
 
-After importing the support code, you can use `cy.healifyGet()` to attempt real-time healing against the live DOM:
+Después de importar el código de soporte, podés usar `cy.healifyGet()` para intentar curar selectores en tiempo real contra el DOM vivo:
 
 ```typescript
-// Instead of:
+// En lugar de:
 cy.get('#comprar-ahora-a1b2c3').click()
 
-// Use:
+// Usá:
 cy.healifyGet('#comprar-ahora-a1b2c3').click()
 ```
 
-If the selector is not found within the timeout, Healify:
-1. Probes the current page DOM
-2. Runs its heuristic to find a working alternative
-3. Retries with the suggested selector before failing the test
+Si el selector no se encuentra dentro del timeout, Healify:
+1. Sondea el DOM actual de la página
+2. Ejecuta su heurística para encontrar una alternativa funcional
+3. Reintenta con el selector sugerido antes de fallar el test
 
-**Options:**
+**Opciones:**
 
 ```typescript
 cy.healifyGet(selector, {
-  timeout: 4000,                    // ms to wait (default: Cypress defaultCommandTimeout)
-  confidenceThreshold: 0.9         // minimum confidence to apply a fix (default: 0.9)
+  timeout: 4000,                    // ms a esperar (default: Cypress defaultCommandTimeout)
+  confidenceThreshold: 0.9         // confianza mínima para aplicar un fix (default: 0.9)
 })
 ```
 
-### Audit Logging
+### Registro de auditoría
 
-Healify automatically generates an audit log (`healify-audit.json`) when selectors fail or are healed. Example entry:
+Healify genera automáticamente un registro de auditoría (`healify-audit.json`) cuando los selectores fallan o son curados. Ejemplo:
 
 ```json
 {
@@ -99,90 +99,90 @@ Healify automatically generates an audit log (`healify-audit.json`) when selecto
 }
 ```
 
-## API Reference
+## Referencia de la API
 
 ### `HealifyCypressPlugin(on, config)`
 
-Registers the Healify plugin with Cypress's Node process.
+Registra el plugin de Healify en el proceso Node de Cypress.
 
-**Parameters:**
-- `on` — Cypress plugin event handler
-- `config` — Cypress configuration object
+**Parámetros:**
+- `on` — handler de eventos del plugin de Cypress
+- `config` — objeto de configuración de Cypress
 
-**Returns:** The same `config` object, unchanged.
+**Retorna:** El mismo objeto `config`, sin modificar.
 
-**What it does:**
-- Registers tasks: `healify:probe-script`, `healify:heal`, `healify:record-event`, `healify:audit-entry`
-- Listens to `after:spec` to run local healing on failed tests
-- Listens to `after:run` to write reports and print a summary
+**Qué hace:**
+- Registra tareas: `healify:probe-script`, `healify:heal`, `healify:record-event`, `healify:audit-entry`
+- Escucha `after:spec` para ejecutar la curación local en tests fallidos
+- Escucha `after:run` para escribir reportes e imprimir un resumen
 
 ### `@healify/cypress-plugin/support`
 
-Imports the browser-side support code that:
-- Registers the `cy.healifyGet()` command
-- Registers a global `fail` handler for audit logging
+Importa el código de soporte del lado del navegador que:
+- Registra el comando `cy.healifyGet()`
+- Registra un handler global de `fail` para registro de auditoría
 
 ### `cy.healifyGet(selector, options?)`
 
-Custom Cypress command that attempts to find a selector, and if it fails, probes the DOM and retries with a healed alternative.
+Comando personalizado de Cypress que intenta encontrar un selector, y si falla, sondea el DOM y reintenta con una alternativa curada.
 
-**Parameters:**
-- `selector` (string) — CSS or XPath selector to find
-- `options` (optional):
-  - `timeout` (number) — milliseconds to wait for the selector (default: Cypress defaultCommandTimeout)
-  - `confidenceThreshold` (number) — minimum confidence 0-1 to accept a healed selector (default: 0.9)
+**Parámetros:**
+- `selector` (string) — selector CSS o XPath a buscar
+- `options` (opcional):
+  - `timeout` (number) — milisegundos a esperar por el selector (default: Cypress defaultCommandTimeout)
+  - `confidenceThreshold` (number) — confianza mínima 0-1 para aceptar un selector curado (default: 0.9)
 
-**Returns:** `Chainable<JQuery<HTMLElement>>`
+**Retorna:** `Chainable<JQuery<HTMLElement>>`
 
-## CLI Integration
+## Integración con CLI
 
-After generating a report, you can apply fixes automatically:
+Después de generar un reporte, podés aplicar fixes automáticamente:
 
 ```bash
-npx @healify/cli fix --dry-run      # preview changes
-npx @healify/cli fix                 # apply high-confidence fixes
-npx @healify/cli fix --interactive   # choose which fixes to apply
+npx @healify/cli fix --dry-run      # vista previa de cambios
+npx @healify/cli fix                 # aplica fixes de alta confianza
+npx @healify/cli fix --interactive   # elegís qué fixes aplicar
 ```
 
-## Troubleshooting
+## Solución de problemas
 
-### Plugin not working
+### El plugin no funciona
 
-1. Ensure you've added both the config (`HealifyCypressPlugin`) and support imports.
-2. Check that `@healify/reporter-core` is installed (it's a dependency of the plugin).
-3. Verify your selectors are using standard CSS/XPath syntax.
+1. Verificá que hayas agregado tanto la configuración (`HealifyCypressPlugin`) como las importaciones de soporte.
+2. Revisá que `@healify/reporter-core` esté instalado (es dependencia del plugin).
+3. Verificá que tus selectores usen sintaxis CSS/XPath estándar.
 
-### Audit log not generated
+### No se genera el registro de auditoría
 
-The audit log (`healify-audit.json`) is only created when selectors fail or are healed via `cy.healifyGet()`. If all tests pass with valid selectors, no audit log is created.
+El registro de auditoría (`healify-audit.json`) solo se crea cuando los selectores fallan o son curados vía `cy.healifyGet()`. Si todos los tests pasan con selectores válidos, no se crea ningún registro.
 
-### Reports not appearing
+### Los reportes no aparecen
 
-Reports are written to the current working directory when Cypress finishes running. Make sure you run Cypress from the project root where you expect the files.
+Los reportes se escriben en el directorio de trabajo actual cuando Cypress termina de ejecutase. Asegurate de ejecutar Cypress desde la raíz del proyecto donde esperás que se generen los archivos.
 
-### `cy.healifyGet` not found
+### `cy.healifyGet` no se encuentra
 
-Ensure you have imported the support file in `cypress/support/e2e.ts`:
+Verificá que hayas importado el archivo de soporte en `cypress/support/e2e.ts`:
 
 ```typescript
 import '@healify/cypress-plugin/support'
 ```
 
-## How It Works
+## Cómo funciona
 
-1. **Local Healing (always active):** When a test fails, Cypress's `after:spec` hook triggers Healify's heuristic on the failed test. It pattern-matches on selector text and error messages without network access.
+1. **Curación local (siempre activa):** Cuando un test falla, el hook `after:spec` de Cypress activa la heurística de Healify sobre el test fallido. Hace pattern matching en el texto del selector y mensajes de error sin acceso a red.
 
-2. **Live Healing (opt-in via `cy.healifyGet`):** When a selector is not found, the command probes the real DOM, sends the page elements to the Node process via `cy.task()`, receives a healed selector, and retries.
+2. **Curación en vivo (opcional vía `cy.healifyGet`):** Cuando un selector no se encuentra, el comando sondea el DOM real, envía los elementos de la página al proceso Node vía `cy.task()`, recibe un selector curado y reintenta.
 
-3. **Audit Trail:** Every healing event is recorded to `healify-audit.json` with timestamps, original/healed selectors, confidence scores, and verification status.
+3. **Registro de auditoría:** Cada evento de curación se registra en `healify-audit.json` con timestamps, selectores originales/curados, puntuaciones de confianza y estado de verificación.
 
-## Example
+## Ejemplo
 
 ```typescript
 // cypress/e2e/checkout.cy.ts
 describe('Checkout', () => {
   it('adds item to cart', () => {
-    // If this selector breaks, Healify will try to fix it
+    // Si este selector se rompe, Healify intentará arreglarlo
     cy.healifyGet('#add-to-cart-btn').click()
     cy.healifyGet('.checkout-form').should('be.visible')
     cy.healifyGet('button[type="submit"]').click()
@@ -190,4 +190,4 @@ describe('Checkout', () => {
 })
 ```
 
-Running `npx cypress run` will generate a report with any healing suggestions.
+Ejecutar `npx cypress run` generará un reporte con cualquier sugerencia de curación.
