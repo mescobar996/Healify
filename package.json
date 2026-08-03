@@ -17,12 +17,18 @@
     "verify": "bash scripts/verify.sh",
     "verify:win": "powershell -ExecutionPolicy Bypass -File scripts/verify.ps1",
     "coverage": "bash scripts/coverage.sh",
-    "coverage:win": "powershell -ExecutionPolicy Bypass -File scripts/coverage.ps1"
+    "coverage:win": "powershell -ExecutionPolicy Bypass -File scripts/coverage.ps1",
+    "lint": "eslint .",
+    "format": "prettier --write ."
   },
   "engines": {
     "node": ">=18.0.0"
   },
   "devDependencies": {
-    "@vitest/coverage-v8": "^4.1.10"
+    "@typescript-eslint/eslint-plugin": "^8.65.0",
+    "@typescript-eslint/parser": "^8.65.0",
+    "@vitest/coverage-v8": "^4.1.10",
+    "eslint": "^10.8.0",
+    "prettier": "^3.9.6"
   }
 }
