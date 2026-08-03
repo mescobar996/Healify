@@ -4,6 +4,7 @@ import type { LocalRun } from '@healify/reporter-core'
 import { BROWSER_PROBE_SCRIPT } from '@healify/reporter-core'
 import { fix, describeReadError, type FixOutcome } from './fix'
 import { fixAst } from './fix-ast'
+import { detectGitHubCLI, createBranch, createCommit, createPRInstructions, createPRWithGH } from './pr'
 import { appendHistory } from './history'
 import { runInteractiveFix } from './interactive'
 import { promptLine } from './prompt'
@@ -65,6 +66,7 @@ function printOutcomes(outcomes: FixOutcome[], run: LocalRun, astUsed: boolean):
 function runFix(args: string[]): void {
   const dryRun = args.includes('--dry-run')
   const force = args.includes('--force')
+  const pr = args.includes('--pr')
   // La reescritura estructural pasó a ser el default: las sugerencias role(...) son las que
   // el motor propone en la mayoría de los casos, y hasta ahora quedaban todas sin aplicar
   // salvo que el usuario supiera del flag `--ast`. Se puede desactivar con `--no-ast`.
@@ -137,6 +139,27 @@ function runFix(args: string[]): void {
       const key = `${outcomes[i].testFile}::${outcomes[i].selector}`
       const astOutcome = astByKey.get(key)
       if (astOutcome) outcomes[i] = astOutcome
+    }
+  }
+
+  if (pr && outcomes.some(o => o.status === 'applied')) {
+    const appliedCount = outcomes.filter(o => o.status === 'applied').length
+
+    try {
+      const branchName = createBranch()
+      createCommit(appliedCount)
+
+      const hasGH = detectGitHubCLI()
+      if (hasGH) {
+        const prBody = `## Healify Auto-Fix\n\nResumen: ${appliedCount} selectores arreglados\n\nAudit completo: healify-audit.json`
+        const prURL = createPRWithGH('healify: fix broken selectors', prBody)
+        console.log(`✅ PR created: ${prURL}`)
+      } else {
+        const instructions = createPRInstructions(branchName)
+        console.log(instructions)
+      }
+    } catch (error) {
+      console.error(`❌ Error creating PR: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
@@ -303,8 +326,9 @@ function printHelp(): void {
 Comandos:
   init                                       Detecta tu framework (o te pregunta cuál armar si no hay ninguno), instala lo que falte y configura el reporter/plugin (sin generar tests)
   doctor                                     Verifica que Healify esté instalado y bien configurado
-  fix [reporte.json] [--dry-run] [--force] [--no-ast] [--interactive]   Aplica las sugerencias de mayor confianza directo en tus archivos de test
-                                                       --no-ast desactiva la reescritura de sugerencias role(...) (page.click → page.getByRole)
+  fix [reporte.json] [--dry-run] [--force] [--pr] [--no-ast] [--interactive]   Aplica las sugerencias de mayor confianza directo en tus archivos de test
+                                                        --pr crea branch, commit y PR con los cambios
+                                                        --no-ast desactiva la reescritura de sugerencias role(...) (page.click → page.getByRole)
                                                        --interactive pregunta caso por caso en vez de aplicar todo solo (necesita una terminal real)
   history                                    Muestra selectores recurrentes y re-rotos de .healify/history.jsonl (se graba en cada fix real, no en --dry-run)
   heal                                       Motor vía JSON por stdin/stdout, para usar desde Python/Java/C#/etc. Ver docs/adapters/README.md

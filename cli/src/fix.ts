@@ -5,6 +5,7 @@ import { isGitDirty } from './git-check'
 export interface FixOptions {
   dryRun?: boolean
   force?: boolean
+  pr?: boolean
 }
 
 /**
