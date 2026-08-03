@@ -225,7 +225,13 @@ jobs:
       - run: npm ci
       - run: npx playwright test
         continue-on-error: true   # queremos el reporte aunque la suite falle
-      - uses: mescobar996/Healify@v1
+      - uses: mescobar996/Healify@v1.6.0
+```
+
+Se referencia un tag exacto. `@v1` funciona solo si existe el alias móvil, que se re-apunta en cada release:
+
+```bash
+git tag -f v1 v1.6.0 && git push -f origin v1
 ```
 
 | Input | Default | Qué hace |
@@ -299,7 +305,7 @@ También genera `healify-report.json` (datos estructurados), `healify-report.md`
 - **Build**: `tsc` + `esbuild` (bundles por paquete).
 - **Tests**: Vitest — 601 tests passing, 0 fails (43 archivos).
 - **Lint/Format**: ESLint flat config + Prettier.
-- **Node**: `>=18.0.0` (`.nvmrc` / `.node-version` = 20.18.0).
+- **Node**: `>=18.0.0` para usar los paquetes (verificado en CI con un smoke que instala el tarball y corre el motor sobre Node 18). Para **desarrollar** hace falta `>=20`: Vitest 4 usa `styleText` de `node:util`, que no existe en 18.
 - **Monorepo**: pnpm/npm workspaces (7 paquetes).
 - **Licencia**: MIT.
 

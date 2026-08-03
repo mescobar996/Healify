@@ -41,6 +41,9 @@
 
 ## 2. Tabla de gaps
 
+> **Estado al 2026-08-03 (v1.6.0):** G1, G2, G3, G4, G5 y G6 cerrados. Sigue abierto G7
+> (dashboard histórico), G8 (flakiness), G9 (`--watch`).
+
 | # | Feature | Healenium | Otros | Healify hoy | ¿Gap? | Prioridad |
 |---|---|---|---|---|---|---|
 | G1 | **Shadow DOM / web components** | ❌ (Selenium no pierce) | ✅ Playwright (auto), ❌ Cypress | ❌ `BROWSER_PROBE_SCRIPT` usa `document.querySelectorAll` plano → 0 elementos en apps con web components; el motor cae a heurística ciega justo donde más falta hace | **SÍ, funcional** | **P0** |

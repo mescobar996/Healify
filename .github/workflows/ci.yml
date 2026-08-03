@@ -33,6 +33,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Los tipos que un paquete ve del otro salen de `dist/*.d.ts`, y `dist/` está
+      # gitignorado: sin buildear, tsc falla con TS2307 en todos los adapters.
+      - name: Build workspaces (los tipos cruzados salen de los dist/)
+        run: npm run build
+
       - name: Type check reporter-core
         run: npx tsc --noEmit -p reporter-core/tsconfig.json
 
@@ -79,10 +84,14 @@ jobs:
         run: npx eslint . --max-warnings=0
 
   # ─── Unit Tests ────────────────────────────────────────────────────────────
-  # Multi-OS porque Healify es sensible a Windows (paths, CRLF), y multi-Node porque
-  # `engines` promete >=18: sin correr 18 y 22 de verdad, esa promesa es un deseo. 22 es
-  # además donde `require()` de ESM cambia de comportamiento, que es justo lo que hace el
-  # loader de healify.config.js.
+  # Multi-OS porque Healify es sensible a Windows (paths, CRLF), y multi-Node porque 22 es
+  # donde cambia el `require()` de ESM, que es justo lo que hace el loader de
+  # healify.config.js.
+  #
+  # Node 18 NO está acá: Vitest 4 usa `styleText` de `node:util`, que existe recién desde
+  # Node 20 — el runner de tests no arranca en 18, aunque el producto sí funcione. Esa
+  # promesa (`engines: >=18`) se verifica en el job `smoke-node18`, que corre el binario
+  # publicado de verdad sobre Node 18.
   test:
     name: Unit Tests (Node ${{ matrix.node }} · ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
@@ -90,7 +99,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        node: ['18', '20', '22']
+        node: ['20', '22']
     timeout-minutes: 15
 
     steps:
@@ -115,6 +124,62 @@ jobs:
 
       - name: Run tests (all workspaces)
         run: npm test
+
+  # ─── Smoke Node 18 ─────────────────────────────────────────────────────────
+  # `engines: ">=18.0.0"` es una promesa al que instala el paquete, y hasta ahora no la
+  # verificaba nada: la suite no puede correr en 18 (Vitest 4 necesita 20+), así que se
+  # comprueba lo que de verdad importa — que el tarball publicado se instale y el motor
+  # funcione sobre Node 18. Si esto falla, hay que subir `engines`, no ignorarlo.
+  smoke-node18:
+    name: Smoke Node 18 (verifica engines >=18)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Se buildea con 20 (el toolchain moderno) y se EJECUTA con 18: es exactamente lo que
+      # pasa en la vida real — el usuario instala un tarball ya compilado.
+      - name: Setup Node.js 20 (build)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build all packages
+        run: npm run build
+
+      - name: Pack @healify/cli
+        run: npm pack --workspace=cli --pack-destination /tmp
+
+      - name: Setup Node.js 18 (run)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Instalar el tarball en un proyecto limpio
+        run: |
+          mkdir -p /tmp/smoke && cd /tmp/smoke
+          npm init -y > /dev/null
+          npm install /tmp/healify-cli-*.tgz
+
+      - name: El binario arranca
+        working-directory: /tmp/smoke
+        run: |
+          node --version
+          npx healify --version
+          npx healify --help > /dev/null
+
+      # El motor de verdad, no solo el arranque: JSON por stdin, JSON por stdout.
+      - name: El motor cura un selector sobre Node 18
+        working-directory: /tmp/smoke
+        run: |
+          echo '{"selector":"#login-btn-a1b2c3"}' | npx healify heal | tee /tmp/heal.json
+          node -e "const r=require('/tmp/heal.json'); if(!r.fixedSelector||typeof r.confidence!=='number'){console.error('respuesta inesperada',r);process.exit(1)}"
 
   # ─── gh-action (paquete privado, no es workspace: se testea aparte) ────────
   gh-action:
