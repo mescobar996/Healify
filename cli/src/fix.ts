@@ -2,6 +2,7 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { resolve, relative } from 'node:path'
 import type { LocalRun, LocalCaseResult } from '@healify/reporter-core'
 import { isGitDirty } from './git-check'
+import { collectCodeFiles } from './pom'
 
 /**
  * Valida que un path resuelto esté dentro del project root para prevenir path traversal.
@@ -40,6 +41,13 @@ export function validatePath(filePath: string, projectRoot: string): string {
 export interface FixOptions {
   dryRun?: boolean
   force?: boolean
+  /**
+   * Buscar el selector en los page objects del proyecto cuando no está en el archivo de test.
+   * Default: true. `false` restaura el comportamiento previo (`--no-pom`).
+   */
+  pageObjects?: boolean
+  /** Raíces donde buscar page objects. Default: `[process.cwd()]`. Inyectable para tests. */
+  pageObjectRoots?: string[]
 }
 
 /**
@@ -78,7 +86,18 @@ export function describeReadError(reportPath: string, error: unknown): { message
 export type SkipReason = 'ambiguous' | 'dirty-git' | 'not-found' | 'not-substitutable' | 'declined'
 
 export type FixOutcome =
-  | { testFile: string; selector: string; fixedSelector: string; status: 'applied' }
+  | {
+      testFile: string
+      selector: string
+      fixedSelector: string
+      status: 'applied'
+      /**
+       * Archivo donde se aplicó de verdad, cuando NO es `testFile` — el page object que tenía
+       * el selector. `testFile` se deja intacto a propósito: la clave `testFile::selector` es
+       * la que usa el armado del PR para cruzar outcomes con casos del reporte.
+       */
+      appliedIn?: string
+    }
   | { testFile: string; selector: string; status: 'skipped'; reason: SkipReason }
 
 /**
@@ -157,6 +176,7 @@ export function fix(run: LocalRun, options: FixOptions = {}): FixOutcome[] {
   }
 
   const outcomes: FixOutcome[] = []
+  const pom = createPageObjectResolver(run, options)
 
   for (const [testFile, cases] of casesByFile) {
     let resolvedFile: string
@@ -194,7 +214,9 @@ export function fix(run: LocalRun, options: FixOptions = {}): FixOutcome[] {
       const codeOnly = maskComments(content)
       const occurrences = countOccurrences(codeOnly, c.selector)
       if (occurrences === 0) {
-        outcomes.push({ testFile, selector: c.selector, status: 'skipped', reason: 'not-found' })
+        // No está en el spec: en un proyecto con Page Object Model eso es lo NORMAL, el
+        // selector vive en `pages/*.page.ts`. Antes se rendía acá y salteaba todo.
+        outcomes.push(pom.resolve(testFile, c))
         continue
       }
       if (occurrences > 1) {
@@ -212,5 +234,91 @@ export function fix(run: LocalRun, options: FixOptions = {}): FixOutcome[] {
     }
   }
 
+  pom.flush()
+
   return outcomes
+}
+
+/**
+ * Fallback a page objects: cuando el selector no está en el archivo de test, se busca en el
+ * resto del código del proyecto.
+ *
+ * Conservador con el mismo criterio que el loop principal — solo aplica cuando hay **un único**
+ * archivo con **una única** ocurrencia. Con dos candidatos no se adivina: se reporta ambiguo.
+ *
+ * Las ediciones se acumulan en memoria y se escriben todas juntas al final, para que dos
+ * selectores distintos que caen en el mismo page object no se pisen entre sí.
+ */
+function createPageObjectResolver(run: LocalRun, options: FixOptions) {
+  const enabled = options.pageObjects !== false
+  const roots = options.pageObjectRoots ?? [process.cwd()]
+
+  /** Archivos ya manejados por el loop principal: contarlos acá perdería ediciones. */
+  const testFiles = new Set(
+    run.cases
+      .map((c) => c.testFile)
+      .filter((f): f is string => !!f)
+      .map((f) => {
+        try {
+          return validatePath(f, process.cwd())
+        } catch {
+          return f
+        }
+      })
+  )
+
+  let candidates: string[] | null = null
+  const contents = new Map<string, string>()
+  const touched = new Set<string>()
+
+  function readCached(file: string): string | null {
+    const cached = contents.get(file)
+    if (cached !== undefined) return cached
+    try {
+      const raw = readFileSync(file, 'utf-8')
+      contents.set(file, raw)
+      return raw
+    } catch {
+      return null
+    }
+  }
+
+  function resolve(testFile: string, c: LocalCaseResult): FixOutcome {
+    const notFound: FixOutcome = { testFile, selector: c.selector, status: 'skipped', reason: 'not-found' }
+    if (!enabled) return notFound
+
+    if (candidates === null) {
+      candidates = collectCodeFiles(roots).filter((f) => !testFiles.has(f))
+    }
+
+    const hits = candidates.filter((file) => {
+      const content = readCached(file)
+      return content !== null && countOccurrences(maskComments(content), c.selector) === 1
+    })
+
+    if (hits.length === 0) return notFound
+    // Dos page objects con el mismo selector: no hay forma de saber cuál rompió el test.
+    if (hits.length > 1) return { testFile, selector: c.selector, status: 'skipped', reason: 'ambiguous' }
+
+    const target = hits[0]
+    if (!options.dryRun && !options.force && isGitDirty(target)) {
+      return { testFile, selector: c.selector, status: 'skipped', reason: 'dirty-git' }
+    }
+
+    const content = contents.get(target) as string
+    const idx = maskComments(content).indexOf(c.selector)
+    contents.set(target, content.slice(0, idx) + c.fixedSelector + content.slice(idx + c.selector.length))
+    touched.add(target)
+
+    return { testFile, selector: c.selector, fixedSelector: c.fixedSelector, status: 'applied', appliedIn: target }
+  }
+
+  function flush(): void {
+    if (options.dryRun) return
+    for (const file of touched) {
+      writeFileSync(file, contents.get(file) as string, 'utf-8')
+    }
+  }
+
+  return { resolve, flush }
 }

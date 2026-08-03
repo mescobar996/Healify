@@ -183,7 +183,15 @@ plugin.flush()
 | `--force` | Aplica aunque el archivo tenga cambios sin commitear. |
 | `--pr` | Crea branch + commit + PR automáticamente (requiere `gh` CLI). |
 | `--no-ast` | Desactiva la reescritura de sugerencias `role(...)` (sustitución simple). |
+| `--no-pom` | No busca el selector en los page objects cuando no está en el archivo de test. |
 | `--interactive` | Pregunta caso por caso antes de aplicar. |
+
+#### Page Object Model
+
+Si el selector roto no está en el spec (lo normal con POM: vive en `pages/login.page.ts`), `fix`
+lo busca en el resto del código del proyecto y aplica el cambio ahí, diciéndote en qué archivo lo
+tocó. Conservador: solo aplica si hay **un único** archivo con **una única** ocurrencia; con dos
+candidatos reporta ambiguo y no toca nada. Se apaga con `--no-pom`.
 
 ### `healify heal` (para adapters)
 

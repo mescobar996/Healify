@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { mkdtempSync, writeFileSync, readFileSync, rmSync, existsSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { LocalRun, LocalCaseResult } from '@healify/reporter-core'
@@ -100,7 +100,7 @@ describe('fix', () => {
     const original = `page.click('#something-else')`
     writeFileSync(file, original)
 
-    const outcomes = fix(makeRun([makeCase({ testFile: file })]))
+    const outcomes = fix(makeRun([makeCase({ testFile: file })]), { pageObjectRoots: [dir] })
 
     expect(outcomes).toEqual([{ testFile: file, selector: '#old', status: 'skipped', reason: 'not-found' }])
     expect(readFileSync(file, 'utf-8')).toBe(original)
@@ -163,10 +163,13 @@ describe('fix', () => {
     // Solo existe '#btn-guardar' en el archivo — '#btn' solo "existe" como substring de ese.
     writeFileSync(file, `page.click('#btn-guardar')`)
 
-    const outcomes = fix(makeRun([
-      makeCase({ testFile: file, selector: '#btn', fixedSelector: "[data-testid='btn']" }),
-      makeCase({ testFile: file, selector: '#btn-guardar', fixedSelector: "[data-testid='guardar']" }),
-    ]))
+    const outcomes = fix(
+      makeRun([
+        makeCase({ testFile: file, selector: '#btn', fixedSelector: "[data-testid='btn']" }),
+        makeCase({ testFile: file, selector: '#btn-guardar', fixedSelector: "[data-testid='guardar']" }),
+      ]),
+      { pageObjectRoots: [dir] }
+    )
 
     const bySelector = Object.fromEntries(outcomes.map((o) => [o.selector, o]))
     expect(bySelector['#btn-guardar'].status).toBe('applied')
@@ -210,7 +213,7 @@ describe('fix', () => {
     const original = `// TODO: reemplazar '#old' por el testid nuevo\npage.click('#new-real-selector')`
     writeFileSync(file, original)
 
-    const outcomes = fix(makeRun([makeCase({ testFile: file })]))
+    const outcomes = fix(makeRun([makeCase({ testFile: file })]), { pageObjectRoots: [dir] })
 
     expect(outcomes).toEqual([{ testFile: file, selector: '#old', status: 'skipped', reason: 'not-found' }])
     expect(readFileSync(file, 'utf-8')).toBe(original)
@@ -231,7 +234,7 @@ describe('fix', () => {
     const original = `/*\n * viejo selector: '#old'\n */\npage.click('#new-real-selector')`
     writeFileSync(file, original)
 
-    const outcomes = fix(makeRun([makeCase({ testFile: file })]))
+    const outcomes = fix(makeRun([makeCase({ testFile: file })]), { pageObjectRoots: [dir] })
 
     expect(outcomes).toEqual([{ testFile: file, selector: '#old', status: 'skipped', reason: 'not-found' }])
     expect(readFileSync(file, 'utf-8')).toBe(original)
@@ -245,5 +248,146 @@ describe('fix', () => {
 
     expect(outcomes).toEqual([{ testFile: escaping, selector: '#old', status: 'skipped', reason: 'not-found' }])
     expect(existsSync(resolvedEscape)).toBe(false)
+  })
+})
+
+/**
+ * El caso que antes salteaba TODO en cualquier proyecto con Page Object Model: el spec llama a
+ * `loginPage.submit()` y el selector roto vive en `pages/login.page.ts`.
+ */
+describe('fix — fallback a page objects', () => {
+  let dir: string
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'healify-fix-pom-'))
+    mockIsGitDirty.mockReturnValue(false)
+  })
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  function spec(): string {
+    const file = join(dir, 'e2e', 'login.spec.ts')
+    mkdirSync(join(dir, 'e2e'), { recursive: true })
+    writeFileSync(file, `await loginPage.submit()`)
+    return file
+  }
+
+  function pageObject(name: string, content: string): string {
+    const file = join(dir, 'pages', name)
+    mkdirSync(join(dir, 'pages'), { recursive: true })
+    writeFileSync(file, content, 'utf-8')
+    return file
+  }
+
+  it('aplica el fix en el page object y reporta dónde lo tocó', () => {
+    const testFile = spec()
+    const po = pageObject('login.page.ts', `export const submitBtn = '#old'\n`)
+
+    const outcomes = fix(makeRun([makeCase({ testFile })]), { pageObjectRoots: [dir] })
+
+    expect(outcomes).toEqual([
+      { testFile, selector: '#old', fixedSelector: "[data-testid='new']", status: 'applied', appliedIn: po },
+    ])
+    expect(readFileSync(po, 'utf-8')).toBe(`export const submitBtn = '[data-testid='new']'\n`)
+  })
+
+  it('no adivina si el selector está en dos page objects', () => {
+    const testFile = spec()
+    const a = pageObject('login.page.ts', `export const btn = '#old'\n`)
+    const b = pageObject('checkout.page.ts', `export const btn = '#old'\n`)
+
+    const outcomes = fix(makeRun([makeCase({ testFile })]), { pageObjectRoots: [dir] })
+
+    expect(outcomes).toEqual([{ testFile, selector: '#old', status: 'skipped', reason: 'ambiguous' }])
+    expect(readFileSync(a, 'utf-8')).toContain('#old')
+    expect(readFileSync(b, 'utf-8')).toContain('#old')
+  })
+
+  it('un page object con el selector dos veces tampoco cuenta — mismo criterio que el spec', () => {
+    const testFile = spec()
+    const po = pageObject('login.page.ts', `const a = '#old'\nconst b = '#old'\n`)
+
+    const outcomes = fix(makeRun([makeCase({ testFile })]), { pageObjectRoots: [dir] })
+
+    expect(outcomes).toEqual([{ testFile, selector: '#old', status: 'skipped', reason: 'not-found' }])
+    expect(readFileSync(po, 'utf-8')).toBe(`const a = '#old'\nconst b = '#old'\n`)
+  })
+
+  it('una mención solo en un comentario no habilita el reemplazo', () => {
+    const testFile = spec()
+    const po = pageObject('login.page.ts', `// TODO: reemplazar '#old'\nexport const btn = '#otro'\n`)
+
+    const outcomes = fix(makeRun([makeCase({ testFile })]), { pageObjectRoots: [dir] })
+
+    expect(outcomes).toEqual([{ testFile, selector: '#old', status: 'skipped', reason: 'not-found' }])
+    expect(readFileSync(po, 'utf-8')).toContain(`// TODO: reemplazar '#old'`)
+  })
+
+  it('--dry-run no escribe el page object', () => {
+    const testFile = spec()
+    const po = pageObject('login.page.ts', `export const btn = '#old'\n`)
+
+    const outcomes = fix(makeRun([makeCase({ testFile })]), { pageObjectRoots: [dir], dryRun: true })
+
+    expect(outcomes[0].status).toBe('applied')
+    expect(readFileSync(po, 'utf-8')).toBe(`export const btn = '#old'\n`)
+  })
+
+  it('page object con cambios sin commitear se saltea', () => {
+    mockIsGitDirty.mockReturnValue(true)
+    const testFile = spec()
+    const po = pageObject('login.page.ts', `export const btn = '#old'\n`)
+
+    const outcomes = fix(makeRun([makeCase({ testFile })]), { pageObjectRoots: [dir] })
+
+    expect(outcomes).toEqual([{ testFile, selector: '#old', status: 'skipped', reason: 'dirty-git' }])
+    expect(readFileSync(po, 'utf-8')).toBe(`export const btn = '#old'\n`)
+  })
+
+  it('dos selectores que caen en el mismo page object se aplican los dos sin pisarse', () => {
+    const testFile = spec()
+    const po = pageObject('login.page.ts', `const user = '#old'\nconst pass = '#viejo'\n`)
+
+    const outcomes = fix(
+      makeRun([
+        makeCase({ testFile }),
+        makeCase({ testFile, selector: '#viejo', fixedSelector: "[data-testid='pass']" }),
+      ]),
+      { pageObjectRoots: [dir] }
+    )
+
+    expect(outcomes.every((o) => o.status === 'applied')).toBe(true)
+    expect(readFileSync(po, 'utf-8')).toBe(`const user = '[data-testid='new']'\nconst pass = '[data-testid='pass']'\n`)
+  })
+
+  it('no toca un archivo que ya es testFile de otro caso — de eso se encarga el loop principal', () => {
+    const testFile = spec()
+    const otro = join(dir, 'e2e', 'otro.spec.ts')
+    writeFileSync(otro, `page.click('#old')`)
+
+    const outcomes = fix(
+      makeRun([makeCase({ testFile }), makeCase({ testFile: otro })]),
+      { pageObjectRoots: [dir] }
+    )
+
+    expect(outcomes).toContainEqual({ testFile, selector: '#old', status: 'skipped', reason: 'not-found' })
+    expect(outcomes).toContainEqual({
+      testFile: otro,
+      selector: '#old',
+      fixedSelector: "[data-testid='new']",
+      status: 'applied',
+    })
+  })
+
+  it('pageObjects:false restaura el comportamiento previo (--no-pom)', () => {
+    const testFile = spec()
+    const po = pageObject('login.page.ts', `export const btn = '#old'\n`)
+
+    const outcomes = fix(makeRun([makeCase({ testFile })]), { pageObjectRoots: [dir], pageObjects: false })
+
+    expect(outcomes).toEqual([{ testFile, selector: '#old', status: 'skipped', reason: 'not-found' }])
+    expect(readFileSync(po, 'utf-8')).toBe(`export const btn = '#old'\n`)
   })
 })

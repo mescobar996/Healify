@@ -205,9 +205,10 @@ function printHelp(): void {
 Comandos:
   init                                       Detecta tu framework (o te pregunta cuál armar si no hay ninguno), instala lo que falte y configura el reporter/plugin (sin generar tests)
   doctor                                     Verifica que Healify esté instalado y bien configurado
-  fix [reporte.json] [--dry-run] [--force] [--pr] [--no-ast] [--interactive]   Aplica las sugerencias de mayor confianza directo en tus archivos de test
+  fix [reporte.json] [--dry-run] [--force] [--pr] [--no-ast] [--no-pom] [--interactive]   Aplica las sugerencias de mayor confianza directo en tus archivos de test
                                                         --pr crea branch, commit y PR con los cambios
                                                         --no-ast desactiva la reescritura de sugerencias role(...) (page.click → page.getByRole)
+                                                        --no-pom no busca el selector en los page objects cuando no está en el archivo de test
                                                        --interactive pregunta caso por caso en vez de aplicar todo solo (necesita una terminal real)
   history                                    Muestra selectores recurrentes y re-rotos de .healify/history.jsonl (se graba en cada fix real, no en --dry-run)
   heal                                       Motor vía JSON por stdin/stdout, para usar desde Python/Java/C#/etc. Ver docs/adapters/README.md

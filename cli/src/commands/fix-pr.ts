@@ -19,7 +19,7 @@ function reasonText(outcome: Extract<FixOutcome, { status: 'skipped' }>, astUsed
     case 'dirty-git':
       return 'cambios sin commitear (usá --force para ignorar)'
     case 'not-found':
-      return 'ya no se encontró en el archivo'
+      return 'no se encontró ni en el archivo de test ni en ningún page object del proyecto'
     case 'not-substitutable':
       return astUsed
         ? 'la sugerencia no es un rol reescribible (método sin mapeo, o no es una llamada de page/locator) — revisar y aplicar a mano'
@@ -41,7 +41,12 @@ function printOutcomes(outcomes: FixOutcome[], run: LocalRun, astUsed: boolean):
   for (const outcome of outcomes) {
     if (outcome.status === 'applied') {
       applied++
-      console.log(`✓ ${outcome.testFile} — ${outcome.selector} → ${outcome.fixedSelector}`)
+      // Cuando se aplicó en un page object, el archivo tocado no es el que falló: decir cuál
+      // es lo único que le permite al usuario revisar el cambio.
+      const where = outcome.appliedIn
+        ? `${outcome.appliedIn} (page object de ${outcome.testFile})`
+        : outcome.testFile
+      console.log(`✓ ${where} — ${outcome.selector} → ${outcome.fixedSelector}`)
     } else {
       skipped++
       console.log(`⚠ ${outcome.testFile} — saltado: ${reasonText(outcome, astUsed)}`)
@@ -61,6 +66,7 @@ export function runFix(args: string[]): void {
   const force = args.includes('--force')
   const pr = args.includes('--pr')
   const ast = !args.includes('--no-ast')
+  const pageObjects = !args.includes('--no-pom')
   const interactive = args.includes('--interactive')
   const reportPath = args.slice(1).find((a) => !a.startsWith('--')) ?? 'healify-report.json'
 
@@ -97,7 +103,7 @@ export function runFix(args: string[]): void {
     }
   }
 
-  const outcomes = fix(runForFix, { dryRun, force })
+  const outcomes = fix(runForFix, { dryRun, force, pageObjects })
 
   // Map original case data for PR body (confidence, originalSelector, verified come from run.cases)
   const caseByKey = new Map(run.cases.map(c => [`${c.testFile}::${c.selector}`, c]))
