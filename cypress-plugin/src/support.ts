@@ -7,6 +7,37 @@ import type { HealTaskInput, HealTaskOutput, RecordEventInput } from './support-
 // paquete al bundle de browser — ver el comentario de import-type más abajo.
 const DEFAULT_CONFIDENCE_THRESHOLD = 0.9
 
+/**
+ * Registra un listener global `Cypress.on('fail')` para capturar fallos de test y generar
+ * entradas de auditoría. Se ejecuta una sola vez al importar el archivo de soporte.
+ * Cada fallo con un selector extraído se envía a `plugin.ts` vía `cy.task()` para que
+ * construya la entrada de auditoría en el proceso Node (donde `reporter-core` tiene acceso
+ * a `node:fs` y `node:crypto`).
+ */
+function registerAuditHandler(): void {
+  const seen = new Set<string>()
+  Cypress.on('fail', (error: Error) => {
+    const selector = error.message.match(/selector['":\s]+([^\s'"]+)/)?.[1]
+    if (selector && !seen.has(selector)) {
+      seen.add(selector)
+      cy.task(
+        'healify:audit-entry',
+        {
+          selector,
+          error: error.message,
+          url: Cypress.config('baseUrl'),
+          html: '',
+          stackTrace: error.stack || '',
+        },
+        { log: false }
+      )
+    }
+    throw error
+  })
+}
+
+registerAuditHandler()
+
 export interface HealifyGetOptions {
   /** Milisegundos que se espera al selector original (poll) antes de intentar curarlo.
    * Default: `Cypress.config('defaultCommandTimeout')`, igual que `cy.get()`. */

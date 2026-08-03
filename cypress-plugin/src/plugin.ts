@@ -15,8 +15,13 @@ import {
   BROWSER_PROBE_SCRIPT,
   buildDefectId,
   severityFor,
+  buildAuditEntry,
+  writeAuditReport,
   type LocalCaseResult,
   type CaseAttachment,
+  type AuditEntry,
+  type HealResponse,
+  type SelectorType,
 } from '@healify/reporter-core'
 import type { HealTaskInput, HealTaskOutput, RecordEventInput } from './support-protocol'
 
@@ -41,6 +46,7 @@ export function HealifyCypressPlugin(
   // fallido. Sin este array esos casos quedarían invisibles en el reporte, a pesar de haber
   // curado un selector roto de verdad.
   const liveResults: LocalCaseResult[] = []
+  const auditEntries: AuditEntry[] = []
   let total = 0
   let passed = 0
   let failed = 0
@@ -98,6 +104,46 @@ export function HealifyCypressPlugin(
       })
       return null
     },
+
+    'healify:audit-entry': (input: {
+      selector: string
+      error: string
+      url?: string
+      html?: string
+      stackTrace?: string
+      testName?: string
+      testFile?: string
+    }): null => {
+      try {
+        const selectorType: SelectorType = input.selector.startsWith('//') || input.selector.startsWith('(') ? 'XPATH' : 'CSS'
+        const response: HealResponse = {
+          fixedSelector: input.selector,
+          confidence: 0,
+          verified: false,
+          fromRepertoire: false,
+          explanation: '',
+          selectorType,
+          needsReview: false,
+          robustnessImprovement: 0,
+          alternatives: [],
+          technicalDetails: {
+            detectedIssue: input.error,
+            proposedSolution: '',
+            accessibilityCompliant: false,
+            stableAgainstDOMChanges: false,
+          },
+        }
+        const entry = buildAuditEntry(
+          response,
+          { selector: input.selector, testName: input.testName, testFile: input.testFile },
+          { errorMessage: input.error, domSnippet: input.html }
+        )
+        auditEntries.push(entry)
+      } catch {
+        // Nunca romper la corrida real por un fallo del audit.
+      }
+      return null
+    },
   })
 
   on('after:spec', (spec, results) => {
@@ -148,6 +194,9 @@ export function HealifyCypressPlugin(
       writeFileSync(join(process.cwd(), 'healify-report.html'), renderLocalReportHtml(run))
       writeFileSync(join(process.cwd(), 'healify-report.json'), renderLocalReportJson(run))
       writeFileSync(join(process.cwd(), 'healify-report.md'), renderLocalReportMarkdown(run))
+      if (auditEntries.length > 0) {
+        writeAuditReport(auditEntries, process.cwd(), 'Cypress suite', 'Cypress')
+      }
     } catch {
       // Fire-and-forget: el reporte local nunca debe romper la corrida.
     }
