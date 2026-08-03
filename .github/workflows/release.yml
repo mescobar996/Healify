@@ -48,6 +48,19 @@ jobs:
           cache: 'npm'
           registry-url: 'https://registry.npmjs.org'
 
+      # Falla rápido y con un mensaje entendible. Sin esto, un token invalido, truncado o sin
+      # permisos sobre el scope se manifiesta recién en el publish como
+      # "E404 Not Found - PUT .../@healify%2freporter-core" — que parece que el paquete no
+      # existe, cuando en realidad es la forma que tiene el registry de decir "no tenes permiso
+      # de escritura" sin revelar si existe. Además deja asentado en el log CONTRA QUÉ CUENTA
+      # se autentica el token, que es el dato que hace falta cuando no coincide con el dueño.
+      - name: Verificar autenticación npm
+        run: |
+          echo "Token autenticado como: $(npm whoami)"
+          npm access list packages @healify
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
       - name: Install dependencies
         run: npm ci
 
