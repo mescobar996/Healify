@@ -9,7 +9,7 @@
   <img src="https://img.shields.io/badge/Selenium-4-green?logo=selenium" />
   <img src="https://img.shields.io/badge/WebdriverIO-9-green?logo=webdriverio" />
   <img src="https://img.shields.io/badge/license-MIT-blue" />
-  <img src="https://img.shields.io/badge/tests-573%20passing-brightgreen" />
+  <img src="https://img.shields.io/badge/tests-538%20passing-brightgreen" />
 </div>
 
 ---
@@ -341,7 +341,7 @@ npm run build
 ### Tests
 
 ```bash
-npx vitest run                               # Todos los tests (573)
+npx vitest run                               # Todos los tests (538)
 npx vitest run --reporter=verbose            # Ver cada test individual
 npx vitest run "cli/src/__tests__/"          # Tests de un paquete
 ```
