@@ -629,13 +629,22 @@ function applyPageEvidence(
   // `bestElementFor` igual busca entre los elementos interactivos de la página.
   const real = bestElementFor(pageElements, selector, expectedRole)
   if (real) {
+    // El elemento existe, pero adentro de un iframe: un locator a nivel top no lo encuentra
+    // igual. Se sugiere igual (es la mejor pista que hay) pero con la confianza bajada y
+    // diciendo explícitamente que falta cambiar de contexto — sugerirlo callado manda al
+    // usuario a un test que sigue fallando y encima parece un bug de Healify.
+    const inFrame = real.frame
     survivors.unshift({
       selector: `role('${real.role}', { name: '${real.name}' })`,
       type: 'ROLE',
-      confidence: 0.97,
-      explanation: `Verificado contra la página: hay un ${real.role} con el nombre accesible "${real.name}". El nombre se leyó del árbol de accesibilidad capturado cuando el test falló, no se dedujo del texto del selector.`,
+      confidence: inFrame ? 0.88 : 0.97,
+      explanation: inFrame
+        ? `Verificado contra la página: hay un ${real.role} con el nombre accesible "${real.name}", pero está DENTRO del iframe ${inFrame}. Un locator a nivel de página no lo encuentra: primero hay que entrar al frame (\`frameLocator('${inFrame}')\` en Playwright, \`switchTo().frame(...)\` en Selenium) y recién ahí aplicar el selector.`
+        : `Verificado contra la página: hay un ${real.role} con el nombre accesible "${real.name}". El nombre se leyó del árbol de accesibilidad capturado cuando el test falló, no se dedujo del texto del selector.`,
       robustnessGain: 50,
-      technicalReason: `Confirmed against the accessibility tree captured at failure time: role=${real.role}, name=${real.name}`,
+      technicalReason: inFrame
+        ? `Confirmed against the accessibility tree captured at failure time, but inside iframe ${inFrame}: a frame switch is required before this locator resolves`
+        : `Confirmed against the accessibility tree captured at failure time: role=${real.role}, name=${real.name}`,
       priority: 0,
     })
     return { strategies: survivors, sawPage: true }

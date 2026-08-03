@@ -84,11 +84,15 @@ var require_page_snapshot = __commonJS({
     exports2.bestElementFor = bestElementFor;
     exports2.bestNameFor = bestNameFor;
     function formatPageElements(elements) {
-      return elements.map((e) => e.name ? `- ${e.role} "${e.name.replace(/"/g, '\\"')}"` : `- ${e.role}`).join("\n");
+      return elements.map((e) => {
+        const base = e.name ? `- ${e.role} "${e.name.replace(/"/g, '\\"')}"` : `- ${e.role}`;
+        return e.frame ? `${base} [frame=${e.frame}]` : base;
+      }).join("\n");
     }
     var PROPERTY_LINE = /^\s*-\s*\//;
     var ELEMENT_LINE = /^\s*-\s+([a-zA-Z][\w-]*)\s*(?:"((?:[^"\\]|\\.)*)")?/;
     var TEXT_LINE = /^\s*-\s+text:\s*(.+?)\s*$/;
+    var FRAME_ATTR = /\[frame=(.+)\]\s*$/;
     function parsePageSnapshot(markdown) {
       if (!markdown)
         return [];
@@ -107,7 +111,11 @@ var require_page_snapshot = __commonJS({
         const role = match[1];
         if (role === "yaml")
           continue;
-        elements.push({ role, name: match[2] ? unescapeName(match[2]) : "" });
+        const element = { role, name: match[2] ? unescapeName(match[2]) : "" };
+        const frameMatch = line.match(FRAME_ATTR);
+        if (frameMatch)
+          element.frame = frameMatch[1];
+        elements.push(element);
       }
       return elements;
     }
@@ -125,10 +133,19 @@ var require_page_snapshot = __commonJS({
     }
     var INTERACTIVE_ROLES = ["button", "link", "textbox", "checkbox", "radio", "combobox", "menuitem", "tab", "option", "searchbox", "switch"];
     function bestElementFor(elements, selector, preferredRole) {
+      const topLevel = elements.filter((e) => !e.frame);
+      const fromTop = bestElementIn(topLevel, selector, preferredRole);
+      if (fromTop)
+        return fromTop;
+      if (topLevel.length === elements.length)
+        return null;
+      return bestElementIn(elements, selector, preferredRole);
+    }
+    function bestElementIn(elements, selector, preferredRole) {
       if (preferredRole) {
-        const name = bestNameFor(elements, preferredRole, selector);
+        const name = bestNameIn(elements, preferredRole, selector);
         if (name !== null)
-          return { role: preferredRole, name };
+          return findMatches(elements, preferredRole, name)[0] ?? { role: preferredRole, name };
       }
       const tokens = selectorTokens(selector);
       if (tokens.length === 0)
@@ -146,6 +163,15 @@ var require_page_snapshot = __commonJS({
       return best.element;
     }
     function bestNameFor(elements, role, selector) {
+      const topLevel = elements.filter((e) => !e.frame);
+      const fromTop = bestNameIn(topLevel, role, selector);
+      if (fromTop !== null)
+        return fromTop;
+      if (topLevel.length === elements.length)
+        return null;
+      return bestNameIn(elements, role, selector);
+    }
+    function bestNameIn(elements, role, selector) {
       const candidates = findMatches(elements, role).filter((e) => e.name.length > 0);
       if (candidates.length === 0)
         return null;
@@ -772,13 +798,14 @@ var require_healing_engine = __commonJS({
       });
       const real = (0, page_snapshot_1.bestElementFor)(pageElements, selector, expectedRole);
       if (real) {
+        const inFrame = real.frame;
         survivors.unshift({
           selector: `role('${real.role}', { name: '${real.name}' })`,
           type: "ROLE",
-          confidence: 0.97,
-          explanation: `Verificado contra la p\xE1gina: hay un ${real.role} con el nombre accesible "${real.name}". El nombre se ley\xF3 del \xE1rbol de accesibilidad capturado cuando el test fall\xF3, no se dedujo del texto del selector.`,
+          confidence: inFrame ? 0.88 : 0.97,
+          explanation: inFrame ? `Verificado contra la p\xE1gina: hay un ${real.role} con el nombre accesible "${real.name}", pero est\xE1 DENTRO del iframe ${inFrame}. Un locator a nivel de p\xE1gina no lo encuentra: primero hay que entrar al frame (\`frameLocator('${inFrame}')\` en Playwright, \`switchTo().frame(...)\` en Selenium) y reci\xE9n ah\xED aplicar el selector.` : `Verificado contra la p\xE1gina: hay un ${real.role} con el nombre accesible "${real.name}". El nombre se ley\xF3 del \xE1rbol de accesibilidad capturado cuando el test fall\xF3, no se dedujo del texto del selector.`,
           robustnessGain: 50,
-          technicalReason: `Confirmed against the accessibility tree captured at failure time: role=${real.role}, name=${real.name}`,
+          technicalReason: inFrame ? `Confirmed against the accessibility tree captured at failure time, but inside iframe ${inFrame}: a frame switch is required before this locator resolves` : `Confirmed against the accessibility tree captured at failure time: role=${real.role}, name=${real.name}`,
           priority: 0
         });
         return { strategies: survivors, sawPage: true };
@@ -1771,52 +1798,95 @@ var require_browser_probe = __commonJS({
     exports2.domContextFromProbeResult = domContextFromProbeResult2;
     var page_snapshot_1 = require_page_snapshot();
     exports2.BROWSER_PROBE_SCRIPT = `
-var nodes = document.querySelectorAll('button, a, input, textarea, select, [role]');
-var seen = [];
+var MAX_DEPTH = 12;
+var MAX_NODES = 3000;
 var results = [];
-for (var i = 0; i < nodes.length; i++) {
-  var el = nodes[i];
-  if (seen.indexOf(el) !== -1) continue;
-  seen.push(el);
 
+function healifyRoleOf(el, tag) {
   var role = el.getAttribute('role');
-  var tag = el.tagName.toLowerCase();
-  if (!role) {
-    if (tag === 'a') role = el.hasAttribute('href') ? 'link' : null;
-    else if (tag === 'button') role = 'button';
-    else if (tag === 'select') role = 'combobox';
-    else if (tag === 'textarea') role = 'textbox';
-    else if (tag === 'input') {
-      var type = (el.getAttribute('type') || 'text').toLowerCase();
-      if (type === 'checkbox') role = 'checkbox';
-      else if (type === 'radio') role = 'radio';
-      else if (type === 'submit' || type === 'button') role = 'button';
-      else if (type === 'search') role = 'searchbox';
-      else if (type === 'hidden') role = null;
-      else role = 'textbox';
-    }
+  if (role) return role;
+  if (tag === 'a') return el.hasAttribute('href') ? 'link' : null;
+  if (tag === 'button') return 'button';
+  if (tag === 'select') return 'combobox';
+  if (tag === 'textarea') return 'textbox';
+  if (tag === 'input') {
+    var type = (el.getAttribute('type') || 'text').toLowerCase();
+    if (type === 'checkbox') return 'checkbox';
+    if (type === 'radio') return 'radio';
+    if (type === 'submit' || type === 'button') return 'button';
+    if (type === 'search') return 'searchbox';
+    if (type === 'hidden') return null;
+    return 'textbox';
   }
-  if (!role) continue;
+  return null;
+}
 
-  var name = '';
+function healifyNameOf(el) {
   var ariaLabel = el.getAttribute('aria-label');
-  if (ariaLabel) {
-    name = ariaLabel.trim();
-  } else {
-    var text = (el.innerText || el.textContent || '').trim();
-    if (text) {
-      name = text.split('\\n')[0].trim();
-    } else {
-      var placeholder = el.getAttribute('placeholder');
-      if (placeholder) {
-        name = placeholder.trim();
-      } else if (typeof el.value === 'string' && el.value.trim()) {
-        name = el.value.trim();
+  if (ariaLabel) return ariaLabel.trim();
+  var text = (el.innerText || el.textContent || '').trim();
+  if (text) return text.split('\\n')[0].trim();
+  var placeholder = el.getAttribute('placeholder');
+  if (placeholder) return placeholder.trim();
+  if (typeof el.value === 'string' && el.value.trim()) return el.value.trim();
+  return '';
+}
+
+/* Identificador del iframe, para que el usuario sepa a qu\xE9 contexto cambiar. Se elige la
+   forma que adem\xE1s sea un selector CSS v\xE1lido, as\xED se puede pegar tal cual en
+   frameLocator()/switchTo().frame(). Se sacan comillas y saltos de l\xEDnea, que s\xED romper\xEDan
+   el formato "[frame=...]" del snapshot (los corchetes no: el parser ancla al final de l\xEDnea). */
+function healifyFrameLabel(el, index) {
+  var raw = el.getAttribute('id')
+    ? 'iframe#' + el.getAttribute('id')
+    : el.getAttribute('name')
+      ? 'iframe[name=' + el.getAttribute('name') + ']'
+      : el.getAttribute('src')
+        ? 'iframe[src=' + el.getAttribute('src') + ']'
+        : 'iframe:nth-of-type(' + (index + 1) + ')';
+  return raw.replace(/[\\r\\n"]/g, '');
+}
+
+function healifyScan(root, framePath, depth) {
+  if (depth > MAX_DEPTH || results.length >= MAX_NODES) return;
+
+  var nodes = root.querySelectorAll('*');
+  var frameIndex = 0;
+
+  for (var i = 0; i < nodes.length; i++) {
+    if (results.length >= MAX_NODES) return;
+    var el = nodes[i];
+    var tag = el.tagName ? el.tagName.toLowerCase() : '';
+
+    var isCandidate = el.getAttribute('role') ||
+      tag === 'button' || tag === 'a' || tag === 'input' || tag === 'textarea' || tag === 'select';
+    if (isCandidate) {
+      var role = healifyRoleOf(el, tag);
+      if (role) {
+        var entry = { role: role, name: healifyNameOf(el) };
+        if (framePath) entry.frame = framePath;
+        results.push(entry);
+      }
+    }
+
+    /* Shadow DOM abierto: mismo contexto de locator que el documento que lo contiene
+       (Playwright y los selectores CSS lo atraviesan solos), as\xED que NO lleva marca de frame. */
+    if (el.shadowRoot) healifyScan(el.shadowRoot, framePath, depth + 1);
+
+    if (tag === 'iframe' || tag === 'frame') {
+      var label = healifyFrameLabel(el, frameIndex);
+      frameIndex++;
+      try {
+        var doc = el.contentDocument;
+        if (doc) healifyScan(doc, framePath ? framePath + ' > ' + label : label, depth + 1);
+      } catch (e) {
+        /* cross-origin: inaccesible por seguridad, se saltea sin romper el resto del scan */
       }
     }
   }
-  results.push({ role: role, name: name });
 }
+
+healifyScan(document, '', 0);
 return results;
 `.trim();
     function domContextFromProbeResult2(raw) {
@@ -1827,7 +1897,7 @@ return results;
           return false;
         const candidate = item;
         return typeof candidate.role === "string" && typeof candidate.name === "string";
-      });
+      }).map((item) => typeof item.frame === "string" && item.frame ? item : { role: item.role, name: item.name });
       if (elements.length === 0)
         return void 0;
       return (0, page_snapshot_1.formatPageElements)(elements);

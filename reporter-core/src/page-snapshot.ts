@@ -29,6 +29,15 @@ export interface PageElement {
   role: string
   /** Nombre accesible. Vacío para elementos que no exponen uno (`generic`, `navigation`). */
   name: string
+  /**
+   * Iframe donde vive el elemento (`iframe#checkout`, anidados con ` > `). Ausente para el
+   * documento principal y para shadow DOM abierto — ese sí es el mismo contexto de locator.
+   *
+   * Importa porque un locator a nivel top NO encuentra lo que está adentro de un iframe: hay
+   * que cambiar de contexto primero (`frameLocator()`, `switchTo().frame()`). Sugerir el
+   * selector sin decirlo manda al usuario a un test que sigue fallando.
+   */
+  frame?: string
 }
 
 /**
@@ -38,7 +47,12 @@ export interface PageElement {
  * un archivo que escribió Playwright o de una consulta hecha en el momento del fallo.
  */
 export function formatPageElements(elements: PageElement[]): string {
-  return elements.map((e) => (e.name ? `- ${e.role} "${e.name.replace(/"/g, '\\"')}"` : `- ${e.role}`)).join('\n')
+  return elements
+    .map((e) => {
+      const base = e.name ? `- ${e.role} "${e.name.replace(/"/g, '\\"')}"` : `- ${e.role}`
+      return e.frame ? `${base} [frame=${e.frame}]` : base
+    })
+    .join('\n')
 }
 
 /** Líneas de propiedad, no de elemento: `- /url: /inicio`. */
@@ -47,6 +61,15 @@ const PROPERTY_LINE = /^\s*-\s*\//
 const ELEMENT_LINE = /^\s*-\s+([a-zA-Z][\w-]*)\s*(?:"((?:[^"\\]|\\.)*)")?/
 /** `- text: Correo` — nodo de texto suelto; el valor está después de los dos puntos. */
 const TEXT_LINE = /^\s*-\s+text:\s*(.+?)\s*$/
+/**
+ * `[frame=iframe#checkout]` — lo escribe `formatPageElements`, no los snapshots de Playwright
+ * (que usan `[ref=...]`, `[level=...]`, `[active]`, nunca `frame`).
+ *
+ * Anclada al final de línea y greedy a propósito: la etiqueta del iframe puede tener corchetes
+ * propios (`iframe[name=pago]`), así que cortar en el primer `]` devolvería la mitad. Como
+ * `formatPageElements` siempre pone este atributo último, el último `]` de la línea es el cierre.
+ */
+const FRAME_ATTR = /\[frame=(.+)\]\s*$/
 
 /**
  * Extrae los elementos del árbol. Tolerante por diseño: cualquier línea que no encaje se
@@ -75,7 +98,10 @@ export function parsePageSnapshot(markdown: string | undefined): PageElement[] {
     // `yaml` es la apertura del bloque de código, no un elemento de la página.
     if (role === 'yaml') continue
 
-    elements.push({ role, name: match[2] ? unescapeName(match[2]) : '' })
+    const element: PageElement = { role, name: match[2] ? unescapeName(match[2]) : '' }
+    const frameMatch = line.match(FRAME_ATTR)
+    if (frameMatch) element.frame = frameMatch[1]
+    elements.push(element)
   }
 
   return elements
@@ -130,14 +156,34 @@ const INTERACTIVE_ROLES = ['button', 'link', 'textbox', 'checkbox', 'radio', 'co
  * es justamente el punto: `#comprar-ahora-a1b2c3` no activa ninguna palabra conocida, pero el
  * botón "Comprar" de la página lo resuelve solo.
  */
+/**
+ * Dos pasadas: primero solo el documento principal (y el shadow DOM abierto, que es el mismo
+ * contexto de locator), y recién si ahí no hay ganador claro se reintenta incluyendo lo que
+ * vive dentro de iframes. Un elemento alcanzable directo siempre le gana a uno que exige
+ * cambiar de contexto — si hay un "Pagar" arriba y otro adentro del iframe del checkout, el de
+ * arriba es el que el test estaba buscando.
+ */
 export function bestElementFor(
   elements: PageElement[],
   selector: string,
   preferredRole?: string
 ): PageElement | null {
+  const topLevel = elements.filter((e) => !e.frame)
+  const fromTop = bestElementIn(topLevel, selector, preferredRole)
+  if (fromTop) return fromTop
+  if (topLevel.length === elements.length) return null
+  return bestElementIn(elements, selector, preferredRole)
+}
+
+function bestElementIn(
+  elements: PageElement[],
+  selector: string,
+  preferredRole?: string
+): PageElement | null {
   if (preferredRole) {
-    const name = bestNameFor(elements, preferredRole, selector)
-    if (name !== null) return { role: preferredRole, name }
+    const name = bestNameIn(elements, preferredRole, selector)
+    // Se devuelve el elemento real (no uno reconstruido) para no perder `frame` en el camino.
+    if (name !== null) return findMatches(elements, preferredRole, name)[0] ?? { role: preferredRole, name }
   }
 
   const tokens = selectorTokens(selector)
@@ -162,7 +208,16 @@ export function bestElementFor(
   return best.element
 }
 
+/** Igual que `bestElementFor`: el documento principal manda, los iframes son el fallback. */
 export function bestNameFor(elements: PageElement[], role: string, selector: string): string | null {
+  const topLevel = elements.filter((e) => !e.frame)
+  const fromTop = bestNameIn(topLevel, role, selector)
+  if (fromTop !== null) return fromTop
+  if (topLevel.length === elements.length) return null
+  return bestNameIn(elements, role, selector)
+}
+
+function bestNameIn(elements: PageElement[], role: string, selector: string): string | null {
   const candidates = findMatches(elements, role).filter((e) => e.name.length > 0)
   if (candidates.length === 0) return null
   if (candidates.length === 1) return candidates[0].name

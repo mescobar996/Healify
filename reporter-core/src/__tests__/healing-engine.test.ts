@@ -450,3 +450,29 @@ describe('customTestIds (healify.config.json)', () => {
     expect(result.confidence).toBeGreaterThanOrEqual(0.9)
   })
 })
+
+describe('elemento verificado dentro de un iframe', () => {
+  it('avisa que hay que entrar al frame y baja la confianza', () => {
+    const result = analyzeAndHeal({
+      selector: '#pagar-btn-a1b2c3',
+      htmlContext: '- link "Inicio"\n- button "Pagar" [frame=iframe#checkout]',
+    })
+
+    expect(result.verified).toBe(true)
+    expect(result.fixedSelector).toBe("role('button', { name: 'Pagar' })")
+    expect(result.confidence).toBe(0.88)
+    expect(result.explanation).toContain('iframe#checkout')
+    expect(result.explanation).toContain('frameLocator')
+    expect(result.needsReview).toBe(false)
+  })
+
+  it('un elemento equivalente en el documento principal gana y no arrastra la advertencia', () => {
+    const result = analyzeAndHeal({
+      selector: '#pagar-btn-a1b2c3',
+      htmlContext: '- button "Pagar" [frame=iframe#checkout]\n- button "Pagar"',
+    })
+
+    expect(result.confidence).toBe(0.97)
+    expect(result.explanation).not.toContain('iframe')
+  })
+})

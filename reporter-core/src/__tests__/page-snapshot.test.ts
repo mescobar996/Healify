@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parsePageSnapshot, formatPageElements, findMatches, existsInPage, bestNameFor, selectorTokens } from '../page-snapshot'
+import { parsePageSnapshot, formatPageElements, findMatches, existsInPage, bestNameFor, bestElementFor, selectorTokens } from '../page-snapshot'
 
 /**
  * Capturado tal cual de una corrida real de Playwright 1.58 (`test-results/.../
@@ -162,5 +162,67 @@ describe('formatPageElements', () => {
 
   it('array vacío da string vacío', () => {
     expect(formatPageElements([])).toBe('')
+  })
+})
+
+describe('elementos dentro de iframes', () => {
+  it('formatea y vuelve a parsear el frame sin perderlo', () => {
+    const elements = [
+      { role: 'button', name: 'Volver' },
+      { role: 'button', name: 'Pagar', frame: 'iframe#checkout' },
+    ]
+
+    expect(formatPageElements(elements)).toBe('- button "Volver"\n- button "Pagar" [frame=iframe#checkout]')
+    expect(parsePageSnapshot(formatPageElements(elements))).toEqual(elements)
+  })
+
+  it('conserva el frame en un elemento sin nombre accesible', () => {
+    const formatted = formatPageElements([{ role: 'generic', name: '', frame: 'iframe:nth-of-type(1)' }])
+
+    expect(formatted).toBe('- generic [frame=iframe:nth-of-type(1)]')
+    expect(parsePageSnapshot(formatted)).toEqual([{ role: 'generic', name: '', frame: 'iframe:nth-of-type(1)' }])
+  })
+
+  it('una etiqueta de frame con corchetes propios sobrevive el round-trip', () => {
+    const elements = [{ role: 'button', name: 'Pagar', frame: 'iframe#outer > iframe[name=pago]' }]
+
+    expect(parsePageSnapshot(formatPageElements(elements))).toEqual(elements)
+  })
+
+  it('los snapshots de Playwright no traen [frame=...], así que nada gana el campo por accidente', () => {
+    const parsed = parsePageSnapshot('- button "Comprar" [ref=e8] [cursor=pointer]')
+
+    expect(parsed).toEqual([{ role: 'button', name: 'Comprar' }])
+  })
+
+  it('bestElementFor prefiere el elemento del documento principal por sobre el homónimo del iframe', () => {
+    const elements = [
+      { role: 'button', name: 'Pagar ahora', frame: 'iframe#checkout' },
+      { role: 'button', name: 'Pagar ahora' },
+    ]
+
+    expect(bestElementFor(elements, '#pagar-ahora-a1b2c3', 'button')).toEqual({ role: 'button', name: 'Pagar ahora' })
+  })
+
+  it('cae al elemento del iframe cuando no hay nada equivalente arriba', () => {
+    const elements = [
+      { role: 'link', name: 'Inicio' },
+      { role: 'button', name: 'Pagar ahora', frame: 'iframe#checkout' },
+    ]
+
+    expect(bestElementFor(elements, '#pagar-ahora-a1b2c3', 'button')).toEqual({
+      role: 'button',
+      name: 'Pagar ahora',
+      frame: 'iframe#checkout',
+    })
+  })
+
+  it('bestNameFor sigue el mismo criterio: primero el documento principal', () => {
+    const elements = [
+      { role: 'button', name: 'Comprar embebido', frame: 'iframe#widget' },
+      { role: 'button', name: 'Comprar' },
+    ]
+
+    expect(bestNameFor(elements, 'button', '#comprar-x9y8')).toBe('Comprar')
   })
 })
