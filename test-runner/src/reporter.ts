@@ -1,9 +1,9 @@
 import { readFileSync, writeFileSync } from 'node:fs'
-import { createHash } from 'node:crypto'
 import { join, relative } from 'node:path'
 import type { FullConfig, FullResult, Reporter, Suite, TestCase, TestResult, TestStep } from '@playwright/test/reporter'
 import {
   runLocalHealing,
+  buildAuditEntry,
   renderLocalReportHtml,
   renderLocalReportJson,
   renderLocalReportMarkdown,
@@ -16,7 +16,7 @@ import {
   type CaseAttachment,
   type RunEnvironment,
   type HistoryEntry,
-  type AuditEntry,
+  type HealResponse,
 } from '@healify/reporter-core'
 
 /**
@@ -96,28 +96,29 @@ export default class HealifyReporter implements Reporter {
 
       if (healResult.selector !== 'Unknown selector') {
         const domContext = readPageSnapshot(result)
-        this.auditEntries.push({
-          timestamp: new Date().toISOString(),
-          testName,
-          testFile,
-          line: test.location.line,
-          originalSelector: healResult.selector,
-          fixedSelector: healResult.fixedSelector,
-          selectorType: healResult.selectorType as AuditEntry['selectorType'],
-          confidence: healResult.confidence,
-          verified: healResult.verified ?? false,
-          fromRepertoire: healResult.fromRepertoire ?? false,
-          errorMessage,
-          domSnippet: domContext,
-          domHash: domContext ? createHash('sha256').update(domContext).digest('hex') : undefined,
-          alternatives: [],
-          technicalDetails: {
-            detectedIssue: `Selector ${healResult.selector} failed`,
-            proposedSolution: healResult.explanation,
-            accessibilityCompliant: healResult.selectorType === 'ROLE' || healResult.selectorType === 'TEXT',
-            stableAgainstDOMChanges: healResult.selectorType !== 'XPATH',
-          },
-        })
+        this.auditEntries.push(
+          buildAuditEntry(
+            {
+              verified: healResult.verified ?? false,
+              fromRepertoire: healResult.fromRepertoire ?? false,
+              fixedSelector: healResult.fixedSelector,
+              confidence: healResult.confidence,
+              explanation: healResult.explanation,
+              selectorType: healResult.selectorType as HealResponse['selectorType'],
+              alternatives: [],
+              needsReview: false,
+              robustnessImprovement: 0,
+              technicalDetails: {
+                detectedIssue: `Selector ${healResult.selector} failed`,
+                proposedSolution: healResult.explanation,
+                accessibilityCompliant: healResult.selectorType === 'ROLE' || healResult.selectorType === 'TEXT',
+                stableAgainstDOMChanges: healResult.selectorType !== 'XPATH',
+              },
+            },
+            { selector: healResult.selector, testName, testFile },
+            { errorMessage, domSnippet: domContext, line: test.location.line },
+          ),
+        )
       }
     } catch {
       // Nunca romper la corrida real por un fallo del healing local.

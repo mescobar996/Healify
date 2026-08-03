@@ -20,6 +20,26 @@ const { mockRunLocalHealing } = vi.hoisted(() => {
 
 vi.mock('@healify/reporter-core', () => ({
   runLocalHealing: mockRunLocalHealing,
+  buildAuditEntry: vi.fn((response, request, context) => ({
+    timestamp: new Date().toISOString(),
+    testName: request.testName ?? 'unknown',
+    testFile: request.testFile,
+    line: context.line,
+    originalSelector: request.selector,
+    fixedSelector: response.fixedSelector,
+    selectorType: response.selectorType,
+    confidence: response.confidence,
+    verified: response.verified,
+    fromRepertoire: response.fromRepertoire,
+    errorMessage: context.errorMessage,
+    domSnippet: context.domSnippet,
+    domHash: context.domSnippet
+      ? require('node:crypto').createHash('sha256').update(context.domSnippet).digest('hex')
+      : undefined,
+    screenshotPath: context.screenshotPath,
+    alternatives: response.alternatives ?? [],
+    technicalDetails: response.technicalDetails,
+  })),
   renderLocalReportHtml: vi.fn(() => '<html></html>'),
   renderLocalReportJson: vi.fn(() => '{}'),
   renderLocalReportMarkdown: vi.fn(() => '# reporte'),
