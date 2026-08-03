@@ -1,6 +1,15 @@
 {
   "name": "@healify/ai-local",
-  "version": "1.5.0",
+  "version": "1.6.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mescobar996/Healify.git",
+    "directory": "ai-local"
+  },
+  "homepage": "https://healify-sigma.vercel.app",
+  "bugs": {
+    "url": "https://github.com/mescobar996/Healify/issues"
+  },
   "description": "IA local para Healify usando Ollama. Explicaciones en lenguaje natural, sugerencias enriquecidas.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

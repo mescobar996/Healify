@@ -1,6 +1,15 @@
 {
   "name": "@healify/cli",
-  "version": "1.5.0",
+  "version": "1.6.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mescobar996/Healify.git",
+    "directory": "cli"
+  },
+  "homepage": "https://healify-sigma.vercel.app",
+  "bugs": {
+    "url": "https://github.com/mescobar996/Healify/issues"
+  },
   "description": "Aplica las sugerencias de un healify-report.json directo en tus archivos de test.",
   "bin": {
     "healify": "dist/index.js"

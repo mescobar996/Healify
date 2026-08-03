@@ -1,0 +1,73 @@
+# Publicación de los 7 paquetes a npm con provenance.
+#
+# Provenance (https://docs.npmjs.com/generating-provenance-statements) hace que npm firme y
+# publique de forma verificable DESDE QUÉ commit y QUÉ workflow salió cada tarball. Es lo que
+# convierte el badge de npm en una garantía en vez de una promesa: sin esto, cualquiera con el
+# token filtrado puede publicar en nombre de @healify y nadie puede notar la diferencia.
+#
+# Requisitos que impone y que están cubiertos:
+#   - `id-token: write` (OIDC): sin esto npm no puede emitir la atestación.
+#   - `repository.url` en cada package.json apuntando a ESTE repo: npm valida que coincida.
+#   - npm >= 9.5 (Node 20 trae 10.x).
+#
+# Se dispara con un tag `v*`. El publish es irreversible: un `npm unpublish` solo se puede
+# hacer dentro de las 72 h y quema la versión para siempre.
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: 'Correr npm publish --dry-run (no publica nada)'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # La suite completa antes de publicar. Un paquete roto en npm no se puede "arreglar":
+      # hay que quemar una versión nueva.
+      - name: Run tests
+        run: npm test
+
+      - name: Build all packages
+        run: npm run build
+
+      - name: Publish
+        # El orden importa: reporter-core primero porque todos lo bundlean.
+        run: |
+          DRY=""
+          if [ "${{ inputs.dry-run }}" = "true" ]; then DRY="--dry-run"; fi
+          for pkg in reporter-core test-runner cypress-plugin selenium-plugin webdriverio-plugin ai-local cli; do
+            echo "::group::publish $pkg"
+            npm publish --workspace="$pkg" --provenance --access public $DRY
+            echo "::endgroup::"
+          done
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

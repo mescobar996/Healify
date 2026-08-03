@@ -1,6 +1,15 @@
 {
   "name": "@healify/webdriverio-plugin",
-  "version": "1.5.0",
+  "version": "1.6.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mescobar996/Healify.git",
+    "directory": "webdriverio-plugin"
+  },
+  "homepage": "https://healify-sigma.vercel.app",
+  "bugs": {
+    "url": "https://github.com/mescobar996/Healify/issues"
+  },
   "description": "Self-healing wrapper for WebdriverIO: heuristic, local-first, no AI, no server.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

@@ -1,6 +1,15 @@
 {
   "name": "@healify/test-runner",
-  "version": "1.5.0",
+  "version": "1.6.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mescobar996/Healify.git",
+    "directory": "test-runner"
+  },
+  "homepage": "https://healify-sigma.vercel.app",
+  "bugs": {
+    "url": "https://github.com/mescobar996/Healify/issues"
+  },
   "description": "Healify reporter for Playwright: reports broken selectors without requiring GitHub repo access.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
