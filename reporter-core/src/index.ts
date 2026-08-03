@@ -9,3 +9,5 @@ export { parseRoleSuggestion, roleSuggestionToXPath, resolveLocatorStrategy, typ
 export { BROWSER_PROBE_SCRIPT, domContextFromProbeResult } from './browser-probe'
 export { parseHistoryLines, readRepertoire, findRepertoireMatch, type HistoryEntry } from './repertoire'
 export { loadConfig, type HealifyConfig } from './config'
+export { buildAuditEntry, writeAuditReport, appendAuditEntry } from './audit'
+export type { AuditEntry, AuditReport, FailureContext } from './audit'
