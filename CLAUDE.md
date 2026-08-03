@@ -18,3 +18,22 @@ Flujo de Trabajo con la IA
 3. Si necesitas ver el historial reciente o bugs pasados, pide leer `CONTEXT_HANDOFF.md` explícitamente.
 4. Devuelve solo el código modificado o nuevo, no repitas código intacto.
 5. Comandos AI: `healify ai setup|status|explain|chat|models` — requieren Ollama corriendo.
+
+## Skills de Auditoría Instalados
+
+| Skill | Para qué sirve | Cuándo usarlo |
+|-------|----------------|---------------|
+| security-reviewer | Identifica vulnerabilidades de seguridad, genera reportes con severidad (OWASP, SAST, secrets) | Cuando pedís "security review", "audit de seguridad", "chequear vulnerabilidades" |
+| code-reviewer | Revisión de código: bugs, code smells, N+1 queries, problemas de arquitectura | Cuando pedís "code review", "revisar PR", "chequear calidad" |
+| deep-review | Pipeline multi-etapa: corre revisión paralela de correctness, security, performance, architecture | Cuando pedís "deep review", "audit completo", "revisión pre-merge" |
+| performance-audit | Detecta cuellos de botella: N+1 queries, memory leaks, rendering innecesario | Cuando pedís "check performance", "find bottlenecks", "optimize" |
+| architecture-review | Evalúa SOLID, coupling, cohesion, patrones de diseño | Cuando pedís "review architecture", "check design patterns", "evaluate structure" |
+
+### Regla de Auditoría
+
+Cada vez que el usuario diga **/audit**, correr en orden:
+1. `deep-review` — Revisión completa del código
+2. `security-reviewer` — Auditoría de seguridad
+3. `code-reviewer` — Revisión de calidad
+
+Generar reporte en `.claude/audits/` con timestamp.
