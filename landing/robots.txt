@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://healify-sigma.vercel.app/sitemap.xml
