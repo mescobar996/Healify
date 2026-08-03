@@ -1,14 +1,23 @@
-# Publicación de los 7 paquetes a npm con provenance.
+# Publicación de los 7 paquetes a npm con Trusted Publishing (OIDC) + provenance.
 #
-# Provenance (https://docs.npmjs.com/generating-provenance-statements) hace que npm firme y
-# publique de forma verificable DESDE QUÉ commit y QUÉ workflow salió cada tarball. Es lo que
-# convierte el badge de npm en una garantía en vez de una promesa: sin esto, cualquiera con el
-# token filtrado puede publicar en nombre de @healify y nadie puede notar la diferencia.
+# NO hay token. npm confía en este workflow porque cada paquete tiene configurado, del lado de
+# npmjs.com, un "trusted publisher" que apunta exactamente a este repo y a este archivo. El
+# runner pide un id-token a GitHub, npm lo valida contra esa configuración y autoriza la
+# escritura. Es lo que reemplaza al NPM_TOKEN: no hay secreto que filtrar, que vencer, ni que
+# rotar, y nadie puede publicar en nombre de @healify desde otro repo u otro workflow.
+#
+# Provenance (https://docs.npmjs.com/generating-provenance-statements) se genera solo en este
+# modo: npm firma y publica de forma verificable desde qué commit y qué workflow salió cada
+# tarball.
 #
 # Requisitos que impone y que están cubiertos:
-#   - `id-token: write` (OIDC): sin esto npm no puede emitir la atestación.
-#   - `repository.url` en cada package.json apuntando a ESTE repo: npm valida que coincida.
-#   - npm >= 9.5 (Node 20 trae 10.x).
+#   - `id-token: write` (OIDC): sin esto no hay nada que npm pueda validar.
+#   - **npm >= 11.5.1**: es la versión que introdujo trusted publishing. Node 20 trae npm 10.x,
+#     así que se actualiza a mano abajo. Sin esto npm ni intenta el intercambio OIDC y falla
+#     pidiendo autenticación.
+#   - `repository.url` en cada package.json apuntando a ESTE repo.
+#   - El trusted publisher configurado en npmjs.com para LOS 7 paquetes, con workflow
+#     `release.yml`. Si cambia el nombre de este archivo, hay que actualizarlo allá.
 #
 # Se dispara con un tag `v*`. El publish es irreversible: un `npm unpublish` solo se puede
 # hacer dentro de las 72 h y quema la versión para siempre.
@@ -48,18 +57,19 @@ jobs:
           cache: 'npm'
           registry-url: 'https://registry.npmjs.org'
 
-      # Falla rápido y con un mensaje entendible. Sin esto, un token invalido, truncado o sin
-      # permisos sobre el scope se manifiesta recién en el publish como
-      # "E404 Not Found - PUT .../@healify%2freporter-core" — que parece que el paquete no
-      # existe, cuando en realidad es la forma que tiene el registry de decir "no tenes permiso
-      # de escritura" sin revelar si existe. Además deja asentado en el log CONTRA QUÉ CUENTA
-      # se autentica el token, que es el dato que hace falta cuando no coincide con el dueño.
-      - name: Verificar autenticación npm
+      # Trusted publishing existe recién desde npm 11.5.1 y Node 20 trae npm 10.x. Con la
+      # versión vieja npm ni intenta el intercambio OIDC: pide autenticación y falla con un
+      # error que no menciona nada de esto. Se verifica explícitamente para que, si algún día
+      # falla, el log diga por qué.
+      - name: Actualizar npm (trusted publishing necesita >= 11.5.1)
         run: |
-          echo "Token autenticado como: $(npm whoami)"
-          npm access list packages @healify
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          npm install -g npm@latest
+          NPM_V=$(npm --version)
+          echo "npm $NPM_V · node $(node --version)"
+          printf '11.5.1\n%s\n' "$NPM_V" | sort -V -C || {
+            echo "::error::npm $NPM_V no soporta trusted publishing (hace falta >= 11.5.1)"
+            exit 1
+          }
 
       - name: Install dependencies
         run: npm ci
@@ -84,5 +94,6 @@ jobs:
             npm publish --workspace="$pkg" --provenance --access public $DRY
             echo "::endgroup::"
           done
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        # Sin `env: NODE_AUTH_TOKEN` a propósito: la autorización sale del id-token de OIDC que
+        # npm negocia solo. Si alguna vez vuelve a aparecer un token acá, se pierde la garantía
+        # de que solo este workflow puede publicar.
