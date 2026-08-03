@@ -1,12 +1,23 @@
 import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { renderLocalReportJson, buildLocalRunFromEvents, readRepertoire, type HistoryEntry } from '@healify/reporter-core'
+import {
+  renderLocalReportJson,
+  buildLocalRunFromEvents,
+  readRepertoire,
+  buildAuditEntry,
+  writeAuditReport,
+  type HistoryEntry,
+  type AuditEntry,
+  type HealResponse,
+  type SelectorType,
+} from '@healify/reporter-core'
 import { wrapBrowser } from './wrap'
 import type { HealifyWebdriverIOOptions, HealingEvent } from './types'
 
 export class HealifyWebdriverIOPlugin {
   private readonly options: HealifyWebdriverIOOptions
   private readonly events: HealingEvent[] = []
+  private readonly auditEntries: AuditEntry[] = []
   // Se lee una sola vez, al construir el plugin. Solo entra en juego cuando esta corrida no
   // pudo verificar nada por su cuenta (ver reporter-core/src/repertoire.ts).
   private readonly repertoire: HistoryEntry[]
@@ -16,10 +27,48 @@ export class HealifyWebdriverIOPlugin {
       ...options,
       onEvent: (event: HealingEvent) => {
         this.events.push(event)
+        this.buildAuditFromEvent(event)
         options.onEvent?.(event)
       },
     }
     this.repertoire = readRepertoire(process.cwd())
+  }
+
+  private buildAuditFromEvent(event: HealingEvent): void {
+    try {
+      const selectorType: SelectorType = event.fixedSelector
+        ? event.fixedSelector.startsWith('//') || event.fixedSelector.startsWith('(')
+          ? 'XPATH'
+          : 'CSS'
+        : 'CSS'
+
+      const response: HealResponse = {
+        fixedSelector: event.fixedSelector ?? event.originalSelector,
+        confidence: event.confidence ?? 0,
+        verified: event.verified ?? false,
+        fromRepertoire: false,
+        explanation: event.explanation ?? '',
+        selectorType,
+        needsReview: false,
+        robustnessImprovement: 0,
+        alternatives: [],
+        technicalDetails: {
+          detectedIssue: `${event.type}: ${event.originalSelector}`,
+          proposedSolution: event.explanation ?? '',
+          accessibilityCompliant: false,
+          stableAgainstDOMChanges: false,
+        },
+      }
+
+      const entry = buildAuditEntry(
+        response,
+        { selector: event.originalSelector },
+        { errorMessage: `${event.type}: ${event.originalSelector}` }
+      )
+      this.auditEntries.push(entry)
+    } catch {
+      // Nunca romper la corrida por un fallo del audit.
+    }
   }
 
   /**
@@ -35,8 +84,9 @@ export class HealifyWebdriverIOPlugin {
   }
 
   /**
-   * Escribe healify-report.json con todos los eventos acumulados desde la última llamada.
-   * Mismo formato que Playwright/Cypress/Selenium.
+   * Escribe healify-report.json con todos los eventos acumulados desde la última llamada
+   * (o desde el inicio si nunca se llamó). Mismo formato que Playwright/Cypress/Selenium.
+   * También escribe healify-audit.json si hay entradas de auditoría.
    * Devuelve la cantidad de casos escritos.
    */
   flush(cwd: string = process.cwd()): number {
@@ -50,6 +100,17 @@ export class HealifyWebdriverIOPlugin {
     writeFileSync(join(cwd, 'healify-report.json'), renderLocalReportJson(run))
     const count = run.cases.length
     this.events.length = 0
+
+    if (this.auditEntries.length > 0) {
+      writeAuditReport(
+        [...this.auditEntries],
+        cwd,
+        this.options.projectName ?? 'webdriverio-project',
+        'WebdriverIO'
+      )
+      this.auditEntries.length = 0
+    }
+
     return count
   }
 }
