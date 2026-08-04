@@ -38,20 +38,15 @@ no se usa es superficie de ataque sin contrapartida.
 
 ---
 
-## 3. Decisión de producto: ¿qué hacemos con `archive/saas-full`? (tu criterio)
+## 3. ~~`archive/saas-full`~~ ✅ HECHO (2026-08-04)
 
-El repo tiene una rama `archive/saas-full` y 3 ramas `dependabot/*` sin mergear. Ahora que el
-repo es **público**, esa rama archive es visible para cualquiera.
+Borrada, local y remota. Antes de tocarla verifiqué que `589aefa` era **ancestro de `main`**:
+0 commits únicos, era solo un puntero 194 commits atrás. Su historia sigue viva dentro de
+`main` — no se perdió nada.
 
-No la audité con el mismo detalle que `main` (donde sí verifiqué: cero `.env` en el historial,
-cero tokens con formato real, cero claves privadas). Tres opciones:
-
-- **Dejarla** — si no te molesta que se vea código viejo de la etapa SaaS
-- **Borrarla** — `git push origin --delete archive/saas-full` (el historial local queda)
-- **Que la audite primero** — decime y la reviso con el mismo criterio que usé en `main`
-
-Las de dependabot son PRs automáticas de actualización de dependencias: podés mergearlas o
-cerrarlas desde la UI, sin apuro.
+Quedan 2 PRs de dependabot abiertas (#36 dev-deps, #37 `ts-morph` 21→28). La #37 es un salto
+de major en la única dependencia de runtime del CLI: **no la mergees a ciegas**, `fix-ast`
+depende de esa API.
 
 ---
 
