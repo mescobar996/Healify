@@ -30,7 +30,7 @@
     "access": "public"
   },
   "dependencies": {
-    "ts-morph": "^21.0.0"
+    "ts-morph": "^28.0.0"
   },
   "devDependencies": {
     "@healify/ai-local": "*",
