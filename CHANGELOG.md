@@ -42,7 +42,94 @@
   `MODULE_NOT_FOUND` interno de npm apenas se corre así. Arreglado invocando `cmd.exe /c npx
   ...` explícito, el patrón estándar de .NET para lanzar batch scripts sin una shell real.
 
+## 2.1.0 — 2026-08-04
+
+> ⚠️ **Si estás en 2.0.0, actualizá.** Esa versión anunciaba soporte de shadow DOM y de Page
+> Object Model, y las dos estaban rotas. Están arregladas acá. La 2.0.0 quedó deprecada en npm.
+
+Las dos features estrella de la 2.0.0 se publicaron sin funcionar del todo, y **ninguno de los
+700 tests unitarios lo detectó**. Los dos bugs aparecieron el mismo día, construyendo ejemplos
+que se corren de verdad contra un browser real — cada uno destapó el suyo.
+
+### Shadow DOM: el sondeo entraba, el reintento no
+
+Encontrado con `examples/cypress-shadow-dom`, corriendo Cypress contra un web component real.
+
+El sondeo **sí** atravesaba el shadow root y proponía bien: la sugerencia era
+`role('button', { name: 'Pagar ahora' })`, el nombre accesible verdadero del botón. Pero el
+reintento resolvía con `document.querySelector` (CSS) o `document.evaluate` (XPath), y **ninguno
+de los dos atraviesa shadow DOM por especificación**. Resultado: `la sugerencia tampoco encontró
+el elemento`. Correcta, pero irrecuperable — ciego justo en el último paso.
+
+Los tests no lo veían porque cubrían las dos mitades por separado: el sondeo contra un DOM
+falso, el resolver con selectores que nunca estaban dentro de un shadow root.
+
+- **`BROWSER_FIND_BY_ROLE_SCRIPT`**: busca un elemento por rol + nombre accesible caminando
+  shadow roots abiertos e iframes same-origin, con los mismos topes que el sondeo.
+- La derivación de rol y nombre se extrajo a un helper **compartido** entre sondeo y búsqueda.
+  Si cada uno usara su propio criterio, lo que uno ve el otro no lo encuentra — que es
+  literalmente el bug que se está arreglando.
+- El plugin de Cypress manda rol + nombre además del locator y expone `healify:find-script`;
+  el support cae a la búsqueda por shadow roots cuando el locator no resuelve. Los dos scripts
+  se piden juntos y se cachean, para no agregar round-trips al reintento.
+
+### Page Object Model: la feature estaba muerta en Playwright
+
+Encontrado con `examples/playwright-pom`.
+
+Con Playwright **siempre** hay evidencia del DOM, así que el motor casi siempre sugiere
+`role(...)`. Y `role('button', { name: 'X' })` no es un valor de selector —es una representación
+legible para el reporte— así que no es sustituible. Como el chequeo de "sustituible" corría
+**antes** de mirar dónde vivía el selector, toda sugerencia de rol se descartaba sin llegar nunca
+a la búsqueda en page objects. Medido: 2 de cada 3 casos caían ahí.
+
+O sea: la feature que más diferencia a Healify de Healenium (G3) era código muerto en el runner
+más usado, y el README prometía algo que no pasaba.
+
+- Se invirtió el orden en `fix()`: primero **dónde** está el selector, después si la sugerencia
+  es sustituible. Si está en el spec sigue yendo al AST (reescribe la llamada entera, que es
+  mejor); si está en un page object, se resuelve como string.
+- **`roleSuggestionToPlaywrightSelector()`**: `role('button', { name: 'X' })` →
+  `role=button[name="X"]`, la sintaxis del motor de selectores de Playwright, que sí se puede
+  pegar dentro de las comillas de un page object sin tocar el call site.
+  - Solo para Playwright: en Cypress (jQuery) o Selenium (CSS/XPath) sería un selector inválido,
+    y ahí el caso sigue quedando para revisión manual. Romper el page object es peor que no
+    tocarlo.
+  - Devuelve `null` sin nombre accesible: `role=button` a secas matchea de más, y un test que
+    pasa probando otro elemento es el peor resultado posible de una curación.
+- **Bug adicional**, del mismo día: `fix` resolvía el path posicional del reporte con
+  `args.find(a => !a.startsWith('--'))`. Mientras ningún flag llevó valor eso alcanzaba, pero
+  con `fix --watch --interval 500` tomaba `500` como nombre del reporte. Ahora hay un
+  `parseReportPath()` que sabe qué flags consumen el argumento siguiente.
+
+### Ejemplos que se corren
+
+Dos proyectos completos, no snippets. **CI los ejecuta contra un browser real en cada commit**:
+si dejan de funcionar, el build se pone en rojo. Un ejemplo que se pudre en silencio es peor que
+no tener ejemplo.
+
+- **`examples/playwright-pom`** — el selector vive en `pages/`, no en el test. Verificado
+  end-to-end: el test falla, `fix` cura el page object, el test pasa.
+- **`examples/cypress-shadow-dom`** — el botón está dentro de un web component, donde
+  `document.querySelectorAll('button')` devuelve cero. El test usa un selector inexistente y
+  pasa igual, curado en vivo.
+
+### Documentación
+
+El README hacía dos trabajos y ninguno bien: 434 líneas donde el pitch quedaba enterrado bajo
+snippets de cuatro runners y tablas de flags.
+
+- **README (102 líneas)**: qué problema resuelve y por qué no adivina. Se lee en un minuto.
+- **`docs/`**: instalación, comandos, configuración, GitHub Action, Jira y reportes. Cada página
+  con título propio y navegación, para que se sostenga sola si alguien cae ahí desde Google.
+- **`examples/README.md`**: índice de los ejemplos.
+
+711 tests (53 archivos), 0 warnings de lint.
+
 ## 2.0.0 — 2026-08-03
+
+> ⚠️ **Deprecada.** Shadow DOM y Page Object Model se anunciaron acá pero no funcionaban del
+> todo. Usá 2.1.0.
 
 **Hito, no ruptura.** El major marca que se cerró el análisis competitivo entero — los 18 gaps
 del `docs/research/competitive-gaps.md` están cerrados o descartados a conciencia — no un cambio
