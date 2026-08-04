@@ -42,6 +42,71 @@
   `MODULE_NOT_FOUND` interno de npm apenas se corre así. Arreglado invocando `cmd.exe /c npx
   ...` explícito, el patrón estándar de .NET para lanzar batch scripts sin una shell real.
 
+## 2.1.1 — 2026-08-04
+
+> ⚠️ **Si usás el adapter de Selenium, actualizá.** En 2.1.0 no curaba nada. No fallaba, no
+> avisaba: simplemente no hacía nada.
+
+Tres bugs, los tres encontrados igual que los de la 2.1.0 — construyendo ejemplos que corren
+contra un browser de verdad. Ninguno lo vio la suite unitaria.
+
+### Selenium: el adapter no curaba nunca
+
+Encontrado con `examples/selenium-live-heal`. Es el peor bug que tuvo Healify hasta ahora.
+
+La guarda de entrada del wrapper era `err instanceof error.NoSuchElementError`. Alcanza con que
+haya **dos instancias del módulo `selenium-webdriver`** en el árbol de dependencias (un
+monorepo, un install de pnpm, dos versiones conviviendo) para que la clase exista duplicada y esa
+comparación dé `false` sobre un error que sí lo es. El log lo decía en la cara:
+
+```
+[DBG] no es NoSuchElement: NoSuchElementError
+```
+
+El wrapper salía por ahí antes de sondear nada. Silencioso y total: el test fallaba igual que
+sin Healify instalado.
+
+Los tests unitarios no podían verlo porque ahí el mock y el plugin comparten la misma instancia
+del módulo, así que `instanceof` funciona siempre. Ahora la detección también mira `.name` y
+`.constructor.name`, y hay un test de regresión que simula la segunda instancia.
+
+### Selenium y WebdriverIO: el mismo bug de shadow DOM que Cypress
+
+El arreglado en 2.1.0 estaba solo en Cypress. Los otros dos adapters seguían resolviendo el
+reintento con `By.xpath()`, que no atraviesa shadow DOM: sugerencia correcta, elemento
+inalcanzable. Los dos caen ahora a `BROWSER_FIND_BY_ROLE_SCRIPT`.
+
+De paso, ese script pasó a leer sus argumentos de `arguments[0]/[1]`, así el **mismo string**
+sirve en los tres adapters sin envoltorios distintos.
+
+### Cypress: `healifyGet` moría por timeout justo cuando el selector no existía
+
+El `.then()` que envuelve al sondeo heredaba `defaultCommandTimeout` — el mismo presupuesto de
+tiempo que el sondeo iba a gastar esperando. Como el sondeo recién resuelve en el tick posterior
+al vencimiento, Cypress mataba el comando primero (siempre, no de a ratos) con *"cy.then() timed
+out … promise that never resolved"*.
+
+Dónde caía es lo peor: **solo cuando el selector no existía**, que es el único caso en el que
+Healify tiene algo que hacer. Con el selector presente resolvía al instante y todo parecía
+andar, así que el bug vivía escondido detrás del camino feliz.
+
+### Para que no vuelva a pasar
+
+Los tres ejemplos corren ahora **en CI, contra browsers reales**. Antes solo lo hacía
+`playwright-pom`; los de cura en vivo dependían de que alguien se acordara de correrlos a mano —
+y son justamente los que encontraron todos estos bugs.
+
+Un test verde no alcanza como prueba: si alguien arregla el HTML de un demo y el selector roto
+vuelve a existir, el test sigue pasando mientras Healify no hace nada. Por eso `scripts/
+assert-healed.mjs` verifica además el reporte, exigiendo `status: healed` **y** `verified: true`
+para el selector roto concreto de cada ejemplo.
+
+### Menor
+
+- `@healify/ai-local` tiene README: su página en npm estaba vacía.
+- `webdriverio-plugin/dist` era el único de los 7 paquetes que no estaba en `.gitignore`, así
+  que su build quedaba versionado. Ignorado y destrackeado.
+
 ## 2.1.0 — 2026-08-04
 
 > ⚠️ **Si estás en 2.0.0, actualizá.** Esa versión anunciaba soporte de shadow DOM y de Page

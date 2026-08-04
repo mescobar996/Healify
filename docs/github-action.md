@@ -27,7 +27,7 @@ jobs:
       - run: npm ci
       - run: npx playwright test
         continue-on-error: true   # we want the report even if the suite fails
-      - uses: mescobar996/Healify@v2.1.0
+      - uses: mescobar996/Healify@v2.1.1
 ```
 
 That pins an exact tag. `@v2` works as a moving alias for the latest `2.x`, and it's published.

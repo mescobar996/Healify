@@ -41,10 +41,32 @@ El test usa un selector que no existe **y pasa igual**: Healify entra al shadow 
 el botón por su nombre accesible y hace el click. Nadie tocó código.
 
 ```bash
-cd examples/cypress-shadow-dom && npm install && node serve.mjs & && npx cypress run
+cd examples/cypress-shadow-dom && npm install && node serve.mjs & npx cypress run
+```
+
+## [Selenium + cura en vivo](selenium-live-heal/)
+
+El caso donde **no se toca una sola línea del test**:
+
+```js
+const healed = plugin.wrap(driver)   // ← esto es todo
+```
+
+`healed` es el mismo driver de siempre. La diferencia aparece solo cuando un `findElement` no
+encuentra nada: ahí Healify sondea el DOM real —shadow roots incluidos— y devuelve el elemento
+en vez de tirar `NoSuchElementError`.
+
+```bash
+cd examples/selenium-live-heal && npm install && node serve.mjs & npm test
 ```
 
 ---
 
-Los dos ejemplos encontraron bugs reales en features ya publicadas, invisibles para 700 tests
-unitarios. Correr las cosas de verdad sigue siendo el mejor detector que tiene este proyecto.
+Los tres ejemplos encontraron bugs reales en features ya publicadas, invisibles para 715 tests
+unitarios. Cuatro bugs en total, uno de ellos tan grave que el adapter de Selenium no curaba
+absolutamente nunca.
+
+Correr las cosas de verdad sigue siendo el mejor detector que tiene este proyecto. Por eso los
+tres corren en CI contra browsers reales, y por eso no alcanza con que el test quede en verde:
+`scripts/assert-healed.mjs` exige que el reporte diga `healed` **y** `verified: true`. Si alguien
+arreglara el HTML de un demo, el test seguiría pasando y el ejemplo pasaría a mentir.
