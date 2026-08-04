@@ -13,6 +13,8 @@ import {
   resolveLocatorStrategy,
   domContextFromProbeResult,
   BROWSER_PROBE_SCRIPT,
+  BROWSER_FIND_BY_ROLE_SCRIPT,
+  parseRoleSuggestion,
   buildDefectId,
   severityFor,
   buildAuditEntry,
@@ -73,6 +75,10 @@ export function HealifyCypressPlugin(
   on('task', {
     'healify:probe-script': () => BROWSER_PROBE_SCRIPT,
 
+    // Buscador por rol+nombre que SÍ atraviesa shadow DOM — el fallback cuando el locator
+    // (CSS/XPath) no puede resolver porque el elemento vive detrás de un shadow root.
+    'healify:find-script': () => BROWSER_FIND_BY_ROLE_SCRIPT,
+
     'healify:heal': (input: HealTaskInput): HealTaskOutput => {
       const result = analyzeAndHeal({
         selector: input.selector,
@@ -83,6 +89,10 @@ export function HealifyCypressPlugin(
         customSynonyms: healifyConfig.customSynonyms,
         maxAlternatives: healifyConfig.maxAlternatives,
       })
+      // El rol/nombre viaja además del locator: es lo único con lo que el browser puede
+      // encontrar el elemento cuando vive dentro de un shadow root, donde ni querySelector ni
+      // XPath llegan.
+      const parsedRole = parseRoleSuggestion(result.fixedSelector)
       return {
         fixedSelector: result.fixedSelector,
         confidence: result.confidence,
@@ -90,6 +100,7 @@ export function HealifyCypressPlugin(
         fromRepertoire: result.fromRepertoire,
         explanation: result.explanation,
         locator: resolveLocatorStrategy(result.fixedSelector),
+        ...(parsedRole?.name ? { role: { role: parsedRole.role, name: parsedRole.name } } : {}),
       }
     },
 

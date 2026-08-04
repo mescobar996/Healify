@@ -46,6 +46,12 @@ vi.mock('@healify/reporter-core', () => ({
   resolveLocatorStrategy: mockResolveLocatorStrategy,
   domContextFromProbeResult: vi.fn((raw: unknown) => (Array.isArray(raw) && raw.length > 0 ? 'button "Comprar"' : undefined)),
   BROWSER_PROBE_SCRIPT: 'return [];',
+  BROWSER_FIND_BY_ROLE_SCRIPT: 'return null;',
+  // El mock del motor devuelve siempre `role('button', { name: 'Comprar' })`; alcanza con
+  // reconocer esa forma para verificar que el plugin propaga rol+nombre al browser.
+  parseRoleSuggestion: vi.fn((s: string) =>
+    s.startsWith("role('button'") ? { role: 'button', name: 'Comprar' } : null
+  ),
   buildDefectId: vi.fn((testFile: string | undefined, selector: string) => `DEF-${testFile ?? 'x'}-${selector}`),
   severityFor: vi.fn((status: string) => (status === 'unresolved' ? 'blocker' : 'minor')),
   appendRunRecord: vi.fn(),
@@ -262,6 +268,9 @@ describe('HealifyCypressPlugin — tasks de cy.healifyGet (live)', () => {
       fromRepertoire: false,
       explanation: 'texto real de la página',
       locator: { strategy: 'xpath', value: "//button[normalize-space(.)='Comprar']" },
+      // Rol + nombre viajan además del locator: son lo único con lo que el browser puede
+      // encontrar el elemento si vive dentro de un shadow root, donde XPath no llega.
+      role: { role: 'button', name: 'Comprar' },
     })
   })
 
@@ -307,5 +316,60 @@ describe('HealifyCypressPlugin — tasks de cy.healifyGet (live)', () => {
     })
 
     expect(result).toBeNull()
+  })
+})
+
+/**
+ * Regresión del bug encontrado dogfoodeando `examples/cypress-shadow-dom`: el sondeo veía el
+ * botón dentro del shadow root y proponía el selector correcto, pero el reintento usaba
+ * `document.querySelector`/`document.evaluate` — que NO atraviesan shadow DOM — y la curación
+ * se perdía justo en el último paso. El soporte de shadow DOM estaba hecho a medias.
+ */
+describe('HealifyCypressPlugin — buscador que atraviesa shadow DOM', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  function taskHandlers(on: Cypress.PluginEvents, handlers: Record<string, TaskHandler>) {
+    HealifyCypressPlugin(on, fakeConfig)
+    return handlers['task'] as Record<string, TaskHandler>
+  }
+
+  it("expone 'healify:find-script' para que el browser pueda caminar shadow roots", () => {
+    const { on, handlers } = createOnCapture()
+    const tasks = taskHandlers(on, handlers)
+
+    expect(tasks['healify:find-script']).toBeTypeOf('function')
+    expect(tasks['healify:find-script']()).toBe('return null;')
+  })
+
+  it("'healify:heal' manda rol + nombre además del locator", () => {
+    // Sin estos dos datos el browser no tiene con qué buscar: el locator (CSS/XPath) es
+    // correcto pero inalcanzable cuando el elemento está detrás de una frontera de shadow DOM.
+    const { on, handlers } = createOnCapture()
+    const tasks = taskHandlers(on, handlers)
+
+    const out = tasks['healify:heal']({ selector: '#old', pageElements: [] }) as {
+      role?: { role: string; name: string }
+    }
+
+    expect(out.role).toEqual({ role: 'button', name: 'Comprar' })
+  })
+
+  it('una sugerencia que no es de rol no lleva el campo — no hay nada que buscar por nombre', () => {
+    mockAnalyzeAndHeal.mockReturnValueOnce({
+      fixedSelector: "[data-testid='comprar']",
+      confidence: 0.95,
+      verified: true,
+      fromRepertoire: false,
+      explanation: '',
+      selectorType: 'TESTID',
+    })
+    const { on, handlers } = createOnCapture()
+    const tasks = taskHandlers(on, handlers)
+
+    const out = tasks['healify:heal']({ selector: '#old', pageElements: [] }) as { role?: unknown }
+
+    expect(out.role).toBeUndefined()
   })
 })

@@ -32,6 +32,108 @@ import { formatPageElements, type PageElement } from './page-snapshot'
  * ES5 a propósito (var, sin arrow functions): corre en cualquier motor de JS que el browser
  * bajo test tenga, sin asumir soporte moderno.
  */
+/**
+ * Derivación de rol y nombre accesible, compartida entre el sondeo y la búsqueda.
+ *
+ * Vive como constante y no duplicada en cada script a propósito: si el probe identifica un
+ * elemento con un criterio y el buscador lo busca con otro, la sugerencia que sale del sondeo
+ * no se puede volver a encontrar — que es exactamente el bug que tuvo `resolveElement` hasta
+ * la 2.1.0. Un solo lugar, un solo criterio.
+ */
+const ACCESSIBLE_NAME_HELPERS = `
+function healifyRoleOf(el, tag) {
+  var role = el.getAttribute('role');
+  if (role) return role;
+  if (tag === 'a') return el.hasAttribute('href') ? 'link' : null;
+  if (tag === 'button') return 'button';
+  if (tag === 'select') return 'combobox';
+  if (tag === 'textarea') return 'textbox';
+  if (tag === 'input') {
+    var type = (el.getAttribute('type') || 'text').toLowerCase();
+    if (type === 'checkbox') return 'checkbox';
+    if (type === 'radio') return 'radio';
+    if (type === 'submit' || type === 'button') return 'button';
+    if (type === 'search') return 'searchbox';
+    if (type === 'hidden') return null;
+    return 'textbox';
+  }
+  return null;
+}
+
+function healifyNameOf(el) {
+  var ariaLabel = el.getAttribute('aria-label');
+  if (ariaLabel) return ariaLabel.trim();
+  var text = (el.innerText || el.textContent || '').trim();
+  if (text) return text.split('\\n')[0].trim();
+  var placeholder = el.getAttribute('placeholder');
+  if (placeholder) return placeholder.trim();
+  if (typeof el.value === 'string' && el.value.trim()) return el.value.trim();
+  return '';
+}
+
+function healifyIsCandidate(el, tag) {
+  return el.getAttribute('role') ||
+    tag === 'button' || tag === 'a' || tag === 'input' || tag === 'textarea' || tag === 'select';
+}
+`.trim()
+
+/**
+ * Busca UN elemento por rol + nombre accesible, atravesando shadow DOM abierto e iframes
+ * same-origin. Devuelve el elemento (no un descriptor) o `null`.
+ *
+ * Existe porque el locator que sale de una curación no se podía volver a resolver cuando el
+ * elemento vivía dentro de un shadow root: `document.querySelector` y `document.evaluate`
+ * (XPath) **no atraviesan shadow DOM**, por especificación. El sondeo veía el botón, proponía
+ * el selector correcto, y el reintento no lo encontraba — el soporte de shadow DOM estaba
+ * hecho a medias, ciego justo en el último paso.
+ *
+ * Se invoca con dos argumentos, en este orden: `new Function('role', 'name', SCRIPT)(role, name)`.
+ * ES5 igual que el sondeo, por el mismo motivo: corre en el browser bajo test.
+ */
+export const BROWSER_FIND_BY_ROLE_SCRIPT = `
+var MAX_DEPTH = 12;
+var MAX_NODES = 3000;
+var seen = 0;
+
+${ACCESSIBLE_NAME_HELPERS}
+
+function healifySearch(root, depth) {
+  if (depth > MAX_DEPTH || seen >= MAX_NODES) return null;
+  var nodes = root.querySelectorAll('*');
+
+  for (var i = 0; i < nodes.length; i++) {
+    if (seen >= MAX_NODES) return null;
+    var el = nodes[i];
+    seen++;
+    var tag = el.tagName ? el.tagName.toLowerCase() : '';
+
+    if (healifyIsCandidate(el, tag) && healifyRoleOf(el, tag) === role && healifyNameOf(el) === name) {
+      return el;
+    }
+
+    if (el.shadowRoot) {
+      var inShadow = healifySearch(el.shadowRoot, depth + 1);
+      if (inShadow) return inShadow;
+    }
+
+    if (tag === 'iframe' || tag === 'frame') {
+      try {
+        var doc = el.contentDocument;
+        if (doc) {
+          var inFrame = healifySearch(doc, depth + 1);
+          if (inFrame) return inFrame;
+        }
+      } catch (e) {
+        /* cross-origin: inaccesible por seguridad */
+      }
+    }
+  }
+  return null;
+}
+
+return healifySearch(document, 0);
+`.trim()
+
 export const BROWSER_PROBE_SCRIPT = `
 var MAX_DEPTH = 12;
 var MAX_NODES = 3000;

@@ -6,7 +6,7 @@ export { renderLocalReportMarkdown, buildDefectId, severityFor, formatDuration, 
 export { isPlaywrightOnlySelector } from './selector-compat'
 export { parsePageSnapshot, formatPageElements, existsInPage, findMatches, bestElementFor, bestNameFor, selectorTokens, type PageElement } from './page-snapshot'
 export { parseRoleSuggestion, roleSuggestionToXPath, roleSuggestionToPlaywrightSelector, resolveLocatorStrategy, type LocatorResolution } from './role-locator'
-export { BROWSER_PROBE_SCRIPT, domContextFromProbeResult } from './browser-probe'
+export { BROWSER_PROBE_SCRIPT, BROWSER_FIND_BY_ROLE_SCRIPT, domContextFromProbeResult } from './browser-probe'
 export { parseHistoryLines, readRepertoire, findRepertoireMatch, type HistoryEntry } from './repertoire'
 export {
   loadConfig,

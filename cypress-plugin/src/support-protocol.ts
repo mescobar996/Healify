@@ -19,6 +19,14 @@ export interface HealTaskOutput {
   fromRepertoire: boolean
   explanation: string
   locator: { strategy: 'css' | 'xpath' | 'unsupported'; value: string | null }
+  /**
+   * Rol y nombre accesible de la sugerencia, cuando es de tipo rol.
+   *
+   * Viaja aparte del `locator` porque ni CSS ni XPath atraviesan shadow DOM: si el elemento
+   * vive dentro de un shadow root, el locator no lo resuelve por más correcto que sea, y hay
+   * que buscarlo caminando los shadow roots con estos dos datos.
+   */
+  role?: { role: string; name: string }
 }
 
 export type RecordEventType = 'healed' | 'no-suggestion' | 'not-convertible' | 'failed' | 'error'

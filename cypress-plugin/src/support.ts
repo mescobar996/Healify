@@ -117,11 +117,17 @@ let cachedProbeScript: string | null = null
 function healAndRetry(selector: string, timeout: number, confidenceThreshold: number): Cypress.Chainable<JQuery<HTMLElement>> {
   const testFile = Cypress.spec?.relative
 
+  // Los dos scripts se piden juntos y se cachean: el de sondeo (qué hay en la página) y el de
+  // búsqueda (dónde está exactamente, atravesando shadow roots). Traerlos de a uno agregaría un
+  // round-trip al reintento justo cuando el test ya está esperando.
   const probe$ = cachedProbeScript
     ? cy.wrap(cachedProbeScript, { log: false })
     : cy.task<string>('healify:probe-script', null, { log: false, timeout }).then((script) => {
         cachedProbeScript = script
-        return script
+        return cy.task<string>('healify:find-script', null, { log: false, timeout }).then((finder) => {
+          cachedFindScript = finder
+          return script
+        })
       })
 
   return probe$.then((script) => {
@@ -157,7 +163,11 @@ function healAndRetry(selector: string, timeout: number, confidenceThreshold: nu
           })
         }
 
-        const retryEl = resolveElement(win, healed.locator)
+        // Segundo intento caminando shadow roots: ni querySelector ni XPath los atraviesan, así
+        // que sin esto una curación correcta sobre un elemento de un web component se perdía
+        // justo en el último paso — el sondeo lo veía, la sugerencia era la buena, y el retry
+        // no lo encontraba.
+        const retryEl = resolveElement(win, healed.locator) ?? findAcrossShadowRoots(win, healed.role)
         if (!retryEl) {
           return recordEvent({
             type: 'failed',
@@ -202,6 +212,27 @@ function resolveElement(win: Cypress.AUTWindow, locator: HealTaskOutput['locator
     }
   }
   return null
+}
+
+let cachedFindScript: string | null = null
+
+/**
+ * Busca el elemento por rol + nombre accesible atravesando shadow DOM abierto e iframes
+ * same-origin, con el mismo criterio que usó el sondeo para identificarlo.
+ *
+ * Es sincrónico y sin `cy.task` a propósito: el script ya vino cacheado del sondeo previo
+ * (`healify:find-script` se pide una sola vez por corrida), así que este camino no agrega
+ * round-trips al reintento.
+ */
+function findAcrossShadowRoots(win: Cypress.AUTWindow, role: HealTaskOutput['role']): Element | null {
+  if (!role || !cachedFindScript) return null
+  try {
+    // Mismo motivo que en el sondeo: la función tiene que crearse en el realm de la AUT para
+    // que su `document` suelto sea el documento real de la página, no el del test-runner.
+    return (new win.Function('role', 'name', cachedFindScript)(role.role, role.name) as Element | null) ?? null
+  } catch {
+    return null
+  }
 }
 
 function recordEvent(event: RecordEventInput): Cypress.Chainable<null> {
