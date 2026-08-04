@@ -1,0 +1,14 @@
+{
+  "name": "healify-example-selenium-live-heal",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Ejemplo: Healify curando en vivo un selector roto dentro de un shadow root, con Selenium.",
+  "type": "module",
+  "scripts": {
+    "test": "node test.mjs"
+  },
+  "devDependencies": {
+    "@healify/selenium-plugin": "^2.1.0",
+    "selenium-webdriver": "^4.40.0"
+  }
+}

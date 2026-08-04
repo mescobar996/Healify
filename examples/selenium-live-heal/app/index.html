@@ -1,0 +1,45 @@
+<!doctype html>
+<!--
+  Panel de admin con un web component. El boton de guardar vive DENTRO del shadow root de
+  <save-panel>, y su id lo genera el bundler: cambia en cada build.
+
+  Desde afuera, `document.querySelectorAll('button')` devuelve 0. Probalo en la consola.
+-->
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Admin — demo Healify (Selenium)</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 30rem; margin: 3rem auto; padding: 0 1rem; }
+    #estado { margin-top: 1.5rem; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <h1>Configuración</h1>
+  <label for="nombre">Nombre del proyecto</label>
+  <input id="nombre" value="Healify" />
+
+  <save-panel></save-panel>
+
+  <p id="estado">Sin guardar</p>
+
+  <script>
+    class SavePanel extends HTMLElement {
+      connectedCallback() {
+        const shadow = this.attachShadow({ mode: 'open' })
+        shadow.innerHTML = `
+          <style>
+            button { font: inherit; margin-top: 1rem; padding: .6rem 1.1rem; border: 0;
+                     border-radius: 6px; background: #16a34a; color: #fff; cursor: pointer; }
+          </style>
+          <button id="save-btn-4f2a9c">Guardar cambios</button>
+        `
+        shadow.querySelector('button').addEventListener('click', () => {
+          document.getElementById('estado').textContent = 'Cambios guardados'
+        })
+      }
+    }
+    customElements.define('save-panel', SavePanel)
+  </script>
+</body>
+</html>
