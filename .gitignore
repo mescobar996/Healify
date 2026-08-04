@@ -79,6 +79,10 @@ selenium-plugin/dist
 selenium-plugin/node_modules
 ai-local/dist
 ai-local/node_modules
+# Se agrego tarde: hasta entonces el dist/ de este paquete quedaba versionado por descuido
+# (era el unico de los 7), asi que el repo cargaba un build viejo que nadie miraba.
+webdriverio-plugin/dist
+webdriverio-plugin/node_modules
 cypress-plugin/tests/cypress/videos
 
 # Superpowers brainstorming companion artifacts (ephemeral, not project content)

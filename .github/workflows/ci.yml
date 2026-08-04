@@ -204,6 +204,46 @@ jobs:
         working-directory: examples/playwright-pom
         run: npx playwright test
 
+      # Los dos ejemplos de cura EN VIVO (Cypress y Selenium) no tienen etapa de "fix": el test
+      # pasa o no pasa. Por eso no alcanza con `npm test` — si mañana alguien arregla el HTML del
+      # demo y el selector roto vuelve a existir, el test seguiría verde mientras Healify no hace
+      # nada. Se verifica además el reporte: tiene que decir `healed`, o el ejemplo miente.
+      #
+      # No es hipotético: los dos bugs que encontraron estos ejemplos (el retry que no cruzaba
+      # shadow DOM, y el `instanceof` que hacía que el adapter de Selenium no curara nunca) eran
+      # invisibles para la suite unitaria. Sin este job vuelven a serlo.
+      - name: cypress-shadow-dom — cura en vivo dentro del shadow root
+        working-directory: examples/cypress-shadow-dom
+        run: |
+          ln -s ../../node_modules node_modules
+          node serve.mjs &
+          # curl en loop y no `wait-on`: el ejemplo no lo tiene instalado y `npx wait-on` lo
+          # bajaría de npm en cada corrida, agregando una dependencia de red al job.
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:4322 > /dev/null && break; sleep 1; done
+          npx cypress run
+
+      - name: cypress-shadow-dom — el reporte confirma que curó (y no que el selector andaba)
+        working-directory: examples/cypress-shadow-dom
+        run: node ../../scripts/assert-healed.mjs healify-report.json '#pay-btn-a1b2c3'
+
+      - name: selenium-live-heal — cura en vivo dentro del shadow root
+        working-directory: examples/selenium-live-heal
+        run: |
+          ln -s ../../node_modules node_modules
+          node serve.mjs &
+          # curl en loop y no `wait-on`: el ejemplo no lo tiene instalado y `npx wait-on` lo
+          # bajaría de npm en cada corrida, agregando una dependencia de red al job.
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:4323 > /dev/null && break; sleep 1; done
+          npm test 2>&1 | tee run.log
+          grep -q "^OK:" run.log || {
+            echo "::error::El test de Selenium no llegó al OK — el adapter no curó."
+            exit 1
+          }
+
+      - name: selenium-live-heal — el reporte confirma que curó
+        working-directory: examples/selenium-live-heal
+        run: node ../../scripts/assert-healed.mjs healify-report.json '#save-btn-a1b2c3'
+
   # ─── Smoke Node 18 ─────────────────────────────────────────────────────────
   # `engines: ">=18.0.0"` es una promesa al que instala el paquete, y hasta ahora no la
   # verificaba nada: la suite no puede correr en 18 (Vitest 4 necesita 20+), así que se
