@@ -83,6 +83,25 @@ jobs:
       - name: ESLint (0 warnings)
         run: npx eslint . --max-warnings=0
 
+      # El Marketplace rechaza descripciones de 125 caracteres o mas, y ese error aparece recien
+      # al intentar publicar el release — no antes. Verificarlo aca lo convierte en un fallo de
+      # CI en el commit que lo rompe, en vez de una sorpresa el dia que quieras publicar.
+      - name: action.yml valido para el Marketplace
+        run: |
+          DESC=$(node -e "
+            const fs=require('fs');
+            const m=fs.readFileSync('action.yml','utf8').match(/^description:\s*'(.*)'\s*$/m);
+            if(!m){console.error('no encontre description en action.yml');process.exit(1)}
+            process.stdout.write(m[1]);
+          ")
+          LEN=${#DESC}
+          echo "description: $LEN caracteres (limite del Marketplace: 125)"
+          if [ "$LEN" -ge 125 ]; then
+            echo "::error::La description de action.yml tiene $LEN caracteres. El Marketplace exige menos de 125."
+            exit 1
+          fi
+
+
   # ─── Unit Tests ────────────────────────────────────────────────────────────
   # Multi-OS porque Healify es sensible a Windows (paths, CRLF), y multi-Node porque 22 es
   # donde cambia el `require()` de ESM, que es justo lo que hace el loader de

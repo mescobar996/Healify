@@ -96,7 +96,17 @@ jobs:
           if [ "${{ inputs.dry-run }}" = "true" ]; then DRY="--dry-run"; fi
           for pkg in reporter-core test-runner cypress-plugin selenium-plugin webdriverio-plugin ai-local cli; do
             echo "::group::publish $pkg"
-            npm publish --workspace="$pkg" --provenance --access public $DRY
+            NAME=$(node -p "require('./$pkg/package.json').name")
+            VER=$(node -p "require('./$pkg/package.json').version")
+            # Idempotente: si esa version ya esta en npm, se saltea en vez de fallar. Sin esto,
+            # re-apuntar un tag (por ejemplo para corregir metadata del action.yml) re-dispara
+            # este workflow y muere con E403 "cannot publish over previously published version",
+            # dejando una corrida en rojo que no significa nada.
+            if npm view "$NAME@$VER" version > /dev/null 2>&1; then
+              echo "$NAME@$VER ya esta publicado — se saltea"
+            else
+              npm publish --workspace="$pkg" --provenance --access public $DRY
+            fi
             echo "::endgroup::"
           done
         # Sin `env: NODE_AUTH_TOKEN` a propósito: la autorización sale del id-token de OIDC que

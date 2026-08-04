@@ -1,7 +1,9 @@
 # Vive en la RAÍZ del repo a propósito: GitHub Marketplace solo publica actions cuyo
 # `action.yml` está en el directorio raíz. El código sigue viviendo en `gh-action/`.
 name: 'Healify — Check broken selectors'
-description: 'Runs Healify doctor + fix --dry-run and posts a PR comment with broken selectors and suggestions. 100% local, no AI, no cloud. Never modifies files.'
+# El Marketplace rechaza descripciones de 125 caracteres o más. Esta tiene 111: si la editás,
+# contá antes de pushear — el error solo aparece al intentar publicar el release, no en CI.
+description: 'Finds broken test selectors and comments the fix on your PR. 100% local, no AI, no cloud. Never modifies files.'
 author: 'Matías Escobar'
 branding:
   icon: 'search'
