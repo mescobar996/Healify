@@ -1,51 +1,56 @@
-[← Volver a Healify](../README.md)
+[← Back to Healify](../README.md)
 
 ---
 
-# Documentación
+# Documentation
 
-Todo lo que necesitás para usar Healify en serio. Si venís de cero, empezá por
-[Instalación](instalacion.md) — son dos minutos.
+Everything you need to use Healify for real. Coming in cold? Start with
+[Installation](instalacion.md) — it takes two minutes.
 
-## Empezar
+> **Heads up:** the individual pages below are written in Spanish. The code snippets,
+> flags and config keys are identical in any language, so they're followable either way —
+> and an English translation is on the way. If something isn't clear,
+> [open an issue](https://github.com/mescobar996/Healify/issues) and I'll prioritise that page.
 
-| | |
-|---|---|
-| **[Instalación](instalacion.md)** | Enchufarlo a Playwright, Cypress, Selenium o WebdriverIO. Es un snippet por runner. |
-| **[Comandos](cli.md)** | `doctor`, `fix`, `dashboard`, `flake`, `watch` y el resto del CLI. |
-
-## Cuando lo quieras afinar
+## Get started
 
 | | |
 |---|---|
-| **[Configuración](configuracion.md)** | Umbrales de confianza, apagar el sanado, test-ids propios. Opcional: anda sin nada de esto. |
-| **[Reportes y dashboard](reportes.md)** | El HTML que le pasás al equipo, el histórico y la detección de tests flaky. |
+| **[Installation](instalacion.md)** | Wiring it into Playwright, Cypress, Selenium or WebdriverIO. One snippet per runner. |
+| **[Commands](cli.md)** | `doctor`, `fix`, `dashboard`, `flake`, `watch` and the rest of the CLI. |
 
-## Integraciones
-
-| | |
-|---|---|
-| **[GitHub Action](github-action.md)** | Que comente los selectores rotos en cada PR. Nunca toca archivos. |
-| **[Reporte a Jira / webhook](jira.md)** | Los defectos entran a tu backlog con evidencia. Opt-in, apagado por default. |
-
-## Ejemplos que se corren
-
-No son snippets: son proyectos completos, verificados en CI contra un browser real.
+## Tune it
 
 | | |
 |---|---|
-| **[Playwright + Page Object Model](../examples/playwright-pom/)** | El selector vive en `pages/`, no en el test. Healify lo encuentra igual. |
-| **[Cypress + Shadow DOM](../examples/cypress-shadow-dom/)** | El botón está dentro de un web component, donde `querySelector` devuelve cero. |
+| **[Configuration](configuracion.md)** | Confidence thresholds, turning healing off, your own test-ids. Optional — it works with none of this. |
+| **[Reports & dashboard](reportes.md)** | The HTML report you hand to your team, the healing history, and flaky-test detection. |
 
-## Para entender el porqué
+## Integrations
 
 | | |
 |---|---|
-| **[Análisis competitivo](research/competitive-gaps.md)** | Los 15 proyectos del rubro que se investigaron antes de escribir una línea, y qué le faltaba a Healify frente a cada uno. |
-| **[Adapters](adapters/README.md)** | Usar el motor desde Python, Java, C# o lo que tengas, vía JSON por stdin/stdout. |
-| **[IA local opcional](ai/README.md)** | `healify ai` con Ollama. Opcional y también 100% local. |
+| **[GitHub Action](github-action.md)** | Comments broken selectors on every PR. Never modifies files. |
+| **[Jira / webhook reporting](jira.md)** | Defects land in your backlog with evidence. Opt-in, off by default. |
+
+## Examples that actually run
+
+Not snippets: complete projects, verified in CI against a real browser.
+
+| | |
+|---|---|
+| **[Playwright + Page Object Model](../examples/playwright-pom/)** | The selector lives in `pages/`, not in the test. Healify finds it anyway. |
+| **[Cypress + Shadow DOM](../examples/cypress-shadow-dom/)** | The button is inside a web component, where `querySelector` returns zero. |
+
+## Understanding the why
+
+| | |
+|---|---|
+| **[Competitive analysis](research/competitive-gaps.md)** | The 15 tools in this space that were researched before writing a line, and what Healify was missing against each. |
+| **[Adapters](adapters/README.md)** | Using the engine from Python, Java, C# or whatever you have, over JSON on stdin/stdout. |
+| **[Optional local AI](ai/README.md)** | `healify ai` with Ollama. Optional, and also 100% local. |
 
 ---
 
-¿Falta algo o algo no se entiende? [Abrí un issue](https://github.com/mescobar996/Healify/issues) —
-la documentación que nadie entiende es un bug.
+Something missing or unclear? [Open an issue](https://github.com/mescobar996/Healify/issues) —
+documentation nobody understands is a bug.

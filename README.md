@@ -1,8 +1,8 @@
 <div align="center">
   <img src="logo-healify.png" alt="Healify" width="110" />
 
-  <h3>Tus tests se rompieron. No cambió nada del producto.</h3>
-  <p><strong>Healify encuentra el selector nuevo y te lo arregla.<br/>Sin mandar una sola línea de tu código a ningún lado.</strong></p>
+  <h3>Your tests broke. Nothing about the product changed.</h3>
+  <p><strong>Healify finds the new selector and fixes it for you.<br/>Without sending a single line of your code anywhere.</strong></p>
 
   <a href="https://www.npmjs.com/package/@healify/cli"><img src="https://img.shields.io/npm/v/@healify/cli" alt="npm" /></a>
   <a href="https://github.com/mescobar996/Healify/actions/workflows/ci.yml"><img src="https://github.com/mescobar996/Healify/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
@@ -11,19 +11,21 @@
   <img src="https://img.shields.io/badge/100%25%20local-true-blue" />
 
   <p>
-    <a href="docs/"><strong>Documentación</strong></a> ·
-    <a href="examples/"><strong>Ejemplos</strong></a> ·
-    <a href="https://healify-sigma.vercel.app"><strong>Demo</strong></a>
+    <a href="docs/"><strong>Docs</strong></a> ·
+    <a href="examples/"><strong>Examples</strong></a> ·
+    <a href="https://healify-sigma.vercel.app"><strong>Demo</strong></a> ·
+    <a href="README.es.md">Español</a>
   </p>
 </div>
 
 ---
 
-Un botón cambió de `id` en el último deploy. No cambió el producto, cambió un atributo que nunca
-debió importar. Y aun así tu suite se pinta de rojo, alguien frena lo que estaba haciendo, abre
-el DOM a mano y busca la única línea que hay que tocar.
+A button changed its `id` in the last deploy. The product didn't change — an attribute generated
+by your bundler did, one that should never have mattered. And yet your suite goes red, someone
+drops what they were doing, opens the DOM by hand and hunts for the single line that needs
+touching.
 
-Eso no es un bug. Es un selector frágil. Y pasa todos los días.
+That's not a bug. It's a brittle selector. And it happens every day.
 
 ```bash
 npx @healify/cli@latest fix
@@ -31,63 +33,63 @@ npx @healify/cli@latest fix
 
 ```diff
 - await page.click('#add-to-cart-btn')
-+ await page.getByRole('button', { name: 'Agregar al carrito' }).click()
++ await page.getByRole('button', { name: 'Add to cart' }).click()
 ```
 
-Listo. Volvé a lo tuyo.
+Done. Back to what you were doing.
 
 ---
 
-## No adivina
+## It doesn't guess
 
-Cuando tu test falla, tu framework ya guardó cómo estaba la página en ese momento exacto.
-Healify lee **esa** evidencia: ahí había un botón cuyo nombre accesible era *"Agregar al
-carrito"*. La sugerencia sale verificada contra lo que había de verdad en pantalla — no contra
-lo que un modelo de lenguaje cree que probablemente estaba.
+When your test fails, your framework has **already captured** what the page looked like at that
+exact moment. Healify reads *that* evidence: there was a button whose accessible name was *"Add
+to cart"*. The suggestion is verified against what was actually on screen — not against what a
+language model thinks was probably there.
 
-Por eso propone roles y nombres accesibles en vez de otro `id`: el `id` nuevo también va a
-cambiar en el próximo deploy. El botón que dice "Agregar al carrito", no.
+That's why it proposes roles and accessible names instead of another `id`: the new `id` will
+change in the next deploy too. The button that says "Add to cart" won't.
 
-## Nada sale de tu máquina
+## Nothing leaves your machine
 
-Sin nube. Sin cuenta. Sin API key. Sin telemetría. Sin IA generativa.
+No cloud. No account. No API key. No telemetry. No generative AI.
 
-El análisis corre entero donde vos estás, con heurística determinista: mismo input, mismo
-resultado, siempre. Si trabajás con datos sensibles —banca, salud, gobierno— eso no es una
-comodidad, es el único requisito que importa.
+The whole analysis runs where you are, on deterministic heuristics: same input, same output,
+every time. If you work with sensitive data — banking, healthcare, government — that isn't a
+convenience, it's the only requirement that matters.
 
-## Contra lo que hay hoy
+## How it compares
 
-Antes de escribir una línea se investigaron 15 herramientas del rubro
-([el análisis completo](docs/research/competitive-gaps.md)):
+Fifteen tools in this space were researched before a single line was written
+([full analysis](docs/research/competitive-gaps.md)):
 
-| | Healify | El resto |
+| | Healify | Everyone else |
 |---|---|---|
-| **Para empezar** | Un `npx` | Docker + Postgres, o una cuenta en la nube |
-| **Cómo decide** | Heurística determinista, auditable | Un LLM que contesta distinto cada vez, o un backend cerrado |
-| **Qué sale de tu máquina** | Nada | El DOM de tu aplicación |
-| **Costo** | Cero, para siempre | Infraestructura, o suscripción |
+| **To get started** | One `npx` | Docker + Postgres, or a cloud account |
+| **How it decides** | Deterministic heuristics you can audit | An LLM that answers differently every time, or a closed backend |
+| **What leaves your machine** | Nothing | Your app's DOM |
+| **Cost** | Zero, forever | Infrastructure to run, or a subscription |
 
-Healenium, el referente del rubro, está muy bien hecho. Resuelve otro problema: el tuyo no
-necesita una base de datos, necesita que alguien te diga "usá esto" antes de que se te enfríe
-el café.
+Healenium, the reference implementation in this space, is genuinely well built. It solves a
+different problem: yours doesn't need a database, it needs someone to tell you "use this instead"
+before your coffee gets cold.
 
-## Funciona donde ya estás
+## Works where you already are
 
 **Playwright · Cypress · Selenium · WebdriverIO**
 
-Incluso donde cuesta: dentro de web components con shadow DOM, en iframes, y cuando el selector
-vive en un page object y no en el test.
+Including the hard places: inside web components with shadow DOM, across iframes, and when the
+selector lives in a page object rather than in the test itself.
 
 ---
 
 <div align="center">
 
-### Empezá acá
+### Start here
 
-**[📖 Documentación](docs/)** — instalación, comandos, configuración
+**[📖 Documentation](docs/)** — installation, commands, configuration
 
-**[▶️ Ejemplos que se corren](examples/)** — proyectos completos, verificados en CI contra un browser real
+**[▶️ Examples that actually run](examples/)** — complete projects, verified in CI against a real browser
 
 **[🌐 Demo](https://healify-sigma.vercel.app)**
 
@@ -96,7 +98,7 @@ vive en un page object y no en el test.
 ---
 
 <sub>
-MIT · Cada release firmado y trazable a un commit público
-(<a href="https://search.sigstore.dev/?packageName=%40healify">verificalo acá</a>) ·
+MIT · Every release signed and traceable to a public commit
+(<a href="https://search.sigstore.dev/?packageName=%40healify">verify it here</a>) ·
 © 2026 Matías Escobar, Rosario, Argentina
 </sub>
