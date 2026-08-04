@@ -213,6 +213,7 @@ var require_role_locator = __commonJS({
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.parseRoleSuggestion = parseRoleSuggestion;
+    exports2.roleSuggestionToPlaywrightSelector = roleSuggestionToPlaywrightSelector;
     exports2.roleSuggestionToXPath = roleSuggestionToXPath;
     exports2.resolveLocatorStrategy = resolveLocatorStrategy2;
     var selector_compat_1 = require_selector_compat();
@@ -222,6 +223,12 @@ var require_role_locator = __commonJS({
         return { role: withName[1], name: withName[2] };
       const roleOnly = selector.match(/^role\('([^']+)'\)$/);
       return roleOnly ? { role: roleOnly[1] } : null;
+    }
+    function roleSuggestionToPlaywrightSelector(selector) {
+      const parsed = parseRoleSuggestion(selector);
+      if (!parsed || parsed.name === void 0 || parsed.name === "")
+        return null;
+      return `role=${parsed.role}[name="${parsed.name.replace(/"/g, '\\"')}"]`;
     }
     function xpathLiteral(value) {
       if (!value.includes("'"))
@@ -2051,9 +2058,88 @@ var require_browser_probe = __commonJS({
   "../reporter-core/dist/browser-probe.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
-    exports2.BROWSER_PROBE_SCRIPT = void 0;
+    exports2.BROWSER_PROBE_SCRIPT = exports2.BROWSER_FIND_BY_ROLE_SCRIPT = void 0;
     exports2.domContextFromProbeResult = domContextFromProbeResult2;
     var page_snapshot_1 = require_page_snapshot();
+    var ACCESSIBLE_NAME_HELPERS = `
+function healifyRoleOf(el, tag) {
+  var role = el.getAttribute('role');
+  if (role) return role;
+  if (tag === 'a') return el.hasAttribute('href') ? 'link' : null;
+  if (tag === 'button') return 'button';
+  if (tag === 'select') return 'combobox';
+  if (tag === 'textarea') return 'textbox';
+  if (tag === 'input') {
+    var type = (el.getAttribute('type') || 'text').toLowerCase();
+    if (type === 'checkbox') return 'checkbox';
+    if (type === 'radio') return 'radio';
+    if (type === 'submit' || type === 'button') return 'button';
+    if (type === 'search') return 'searchbox';
+    if (type === 'hidden') return null;
+    return 'textbox';
+  }
+  return null;
+}
+
+function healifyNameOf(el) {
+  var ariaLabel = el.getAttribute('aria-label');
+  if (ariaLabel) return ariaLabel.trim();
+  var text = (el.innerText || el.textContent || '').trim();
+  if (text) return text.split('\\n')[0].trim();
+  var placeholder = el.getAttribute('placeholder');
+  if (placeholder) return placeholder.trim();
+  if (typeof el.value === 'string' && el.value.trim()) return el.value.trim();
+  return '';
+}
+
+function healifyIsCandidate(el, tag) {
+  return el.getAttribute('role') ||
+    tag === 'button' || tag === 'a' || tag === 'input' || tag === 'textarea' || tag === 'select';
+}
+`.trim();
+    exports2.BROWSER_FIND_BY_ROLE_SCRIPT = `
+var MAX_DEPTH = 12;
+var MAX_NODES = 3000;
+var seen = 0;
+
+${ACCESSIBLE_NAME_HELPERS}
+
+function healifySearch(root, depth) {
+  if (depth > MAX_DEPTH || seen >= MAX_NODES) return null;
+  var nodes = root.querySelectorAll('*');
+
+  for (var i = 0; i < nodes.length; i++) {
+    if (seen >= MAX_NODES) return null;
+    var el = nodes[i];
+    seen++;
+    var tag = el.tagName ? el.tagName.toLowerCase() : '';
+
+    if (healifyIsCandidate(el, tag) && healifyRoleOf(el, tag) === role && healifyNameOf(el) === name) {
+      return el;
+    }
+
+    if (el.shadowRoot) {
+      var inShadow = healifySearch(el.shadowRoot, depth + 1);
+      if (inShadow) return inShadow;
+    }
+
+    if (tag === 'iframe' || tag === 'frame') {
+      try {
+        var doc = el.contentDocument;
+        if (doc) {
+          var inFrame = healifySearch(doc, depth + 1);
+          if (inFrame) return inFrame;
+        }
+      } catch (e) {
+        /* cross-origin: inaccesible por seguridad */
+      }
+    }
+  }
+  return null;
+}
+
+return healifySearch(document, 0);
+`.trim();
     exports2.BROWSER_PROBE_SCRIPT = `
 var MAX_DEPTH = 12;
 var MAX_NODES = 3000;
@@ -2935,8 +3021,8 @@ var require_dist = __commonJS({
   "../reporter-core/dist/index.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
-    exports2.postJson = exports2.createJiraClient = exports2.detectFlakyTests = exports2.serializeRunRecord = exports2.parseRunLines = exports2.readRunRecords = exports2.appendRunRecord = exports2.computeRebroken = exports2.computeTopRecurrent = exports2.renderDashboardHtml = exports2.buildDashboardStats = exports2.reportDefects = exports2.buildAgileDefects = exports2.DEFAULT_AGILE_PRIORITIES = exports2.defaultAgile = exports2.resolveAgile = exports2.DEFAULT_THRESHOLDS = exports2.resolveThresholds = exports2.loadConfig = exports2.findRepertoireMatch = exports2.readRepertoire = exports2.parseHistoryLines = exports2.domContextFromProbeResult = exports2.BROWSER_PROBE_SCRIPT = exports2.resolveLocatorStrategy = exports2.roleSuggestionToXPath = exports2.parseRoleSuggestion = exports2.selectorTokens = exports2.bestNameFor = exports2.bestElementFor = exports2.findMatches = exports2.existsInPage = exports2.formatPageElements = exports2.parsePageSnapshot = exports2.isPlaywrightOnlySelector = exports2.SEVERITY_LABEL = exports2.environmentRows = exports2.formatDuration = exports2.severityFor = exports2.buildDefectId = exports2.renderLocalReportMarkdown = exports2.statsFromCases = exports2.baseEnvironment = exports2.buildLocalRunFromEvents = exports2.printSummary = exports2.renderLocalReportJson = exports2.renderLocalReportHtml = exports2.runLocalHealing = exports2.analyzeAndHeal = exports2.extractSelectorFromError = void 0;
-    exports2.flushPlugin = exports2.buildAuditFromEvent = exports2.appendAuditEntry = exports2.writeAuditReport = exports2.buildAuditEntry = void 0;
+    exports2.detectFlakyTests = exports2.serializeRunRecord = exports2.parseRunLines = exports2.readRunRecords = exports2.appendRunRecord = exports2.computeRebroken = exports2.computeTopRecurrent = exports2.renderDashboardHtml = exports2.buildDashboardStats = exports2.reportDefects = exports2.buildAgileDefects = exports2.DEFAULT_AGILE_PRIORITIES = exports2.defaultAgile = exports2.resolveAgile = exports2.DEFAULT_THRESHOLDS = exports2.resolveThresholds = exports2.loadConfig = exports2.findRepertoireMatch = exports2.readRepertoire = exports2.parseHistoryLines = exports2.domContextFromProbeResult = exports2.BROWSER_FIND_BY_ROLE_SCRIPT = exports2.BROWSER_PROBE_SCRIPT = exports2.resolveLocatorStrategy = exports2.roleSuggestionToPlaywrightSelector = exports2.roleSuggestionToXPath = exports2.parseRoleSuggestion = exports2.selectorTokens = exports2.bestNameFor = exports2.bestElementFor = exports2.findMatches = exports2.existsInPage = exports2.formatPageElements = exports2.parsePageSnapshot = exports2.isPlaywrightOnlySelector = exports2.SEVERITY_LABEL = exports2.environmentRows = exports2.formatDuration = exports2.severityFor = exports2.buildDefectId = exports2.renderLocalReportMarkdown = exports2.statsFromCases = exports2.baseEnvironment = exports2.buildLocalRunFromEvents = exports2.printSummary = exports2.renderLocalReportJson = exports2.renderLocalReportHtml = exports2.runLocalHealing = exports2.analyzeAndHeal = exports2.extractSelectorFromError = void 0;
+    exports2.flushPlugin = exports2.buildAuditFromEvent = exports2.appendAuditEntry = exports2.writeAuditReport = exports2.buildAuditEntry = exports2.postJson = exports2.createJiraClient = void 0;
     var selector_extractor_1 = require_selector_extractor();
     Object.defineProperty(exports2, "extractSelectorFromError", { enumerable: true, get: function() {
       return selector_extractor_1.extractSelectorFromError;
@@ -3020,12 +3106,18 @@ var require_dist = __commonJS({
     Object.defineProperty(exports2, "roleSuggestionToXPath", { enumerable: true, get: function() {
       return role_locator_1.roleSuggestionToXPath;
     } });
+    Object.defineProperty(exports2, "roleSuggestionToPlaywrightSelector", { enumerable: true, get: function() {
+      return role_locator_1.roleSuggestionToPlaywrightSelector;
+    } });
     Object.defineProperty(exports2, "resolveLocatorStrategy", { enumerable: true, get: function() {
       return role_locator_1.resolveLocatorStrategy;
     } });
     var browser_probe_1 = require_browser_probe();
     Object.defineProperty(exports2, "BROWSER_PROBE_SCRIPT", { enumerable: true, get: function() {
       return browser_probe_1.BROWSER_PROBE_SCRIPT;
+    } });
+    Object.defineProperty(exports2, "BROWSER_FIND_BY_ROLE_SCRIPT", { enumerable: true, get: function() {
+      return browser_probe_1.BROWSER_FIND_BY_ROLE_SCRIPT;
     } });
     Object.defineProperty(exports2, "domContextFromProbeResult", { enumerable: true, get: function() {
       return browser_probe_1.domContextFromProbeResult;
