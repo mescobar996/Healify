@@ -1,59 +1,61 @@
-[← Documentación](README.md) · [Healify](../README.md)
+[← Documentation](README.md) · [Healify](../README.md) · [Español](cli.es.md)
 
 ---
 
-# Comandos
+# Commands
 
-> Todo lo que hace el CLI. Nada acá manda datos a ningún lado.
+> Everything the CLI does. None of it sends data anywhere.
 
-| Comando | Qué hace |
+| Command | What it does |
 |---|---|
-| `healify init` | Detecta tu framework (o te pregunta cuál armar si no hay ninguno), instala lo que falte y configura el reporter/plugin. No genera tests. |
-| `healify doctor` | Verifica que Healify esté instalado y bien configurado. |
-| `healify fix [reporte.json]` | Aplica las sugerencias de mayor confianza directo en tus archivos de test. |
-| `healify history` | Muestra selectores recurrentes y re-rotos de `.healify/history.jsonl`. |
-| `healify report [reporte.json]` | Reporta los defectos de la corrida a tu Jira (o webhook). Dedupe por `defectId`, opt-in. |
-| `healify dashboard [--out <path>]` | Genera `healify-dashboard.html`, la vista offline del histórico (misma estética que `healify-report.html`). |
-| `healify flake [--min-runs <n>]` | Detecta tests flaky (verde en unas corridas, rojo en otras) sobre `.healify/runs.jsonl`, lo que registran los reporters de Playwright/Cypress en cada corrida. |
-| `healify heal` | Motor vía JSON por stdin/stdout, para usar desde Python/Java/C#/etc. |
-| `healify probe-script` | Imprime el script para sondear el DOM con `execute_script()` (insumo de `heal`). |
-| `healify explain [selector]` | Explica por qué un selector es frágil y qué propone el motor. |
-| `healify ai <setup\|status\|explain\|chat\|models>` | IA local opcional via Ollama. |
+| `healify init` | Detects your framework (or asks which one to set up if there isn't one), installs what's missing and configures the reporter/plugin. Does not generate tests. |
+| `healify doctor` | Checks that Healify is installed and correctly configured. |
+| `healify fix [report.json]` | Applies the highest-confidence suggestions straight into your test files. |
+| `healify history` | Shows recurring and re-broken selectors from `.healify/history.jsonl`. |
+| `healify report [report.json]` | Reports the run's defects to your Jira (or a webhook). Deduped by `defectId`, opt-in. |
+| `healify dashboard [--out <path>]` | Generates `healify-dashboard.html`, the offline view of your healing history (same look as `healify-report.html`). |
+| `healify flake [--min-runs <n>]` | Detects flaky tests (green on some runs, red on others) from `.healify/runs.jsonl`, which the Playwright/Cypress reporters record on every run. |
+| `healify heal` | The engine over JSON on stdin/stdout, so you can drive it from Python/Java/C#/etc. |
+| `healify probe-script` | Prints the script to probe the DOM with `execute_script()` (input for `heal`). |
+| `healify explain [selector]` | Explains why a selector is brittle and what the engine proposes. |
+| `healify ai <setup\|status\|explain\|chat\|models>` | Optional local AI via Ollama. |
 
-## Flags de `healify fix`
+## `healify fix` flags
 
-| Flag | Efecto |
+| Flag | Effect |
 |---|---|
-| `--dry-run` | Muestra qué se curaría sin modificar archivos. |
-| `--force` | Aplica aunque el archivo tenga cambios sin commitear. |
-| `--pr` | Crea branch + commit + PR automáticamente (requiere `gh` CLI). |
-| `--no-ast` | Desactiva la reescritura de sugerencias `role(...)` (sustitución simple). |
-| `--no-pom` | No busca el selector en los page objects cuando no está en el archivo de test. |
-| `--watch` | Se queda vigilando el reporte y re-aplica en cada corrida nueva. `--interval <ms>` para ajustar (default 1000). |
-| `--interactive` | Pregunta caso por caso antes de aplicar. |
+| `--dry-run` | Shows what would be healed without modifying files. |
+| `--force` | Applies even if the file has uncommitted changes. |
+| `--pr` | Creates branch + commit + PR automatically (requires the `gh` CLI). |
+| `--no-ast` | Disables rewriting `role(...)` suggestions (plain substitution instead). |
+| `--no-pom` | Don't look for the selector in page objects when it isn't in the test file. |
+| `--watch` | Keeps watching the report and re-applies on every new run. `--interval <ms>` to adjust (default 1000). |
+| `--interactive` | Asks case by case before applying. |
 
-### Modo watch
+### Watch mode
 
 ```bash
 npx @healify/cli@latest fix --watch
 ```
 
-Se queda escuchando: cada vez que tus tests escriben un reporte nuevo, aplica solo. El equivalente
-del `--ui` de Playwright pero del lado de Healify — dejás la terminal abierta y no tenés que
-acordarte de nada.
+It stays listening: every time your tests write a new report, it applies on its own. The
+equivalent of Playwright's `--ui` but on Healify's side — leave the terminal open and you don't
+have to remember anything.
 
-Si todavía no hay reporte, avisa una vez y espera. La primera pasada es inmediata, así que si ya
-había uno cuando arrancaste, lo aplica al toque. `--pr` y `--interactive` no aplican acá (crear
-una PR por cada corrida, o preguntarte algo mientras mirás otra cosa, no tiene sentido).
+If there's no report yet, it says so once and waits. The first pass is immediate, so if one was
+already there when you started, it applies right away. `--pr` and `--interactive` don't apply
+here (opening a PR per run, or asking you something while you're looking elsewhere, makes no
+sense).
 
 ### Page Object Model
 
-Si el selector roto no está en el spec (lo normal con POM: vive en `pages/login.page.ts`), `fix`
-lo busca en el resto del código del proyecto y aplica el cambio ahí, diciéndote en qué archivo lo
-tocó. Conservador: solo aplica si hay **un único** archivo con **una única** ocurrencia; con dos
-candidatos reporta ambiguo y no toca nada. Se apaga con `--no-pom`.
+If the broken selector isn't in the spec (the norm with POM: it lives in `pages/login.page.ts`),
+`fix` looks for it across the rest of your project's code and applies the change there, telling
+you which file it touched. Conservative by design: it only applies when there's **exactly one**
+file with **exactly one** occurrence; with two candidates it reports ambiguity and touches
+nothing. Turn it off with `--no-pom`.
 
-## `healify heal` (para adapters)
+## `healify heal` (for adapters)
 
 ```bash
 echo '{"testFile":"test.py","testName":"test_login","selector":"#old-btn","errorMessage":"..."}' | npx @healify/cli@latest heal

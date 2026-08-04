@@ -1,4 +1,4 @@
-[← Documentación](README.md) · [Healify](../README.md)
+[← Documentación](README.es.md) · [Healify](../README.es.md) · [English](reports.md)
 
 ---
 

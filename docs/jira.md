@@ -1,27 +1,27 @@
-[← Documentación](README.md) · [Healify](../README.md)
+[← Documentation](README.md) · [Healify](../README.md) · [Español](jira.es.md)
 
 ---
 
-# Reporte a Jira / webhook
+# Jira / webhook reporting
 
-> Opt-in y apagado por default. Tus credenciales contra tu instancia — Healify no tiene servidor propio.
+> Opt-in and off by default. Your credentials against your instance — Healify has no server of its own.
 
-Cierra el loop "selector roto → ticket en Jira". Con la misma seriedad que **Cadena de custodia**, tres reglas que no se negocian:
+Closes the "broken selector → Jira ticket" loop. Three rules that aren't up for negotiation:
 
-1. **Opt-in, off por default.** Sin `agile.enabled: true` Healify nunca toca la red. El silencio no reporta nada.
-2. **Tus credenciales contra TU instancia.** El token Jira lo ponés vos, se lee de config o de `JIRA_API_TOKEN` (para no commitearlo), y solo se usa para autenticarte contra **tu** Jira. Jamás se loguea, y nunca sale hacia ningún lado que no sea tu servidor.
-3. **Cero datos fuera de tu máquina.** La única salida de datos cuando activás el reporte es el POST hacia **tu** Jira (o **tu** webhook). No hay nube de Healify, no hay API key nuestra, no hay tracking.
+1. **Opt-in, off by default.** Without `agile.enabled: true` Healify never touches the network. Silence reports nothing.
+2. **Your credentials against YOUR instance.** You provide the Jira token; it's read from config or from `JIRA_API_TOKEN` (so you don't commit it), and it's only ever used to authenticate against **your** Jira. It's never logged, and never leaves for anywhere that isn't your server.
+3. **Zero data off your machine.** The only data leaving when you enable reporting is the POST to **your** Jira (or **your** webhook). There's no Healify cloud, no API key of ours, no tracking.
 
-Config en `healify.config.js`:
+Config in `healify.config.js`:
 
 ```js
 module.exports = {
   agile: {
-    enabled: true,          // ← sin esto, nada se reporta
+    enabled: true,          // ← without this, nothing is reported
     provider: 'jira',       // 'jira' | 'webhook'
-    baseUrl: 'https://tu-equipo.atlassian.net',
-    email: 'qa@tu-equipo.com',
-    apiToken: process.env.JIRA_API_TOKEN,   // o solo JIRA_API_TOKEN en el entorno
+    baseUrl: 'https://your-team.atlassian.net',
+    email: 'qa@your-team.com',
+    apiToken: process.env.JIRA_API_TOKEN,   // or just JIRA_API_TOKEN in the environment
     project: 'QA',
     issueType: 'Bug',
     priorityBySeverity: { blocker: 'Highest', major: 'High', minor: 'Medium' },
@@ -30,27 +30,37 @@ module.exports = {
 }
 ```
 
-| Opción | Default | Qué hace |
+| Option | Default | What it does |
 |---|---|---|
-| `agile.enabled` | `false` | Activa el reporte. Sin esto, no-op. |
-| `agile.provider` | `jira` | `jira` (REST Cloud) o `webhook` (Zapier/n8n/automatización Jira). |
-| `agile.baseUrl` | — | Base de tu Jira Cloud, ej. `https://tu-equipo.atlassian.net`. |
-| `agile.email` / `agile.apiToken` | — | Credenciales del usuario contra su instancia. |
-| `agile.project` | — | Key del proyecto, ej. `QA`. |
-| `agile.issueType` | `Bug` | Tipo de issue. |
-| `agile.priorityBySeverity` | `blocker→Highest, major→High, minor→Medium` | Mapeo severidad→prioridad. |
-| `agile.labels` | `[]` | Labels extra para el ticket. |
-| `agile.webhookUrl` | — | URL del webhook (solo provider `webhook`). |
+| `agile.enabled` | `false` | Enables reporting. Without it, no-op. |
+| `agile.provider` | `jira` | `jira` (REST Cloud) or `webhook` (Zapier/n8n/Jira automation). |
+| `agile.baseUrl` | — | Your Jira Cloud base, e.g. `https://your-team.atlassian.net`. |
+| `agile.email` / `agile.apiToken` | — | The user's credentials against their own instance. |
+| `agile.project` | — | Project key, e.g. `QA`. |
+| `agile.issueType` | `Bug` | Issue type. |
+| `agile.priorityBySeverity` | `blocker→Highest, major→High, minor→Medium` | Severity → priority mapping. |
+| `agile.labels` | `[]` | Extra labels for the ticket. |
+| `agile.webhookUrl` | — | Webhook URL (provider `webhook` only). |
 
-Env overrides para CI: `HEALIFY_AGILE_ENABLED`, `HEALIFY_AGILE_PROVIDER`, `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN`, `JIRA_PROJECT`, `JIRA_ISSUE_TYPE`, `HEALIFY_WEBHOOK_URL`.
+Env overrides for CI: `HEALIFY_AGILE_ENABLED`, `HEALIFY_AGILE_PROVIDER`, `JIRA_BASE_URL`,
+`JIRA_EMAIL`, `JIRA_API_TOKEN`, `JIRA_PROJECT`, `JIRA_ISSUE_TYPE`, `HEALIFY_WEBHOOK_URL`.
 
-Reportá la última corrida:
+Report the last run:
 
 ```bash
-healify report                 # reporta healify-report.json a tu Jira
-healify report --dry-run       # qué se reportaría, sin tocar la red
+healify report                 # reports healify-report.json to your Jira
+healify report --dry-run       # what would be reported, without touching the network
 ```
 
-**Cómo funciona y por qué no genera ruido.** Cada defecto lleva un `defectId` estable (`HLF-XXXXXXXX`, sha1 de archivo+selector): el mismo selector roto devuelve el mismo ID en cada corrida. Antes de crear un ticket, Healify pregunta a tu Jira (`text ~ "HLF-XXXXXXXX" AND project = QA`) si ese defecto ya existe: si existe, **no crea nada nuevo** (outcome `ya existía`); si no, crea el issue **y** agrega como comentario la sugerencia del selector. La sugerencia viaja como contexto del ticket — nunca reemplaza el hallazgo. Un 503 de tu Jira no pierde el reporte local: falla ese defecto, no la corrida.
+**How it works, and why it doesn't create noise.** Every defect carries a stable `defectId`
+(`HLF-XXXXXXXX`, a sha1 of file + selector): the same broken selector yields the same ID on every
+run. Before creating a ticket, Healify asks your Jira (`text ~ "HLF-XXXXXXXX" AND project = QA`)
+whether that defect already exists: if it does, **nothing new is created** (outcome: `already
+existed`); if it doesn't, it creates the issue **and** adds the selector suggestion as a comment.
+The suggestion travels as ticket context — it never replaces the finding. A 503 from your Jira
+doesn't lose the local report: that defect fails, not the run.
 
-Con `provider: 'webhook'`, Healify POSTea el payload JSON (defecto + sugerencia + entorno) a tu URL y es el receptor quien decide crear-o-actualizar — el patrón que la competencia ya estableció ("webhook → JQL lookup por clave estable → crear si no existe / comentar si existe").
+With `provider: 'webhook'`, Healify POSTs the JSON payload (defect + suggestion + environment) to
+your URL and the receiver decides whether to create or update — the pattern the rest of the field
+already established ("webhook → JQL lookup by stable key → create if missing / comment if
+present").

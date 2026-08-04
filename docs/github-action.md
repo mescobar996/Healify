@@ -1,12 +1,12 @@
-[← Documentación](README.md) · [Healify](../README.md)
+[← Documentation](README.md) · [Healify](../README.md) · [Español](github-action.es.md)
 
 ---
 
 # GitHub Action
 
-> Comenta los selectores rotos en la PR. Nunca modifica archivos.
+> Comments broken selectors on the PR. Never modifies files.
 
-Comenta los selectores rotos directo en la PR. Corre `doctor` + `fix --dry-run`: **nunca modifica archivos**.
+Runs `doctor` + `fix --dry-run` and posts the result as a PR comment: **it never modifies files**.
 
 ```yaml
 # .github/workflows/healify.yml
@@ -15,7 +15,7 @@ on: pull_request
 
 permissions:
   contents: read
-  pull-requests: write   # sin esto la API devuelve 403 al comentar
+  pull-requests: write   # without this the API returns 403 when commenting
 
 jobs:
   healify:
@@ -26,15 +26,16 @@ jobs:
         with: { node-version: '20' }
       - run: npm ci
       - run: npx playwright test
-        continue-on-error: true   # queremos el reporte aunque la suite falle
-      - uses: mescobar996/Healify@v2.0.0
+        continue-on-error: true   # we want the report even if the suite fails
+      - uses: mescobar996/Healify@v2.1.0
 ```
 
-Se referencia un tag exacto. `@v2` funciona como alias móvil de la última `2.x`, y ya está publicado.
+That pins an exact tag. `@v2` works as a moving alias for the latest `2.x`, and it's published.
 
-| Input | Default | Qué hace |
+| Input | Default | What it does |
 |---|---|---|
-| `github-token` | `${{ github.token }}` | Token para comentar. Necesita `pull-requests: write`. |
-| `project-path` | `.` | Directorio donde correr Healify (monorepos). |
+| `github-token` | `${{ github.token }}` | Token used to comment. Needs `pull-requests: write`. |
+| `project-path` | `.` | Directory to run Healify in (monorepos). |
 
-El comentario se **actualiza** en cada push en vez de apilar uno nuevo. Cero dependencias de runtime: la action habla con la API de GitHub por `fetch`, nada más.
+The comment is **updated** on every push instead of piling up a new one. Zero runtime
+dependencies: the action talks to the GitHub API over `fetch`, nothing else.

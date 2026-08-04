@@ -1,30 +1,25 @@
-[← Back to Healify](../README.md)
+[← Back to Healify](../README.md) · [Español](README.es.md)
 
 ---
 
 # Documentation
 
 Everything you need to use Healify for real. Coming in cold? Start with
-[Installation](instalacion.md) — it takes two minutes.
-
-> **Heads up:** the individual pages below are written in Spanish. The code snippets,
-> flags and config keys are identical in any language, so they're followable either way —
-> and an English translation is on the way. If something isn't clear,
-> [open an issue](https://github.com/mescobar996/Healify/issues) and I'll prioritise that page.
+[Installation](installation.md) — it takes two minutes.
 
 ## Get started
 
 | | |
 |---|---|
-| **[Installation](instalacion.md)** | Wiring it into Playwright, Cypress, Selenium or WebdriverIO. One snippet per runner. |
+| **[Installation](installation.md)** | Wiring it into Playwright, Cypress, Selenium or WebdriverIO. One snippet per runner. |
 | **[Commands](cli.md)** | `doctor`, `fix`, `dashboard`, `flake`, `watch` and the rest of the CLI. |
 
 ## Tune it
 
 | | |
 |---|---|
-| **[Configuration](configuracion.md)** | Confidence thresholds, turning healing off, your own test-ids. Optional — it works with none of this. |
-| **[Reports & dashboard](reportes.md)** | The HTML report you hand to your team, the healing history, and flaky-test detection. |
+| **[Configuration](configuration.md)** | Confidence thresholds, turning healing off, your own test-ids. Optional — it works with none of this. |
+| **[Reports & dashboard](reports.md)** | The HTML report you hand to your team, the healing history, and flaky-test detection. |
 
 ## Integrations
 

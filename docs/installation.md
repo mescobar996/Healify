@@ -1,10 +1,10 @@
-[← Documentación](README.md) · [Healify](../README.md)
+[← Documentation](README.md) · [Healify](../README.md) · [Español](installation.es.md)
 
 ---
 
-# Instalación
+# Installation
 
-> Cómo enchufar Healify a tu runner. Elegí el tuyo y copiá el snippet — es lo único que hay que agregar.
+> How to wire Healify into your runner. Pick yours and copy the snippet — that's the only thing you need to add.
 
 ```bash
 npm i -D @healify/cli
@@ -19,7 +19,7 @@ npx @healify/cli@latest fix --dry-run
 npm i -D @healify/cli @healify/test-runner
 ```
 
-En `playwright.config.ts`:
+In `playwright.config.ts`:
 
 ```typescript
 import { defineConfig } from '@playwright/test'
@@ -35,7 +35,7 @@ export default defineConfig({
 npm i -D @healify/cypress-plugin
 ```
 
-En `cypress.config.ts`:
+In `cypress.config.ts`:
 
 ```typescript
 import { defineConfig } from 'cypress'
@@ -64,12 +64,12 @@ const plugin = new HealifySeleniumPlugin()
 const driver = await new Builder().forBrowser('chrome').build()
 const wrappedDriver = plugin.wrap(driver)
 
-// Usar wrappedDriver en vez de driver
+// Use wrappedDriver instead of driver
 await wrappedDriver.findElement(By.css('#submit'))
-// Si #submit falla, Healify propone un alternativo
+// If #submit fails, Healify proposes an alternative
 
-// Al final del test
-plugin.flush() // escribe healify-report.json
+// At the end of the test
+plugin.flush() // writes healify-report.json
 ```
 
 ## WebdriverIO
@@ -84,9 +84,9 @@ import { HealifyWebdriverIOPlugin } from '@healify/webdriverio-plugin'
 const plugin = new HealifyWebdriverIOPlugin()
 const wrappedBrowser = plugin.wrap(browser)
 
-// Usar wrappedBrowser en vez de browser
+// Use wrappedBrowser instead of browser
 await wrappedBrowser.$('#submit').click()
 
-// Al final del test
+// At the end of the test
 plugin.flush()
 ```
