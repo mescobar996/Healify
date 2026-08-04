@@ -28,6 +28,33 @@ export function parseRoleSuggestion(selector: string): { role: string; name?: st
 }
 
 /**
+ * `role('button', { name: 'Comprar' })` → `role=button[name="Comprar"]`, la sintaxis del motor
+ * de selectores de Playwright.
+ *
+ * Existe porque `role('button', {...})` es una **representación legible para el reporte**, no un
+ * valor de selector: no se puede pegar dentro de las comillas de `page.click('...')`. Aplicarla
+ * tal cual corrompe el archivo, así que `fix` la manda a la reescritura por AST — que necesita
+ * ver la llamada (`page.click(...)`) para reescribirla como `page.getByRole(...)`.
+ *
+ * El problema aparece con Page Object Model: ahí el string vive en `pages/*.page.ts` y la
+ * llamada está en el spec, en otro archivo. El AST no puede reescribir algo partido en dos, y
+ * la curación se perdía entera. Como Playwright **sí** acepta `role=button[name="X"]` como
+ * string de selector, esta forma se puede sustituir en el page object sin tocar el call site.
+ *
+ * Solo sirve para Playwright: Selenium/WebdriverIO usan `roleSuggestionToXPath()` y Cypress
+ * resuelve con jQuery, que no conoce esta sintaxis.
+ *
+ * `null` si no hay nombre accesible — `role=button` a secas casi siempre matchea de más, y
+ * sustituir por algo ambiguo es peor que dejar el caso para revisión manual.
+ */
+export function roleSuggestionToPlaywrightSelector(selector: string): string | null {
+  const parsed = parseRoleSuggestion(selector)
+  if (!parsed || parsed.name === undefined || parsed.name === '') return null
+  // Las comillas dobles del nombre se escapan; Playwright acepta \" dentro del valor.
+  return `role=${parsed.role}[name="${parsed.name.replace(/"/g, '\\"')}"]`
+}
+
+/**
  * Literal de XPath 1.0 seguro para cualquier texto, incluso con comillas simples y dobles
  * mezcladas (XPath 1.0 no tiene forma de escapar comillas dentro de un string). Truco estándar:
  * envolver en el tipo de comilla que el texto no tenga, o armar un `concat()` cuando tiene las

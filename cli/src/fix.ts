@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { resolve, relative } from 'node:path'
 import type { LocalRun, LocalCaseResult } from '@healify/reporter-core'
+import { roleSuggestionToPlaywrightSelector } from '@healify/reporter-core'
 import { isGitDirty } from './git-check'
 import { collectCodeFiles } from './pom'
 
@@ -204,19 +205,29 @@ export function fix(run: LocalRun, options: FixOptions = {}): FixOutcome[] {
     let changed = false
 
     for (const c of sorted) {
-      if (!isSubstitutable(c.fixedSelector)) {
-        outcomes.push({ testFile, selector: c.selector, status: 'skipped', reason: 'not-substitutable' })
-        continue
-      }
       // codeOnly tiene el mismo largo que content (comentarios enmascarados con espacios,
       // preservando offsets) — así una mención solo en un comentario nunca cuenta ni se
       // reemplaza, y el índice encontrado sigue siendo válido para el content real.
       const codeOnly = maskComments(content)
       const occurrences = countOccurrences(codeOnly, c.selector)
+
+      // El orden importa: primero se pregunta DÓNDE está el selector, después si la sugerencia
+      // es sustituible. Al revés (como estaba), una sugerencia de rol se descartaba por
+      // "not-substitutable" antes de mirar si el selector vivía en un page object — y como con
+      // Playwright casi toda sugerencia con evidencia de página es de rol, el fallback a page
+      // objects no se disparaba nunca en el runner más usado. Encontrado dogfoodeando el
+      // ejemplo `examples/playwright-pom`.
       if (occurrences === 0) {
         // No está en el spec: en un proyecto con Page Object Model eso es lo NORMAL, el
-        // selector vive en `pages/*.page.ts`. Antes se rendía acá y salteaba todo.
+        // selector vive en `pages/*.page.ts`.
         outcomes.push(pom.resolve(testFile, c))
+        continue
+      }
+
+      if (!isSubstitutable(c.fixedSelector)) {
+        // Está en el spec, así que el call site está acá y el AST puede reescribir la llamada
+        // entera (`page.click('x')` → `page.getByRole(...)`), que es mejor que un string.
+        outcomes.push({ testFile, selector: c.selector, status: 'skipped', reason: 'not-substitutable' })
         continue
       }
       if (occurrences > 1) {
@@ -252,6 +263,9 @@ export function fix(run: LocalRun, options: FixOptions = {}): FixOutcome[] {
 function createPageObjectResolver(run: LocalRun, options: FixOptions) {
   const enabled = options.pageObjects !== false
   const roots = options.pageObjectRoots ?? [process.cwd()]
+  // `role=button[name="X"]` es sintaxis del motor de selectores de Playwright: en Cypress
+  // (jQuery) o Selenium (CSS/XPath nativo) sería un selector inválido, peor que no tocar nada.
+  const isPlaywright = /playwright/i.test(run.framework ?? '')
 
   /** Archivos ya manejados por el loop principal: contarlos acá perdería ediciones. */
   const testFiles = new Set(
@@ -287,6 +301,18 @@ function createPageObjectResolver(run: LocalRun, options: FixOptions) {
     const notFound: FixOutcome = { testFile, selector: c.selector, status: 'skipped', reason: 'not-found' }
     if (!enabled) return notFound
 
+    // El valor que se va a escribir en el page object. Una sugerencia de rol no se puede pegar
+    // tal cual (`role('button', {...})` es para leer, no un selector), y acá el AST tampoco
+    // sirve: la llamada vive en el spec, en otro archivo. Playwright sí acepta la forma string
+    // `role=button[name="X"]`, así que para Playwright se convierte y la curación se salva; en
+    // los demás runners esa sintaxis no existe y el caso queda para revisión manual.
+    let replacement = c.fixedSelector
+    if (!isSubstitutable(replacement)) {
+      const asString = isPlaywright ? roleSuggestionToPlaywrightSelector(replacement) : null
+      if (!asString) return { testFile, selector: c.selector, status: 'skipped', reason: 'not-substitutable' }
+      replacement = asString
+    }
+
     if (candidates === null) {
       candidates = collectCodeFiles(roots).filter((f) => !testFiles.has(f))
     }
@@ -307,10 +333,10 @@ function createPageObjectResolver(run: LocalRun, options: FixOptions) {
 
     const content = contents.get(target) as string
     const idx = maskComments(content).indexOf(c.selector)
-    contents.set(target, content.slice(0, idx) + c.fixedSelector + content.slice(idx + c.selector.length))
+    contents.set(target, content.slice(0, idx) + replacement + content.slice(idx + c.selector.length))
     touched.add(target)
 
-    return { testFile, selector: c.selector, fixedSelector: c.fixedSelector, status: 'applied', appliedIn: target }
+    return { testFile, selector: c.selector, fixedSelector: replacement, status: 'applied', appliedIn: target }
   }
 
   function flush(): void {

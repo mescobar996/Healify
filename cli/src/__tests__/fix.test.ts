@@ -391,3 +391,79 @@ describe('fix — fallback a page objects', () => {
     expect(readFileSync(po, 'utf-8')).toBe(`export const btn = '#old'\n`)
   })
 })
+
+/**
+ * Regresión del gap encontrado dogfoodeando `examples/playwright-pom`: con Playwright, casi
+ * toda sugerencia con evidencia de página es de rol, y `role(...)` no es sustituible. Como el
+ * chequeo de "sustituible" corría ANTES de mirar dónde vivía el selector, el fallback a page
+ * objects no se disparaba nunca en el runner más usado — la feature era efectivamente código
+ * muerto para Playwright.
+ */
+describe('fix — sugerencias de rol en page objects', () => {
+  let dir: string
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'healify-role-pom-'))
+    mockIsGitDirty.mockReturnValue(false)
+  })
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  function setup(framework: string) {
+    const testFile = join(dir, 'e2e', 'login.spec.ts')
+    mkdirSync(join(dir, 'e2e'), { recursive: true })
+    writeFileSync(testFile, 'await shop.addToCart()')
+
+    const po = join(dir, 'pages', 'shop.page.ts')
+    mkdirSync(join(dir, 'pages'), { recursive: true })
+    writeFileSync(po, `export const addToCart = '#old'\n`)
+
+    const run = makeRun([
+      makeCase({ testFile, fixedSelector: "role('button', { name: 'Comprar' })", selectorType: 'ROLE' }),
+    ])
+    return { testFile, po, run: { ...run, framework } }
+  }
+
+  it('Playwright: convierte a role=... y cura el page object', () => {
+    const { testFile, po, run } = setup('Playwright')
+
+    const outcomes = fix(run, { pageObjectRoots: [dir] })
+
+    expect(outcomes).toEqual([
+      {
+        testFile,
+        selector: '#old',
+        fixedSelector: 'role=button[name="Comprar"]',
+        status: 'applied',
+        appliedIn: po,
+      },
+    ])
+    expect(readFileSync(po, 'utf-8')).toBe(`export const addToCart = 'role=button[name="Comprar"]'\n`)
+  })
+
+  it('Cypress: no inventa sintaxis que su motor no entiende', () => {
+    // `role=button[name="X"]` es del motor de Playwright. En jQuery seria un selector invalido:
+    // dejar el caso para revision manual es mejor que romper el page object.
+    const { testFile, po, run } = setup('Cypress')
+
+    const outcomes = fix(run, { pageObjectRoots: [dir] })
+
+    expect(outcomes).toEqual([{ testFile, selector: '#old', status: 'skipped', reason: 'not-substitutable' }])
+    expect(readFileSync(po, 'utf-8')).toBe(`export const addToCart = '#old'\n`)
+  })
+
+  it('si el selector SI esta en el spec, sigue yendo al AST (reescribe la llamada entera)', () => {
+    const testFile = join(dir, 'a.spec.ts')
+    writeFileSync(testFile, `await page.click('#old')`)
+    const run = {
+      ...makeRun([makeCase({ testFile, fixedSelector: "role('button', { name: 'Comprar' })" })]),
+      framework: 'Playwright',
+    }
+
+    const outcomes = fix(run, { pageObjectRoots: [dir] })
+
+    expect(outcomes).toEqual([{ testFile, selector: '#old', status: 'skipped', reason: 'not-substitutable' }])
+  })
+})

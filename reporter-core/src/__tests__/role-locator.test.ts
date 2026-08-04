@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseRoleSuggestion, roleSuggestionToXPath, resolveLocatorStrategy } from '../role-locator'
+import { parseRoleSuggestion, roleSuggestionToXPath, roleSuggestionToPlaywrightSelector, resolveLocatorStrategy } from '../role-locator'
 
 describe('parseRoleSuggestion', () => {
   it('extrae rol y nombre', () => {
@@ -101,5 +101,34 @@ describe('resolveLocatorStrategy', () => {
 
   it('rol sin mapeo conocido, aunque tenga nombre → unsupported', () => {
     expect(resolveLocatorStrategy("role('heading', { name: 'Tienda' })")).toEqual({ strategy: 'unsupported', value: null })
+  })
+})
+
+describe('roleSuggestionToPlaywrightSelector()', () => {
+  it('convierte a la sintaxis del motor de selectores de Playwright', () => {
+    expect(roleSuggestionToPlaywrightSelector("role('button', { name: 'Agregar al carrito' })"))
+      .toBe('role=button[name="Agregar al carrito"]')
+  })
+
+  it('sirve para cualquier rol, no solo los que tienen mapeo a XPath', () => {
+    expect(roleSuggestionToPlaywrightSelector("role('heading', { name: 'Tienda' })"))
+      .toBe('role=heading[name="Tienda"]')
+  })
+
+  it('escapa las comillas dobles del nombre accesible', () => {
+    expect(roleSuggestionToPlaywrightSelector(`role('button', { name: 'Decí "hola"' })`))
+      .toBe('role=button[name="Decí \\"hola\\""]')
+  })
+
+  it('null sin nombre accesible — `role=button` a secas matchea de más', () => {
+    // Sustituir por algo ambiguo es peor que dejar el caso para revisión manual: el test
+    // pasaría probando otro elemento, que es el peor resultado posible de una curación.
+    expect(roleSuggestionToPlaywrightSelector("role('button')")).toBeNull()
+    expect(roleSuggestionToPlaywrightSelector("role('button', { name: '' })")).toBeNull()
+  })
+
+  it('null si no es una sugerencia de rol', () => {
+    expect(roleSuggestionToPlaywrightSelector("[data-testid='x']")).toBeNull()
+    expect(roleSuggestionToPlaywrightSelector("button:has-text('Add')")).toBeNull()
   })
 })
