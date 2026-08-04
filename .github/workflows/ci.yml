@@ -125,6 +125,66 @@ jobs:
       - name: Run tests (all workspaces)
         run: npm test
 
+  # ─── Ejemplos ──────────────────────────────────────────────────────────────
+  # Los ejemplos viven DENTRO del repo (y no como repos sueltos) exactamente para esto: acá se
+  # corre el ciclo completo contra un browser real, así no pueden pudrirse en silencio — que es
+  # el destino de casi todos los `*-examples` que andan dando vueltas.
+  #
+  # Verifica las tres etapas del demo, en orden. Si cualquiera cambia de resultado, el ejemplo
+  # dejó de contar la verdad y el job se pone en rojo.
+  examples:
+    name: Ejemplos (ciclo completo con browser real)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build workspaces
+        run: npm run build
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      # El ejemplo NO es un workspace (para no ensuciar el install de la raíz), así que se le
+      # presta el node_modules de arriba. Eso además hace que resuelva `@healify/test-runner`
+      # al build LOCAL y no al publicado en npm: acá se testea el código de este commit.
+      - name: playwright-pom — el test falla con el selector roto
+        working-directory: examples/playwright-pom
+        run: |
+          ln -s ../../node_modules node_modules
+          if npx playwright test; then
+            echo "::error::El ejemplo tiene que FALLAR antes del fix. Si pasa, el demo dejó de demostrar nada."
+            exit 1
+          fi
+
+      - name: playwright-pom — healify cura el page object
+        working-directory: examples/playwright-pom
+        run: |
+          node ../../cli/dist/index.js fix | tee fix.log
+          grep -q "shop.page.ts" fix.log || {
+            echo "::error::fix no tocó pages/shop.page.ts — el fallback a page objects se rompió."
+            exit 1
+          }
+          grep -q "1 selector aplicado" fix.log || {
+            echo "::error::fix no aplicó exactamente 1 selector."
+            exit 1
+          }
+
+      - name: playwright-pom — ahora el test pasa
+        working-directory: examples/playwright-pom
+        run: npx playwright test
+
   # ─── Smoke Node 18 ─────────────────────────────────────────────────────────
   # `engines: ">=18.0.0"` es una promesa al que instala el paquete, y hasta ahora no la
   # verificaba nada: la suite no puede correr en 18 (Vitest 4 necesita 20+), así que se
