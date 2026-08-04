@@ -55,6 +55,13 @@ dos criterios no coincidieran, la sugerencia sería correcta pero irrecuperable.
 > bien, pero el reintento usaba XPath y no llegaba. Estaba a medias, y nadie se había dado
 > cuenta porque los tests unitarios cubrían las dos mitades por separado.
 
+> Y encontró un segundo, más tonto y más grave: el comando de Cypress que envuelve al sondeo
+> heredaba `defaultCommandTimeout`, el mismo presupuesto de tiempo que el sondeo iba a gastar
+> esperando. Cypress mataba el comando unos milisegundos antes de que el sondeo contestara, así
+> que `healifyGet` moría con *"promise that never resolved"* justo cuando el selector no existía
+> —el único caso donde Healify sirve para algo—. Con el selector presente resolvía al instante y
+> todo parecía andar: el bug vivía escondido detrás del camino feliz.
+
 ## Diferencia con `cy.get()`
 
 `cy.healifyGet()` es un comando **nuevo**, opt-in. No pisa `cy.get()` ni el motor de retry de

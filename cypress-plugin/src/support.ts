@@ -74,13 +74,31 @@ Cypress.Commands.add('healifyGet', (selector: string, options: HealifyGetOptions
 })
 
 /**
+ * Margen que se le da al comando de Cypress POR ENCIMA de lo que va a esperar el sondeo.
+ *
+ * Sin esto el comando muere justo antes de que el sondeo conteste, y el resultado era el peor
+ * posible: `healifyGet` fallaba con "cy.then() timed out … promise that never resolved" en el
+ * único caso donde Healify tiene algo que aportar — el selector que de verdad no existe. Con el
+ * selector presente resolvía rápido y todo parecía andar, así que el bug quedaba escondido
+ * exactamente detrás del camino feliz.
+ *
+ * El sondeo espera `timeout` y recién resuelve en el tick siguiente al vencimiento (~+50 ms),
+ * mientras que el `.then()` que lo contiene heredaba `defaultCommandTimeout`, el MISMO número.
+ * Carrera perdida siempre, no de a ratos.
+ */
+const POLL_TIMEOUT_BUFFER_MS = 2000
+
+/**
  * Sondeo manual del selector, no el retry-ability nativo de `cy.get()` (Cypress no lo expone
  * para reusarlo desde un comando custom sin duplicar su motor entero) — mismo espíritu: reintenta
  * hasta el timeout antes de asumir que el selector está roto, para no confundir "todavía no
  * renderizó" con "el selector ya no existe".
+ *
+ * El `{ timeout }` explícito del `.then()` es obligatorio, no cosmético: ver
+ * `POLL_TIMEOUT_BUFFER_MS`.
  */
 function pollForSelector(selector: string, timeout: number): Cypress.Chainable<JQuery<HTMLElement> | null> {
-  return cy.window({ log: false }).then(() => {
+  return cy.window({ log: false }).then({ timeout: timeout + POLL_TIMEOUT_BUFFER_MS }, () => {
     return new Cypress.Promise<JQuery<HTMLElement> | null>((resolve) => {
       const deadline = Date.now() + timeout
       const tick = () => {
