@@ -1,0 +1,53 @@
+<!doctype html>
+<!--
+  Checkout construido con web components — un shadow root ABIERTO, como Salesforce Lightning,
+  Ionic, Lit o Vaadin.
+
+  Esto es lo que hace al ejemplo distinto: el botón de pagar NO está en el documento. Vive
+  dentro del shadow root de <checkout-widget>. Un `document.querySelectorAll('button')` desde
+  afuera devuelve CERO resultados — probalo en la consola del browser.
+
+  Ahí es donde casi todas las herramientas de self-healing se quedan ciegas: si no pueden ver
+  el elemento, no pueden proponer nada mejor que una adivinanza.
+-->
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Checkout — demo Healify (shadow DOM)</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 32rem; margin: 3rem auto; padding: 0 1rem; }
+    #resultado { margin-top: 1.5rem; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <h1>Checkout</h1>
+  <p>Total: $149.99</p>
+
+  <checkout-widget></checkout-widget>
+
+  <p id="resultado">Sin pagar</p>
+
+  <script>
+    class CheckoutWidget extends HTMLElement {
+      connectedCallback() {
+        // `mode: 'open'` — es lo que permite que se pueda inspeccionar desde afuera.
+        // Un shadow root `closed` es inaccesible por especificación, para nadie.
+        const shadow = this.attachShadow({ mode: 'open' })
+        shadow.innerHTML = `
+          <style>
+            button { font: inherit; padding: .6rem 1.1rem; border: 0; border-radius: 6px;
+                     background: #2563eb; color: #fff; cursor: pointer; }
+          </style>
+          <!-- El id lo genera el bundler y cambia en cada build. El rol y el nombre
+               accesible ("Pagar ahora"), no. -->
+          <button id="pay-btn-7c4d2e">Pagar ahora</button>
+        `
+        shadow.querySelector('button').addEventListener('click', () => {
+          document.getElementById('resultado').textContent = 'Pago confirmado'
+        })
+      }
+    }
+    customElements.define('checkout-widget', CheckoutWidget)
+  </script>
+</body>
+</html>
