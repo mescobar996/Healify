@@ -102,3 +102,10 @@ __pycache__/
 
 # java/healify-selenium — artefactos de build (mvn package/deploy), no fuente
 java/healify-selenium/target/
+
+# Ejemplos: artefactos de corrida, no fuente
+examples/*/node_modules
+examples/*/test-results
+examples/*/healify-report.*
+examples/*/healify-audit.*
+examples/*/.healify/

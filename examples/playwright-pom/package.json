@@ -1,0 +1,18 @@
+{
+  "name": "healify-example-playwright-pom",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Ejemplo: Healify curando un selector que vive en un Page Object, no en el spec.",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "heal": "healify fix",
+    "heal:dry": "healify fix --dry-run",
+    "demo": "playwright test || healify fix --dry-run"
+  },
+  "devDependencies": {
+    "@healify/cli": "^2.0.0",
+    "@healify/test-runner": "^2.0.0",
+    "@playwright/test": "^1.58.0"
+  }
+}

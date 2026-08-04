@@ -1,0 +1,53 @@
+<!doctype html>
+<!--
+  Tienda de mentira para el ejemplo. HTML plano a propósito: sin framework, sin build, sin
+  npm install. Lo único que importa es que tenga elementos accesibles de verdad (roles, labels)
+  para que Healify tenga algo real contra qué verificar sus sugerencias.
+
+  El botón de comprar tiene un id con hash — `#buy-btn-a1b2c3` — imitando lo que generan los
+  build tools modernos. Ese es el id que "cambió en el último deploy" y rompe el test.
+-->
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Tienda — demo Healify</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 34rem; margin: 3rem auto; padding: 0 1rem; }
+    .product { border: 1px solid #ddd; border-radius: 8px; padding: 1.25rem; }
+    button { font: inherit; padding: .6rem 1.1rem; border-radius: 6px; border: 0; cursor: pointer; }
+    .primary { background: #16a34a; color: #fff; }
+    label { display: block; margin: 1rem 0 .25rem; }
+    input { font: inherit; padding: .5rem; width: 100%; box-sizing: border-box; }
+    #cart-status { margin-top: 1.5rem; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <h1>Tienda</h1>
+
+  <div class="product">
+    <h2>Auriculares inalámbricos</h2>
+    <p>$149.99</p>
+
+    <label for="qty">Cantidad</label>
+    <input id="qty" name="quantity" type="number" value="1" min="1" />
+
+    <p style="margin-top:1.25rem">
+      <!--
+        Este es el elemento del demo. El id cambia en cada build (lo genera el bundler), pero
+        el ROL y el NOMBRE ACCESIBLE no cambian nunca: sigue siendo un button que dice
+        "Agregar al carrito". Eso es exactamente lo que Healify prioriza.
+      -->
+      <button id="buy-btn-9f8e7d" class="primary">Agregar al carrito</button>
+    </p>
+  </div>
+
+  <p id="cart-status">Carrito vacío</p>
+
+  <script>
+    document.querySelector('.primary').addEventListener('click', () => {
+      const qty = document.getElementById('qty').value
+      document.getElementById('cart-status').textContent = `${qty} en el carrito`
+    })
+  </script>
+</body>
+</html>
