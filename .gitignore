@@ -109,3 +109,11 @@ examples/*/test-results
 examples/*/healify-report.*
 examples/*/healify-audit.*
 examples/*/.healify/
+
+# Notas internas y andamiaje de desarrollo — utiles en local, ruido en un repo publico.
+# ROTATE_SECRETS.md ademas enumera la infraestructura de la etapa SaaS: no va a GitHub.
+ROTATE_SECRETS.md
+PARA-MANANA.md
+.opencode/
+.claude/
+docs/superpowers/
