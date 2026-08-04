@@ -229,7 +229,7 @@ function findAcrossShadowRoots(win: Cypress.AUTWindow, role: HealTaskOutput['rol
   try {
     // Mismo motivo que en el sondeo: la función tiene que crearse en el realm de la AUT para
     // que su `document` suelto sea el documento real de la página, no el del test-runner.
-    return (new win.Function('role', 'name', cachedFindScript)(role.role, role.name) as Element | null) ?? null
+    return (new win.Function(cachedFindScript)(role.role, role.name) as Element | null) ?? null
   } catch {
     return null
   }

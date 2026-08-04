@@ -205,7 +205,9 @@ describe('wrapBrowser', () => {
     const el = wrapped.$('#old')
     await el.click().catch(() => {}) // el retry puede fallar acá (mismo mock devuelve el original), no es el punto del test
 
-    expect(execute).toHaveBeenCalledTimes(1)
+    // Dos llamadas a execute(): el sondeo de la pagina y, como la sugerencia es de rol, el
+    // buscador que atraviesa shadow roots.
+    expect(execute).toHaveBeenCalledTimes(2)
     expect(mockAnalyzeAndHeal).toHaveBeenCalledWith(
       expect.objectContaining({ htmlContext: expect.stringContaining('button "Comprar"') })
     )

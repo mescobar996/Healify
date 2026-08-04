@@ -87,10 +87,17 @@ function healifyIsCandidate(el, tag) {
  * el selector correcto, y el reintento no lo encontraba — el soporte de shadow DOM estaba
  * hecho a medias, ciego justo en el último paso.
  *
- * Se invoca con dos argumentos, en este orden: `new Function('role', 'name', SCRIPT)(role, name)`.
+ * Los dos argumentos (rol y nombre, en ese orden) se leen de `arguments`, no de parámetros
+ * nombrados, para que el MISMO string sirva en los tres adapters sin envoltorios distintos:
+ * `new Function(SCRIPT)(role, name)` en Cypress, `executeScript(SCRIPT, role, name)` en
+ * Selenium, `execute(SCRIPT, role, name)` en WebdriverIO. Un solo script, una sola forma de
+ * invocarlo.
+ *
  * ES5 igual que el sondeo, por el mismo motivo: corre en el browser bajo test.
  */
 export const BROWSER_FIND_BY_ROLE_SCRIPT = `
+var role = arguments[0];
+var name = arguments[1];
 var MAX_DEPTH = 12;
 var MAX_NODES = 3000;
 var seen = 0;

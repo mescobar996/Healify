@@ -3,6 +3,8 @@ import {
   BROWSER_PROBE_SCRIPT,
   domContextFromProbeResult,
   resolveLocatorStrategy,
+  parseRoleSuggestion,
+  BROWSER_FIND_BY_ROLE_SCRIPT,
   type HistoryEntry,
 } from '@healify/reporter-core'
 import { wdioSelectorToSelector } from './locator'
@@ -148,7 +150,23 @@ export function wrapBrowser(browser: WdioBrowser, options: HealifyWebdriverIOOpt
     // so we can detect if the healed selector itself fails.
     let healedEl: WdioElement
     try {
-      healedEl = (browser as Record<string, Function>).$(retrySelector) as WdioElement
+      // Igual que en Selenium: primero el buscador que atraviesa shadow DOM, despues el
+    // selector. `$()` resuelve por CSS o XPath, y ninguno cruza un shadow root.
+    const parsedRole = parseRoleSuggestion(result.fixedSelector)
+    let fromShadow: WdioElement | null = null
+    if (parsedRole?.name) {
+      try {
+        const found = await (browser as Record<string, Function>).execute(
+          BROWSER_FIND_BY_ROLE_SCRIPT,
+          parsedRole.role,
+          parsedRole.name
+        )
+        fromShadow = (found ?? null) as WdioElement | null
+      } catch {
+        fromShadow = null
+      }
+    }
+    healedEl = fromShadow ?? ((browser as Record<string, Function>).$(retrySelector) as WdioElement)
     } catch {
       emit({ type: 'failed', originalSelector: selector, fixedSelector: result.fixedSelector, confidence: result.confidence, latencyMs: Date.now() - start })
       throw new Error(`Healify: healed selector '${result.fixedSelector}' also failed for '${selector}'`)
