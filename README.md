@@ -81,6 +81,22 @@ before your coffee gets cold.
 Including the hard places: inside web components with shadow DOM, across iframes, and when the
 selector lives in a page object rather than in the test itself.
 
+## It files the ticket for you
+
+A red build nobody triages is a red build nobody fixes. Healify turns each broken selector into
+a **Jira ticket or a GitHub issue** — with the evidence, the steps, the environment, and the
+selector it suggests instead.
+
+```bash
+npx healify report --dry-run   # exactly what it would file, without touching the network
+```
+
+The same broken selector never files twice: every defect carries a stable id, and Healify
+comments on the existing ticket instead of opening another one. Opt-in and off by default —
+your credentials, your instance, no cloud of ours in between.
+
+**[→ Jira, GitHub Issues and webhooks](docs/jira.md)**
+
 ---
 
 <div align="center">

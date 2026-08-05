@@ -42,6 +42,23 @@ export interface HealifyAgileConfig {
   labels?: string[]
   /** URL del webhook (provider `webhook`). */
   webhookUrl?: string
+  /**
+   * Sube la evidencia del fallo (screenshot, trace) como adjunto del ticket, en vez de dejarla
+   * como un link a una ruta local que solo existe en la máquina que corrió los tests.
+   *
+   * Default: `false`. Es opt-in aparte de `enabled` porque un screenshot puede contener datos
+   * de un entorno de prueba con información real, y esa decisión no la toma Healify.
+   * Solo aplica al provider `jira`: la API de GitHub no permite adjuntar archivos a un issue.
+   */
+  attachEvidence?: boolean
+  /**
+   * Nombre de la transición (o del estado destino) a la que mover el ticket cuando Healify
+   * resolvió el selector y lo verificó contra la página. Ej. `'Done'`, `'Listo para revisar'`.
+   *
+   * Sin esto los tickets quedan abiertos para siempre, aunque el problema ya esté resuelto.
+   * Vacío = no transicionar. Solo aplica al provider `jira`.
+   */
+  transitionOnHealed?: string
 }
 
 /** Config agile ya resuelta: todo presente, todo saneado. */
@@ -57,6 +74,8 @@ export interface ResolvedAgileConfig {
   priorityBySeverity: Record<Severity, string>
   labels: string[]
   webhookUrl?: string
+  attachEvidence: boolean
+  transitionOnHealed?: string
 }
 
 export const DEFAULT_AGILE_PRIORITIES: Record<Severity, string> = {
@@ -72,6 +91,7 @@ export function defaultAgile(): ResolvedAgileConfig {
     issueType: 'Bug',
     priorityBySeverity: { ...DEFAULT_AGILE_PRIORITIES },
     labels: [],
+    attachEvidence: false,
   }
 }
 
@@ -376,5 +396,7 @@ export function resolveAgile(config: HealifyConfig = {}): ResolvedAgileConfig {
     priorityBySeverity: { ...defaults.priorityBySeverity, ...(raw.priorityBySeverity ?? {}) },
     labels: raw.labels ?? defaults.labels,
     webhookUrl: raw.webhookUrl ?? defaults.webhookUrl,
+    attachEvidence: raw.attachEvidence ?? defaults.attachEvidence,
+    transitionOnHealed: raw.transitionOnHealed ?? defaults.transitionOnHealed,
   }
 }

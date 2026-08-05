@@ -1,4 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { mkdtempSync, writeFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { reportDefects } from '../agile'
 import { startFakeJira, type FakeJira } from './helpers/fake-jira'
 import type { LocalRun, LocalCaseResult, HealifyConfig } from '../index'
@@ -126,5 +129,81 @@ describe('reportDefects contra un Jira que responde de verdad', () => {
 
     expect(result.outcomes).toHaveLength(2)
     expect(jira.issues).toHaveLength(2)
+  })
+})
+
+/**
+ * Los dos pasos opcionales del reporte. Van despues de registrar el outcome y con su propio
+ * try/catch: el defecto ya quedo reportado, y que falle subir un screenshot o que el workflow
+ * no tenga la transicion no puede convertir un ticket creado con exito en un fallo.
+ */
+describe('evidencia y transiciones', () => {
+  let dir: string
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'healify-evidencia-'))
+  })
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  function conEvidencia(): LocalCaseResult {
+    const captura = join(dir, 'fallo.png')
+    writeFileSync(captura, Buffer.from([0x89, 0x50, 0x4e, 0x47]))
+    return makeCase({ attachments: [{ name: 'fallo.png', path: captura }] } as Partial<LocalCaseResult>)
+  }
+
+  it('con attachEvidence sube el archivo al ticket', async () => {
+    const c = config()
+    c.agile!.attachEvidence = true
+
+    await reportDefects(makeRun([conEvidencia()]), c)
+
+    expect(jira.issues[0].attachments).toEqual(['fallo.png'])
+  })
+
+  it('por default no sube nada: un screenshot puede tener datos de un entorno real', async () => {
+    await reportDefects(makeRun([conEvidencia()]), config())
+    expect(jira.issues[0].attachments).toEqual([])
+  })
+
+  it('un adjunto que ya no esta en disco no rompe el reporte', async () => {
+    const c = config()
+    c.agile!.attachEvidence = true
+    const caso = makeCase({ attachments: [{ name: 'x.png', path: join(dir, 'no-existe.png') }] } as Partial<LocalCaseResult>)
+
+    const result = await reportDefects(makeRun([caso]), c)
+
+    expect(result.outcomes[0].action).toBe('created')
+    expect(jira.issues[0].attachments).toEqual([])
+  })
+
+  it('transiciona el ticket cuando Healify resolvio el selector y lo verifico', async () => {
+    const c = config()
+    c.agile!.transitionOnHealed = 'Done'
+
+    await reportDefects(makeRun([makeCase({ status: 'healed', verified: true, fixedSelector: "role('button', { name: 'X' })" })]), c)
+
+    expect(jira.issues[0].status).toBe('Done')
+  })
+
+  it('NO transiciona si la sugerencia no se verifico contra la pagina', async () => {
+    const c = config()
+    c.agile!.transitionOnHealed = 'Done'
+
+    await reportDefects(makeRun([makeCase({ status: 'healed', verified: false, fixedSelector: 'algo' })]), c)
+
+    expect(jira.issues[0].status).toBe('To Do')
+  })
+
+  it('una transicion que el workflow no tiene deja el ticket creado igual', async () => {
+    const c = config()
+    c.agile!.transitionOnHealed = 'Estado Inventado'
+
+    const result = await reportDefects(makeRun([makeCase({ status: 'healed', verified: true, fixedSelector: 'x' })]), c)
+
+    expect(result.outcomes[0].action).toBe('created')
+    expect(jira.issues[0].status).toBe('To Do')
   })
 })

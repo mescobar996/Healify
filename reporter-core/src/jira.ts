@@ -127,5 +127,63 @@ export function createJiraClient(config: ResolvedAgileConfig, fetchImpl: typeof 
     async addComment(issueKey: string, body: string): Promise<void> {
       await request('POST', `/rest/api/3/issue/${encodeURIComponent(issueKey)}/comment`, { body: toAdf(body) })
     },
+
+    /**
+     * Sube un archivo al ticket (screenshot del fallo, trace, video).
+     *
+     * Hasta ahora la evidencia iba en la descripción como un link markdown a una ruta local —
+     * `[captura](test-results/checkout/screenshot.png)` —, que para quien abre el ticket es
+     * una ruta en el disco de otra persona. Inservible.
+     *
+     * Este endpoint es distinto al resto: `multipart/form-data` y **`X-Atlassian-Token:
+     * no-check`** obligatorio (protección XSRF; sin ese header Jira devuelve 403 aunque las
+     * credenciales sean correctas). No se le pasa `content-type` a mano a propósito: lo tiene
+     * que poner `fetch` con el boundary que generó para el FormData.
+     */
+    async addAttachment(issueKey: string, fileName: string, content: Uint8Array): Promise<void> {
+      const form = new FormData()
+      form.append('file', new Blob([content as BlobPart]), fileName)
+
+      const response = await fetchImpl(`${apiBase(config)}/rest/api/3/issue/${encodeURIComponent(issueKey)}/attachments`, {
+        method: 'POST',
+        headers: {
+          authorization: basicAuth(config),
+          accept: 'application/json',
+          'x-atlassian-token': 'no-check',
+        },
+        body: form,
+      })
+
+      if (!response.ok) {
+        const detail = await response.text().catch(() => '')
+        throw new Error(`Jira API POST attachments respondió ${response.status}: ${detail.slice(0, 300)}`)
+      }
+    },
+
+    /**
+     * Mueve el ticket a otro estado. Jira no acepta el nombre del estado destino: hay que pasar
+     * el **id de la transición**, y ese id varía por workflow, así que primero se pregunta qué
+     * transiciones están disponibles desde el estado actual.
+     *
+     * Devuelve `false` si no existe una transición con ese nombre. No es un error: el workflow
+     * del proyecto puede no tener un estado "Done" desde donde está el ticket, y eso no debe
+     * hacer fallar el reporte de un defecto que sí se registró bien.
+     */
+    async transition(issueKey: string, transitionName: string): Promise<boolean> {
+      const data = (await request('GET', `/rest/api/3/issue/${encodeURIComponent(issueKey)}/transitions`)) as {
+        transitions?: { id?: string; name?: string; to?: { name?: string } }[]
+      }
+
+      const wanted = transitionName.toLowerCase()
+      const match = (data?.transitions ?? []).find(
+        (t) => t.name?.toLowerCase() === wanted || t.to?.name?.toLowerCase() === wanted
+      )
+      if (!match?.id) return false
+
+      await request('POST', `/rest/api/3/issue/${encodeURIComponent(issueKey)}/transitions`, {
+        transition: { id: match.id },
+      })
+      return true
+    },
   }
 }

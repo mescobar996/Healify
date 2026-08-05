@@ -238,11 +238,16 @@ describe('resolveAgile', () => {
       baseUrl: undefined,
       email: undefined,
       apiToken: undefined,
+      repository: undefined,
       project: undefined,
       issueType: 'Bug',
       priorityBySeverity: { blocker: 'Highest', major: 'High', minor: 'Medium' },
       labels: [],
       webhookUrl: undefined,
+      // Los dos son opt-in aparte de `enabled`: subir un screenshot puede sacar datos de un
+      // entorno real, y transicionar tickets es tocar el workflow de otro equipo.
+      attachEvidence: false,
+      transitionOnHealed: undefined,
     })
   })
 

@@ -31,7 +31,15 @@ export interface FakeJiraIssue {
   description: unknown
   labels: string[]
   comments: unknown[]
+  attachments: string[]
+  status: string
 }
+
+/** Transiciones que ofrece el workflow del proyecto simulado. */
+const TRANSITIONS = [
+  { id: '11', name: 'En curso', to: { name: 'In Progress' } },
+  { id: '31', name: 'Listo', to: { name: 'Done' } },
+]
 
 export interface FakeJira {
   url: string
@@ -68,6 +76,31 @@ export async function startFakeJira(options: { existingIssues?: FakeJiraIssue[] 
       return
     }
 
+    // Los adjuntos van en multipart, no en JSON: se procesan antes de intentar parsear el
+    // cuerpo. La validación clave es el header XSRF, que la API real exige y sin el cual
+    // devuelve 403 aunque las credenciales estén bien.
+    const attachMatch = path.match(/^\/rest\/api\/3\/issue\/([^/]+)\/attachments$/)
+    if (method === 'POST' && attachMatch) {
+      if (req.headers['x-atlassian-token'] !== 'no-check') {
+        send(403, { errorMessages: ['XSRF check failed'] })
+        return
+      }
+      const issue = issues.find((i) => i.key === decodeURIComponent(attachMatch[1]))
+      if (!issue) {
+        send(404, { errorMessages: ['Issue does not exist'] })
+        return
+      }
+      const chunks: Buffer[] = []
+      req.on('data', (chunk) => chunks.push(chunk as Buffer))
+      req.on('end', () => {
+        // El nombre viaja en el Content-Disposition de la parte multipart.
+        const nombre = Buffer.concat(chunks).toString('latin1').match(/filename="([^"]+)"/)?.[1] ?? 'sin-nombre'
+        issue.attachments.push(nombre)
+        send(200, [{ id: '10001', filename: nombre }])
+      })
+      return
+    }
+
     let raw = ''
     req.on('data', (chunk) => (raw += chunk))
     req.on('end', () => {
@@ -79,6 +112,29 @@ export async function startFakeJira(options: { existingIssues?: FakeJiraIssue[] 
           send(400, { errorMessages: ['Unexpected character'] })
           return
         }
+      }
+
+      const transitionsMatch = path.match(/^\/rest\/api\/3\/issue\/([^/]+)\/transitions$/)
+      if (transitionsMatch) {
+        const issue = issues.find((i) => i.key === decodeURIComponent(transitionsMatch[1]))
+        if (!issue) {
+          send(404, { errorMessages: ['Issue does not exist'] })
+          return
+        }
+        if (method === 'GET') {
+          send(200, { transitions: TRANSITIONS })
+          return
+        }
+        // Jira NO acepta el nombre del estado acá: solo el id de la transición.
+        const id = ((body.transition ?? {}) as { id?: string }).id
+        const found = TRANSITIONS.find((t) => t.id === id)
+        if (!found) {
+          send(400, { errorMessages: ['Transition id is not valid'] })
+          return
+        }
+        issue.status = found.to.name
+        send(204, null)
+        return
       }
 
       // El endpoint viejo de búsqueda, removido por Atlassian.
@@ -119,6 +175,8 @@ export async function startFakeJira(options: { existingIssues?: FakeJiraIssue[] 
           description: fields.description,
           labels: Array.isArray(fields.labels) ? (fields.labels as string[]) : [],
           comments: [],
+          attachments: [],
+          status: 'To Do',
         }
         issues.push(issue)
         send(201, { id: String(nextId), key: issue.key })

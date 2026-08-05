@@ -11,6 +11,7 @@
  * POST hacia su Jira/webhook. El hallazgo se reporta ANTES o junto con la sugerencia, y la
  * sugerencia viaja como comentario/contexto del ticket — nunca borra el rastro original.
  */
+import { existsSync, readFileSync } from 'node:fs'
 import { environmentRows, type Severity } from './qa-report'
 import { resolveAgile, type AgileProvider, type HealifyConfig, type ResolvedAgileConfig } from './config'
 import { createJiraClient } from './jira'
@@ -276,10 +277,12 @@ export async function reportDefects(
     const c = run.cases[i]
     try {
       const existing = await client.searchByDefectId(agile.project ?? '', defect.defectId)
+      let key: string
       if (existing) {
-        outcomes.push({ case: c, action: 'existing', key: existing })
+        key = existing
+        outcomes.push({ case: c, action: 'existing', key })
       } else {
-        const key = await client.createIssue({
+        key = await client.createIssue({
           project: agile.project ?? '',
           issueType: agile.issueType,
           summary: defect.title,
@@ -290,9 +293,44 @@ export async function reportDefects(
         await client.addComment(key, buildSuggestionComment(c))
         outcomes.push({ case: c, action: 'created', key })
       }
+
+      // Los dos pasos opcionales van DESPUÉS de registrar el outcome y con su propio try: el
+      // defecto ya quedó reportado, que es lo que importa. Que falle subir un screenshot o que
+      // el workflow no tenga la transición configurada no puede convertir un ticket creado con
+      // éxito en un `failed`.
+      if (agile.attachEvidence) await attachEvidence(client, key, c)
+      if (agile.transitionOnHealed && c.status === 'healed' && c.verified) {
+        await client.transition(key, agile.transitionOnHealed).catch(() => false)
+      }
     } catch (error) {
       outcomes.push({ case: c, action: 'failed', message: error instanceof Error ? error.message : String(error) })
     }
   }
   return { enabled: true, provider: 'jira', outcomes }
+}
+
+/**
+ * Sube los adjuntos del caso al ticket.
+ *
+ * La evidencia figuraba en la descripción como `[captura](test-results/x/screenshot.png)` — una
+ * ruta en el disco de quien corrió los tests, que para el que abre el ticket no existe. Un
+ * screenshot del fallo adentro del ticket es la diferencia entre "no puedo reproducirlo" y ver
+ * qué pasó.
+ *
+ * Cada archivo va en su propio try: uno que ya no esté (los `test-results/` se limpian entre
+ * corridas) no debe frenar a los demás.
+ */
+async function attachEvidence(
+  client: { addAttachment(key: string, name: string, content: Uint8Array): Promise<void> },
+  key: string,
+  c: LocalCaseResult
+): Promise<void> {
+  for (const attachment of c.attachments ?? []) {
+    try {
+      if (!existsSync(attachment.path)) continue
+      await client.addAttachment(key, attachment.name, readFileSync(attachment.path))
+    } catch {
+      /* un adjunto que falla no invalida el ticket */
+    }
+  }
 }

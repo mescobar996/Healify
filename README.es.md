@@ -80,6 +80,22 @@ el café.
 Incluso donde cuesta: dentro de web components con shadow DOM, en iframes, y cuando el selector
 vive en un page object y no en el test.
 
+## Te abre el ticket
+
+Un build en rojo que nadie triangula es un build en rojo que nadie arregla. Healify convierte
+cada selector roto en un **ticket de Jira o un issue de GitHub** — con la evidencia, los pasos,
+el entorno, y el selector que propone en su lugar.
+
+```bash
+npx healify report --dry-run   # qué se reportaría exactamente, sin tocar la red
+```
+
+El mismo selector roto nunca abre dos tickets: cada defecto lleva un id estable, y Healify
+comenta en el que ya existe en vez de crear otro. Opt-in y apagado por default — tus
+credenciales, tu instancia, sin ninguna nube nuestra en el medio.
+
+**[→ Jira, GitHub Issues y webhooks](docs/jira.es.md)**
+
 ---
 
 <div align="center">
