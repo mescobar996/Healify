@@ -42,7 +42,7 @@
     "@types/selenium-webdriver": "^4.35.6",
     "esbuild": "^0.28.1",
     "selenium-webdriver": "^4.27.0",
-    "typescript": "^5.4.0",
+    "typescript": "^7.0.2",
     "vitest": "^4.0.18"
   }
 }

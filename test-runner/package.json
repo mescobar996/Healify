@@ -42,9 +42,9 @@
     "@playwright/test": ">=1.40.0"
   },
   "devDependencies": {
-    "@playwright/test": "^1.58.2",
+    "@playwright/test": "^1.62.1",
     "esbuild": "^0.28.1",
-    "typescript": "^5.4.0",
+    "typescript": "^7.0.2",
     "vitest": "^4.0.18"
   }
 }

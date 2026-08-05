@@ -40,7 +40,7 @@
   "devDependencies": {
     "@healify/reporter-core": "*",
     "esbuild": "^0.28.1",
-    "typescript": "^5.4.0",
+    "typescript": "^7.0.2",
     "vitest": "^4.0.18",
     "webdriverio": "^9.0.0"
   }
