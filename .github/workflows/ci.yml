@@ -344,6 +344,45 @@ jobs:
         run: npm test
         working-directory: gh-action
 
+  # ─── CLI de punta a punta ──────────────────────────────────────────────────
+  # Invoca el binario del CLI como lo haría un usuario, sobre reportes de verdad en un tmpdir.
+  # No corría en ningún lado: su config decía `**/*.test.ts`, que desde la raíz del repo barría
+  # los 61 archivos de todos los workspaces y terminaba en dos fallos que no eran bugs. Nadie la
+  # corría, así que nadie lo notó. Acotada y en CI, para que no se vuelva a pudrir.
+  integration:
+    name: CLI de punta a punta
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # El test ejecuta cli/dist/index.js: sin build no hay binario que invocar.
+      - name: Build workspaces
+        run: npm run build
+
+      # Un test ejercita `fix --pr`, que hace `git checkout -b`. Sin identidad configurada,
+      # git falla con "Please tell me who you are" y el caso deja de probar lo que quería.
+      - name: Configurar identidad de git
+        run: |
+          git config user.email "ci@healify.test"
+          git config user.name "Healify CI"
+
+      # No tiene package.json propio: `npx vitest` resuelve el de la raiz subiendo por el arbol.
+      - name: Run
+        run: npx vitest run
+        working-directory: integration-test
+
   # ─── Extensión de VS Code ──────────────────────────────────────────────────
   # Dos niveles, por el mismo motivo que existen los ejemplos: lo que decide QUÉ marcar vive
   # en src/core/ y se testea con vitest, pero que eso llegue a la pantalla depende de la API
