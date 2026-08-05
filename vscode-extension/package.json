@@ -1,0 +1,90 @@
+{
+  "name": "healify-vscode",
+  "displayName": "Healify",
+  "description": "Marca los selectores frágiles mientras escribís, y aplica la corrección verificada cuando un test se rompe. 100% local, sin IA, sin nube.",
+  "version": "0.1.0",
+  "publisher": "mescobar996",
+  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mescobar996/Healify.git",
+    "directory": "vscode-extension"
+  },
+  "homepage": "https://healify-sigma.vercel.app",
+  "bugs": {
+    "url": "https://github.com/mescobar996/Healify/issues"
+  },
+  "categories": [
+    "Testing",
+    "Linters"
+  ],
+  "keywords": [
+    "testing",
+    "playwright",
+    "cypress",
+    "selenium",
+    "selectors"
+  ],
+  "engines": {
+    "vscode": "^1.75.0",
+    "node": ">=18.0.0"
+  },
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onLanguage:typescript",
+    "onLanguage:javascript"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "healify.openPanel",
+        "title": "Healify: Abrir panel",
+        "category": "Healify"
+      },
+      {
+        "command": "healify.refresh",
+        "title": "Healify: Re-analizar el archivo actual",
+        "category": "Healify"
+      }
+    ],
+    "configuration": {
+      "title": "Healify",
+      "properties": {
+        "healify.liveLint": {
+          "type": "boolean",
+          "default": true,
+          "description": "Marcar selectores frágiles mientras escribís. Son advertencias sin reemplazo propuesto: sin ver la página, cualquier sugerencia concreta sería una adivinanza."
+        },
+        "healify.reportPath": {
+          "type": "string",
+          "default": "",
+          "description": "Ruta al healify-report.json. Vacío = buscar en .healify/healify-report.json y healify-report.json, igual que el CLI."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "esbuild src/extension.ts --bundle --platform=node --outfile=dist/extension.js --format=cjs --external:vscode",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "package": "vsce package --no-dependencies",
+    "compile-tests": "tsc -p tsconfig.test.json",
+    "test:integration": "npm run build && npm run compile-tests && node out/test/runTest.js",
+    "vscode:prepublish": "node ../scripts/sync-license.mjs && npm run build"
+  },
+  "dependencies": {
+    "@healify/reporter-core": "^2.1.1"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^25.5.0",
+    "@types/vscode": "^1.75.0",
+    "@vscode/test-electron": "^3.1.0",
+    "esbuild": "^0.28.1",
+    "glob": "^13.0.6",
+    "mocha": "^11.8.0",
+    "typescript": "^5.4.0",
+    "vitest": "^4.1.10"
+  }
+}

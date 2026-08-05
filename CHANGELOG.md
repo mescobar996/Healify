@@ -42,6 +42,57 @@
   `MODULE_NOT_FOUND` interno de npm apenas se corre así. Arreglado invocando `cmd.exe /c npx
   ...` explícito, el patrón estándar de .NET para lanzar batch scripts sin una shell real.
 
+## 2.2.0 — 2026-08-05
+
+### Extensión de VS Code (`healify-vscode` 0.1.0)
+
+Healify sale de la terminal. Los selectores frágiles se subrayan mientras escribís; los que
+se rompieron de verdad se arreglan con `Ctrl+.`.
+
+La extensión se versiona aparte de los paquetes npm, igual que los adapters de Java y Python:
+su ciclo de release no es el de npm.
+
+**Dos niveles, y la diferencia es el diseño entero:**
+
+| | Origen | Acción |
+|---|---|---|
+| Amarillo | El motor, sin ver la página | Ninguna — advierte, no propone |
+| Rojo | `healify-report.json` con `verified: true` | Quick Fix con el reemplazo real |
+
+Sin evidencia del DOM el motor igual propone algo: preguntarle por `#btn-a1b2c3` devuelve
+`role('button', { name: 'Submit' })`. Ese *"Submit"* no salió de ninguna página. Ofrecerlo
+como Quick Fix sería la adivinanza que Healify dice no hacer, y encima dentro del editor,
+donde un `Ctrl+.` distraído lo aplica sin que nadie lo lea. **Un selector no recibe reemplazo
+concreto si no fue confrontado contra una página real**, y hay tests —unitarios y dentro de un
+VS Code de verdad— que fallan si eso deja de cumplirse.
+
+No reimplementa nada del motor: `analyzeAndHeal` va bundleado para el lint (spawnear un
+proceso por tecla no es viable) y las correcciones estructurales las aplica el `healify fix`
+del proyecto, que ya sabe de page objects y reescritura AST. Dos copias de esa lógica se
+desincronizan seguro.
+
+**Dos bugs que aparecieron construyéndola**, los dos en el mismo lugar donde nadie mira:
+
+- El enmascarado de comentarios trataba el `//` inicial de un XPath como comentario de línea.
+  La extensión habría sido **ciega a todos los XPath** — de los selectores más frágiles que
+  existen — y el subrayado simplemente no habría aparecido nunca.
+- La regex exigía que el cuerpo del string no tuviera *ninguna* comilla, así que
+  `By.xpath("//button[text()='Pagar']")` se cortaba en la comilla interna.
+
+Los encontraron los tests al escribirlos, no una revisión del código.
+
+### Menor
+
+- **LICENSE en los 7 tarballs.** Todos declaraban `"license": "MIT"` sin llevar el texto: npm
+  solo incluye el archivo si está en la raíz *del paquete*, y el nuestro vive en la raíz del
+  repo. Lo copia un `prepack`, y CI verifica el tarball —no el script— porque un tarball
+  publicado no se corrige: hay que quemar una versión nueva.
+- **`ts-morph` 21 → 28.** Siete majors, pero la superficie que usa `fix-ast` son 6 llamadas de
+  la API core y ninguna cambió. Verificado con los tests que escriben archivos de verdad más
+  el ciclo completo del ejemplo `playwright-pom` contra Chrome real.
+- **`healify ai models` con Ollama apagado.** Salía con error aunque el catálogo de modelos y
+  la RAM son datos locales, y son justo lo que querés mirar *antes* de bajar nada.
+
 ## 2.1.1 — 2026-08-04
 
 > ⚠️ **Si usás el adapter de Selenium, actualizá.** En 2.1.0 no curaba nada. No fallaba, no

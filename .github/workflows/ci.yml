@@ -344,6 +344,52 @@ jobs:
         run: npm test
         working-directory: gh-action
 
+  # ─── Extensión de VS Code ──────────────────────────────────────────────────
+  # Dos niveles, por el mismo motivo que existen los ejemplos: lo que decide QUÉ marcar vive
+  # en src/core/ y se testea con vitest, pero que eso llegue a la pantalla depende de la API
+  # de vscode. Mockearla probaría el mock, así que la segunda tanda levanta un VS Code de
+  # verdad con xvfb y verifica los diagnostics y el Quick Fix ahí adentro.
+  vscode-extension:
+    name: Extensión de VS Code
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install deps
+        run: npm ci
+        working-directory: vscode-extension
+
+      - name: Type check
+        run: npm run typecheck
+        working-directory: vscode-extension
+
+      - name: Unit tests (core, sin editor)
+        run: npm test
+        working-directory: vscode-extension
+
+      # VS Code es una app de Electron: sin display no arranca. xvfb-run le da uno virtual.
+      - name: Tests de integración (VS Code real)
+        run: xvfb-run -a npm run test:integration
+        working-directory: vscode-extension
+
+      - name: Empaquetar .vsix
+        run: npx --yes @vscode/vsce package --no-dependencies
+        working-directory: vscode-extension
+
+      - name: Guardar el .vsix como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: healify-vscode
+          path: vscode-extension/*.vsix
+
   # ─── Coverage ──────────────────────────────────────────────────────────────
   coverage:
     name: Coverage

@@ -25,6 +25,7 @@ Everything you need to use Healify for real. Coming in cold? Start with
 
 | | |
 |---|---|
+| **[VS Code extension](../vscode-extension/)** | Fragile selectors underlined as you type; the ones that actually broke get a verified `Ctrl+.` fix. |
 | **[GitHub Action](github-action.md)** | Comments broken selectors on every PR. Never modifies files. |
 | **[Jira / webhook reporting](jira.md)** | Defects land in your backlog with evidence. Opt-in, off by default. |
 
@@ -36,6 +37,7 @@ Not snippets: complete projects, verified in CI against a real browser.
 |---|---|
 | **[Playwright + Page Object Model](../examples/playwright-pom/)** | The selector lives in `pages/`, not in the test. Healify finds it anyway. |
 | **[Cypress + Shadow DOM](../examples/cypress-shadow-dom/)** | The button is inside a web component, where `querySelector` returns zero. |
+| **[Selenium + live healing](../examples/selenium-live-heal/)** | `plugin.wrap(driver)` and nothing else. The test never changes. |
 
 ## Understanding the why
 

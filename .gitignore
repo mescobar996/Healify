@@ -47,7 +47,11 @@ next-env.d.ts
 .claude
 .z-ai-config
 dev.log
-test
+# Sin barra, `test` ignora CUALQUIER carpeta con ese nombre en cualquier nivel — se llevaba
+# puesto vscode-extension/src/test/, que son los tests de integracion de la extension (y el
+# job de CI que los corre habria fallado sin ellos). Anclado a la raiz, que es lo que se
+# queria decir.
+/test
 prompt
 
 server.log
@@ -136,3 +140,11 @@ docs/superpowers/
 
 # Borradores de marketing — utiles en local, no son contenido del proyecto
 post-tecnico.md
+
+# Extension de VS Code
+vscode-extension/node_modules
+vscode-extension/dist
+vscode-extension/out
+vscode-extension/.vscode-test
+vscode-extension/*.vsix
+vscode-extension/LICENSE

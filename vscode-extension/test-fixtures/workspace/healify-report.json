@@ -1,0 +1,17 @@
+{
+  "project": "fixture",
+  "framework": "Playwright",
+  "verdict": "passed",
+  "stats": { "total": 1, "healed": 1, "review": 0, "unresolved": 0 },
+  "cases": [
+    {
+      "testName": "checkout",
+      "selector": "#buy-btn-a1b2c3",
+      "status": "healed",
+      "fixedSelector": "[data-testid='comprar']",
+      "confidence": 0.97,
+      "verified": true,
+      "explanation": "Verificado contra la pagina."
+    }
+  ]
+}

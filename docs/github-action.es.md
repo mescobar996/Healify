@@ -27,7 +27,7 @@ jobs:
       - run: npm ci
       - run: npx playwright test
         continue-on-error: true   # queremos el reporte aunque la suite falle
-      - uses: mescobar996/Healify@v2.1.1
+      - uses: mescobar996/Healify@v2.2.0
 ```
 
 Se referencia un tag exacto. `@v2` funciona como alias móvil de la última `2.x`, y ya está publicado.

@@ -3,7 +3,10 @@ import tsParser from '@typescript-eslint/parser';
 
 export default [
   {
-    ignores: ['**/node_modules/**', '**/dist/**', '**/coverage/**'],
+    // `.vscode-test/` es el VS Code que @vscode/test-electron descarga para correr los tests
+    // de integracion: cientos de megas de codigo ajeno, con su propia config de ESLint que
+    // rompe la corrida entera si se la intenta cargar. `out/` es el compilado de esos tests.
+    ignores: ['**/node_modules/**', '**/dist/**', '**/coverage/**', '**/.vscode-test/**', 'vscode-extension/out/**'],
   },
   {
     files: ['**/*.ts'],

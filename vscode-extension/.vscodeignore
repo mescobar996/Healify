@@ -1,0 +1,10 @@
+# Todo lo que no hace falta para EJECUTAR la extensión. El bundle de esbuild ya trae adentro
+# lo que necesita (incluido @healify/reporter-core), así que node_modules no viaja.
+.vscode-test/**
+node_modules/**
+out/**
+src/**
+test-fixtures/**
+tsconfig*.json
+vitest.config.mjs
+**/*.map
