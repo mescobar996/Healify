@@ -26,6 +26,11 @@
     "selenium",
     "selectors"
   ],
+  "icon": "icon.png",
+  "galleryBanner": {
+    "color": "#0d0d12",
+    "theme": "dark"
+  },
   "engines": {
     "vscode": "^1.75.0",
     "node": ">=18.0.0"
