@@ -30,6 +30,43 @@ function jqlEscape(value: string): string {
   return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
 }
 
+/**
+ * Convierte texto plano a Atlassian Document Format.
+ *
+ * No es opcional ni cosmético: la API v3 **rechaza un string** en `description` y en el cuerpo
+ * de los comentarios con un 400 (`"Operation value must be an Atlassian Document"`). Es la
+ * diferencia principal entre la v2 y la v3, y el motivo por el que este cliente nunca pudo
+ * crear un ticket — algo que 19 tests con el `fetch` mockeado no podían detectar, porque el
+ * mock aceptaba cualquier cosa que se le mandara.
+ *
+ * https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-issues/
+ *
+ * Las líneas en blanco separan párrafos; dentro de cada párrafo los saltos van como
+ * `hardBreak`, que es como ADF representa un salto de línea sin abrir un párrafo nuevo.
+ */
+export function toAdf(text: string): Record<string, unknown> {
+  const paragraphs = text
+    .split(/\n{2,}/)
+    .map((block) => block.split('\n').filter((line) => line.length > 0))
+    .filter((lines) => lines.length > 0)
+
+  const content = paragraphs.map((lines) => ({
+    type: 'paragraph',
+    content: lines.flatMap((line, i) =>
+      // ADF no acepta un nodo `text` con string vacío, por eso las líneas vacías ya se
+      // filtraron arriba.
+      i === 0 ? [{ type: 'text', text: line }] : [{ type: 'hardBreak' }, { type: 'text', text: line }]
+    ),
+  }))
+
+  return {
+    type: 'doc',
+    version: 1,
+    // Un doc sin contenido tambien es invalido; un parrafo vacio es el minimo aceptable.
+    content: content.length > 0 ? content : [{ type: 'paragraph', content: [] }],
+  }
+}
+
 export function createJiraClient(config: ResolvedAgileConfig, fetchImpl: typeof fetch = globalThis.fetch) {
   async function request(method: string, path: string, body?: unknown): Promise<unknown> {
     const response = await fetchImpl(`${apiBase(config)}${path}`, {
@@ -60,9 +97,13 @@ export function createJiraClient(config: ResolvedAgileConfig, fetchImpl: typeof 
      */
     async searchByDefectId(project: string, defectId: string): Promise<string | null> {
       const jql = `text ~ "${jqlEscape(defectId)}" AND project = ${project}`
+      // `/search/jql`, no `/search`: Atlassian removió el segundo y responde 410 pidiendo
+      // migrar. Con el endpoint viejo el dedupe fallaba en toda corrida contra un Jira actual,
+      // así que cada test roto abría un ticket nuevo cada vez.
+      // https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-issue-search/
       const data = (await request(
         'GET',
-        `/rest/api/3/search?jql=${encodeURIComponent(jql)}&maxResults=1&fields=key`
+        `/rest/api/3/search/jql?jql=${encodeURIComponent(jql)}&maxResults=1&fields=key`
       )) as { issues?: { key?: string }[] }
       if (!Array.isArray(data?.issues) || data.issues.length === 0 || !data.issues[0]?.key) return null
       return data.issues[0].key as string
@@ -74,7 +115,7 @@ export function createJiraClient(config: ResolvedAgileConfig, fetchImpl: typeof 
           project: { key: input.project },
           issuetype: { name: input.issueType },
           summary: input.summary,
-          description: input.description,
+          description: toAdf(input.description),
           priority: { name: input.priority },
           labels: input.labels,
         },
@@ -84,7 +125,7 @@ export function createJiraClient(config: ResolvedAgileConfig, fetchImpl: typeof 
     },
 
     async addComment(issueKey: string, body: string): Promise<void> {
-      await request('POST', `/rest/api/3/issue/${encodeURIComponent(issueKey)}/comment`, { body })
+      await request('POST', `/rest/api/3/issue/${encodeURIComponent(issueKey)}/comment`, { body: toAdf(body) })
     },
   }
 }

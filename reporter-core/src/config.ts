@@ -3,7 +3,7 @@ import { createRequire } from 'node:module'
 import { join } from 'node:path'
 import type { Severity } from './qa-report'
 
-export type AgileProvider = 'jira' | 'webhook'
+export type AgileProvider = 'jira' | 'github' | 'webhook'
 
 /** Bloque `agile` de la config — reporte de defectos a herramientas ágiles. Siempre opt-in. */
 export interface HealifyAgileConfig {
@@ -13,16 +13,26 @@ export interface HealifyAgileConfig {
    * SUS credenciales; nada pasa por una nube de Healify.
    */
   enabled?: boolean
-  /** `jira` (REST Cloud) o `webhook` (genérico: Zapier/n8n/automatización Jira hacen el
-   * create-or-update). Default: `jira`. */
+  /**
+   * `jira` (REST Cloud), `github` (Issues del repo) o `webhook` (genérico: Zapier/n8n o una
+   * automatización de Jira hacen el create-or-update). Default: `jira`.
+   */
   provider?: AgileProvider
-  /** Base del Jira Cloud, ej. `https://acme.atlassian.net`. */
+  /**
+   * Base de la API. Jira: la instancia, ej. `https://acme.atlassian.net`. GitHub: solo hace
+   * falta con GitHub Enterprise; contra github.com se resuelve a `https://api.github.com`.
+   */
   baseUrl?: string
   /** Email del usuario de Jira (credencial del usuario contra su instancia). */
   email?: string
-  /** Token API de Jira (credencial del usuario). Se lee de config o de `JIRA_API_TOKEN`. */
+  /**
+   * Credencial del USUARIO. Jira: token de API (`JIRA_API_TOKEN`). GitHub: un token con scope
+   * `repo` — en un workflow alcanza el `GITHUB_TOKEN` si el job declara `issues: write`.
+   */
   apiToken?: string
-  /** Key del proyecto, ej. `QA`. */
+  /** `owner/repo` para el provider `github`. En CI se toma de `GITHUB_REPOSITORY`. */
+  repository?: string
+  /** Key del proyecto de Jira, ej. `QA`. */
   project?: string
   /** Tipo de issue. Default: `Bug`. */
   issueType?: string
@@ -41,6 +51,7 @@ export interface ResolvedAgileConfig {
   baseUrl?: string
   email?: string
   apiToken?: string
+  repository?: string
   project?: string
   issueType: string
   priorityBySeverity: Record<Severity, string>
@@ -279,14 +290,23 @@ function withEnvOverrides(config: HealifyConfig, env: NodeJS.ProcessEnv = proces
     agile.enabled = agileEnabled
     agileChanged = true
   }
-  if (env.HEALIFY_AGILE_PROVIDER === 'jira' || env.HEALIFY_AGILE_PROVIDER === 'webhook') {
+  if (env.HEALIFY_AGILE_PROVIDER === 'jira' || env.HEALIFY_AGILE_PROVIDER === 'github' || env.HEALIFY_AGILE_PROVIDER === 'webhook') {
     agile.provider = env.HEALIFY_AGILE_PROVIDER
     agileChanged = true
   }
+  // El token de GitHub se lee de HEALIFY_GITHUB_TOKEN y no de GITHUB_TOKEN a secas: esa
+  // variable la exporta el runner en TODO workflow, y tomarla sola convertiría un `healify
+  // report` sin configurar en un intento silencioso de escribir issues en el repo. Activarlo
+  // tiene que ser una decisión escrita.
+  //
+  // `repository` sí sale de GITHUB_REPOSITORY, que el runner ya define como `owner/repo` y no
+  // es una credencial: ahorra repetir en la config algo que el entorno ya sabe.
+  const githubToken = env.HEALIFY_GITHUB_TOKEN ?? ''
   const agileStringFields: [keyof HealifyAgileConfig, string][] = [
     ['baseUrl', env.JIRA_BASE_URL ?? ''],
     ['email', env.JIRA_EMAIL ?? ''],
-    ['apiToken', env.JIRA_API_TOKEN ?? ''],
+    ['apiToken', isNonEmptyString(githubToken) && agile.provider === 'github' ? githubToken : (env.JIRA_API_TOKEN ?? '')],
+    ['repository', env.HEALIFY_GITHUB_REPOSITORY ?? env.GITHUB_REPOSITORY ?? ''],
     ['project', env.JIRA_PROJECT ?? ''],
     ['issueType', env.JIRA_ISSUE_TYPE ?? ''],
     ['webhookUrl', env.HEALIFY_WEBHOOK_URL ?? ''],
@@ -350,6 +370,7 @@ export function resolveAgile(config: HealifyConfig = {}): ResolvedAgileConfig {
     baseUrl: raw.baseUrl ?? defaults.baseUrl,
     email: raw.email ?? defaults.email,
     apiToken: raw.apiToken ?? defaults.apiToken,
+    repository: raw.repository ?? defaults.repository,
     project: raw.project ?? defaults.project,
     issueType: raw.issueType ?? defaults.issueType,
     priorityBySeverity: { ...defaults.priorityBySeverity, ...(raw.priorityBySeverity ?? {}) },

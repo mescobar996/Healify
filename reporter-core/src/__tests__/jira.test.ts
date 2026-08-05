@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { createJiraClient } from '../jira'
+import { createJiraClient, toAdf } from '../jira'
 import type { ResolvedAgileConfig } from '../config'
 
 function config(overrides: Partial<ResolvedAgileConfig> = {}): ResolvedAgileConfig {
@@ -54,7 +54,8 @@ describe('createJiraClient', () => {
     await client.searchByDefectId('QA', 'HLF-AABB11')
 
     const [url] = fetchImpl.mock.calls[0] as [string]
-    expect(url).toContain('/rest/api/3/search?')
+    // `/search/jql`, no `/search`: Atlassian removio el segundo (410).
+    expect(url).toContain('/rest/api/3/search/jql?')
     expect(url).toContain(encodeURIComponent('text ~ "HLF-AABB11" AND project = QA'))
     expect(url).toContain('maxResults=1')
   })
@@ -98,7 +99,11 @@ describe('createJiraClient', () => {
 
     const [url, init] = fetchImpl.mock.calls[0] as [string, RequestInit]
     expect(url).toBe('https://acme.atlassian.net/rest/api/3/issue/QA-11/comment')
-    expect(JSON.parse(init.body as string).body).toContain('Sugerencia')
+
+    // El cuerpo va en ADF, no como string: la v3 rechaza texto plano con un 400.
+    const body = JSON.parse(init.body as string).body
+    expect(body.type).toBe('doc')
+    expect(JSON.stringify(body)).toContain('Sugerencia')
   })
 
   it('un 403/401 tira error con el snippet del cuerpo (explica permisos)', async () => {
@@ -108,5 +113,41 @@ describe('createJiraClient', () => {
     await expect(client.createIssue({ project: 'QA', issueType: 'Bug', summary: 'x', description: '', priority: 'High', labels: [] })).rejects.toThrow(
       /403.*no tiene permiso/
     )
+  })
+})
+
+/**
+ * ADF es lo que separa la v3 de la v2, y mandarle un string es un 400. Estos casos borde
+ * importan porque la descripcion de un defecto se arma concatenando lineas: pasos, evidencia,
+ * entorno, con lineas en blanco entre bloques.
+ */
+describe('toAdf', () => {
+  it('devuelve un documento ADF valido', () => {
+    const doc = toAdf('una linea')
+    expect(doc.type).toBe('doc')
+    expect(doc.version).toBe(1)
+    expect(Array.isArray(doc.content)).toBe(true)
+  })
+
+  it('las lineas en blanco separan parrafos', () => {
+    const doc = toAdf(['primero', '', 'segundo'].join('\n')) as { content: unknown[] }
+    expect(doc.content).toHaveLength(2)
+  })
+
+  it('los saltos dentro de un parrafo van como hardBreak', () => {
+    const doc = toAdf(['linea 1', 'linea 2'].join('\n')) as { content: { content: { type: string }[] }[] }
+    expect(doc.content).toHaveLength(1)
+    expect(doc.content[0].content.map((n) => n.type)).toEqual(['text', 'hardBreak', 'text'])
+  })
+
+  it('nunca emite un nodo text vacio, que ADF rechaza', () => {
+    const serializado = JSON.stringify(toAdf(['a', '', '', '', 'b'].join('\n')))
+    expect(serializado).not.toContain('"text":""')
+  })
+
+  it('con texto vacio devuelve un doc valido igual', () => {
+    const doc = toAdf('') as { type: string; content: unknown[] }
+    expect(doc.type).toBe('doc')
+    expect(doc.content).toHaveLength(1)
   })
 })

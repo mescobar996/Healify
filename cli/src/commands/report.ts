@@ -50,7 +50,13 @@ function dryRunLines(defects: AgileDefect[], provider: AgileProvider): string[] 
     if (d.testFile) lines.push(`    en: ${d.testFile} · selector ${d.selector}`)
   }
   lines.push('')
-  lines.push('El dedupe lo hace el receptor por defectId: el mismo selector roto nunca crea un ticket nuevo.')
+  // Quién dedupe cambia con el provider, y decirlo mal importa: con webhook, si el receptor no
+  // implementa el create-or-update, el mismo selector roto abre un ticket por corrida de CI.
+  lines.push(
+    provider === 'webhook'
+      ? 'Con webhook el dedupe lo hace el receptor, usando el defectId: si tu automatización no lo implementa, cada corrida crea un ticket nuevo.'
+      : `Healify busca el defectId en ${provider} antes de crear: el mismo selector roto comenta en el ticket que ya existe, no abre otro.`
+  )
   return lines
 }
 

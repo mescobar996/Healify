@@ -145,8 +145,11 @@ describe('reportDefects', () => {
     expect(createBody.fields.summary).toContain('HLF-AABB11')
     expect(createBody.fields.priority.name).toBe('Highest')
 
+    // El comentario viaja en ADF (la v3 rechaza texto plano), asi que el texto se busca
+    // dentro del documento serializado.
     const commentBody = JSON.parse(calls[2][1].body as string)
-    expect(commentBody.body).toContain('Sugerencia')
+    expect(commentBody.body.type).toBe('doc')
+    expect(JSON.stringify(commentBody.body)).toContain('Sugerencia')
   })
 
   it('jira: el defectId ya existe → no crea nada (dedupe), outcome existing', async () => {

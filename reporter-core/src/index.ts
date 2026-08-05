@@ -48,7 +48,8 @@ export {
   type RunOutcome,
 } from './runs'
 export { detectFlakyTests, type FlakyTest, type FlakeVerdict } from './flake'
-export { createJiraClient } from './jira'
+export { createJiraClient, toAdf } from './jira'
+export { createGithubIssuesClient } from './github-issues'
 export { postJson } from './webhook'
 export { buildAuditEntry, writeAuditReport, appendAuditEntry } from './audit'
 export type { AuditEntry, AuditReport, FailureContext } from './audit'

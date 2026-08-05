@@ -12,8 +12,9 @@
  * sugerencia viaja como comentario/contexto del ticket — nunca borra el rastro original.
  */
 import { environmentRows, type Severity } from './qa-report'
-import { resolveAgile, type AgileProvider, type HealifyConfig } from './config'
+import { resolveAgile, type AgileProvider, type HealifyConfig, type ResolvedAgileConfig } from './config'
 import { createJiraClient } from './jira'
+import { createGithubIssuesClient } from './github-issues'
 import { postJson } from './webhook'
 import type { LocalCaseResult } from './local-mode'
 import type { LocalRun } from './local-report'
@@ -169,13 +170,55 @@ function webhookPayload(defect: AgileDefect): Record<string, unknown> {
 }
 
 /**
+ * GitHub Issues: mismo contrato que Jira (buscar por defectId → crear o comentar), pero el
+ * cuerpo viaja en Markdown plano, que es lo que la API espera — sin ADF ni conversión.
+ *
+ * La sugerencia va en el cuerpo del issue y no como comentario aparte: en GitHub un issue
+ * recién creado con un comentario inmediato genera dos notificaciones para lo mismo. Cuando el
+ * issue ya existe, ahí sí corresponde comentar, porque es información nueva sobre algo viejo.
+ */
+async function reportToGithub(
+  defects: AgileDefect[],
+  run: LocalRun,
+  agile: ResolvedAgileConfig,
+  fetchImpl: typeof fetch
+): Promise<AgileOutcome[]> {
+  const client = createGithubIssuesClient(agile, fetchImpl)
+  const outcomes: AgileOutcome[] = []
+
+  for (let i = 0; i < defects.length; i++) {
+    const defect = defects[i]
+    const c = run.cases[i]
+    try {
+      const existing = await client.searchByDefectId(defect.defectId)
+      if (existing !== null) {
+        await client.addComment(existing, buildSuggestionComment(c))
+        outcomes.push({ case: c, action: 'existing', key: `#${existing}` })
+      } else {
+        const number = await client.createIssue({
+          title: defect.title,
+          body: `${defect.description}\n\n---\n\n${buildSuggestionComment(c)}`,
+          labels: defect.labels,
+        })
+        outcomes.push({ case: c, action: 'created', key: `#${number}` })
+      }
+    } catch (error) {
+      outcomes.push({ case: c, action: 'failed', message: error instanceof Error ? error.message : String(error) })
+    }
+  }
+
+  return outcomes
+}
+
+/**
  * Orquestador: reporta cada defecto de la corrida al provider configurado.
  *
  * - Jira: `searchByDefectId` → si existe, `existing` (no se duplica); si no, `createIssue` +
  *   `addComment` con la sugerencia → `created`.
+ * - GitHub: mismo contrato, con Markdown en vez de ADF.
  * - Webhook: POST del payload → `sent` (el create-or-update lo hace el receptor).
- * - Un fallo por defecto → `failed`, sin tirar la corrida completa: un 503 de Jira nunca debe
- *   hacer que se pierda el reporte local.
+ * - Un fallo por defecto → `failed`, sin tirar la corrida completa: un 503 del gestor nunca
+ *   debe hacer que se pierda el reporte local.
  */
 export async function reportDefects(
   run: LocalRun,
@@ -210,6 +253,14 @@ export async function reportDefects(
       }
     }
     return { enabled: true, provider: agile.provider, outcomes }
+  }
+
+  if (agile.provider === 'github') {
+    if (!agile.repository || !agile.apiToken) {
+      const missing = [!agile.repository ? 'repository' : '', !agile.apiToken ? 'apiToken' : ''].filter(Boolean).join('/')
+      return failAll(`Falta agile.${missing} para reportar a GitHub Issues.`)
+    }
+    return { enabled: true, provider: 'github', outcomes: await reportToGithub(defects, run, agile, fetchImpl) }
   }
 
   if (!agile.baseUrl || !agile.email || !agile.apiToken) {
