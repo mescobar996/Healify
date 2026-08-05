@@ -16,6 +16,19 @@ updates:
         dependency-type: production
       development-deps:
         dependency-type: development
+    ignore:
+      # TypeScript 7 es la reescritura nativa en Go, no un bump: cambia el compilador entero y
+      # arrastra binarios por plataforma (@typescript/typescript-*). Sobre el 5.9 que usa el
+      # repo rompia 7 jobs de CI.
+      #
+      # El problema no era la propuesta en si, sino que viene AGRUPADA con el resto de las
+      # dev-deps: mientras estuviera adentro, cada lunes llegaba la misma PR en rojo tapando
+      # bumps que si sirven, y no habia forma de mergear "la parte buena".
+      #
+      # Solo se ignoran los majors. Los 5.x siguen llegando, y el dia que TS 7 sea la version
+      # a la que migrar, se hace a mano y verificando — como se hizo con ts-morph 21 -> 28.
+      - dependency-name: 'typescript'
+        update-types: ['version-update:semver-major']
 
   - package-ecosystem: github-actions
     directory: "/"
