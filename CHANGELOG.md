@@ -42,6 +42,87 @@
   `MODULE_NOT_FOUND` interno de npm apenas se corre así. Arreglado invocando `cmd.exe /c npx
   ...` explícito, el patrón estándar de .NET para lanzar batch scripts sin una shell real.
 
+## 2.3.0 — 2026-08-05
+
+> ⚠️ **Si configuraste el reporte a Jira, nunca funcionó.** No es una regresión de esta
+> versión: no funcionó nunca, desde que la feature existe. Está arreglado acá.
+
+### El reporte a Jira no podía crear un ticket
+
+Dos motivos, los dos confirmados contra la documentación de Atlassian:
+
+1. **La API v3 exige ADF** (Atlassian Document Format) en `description` y en el cuerpo de los
+   comentarios. El cliente mandaba strings, y v3 contesta 400 con *"Operation value must be an
+   Atlassian Document"*. Es la diferencia principal entre la v2 y la v3.
+2. **`GET /rest/api/3/search` fue removido.** Hoy responde 410 pidiendo migrar a
+   `/rest/api/3/search/jql`. Ese endpoint es el que hace el dedupe: además de no poder crear
+   tickets, tampoco podía evitar duplicarlos.
+
+La feature tenía 19 tests en verde. Todos con el `fetch` mockeado, y **un mock devuelve lo que
+el test le dice que devuelva**: valida que el código llame a lo que el test cree que
+corresponde, nunca que el otro lado lo acepte.
+
+Ahora hay un servidor que se comporta como Jira Cloud v3 y **rechaza lo que Jira rechaza** —
+texto plano donde va ADF, 410 en el endpoint viejo, 403 sin el header XSRF en los adjuntos.
+Los 12 tests nuevos pasan por HTTP real; con el código anterior, 5 fallaban de entrada.
+
+### GitHub Issues
+
+Los defectos ahora pueden ir a los Issues del repo. Mismo contrato que Jira (buscar por
+`defectId`, crear o comentar) pero en Markdown, que es lo que la API espera.
+
+```js
+agile: {
+  enabled: true,
+  provider: 'github',
+  repository: 'tu-usuario/tu-repo',
+  apiToken: process.env.HEALIFY_GITHUB_TOKEN,
+}
+```
+
+En un workflow alcanza el token que GitHub ya da, con `permissions: issues: write`. El token se
+lee de `HEALIFY_GITHUB_TOKEN` y **no** de `GITHUB_TOKEN` a secas: esa variable la exporta el
+runner en todo workflow, y tomarla sola convertiría un `healify report` mal configurado en un
+intento silencioso de escribir en tu repo.
+
+Nació con 10 tests contra un servidor igual de estricto, sin pasar por la etapa de mockear.
+
+### La evidencia llega al ticket
+
+Hasta ahora el screenshot del fallo iba en la descripción como
+`[captura](test-results/checkout/fallo.png)` — una ruta en el disco de quien corrió los tests,
+que para el que abre el ticket no existe.
+
+`attachEvidence: true` sube el archivo de verdad (multipart, con el header XSRF que Jira exige
+y sin el cual devuelve 403 aunque las credenciales estén bien). Es opt-in aparte de `enabled`
+porque una captura de un entorno de prueba puede tener datos reales adentro.
+
+### Los tickets se cierran
+
+`transitionOnHealed: 'Done'` mueve el ticket cuando Healify resolvió el selector **y lo
+verificó contra la página** — no cuando dedujo un nombre plausible. Jira no acepta el nombre
+del estado destino, solo el id de la transición, que varía por workflow: se consultan las
+disponibles primero. Si el workflow no la tiene, el ticket queda creado igual.
+
+### Dos bugs más, encontrados en el camino
+
+- **`GITHUB_REPOSITORY` se leía siempre**, y el runner de GitHub Actions la exporta en *todo*
+  workflow: la config resuelta cambiaba según dónde corría. Lo encontró CI — los tests pasaban
+  en cualquier máquina y fallaban en el runner.
+- **`validateAgile` descartaba los campos nuevos.** Un `healify.config.json` con
+  `provider: 'github'` quedaba reducido a `{ enabled: true }`: la feature andaba solo por
+  variables de entorno, y la documentación recién escrita mostraba ejemplos que no habrían
+  funcionado.
+
+### Menor
+
+- El dry-run decía que el dedupe lo hace el receptor. Eso solo vale para `webhook`; con Jira y
+  GitHub lo hace Healify.
+- **El reporte de defectos por fin está en el README**, en los dos idiomas. Existía desde la
+  1.7.0 y quien llegaba al repo por GitHub no se enteraba de que Healify podía abrirle un
+  ticket.
+- La landing menciona GitHub Issues y suma el ejemplo de Selenium, que faltaba ahí.
+
 ## 2.2.0 — 2026-08-05
 
 ### Extensión de VS Code (`healify-vscode` 0.1.0)
