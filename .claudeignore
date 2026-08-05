@@ -1,7 +1,6 @@
-archive/**
-docs/superpowers/plans/**
-docs/superpowers/specs/2026-07-2*
 **/node_modules/**
 **/dist/**
-healify-report.*
+**/out/**
+**/.vscode-test/**
 *.tsbuildinfo
+healify-report.*
