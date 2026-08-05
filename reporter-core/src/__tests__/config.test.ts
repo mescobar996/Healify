@@ -18,6 +18,11 @@ const ENV_KEYS = [
   'JIRA_PROJECT',
   'JIRA_ISSUE_TYPE',
   'HEALIFY_WEBHOOK_URL',
+  'HEALIFY_GITHUB_TOKEN',
+  'HEALIFY_GITHUB_REPOSITORY',
+  // El runner de GitHub Actions la exporta en TODO workflow: sin limpiarla, estos tests pasan
+  // en cualquier máquina y fallan en CI.
+  'GITHUB_REPOSITORY',
 ] as const
 
 beforeEach(() => {
@@ -178,6 +183,27 @@ describe('loadConfig — bloque agile', () => {
     expect(loadConfig(dir).agile).toEqual({ project: 'QA' })
   })
 
+  /**
+   * `validateAgile` descarta todo campo que no reconozca, asi que agregar una opcion nueva sin
+   * agregarla ahi la vuelve inutilizable desde el archivo de config — anda solo por variable de
+   * entorno, que es el camino que menos gente usa. Paso exactamente eso con los tres campos del
+   * provider github, y la doc ya mostraba ejemplos que no habrian funcionado.
+   */
+  it('los campos del provider github sobreviven a la validacion', () => {
+    writeFileSync(
+      join(dir, 'healify.config.json'),
+      JSON.stringify({
+        agile: { enabled: true, provider: 'github', repository: 'a/b', attachEvidence: true, transitionOnHealed: 'Done' },
+      })
+    )
+
+    const resuelto = resolveAgile(loadConfig(dir))
+    expect(resuelto.provider).toBe('github')
+    expect(resuelto.repository).toBe('a/b')
+    expect(resuelto.attachEvidence).toBe(true)
+    expect(resuelto.transitionOnHealed).toBe('Done')
+  })
+
   it('issueType y labels se sanean', () => {
     writeFileSync(
       join(dir, 'healify.config.json'),
@@ -221,6 +247,31 @@ describe('loadConfig — bloque agile', () => {
     process.env.HEALIFY_AGILE_PROVIDER = 'webhook'
 
     expect(loadConfig(dir).agile?.provider).toBe('webhook')
+  })
+
+  /**
+   * `GITHUB_REPOSITORY` la exporta el runner en TODO workflow de GitHub Actions. Si se leyera
+   * siempre, la config resuelta cambiaria segun DONDE corre — poblada en CI, vacia en la
+   * maquina de cualquiera — aunque el provider no tenga nada que ver con GitHub.
+   *
+   * Lo encontro CI: estos tests pasaban local y fallaban en el runner.
+   */
+  it('GITHUB_REPOSITORY se ignora cuando el provider no es github', () => {
+    process.env.GITHUB_REPOSITORY = 'alguien/algo'
+    expect(resolveAgile(loadConfig(dir)).repository).toBeUndefined()
+  })
+
+  it('GITHUB_REPOSITORY se usa cuando el provider SI es github', () => {
+    process.env.HEALIFY_AGILE_PROVIDER = 'github'
+    process.env.GITHUB_REPOSITORY = 'alguien/algo'
+    expect(resolveAgile(loadConfig(dir)).repository).toBe('alguien/algo')
+  })
+
+  it('el token de GitHub sale de HEALIFY_GITHUB_TOKEN, no de JIRA_API_TOKEN', () => {
+    process.env.HEALIFY_AGILE_PROVIDER = 'github'
+    process.env.JIRA_API_TOKEN = 'token-de-jira'
+    process.env.HEALIFY_GITHUB_TOKEN = 'token-de-github'
+    expect(resolveAgile(loadConfig(dir)).apiToken).toBe('token-de-github')
   })
 
   it('HEALIFY_WEBHOOK_URL puebla webhookUrl', () => {

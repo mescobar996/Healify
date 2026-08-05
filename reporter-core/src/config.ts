@@ -251,10 +251,11 @@ function isNonEmptyString(value: unknown): value is string {
 function validateAgile(raw: HealifyAgileConfig): HealifyAgileConfig {
   const result: HealifyAgileConfig = {}
   if (typeof raw.enabled === 'boolean') result.enabled = raw.enabled
-  if (raw.provider === 'jira' || raw.provider === 'webhook') result.provider = raw.provider
+  if (raw.provider === 'jira' || raw.provider === 'github' || raw.provider === 'webhook') result.provider = raw.provider
   if (isNonEmptyString(raw.baseUrl)) result.baseUrl = raw.baseUrl
   if (isNonEmptyString(raw.email)) result.email = raw.email
   if (isNonEmptyString(raw.apiToken)) result.apiToken = raw.apiToken
+  if (isNonEmptyString(raw.repository)) result.repository = raw.repository
   if (isNonEmptyString(raw.project)) result.project = raw.project
   if (isNonEmptyString(raw.issueType)) result.issueType = raw.issueType
   if (raw.priorityBySeverity && typeof raw.priorityBySeverity === 'object') {
@@ -269,6 +270,8 @@ function validateAgile(raw: HealifyAgileConfig): HealifyAgileConfig {
     if (labels.length > 0) result.labels = labels
   }
   if (isNonEmptyString(raw.webhookUrl)) result.webhookUrl = raw.webhookUrl
+  if (typeof raw.attachEvidence === 'boolean') result.attachEvidence = raw.attachEvidence
+  if (isNonEmptyString(raw.transitionOnHealed)) result.transitionOnHealed = raw.transitionOnHealed
   return result
 }
 
@@ -314,19 +317,23 @@ function withEnvOverrides(config: HealifyConfig, env: NodeJS.ProcessEnv = proces
     agile.provider = env.HEALIFY_AGILE_PROVIDER
     agileChanged = true
   }
-  // El token de GitHub se lee de HEALIFY_GITHUB_TOKEN y no de GITHUB_TOKEN a secas: esa
-  // variable la exporta el runner en TODO workflow, y tomarla sola convertiría un `healify
-  // report` sin configurar en un intento silencioso de escribir issues en el repo. Activarlo
-  // tiene que ser una decisión escrita.
+  // Las dos variables de GitHub solo se leen cuando el provider ES github. No es una
+  // formalidad: `GITHUB_REPOSITORY` la exporta el runner en TODO workflow, así que tomarla
+  // siempre hacía que `resolveAgile` devolviera un `repository` poblado en cualquier corrida
+  // de CI, aunque nadie lo hubiera configurado ni el provider fuera ese. El comportamiento
+  // pasaba a depender de dónde corre, que es justo lo que una config no puede hacer.
   //
-  // `repository` sí sale de GITHUB_REPOSITORY, que el runner ya define como `owner/repo` y no
-  // es una credencial: ahorra repetir en la config algo que el entorno ya sabe.
-  const githubToken = env.HEALIFY_GITHUB_TOKEN ?? ''
+  // (Lo encontró CI: los tests de config pasaban en cualquier máquina y fallaban en el runner.)
+  //
+  // El token, además, se lee de HEALIFY_GITHUB_TOKEN y no de GITHUB_TOKEN a secas — esa
+  // también la exporta el runner, y tomarla sola convertiría un `healify report` sin
+  // configurar en un intento silencioso de escribir issues en el repo.
+  const esGithub = agile.provider === 'github'
   const agileStringFields: [keyof HealifyAgileConfig, string][] = [
     ['baseUrl', env.JIRA_BASE_URL ?? ''],
     ['email', env.JIRA_EMAIL ?? ''],
-    ['apiToken', isNonEmptyString(githubToken) && agile.provider === 'github' ? githubToken : (env.JIRA_API_TOKEN ?? '')],
-    ['repository', env.HEALIFY_GITHUB_REPOSITORY ?? env.GITHUB_REPOSITORY ?? ''],
+    ['apiToken', esGithub ? (env.HEALIFY_GITHUB_TOKEN ?? '') : (env.JIRA_API_TOKEN ?? '')],
+    ['repository', esGithub ? (env.HEALIFY_GITHUB_REPOSITORY ?? env.GITHUB_REPOSITORY ?? '') : ''],
     ['project', env.JIRA_PROJECT ?? ''],
     ['issueType', env.JIRA_ISSUE_TYPE ?? ''],
     ['webhookUrl', env.HEALIFY_WEBHOOK_URL ?? ''],
