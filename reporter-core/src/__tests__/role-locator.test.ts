@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseRoleSuggestion, roleSuggestionToXPath, roleSuggestionToPlaywrightSelector, resolveLocatorStrategy } from '../role-locator'
+import { buildRoleSuggestion, parseRoleSuggestion, roleSuggestionToXPath, roleSuggestionToPlaywrightSelector, resolveLocatorStrategy } from '../role-locator'
 
 describe('parseRoleSuggestion', () => {
   it('extrae rol y nombre', () => {
@@ -130,5 +130,65 @@ describe('roleSuggestionToPlaywrightSelector()', () => {
   it('null si no es una sugerencia de rol', () => {
     expect(roleSuggestionToPlaywrightSelector("[data-testid='x']")).toBeNull()
     expect(roleSuggestionToPlaywrightSelector("button:has-text('Add')")).toBeNull()
+  })
+})
+
+/**
+ * Los nombres accesibles salen del DOM de la pagina bajo test, y un apostrofe ahi no tiene
+ * nada de exotico: "L'Oreal", "Guardar 'borrador'", cualquier texto en frances.
+ *
+ * Interpolarlos crudos producia `role('button', { name: 'Guardar 'borrador'' })`, que
+ * parseRoleSuggestion no podia volver a leer. El efecto era silencioso y total: no se curaba
+ * ningun elemento con apostrofe en el nombre, y el reporte mostraba un selector que no
+ * funcionaba si lo copiabas.
+ */
+describe('nombres con comillas', () => {
+  const conApostrofe = "Guardar 'borrador'"
+
+  it('build y parse son inversas', () => {
+    const s = buildRoleSuggestion('button', conApostrofe)
+    expect(parseRoleSuggestion(s)).toEqual({ role: 'button', name: conApostrofe })
+  })
+
+  it('escapa la comilla al construir', () => {
+    // El valor real lleva \' donde el nombre tenía '
+    expect(buildRoleSuggestion('button', conApostrofe)).toBe("role('button', { name: 'Guardar \\'borrador\\'' })")
+  })
+
+  it('sobrevive a un backslash literal en el nombre', () => {
+    const raro = 'C:\\ruta\\rara'
+    expect(parseRoleSuggestion(buildRoleSuggestion('button', raro))).toEqual({ role: 'button', name: raro })
+  })
+
+  it('llega entero al selector de Playwright', () => {
+    const s = buildRoleSuggestion('button', conApostrofe)
+    expect(roleSuggestionToPlaywrightSelector(s)).toBe(`role=button[name="${conApostrofe}"]`)
+  })
+
+  it('llega entero al XPath: con solo comilla simple, se envuelve en dobles', () => {
+    const parsed = parseRoleSuggestion(buildRoleSuggestion('button', conApostrofe))!
+    const xpath = roleSuggestionToXPath(parsed.role, parsed.name!)
+
+    expect(xpath).toContain(`"${conApostrofe}"`)
+  })
+
+  /** XPath 1.0 no puede escapar comillas: con las dos, el literal se arma con `concat()`. */
+  it('con comilla simple Y doble, el XPath usa concat()', () => {
+    const mixto = `Decí 'hola' y "chau"`
+    const parsed = parseRoleSuggestion(buildRoleSuggestion('button', mixto))!
+    const xpath = roleSuggestionToXPath(parsed.role, parsed.name!)
+
+    expect(xpath).toContain('concat(')
+    expect(xpath).toContain('hola')
+  })
+
+  it('resolveLocatorStrategy devuelve xpath, no unsupported', () => {
+    const resuelto = resolveLocatorStrategy(buildRoleSuggestion('button', conApostrofe))
+    expect(resuelto.strategy).toBe('xpath')
+    expect(resuelto.value).toBeTruthy()
+  })
+
+  it('sin nombre sigue funcionando igual', () => {
+    expect(parseRoleSuggestion(buildRoleSuggestion('button'))).toEqual({ role: 'button' })
   })
 })

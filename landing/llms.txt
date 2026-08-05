@@ -1,30 +1,53 @@
 # Healify
 
-Healify es una herramienta open source (MIT) para sanar selectores de test que se rompen. Corre 100% local, sin IA, sin nube y sin cuenta. Lee tu DOM real cuando un locator falla y te sugiere el selector estable que sí funciona (roles ARIA, texto visible, estructura), generando un reporte HTML con la corrección copiable.
+Healify is an open-source (MIT) tool that fixes broken test selectors. It runs 100% locally — no AI, no cloud, no account. When a locator fails, it reads the DOM evidence your framework already captured, finds the element by its ARIA role and accessible name, and tells you which stable selector to use instead. `healify fix` applies the change to your code.
 
-- Version: 2.1.0 (Latest)
-- Estado: 711 tests passing, 7 paquetes publicados
-- Lenguaje: TypeScript (engines >= 18.0.0)
-- Autor: Matías Escobar (Rosario, Argentina)
-- Licencia: MIT
+Healify es una herramienta open source (MIT) para arreglar selectores de test rotos. Corre 100% local, sin IA, sin nube y sin cuenta.
 
-## Ecosistema @healify/*
+- Version: 2.3.0 (Latest)
+- Status: 788 tests passing, 7 npm packages, CI 13/13
+- Language: TypeScript (engines >= 18.0.0)
+- Author: Matías Escobar (Rosario, Argentina)
+- License: MIT
 
-- @healify/reporter-core: core compartido, base de todos los runners
-- @healify/test-runner: reporter para Playwright
-- @healify/cypress-plugin: plugin para Cypress
-- @healify/selenium-plugin: wrapper de WebDriver, cura en vivo
-- @healify/webdriverio-plugin: wrapper v8+, auto-heal opcional en dev
-- @healify/ai-local: IA local opcional (todo offline)
-- @healify/cli: CLI (doctor, init, fix, history)
+## What makes it different
 
-## Uso rapido
+Most tools in this space need Docker with Postgres, or send your DOM to an LLM. Healify is **deterministic heuristics**: same input, same output, every time. Nothing leaves your machine. That matters for confidentiality (banks, government), cost (no tokens to pay) and auditability (a suggestion can be explained; a model can't).
 
+It never proposes a concrete replacement without confirming the element against a real page. A suggestion carries `verified: true` only when Healify actually found it in the DOM.
+
+## Supported frameworks
+
+Playwright, Cypress, Selenium, WebdriverIO — including shadow DOM, iframes, and selectors that live in page objects rather than in the test.
+
+Other languages talk to the engine over JSON on stdin/stdout: Python (`pip install healify-selenium`), Java (`io.github.mescobar996:healify-selenium` on Maven Central), C# (reference adapter).
+
+## @healify/* packages
+
+- @healify/reporter-core: the engine — heuristics, verification, reporting
+- @healify/test-runner: Playwright reporter
+- @healify/cypress-plugin: Cypress plugin, includes `cy.healifyGet()` for live healing
+- @healify/selenium-plugin: WebDriver wrapper, heals in place without touching the test
+- @healify/webdriverio-plugin: v8+ wrapper
+- @healify/ai-local: optional local AI (Ollama) for explanations — off by default, never decides a fix
+- @healify/cli: doctor, init, fix, report, dashboard, flake, watch, explain
+
+## Integrations
+
+- **GitHub Action**: comments broken selectors on every PR, never modifies files
+- **Defect reporting**: files each broken selector as a Jira ticket or GitHub issue, with evidence and steps. Deduplicated by a stable defect id, opt-in and off by default
+- **VS Code extension**: underlines fragile selectors as you type; the ones that actually broke get a verified Quick Fix
+
+## Quick start
+
+```
 npx @healify/cli init
+```
 
-## Enlaces
+## Links
 
 - [Landing](https://healify-sigma.vercel.app/)
-- [Repositorio](https://github.com/mescobar996/Healify)
-- [npm CLI](https://www.npmjs.com/package/@healify/cli)
-- [Reporte de errores](https://github.com/mescobar996/Healify/issues)
+- [Repository](https://github.com/mescobar996/Healify)
+- [Documentation](https://github.com/mescobar996/Healify/tree/main/docs)
+- [npm](https://www.npmjs.com/package/@healify/cli)
+- [Issues](https://github.com/mescobar996/Healify/issues)

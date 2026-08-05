@@ -13,18 +13,50 @@
 import { isPlaywrightOnlySelector } from './selector-compat'
 
 /**
+ * Escapa un valor para meterlo entre comillas simples en una sugerencia.
+ *
+ * Los nombres accesibles salen del DOM de la página bajo test, y un apóstrofe ahí no tiene nada
+ * de exótico: "L'Oréal", "Guardar 'borrador'", cualquier texto en francés. Interpolarlos crudos
+ * producía `role('button', { name: 'Guardar 'borrador'' })` — un string roto que
+ * `parseRoleSuggestion` no podía volver a leer.
+ *
+ * El efecto era silencioso y total: `parseRoleSuggestion` devolvía `null`, así que el reintento
+ * en vivo no encontraba nada, `fix` no aplicaba, y el reporte mostraba un selector que no
+ * funcionaba si lo copiabas. Healify simplemente no curaba ningún elemento con un apóstrofe en
+ * el nombre.
+ */
+function escapeSingleQuoted(value: string): string {
+  return value.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+}
+
+function unescapeSingleQuoted(value: string): string {
+  return value.replace(/\\(.)/g, '$1')
+}
+
+/**
+ * Construye la sugerencia legible `role('button', { name: 'Comprar' })`.
+ *
+ * **Este es el único lugar donde se arma ese string.** Antes se interpolaba a mano en cada punto
+ * de `healing-engine.ts` que proponía un rol, y con eso alcanzaba para que un apóstrofe del DOM
+ * lo rompiera. Si aparece otra interpolación suelta, el bug vuelve.
+ */
+export function buildRoleSuggestion(role: string, name?: string): string {
+  if (name === undefined || name === '') return `role('${escapeSingleQuoted(role)}')`
+  return `role('${escapeSingleQuoted(role)}', { name: '${escapeSingleQuoted(name)}' })`
+}
+
+/**
  * `role('button', { name: 'X' })` o `role('button')` → sus partes.
  *
- * Extraída tal cual — mismo regex, cero cambio de comportamiento — de la función interna que
- * ya usaba `healing-engine.ts` para confrontar sugerencias contra la página. Vive acá para que
- * los plugins de Selenium/WebdriverIO también la puedan usar, sin duplicar el regex.
+ * El cuerpo del nombre acepta escapes (`\'`) para poder leer lo que produce
+ * `buildRoleSuggestion`. `[^']*` a secas cortaba en la primera comilla interna.
  */
 export function parseRoleSuggestion(selector: string): { role: string; name?: string } | null {
-  const withName = selector.match(/^role\('([^']+)',\s*\{\s*name:\s*'([^']*)'\s*\}\s*\)$/)
-  if (withName) return { role: withName[1], name: withName[2] }
+  const withName = selector.match(/^role\('((?:[^'\\]|\\.)+)',\s*\{\s*name:\s*'((?:[^'\\]|\\.)*)'\s*\}\s*\)$/)
+  if (withName) return { role: unescapeSingleQuoted(withName[1]), name: unescapeSingleQuoted(withName[2]) }
 
-  const roleOnly = selector.match(/^role\('([^']+)'\)$/)
-  return roleOnly ? { role: roleOnly[1] } : null
+  const roleOnly = selector.match(/^role\('((?:[^'\\]|\\.)+)'\)$/)
+  return roleOnly ? { role: unescapeSingleQuoted(roleOnly[1]) } : null
 }
 
 /**

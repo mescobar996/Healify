@@ -8,6 +8,8 @@ const { mockIsGitDirty } = vi.hoisted(() => ({ mockIsGitDirty: vi.fn(() => false
 vi.mock('../git-check', () => ({ isGitDirty: mockIsGitDirty }))
 
 import { fixAst } from '../fix-ast'
+import { Project, SyntaxKind } from 'ts-morph'
+import { buildRoleSuggestion } from '@healify/reporter-core'
 
 function makeCase(overrides: Partial<LocalCaseResult> = {}): LocalCaseResult {
   return {
@@ -165,5 +167,70 @@ describe('fixAst', () => {
 
     expect(outcomes).toEqual([{ testFile: escaping, selector: '#btn-submit', status: 'skipped', reason: 'not-found' }])
     expect(existsSync(resolvedEscape)).toBe(false)
+  })
+})
+
+/**
+ * Este archivo se escribe EN EL CODIGO DEL USUARIO, asi que un nombre accesible con apostrofe
+ * ("L'Oreal", "Guardar 'borrador'") tiene que salir escapado o el archivo deja de compilar.
+ *
+ * Antes este camino no se alcanzaba nunca: el parseo de la sugerencia fallaba primero por el
+ * mismo motivo. Al arreglar aquel, este paso a ser alcanzable — y a poder romper archivos.
+ */
+describe('fixAst con nombres que llevan comillas', () => {
+  let dir: string
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'healify-fix-ast-comillas-'))
+    mockIsGitDirty.mockReturnValue(false)
+  })
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  it('escapa el apostrofe en el codigo generado', () => {
+    const file = join(dir, 'apostrofe.spec.ts')
+    writeFileSync(file, `await page.click('#save-btn')`)
+
+    const outcomes = fixAst(
+      makeRun([
+        makeCase({
+          testFile: file,
+          selector: '#save-btn',
+          fixedSelector: buildRoleSuggestion('button', "Guardar 'borrador'"),
+        }),
+      ])
+    )
+
+    expect(outcomes[0].status).toBe('applied')
+    expect(readFileSync(file, 'utf-8')).toBe(
+      "await page.getByRole('button', { name: 'Guardar \\'borrador\\'' }).click()"
+    )
+  })
+
+  /**
+   * La prueba que de verdad importa: no comparar strings, sino volver a parsear lo que quedó
+   * escrito y confirmar que el nombre sobrevivió intacto. Con el escape mal, o el archivo no
+   * parsea o el literal sale cortado en la comilla interna.
+   */
+  it('lo que queda escrito parsea, y el nombre sobrevive entero', () => {
+    const file = join(dir, 'parsea.spec.ts')
+    // `export {}` para que TypeScript lo trate como módulo: si no, el `await` de arriba da un
+    // error 1375 que no tiene nada que ver con lo que se está probando acá.
+    writeFileSync(file, `export {}\nawait page.click('#save-btn')`)
+
+    fixAst(makeRun([makeCase({ testFile: file, selector: '#save-btn', fixedSelector: buildRoleSuggestion('button', "L'Oreal") })]))
+
+    const proyecto = new Project({ useInMemoryFileSystem: true })
+    const sf = proyecto.createSourceFile('t.ts', readFileSync(file, 'utf-8'))
+
+    // Solo errores de SINTAXIS (códigos 1xxx). Los de tipo no vienen al caso: en el fixture
+    // `page` no está declarado, y eso es esperable.
+    const sintaxis = sf.getPreEmitDiagnostics().filter((d) => d.getCode() >= 1000 && d.getCode() < 2000)
+    expect(sintaxis.map((d) => d.getMessageText())).toEqual([])
+
+    const literales = sf.getDescendantsOfKind(SyntaxKind.StringLiteral).map((n) => n.getLiteralValue())
+    expect(literales).toContain("L'Oreal")
   })
 })

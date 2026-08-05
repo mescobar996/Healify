@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { Project, SyntaxKind, type CallExpression, type SourceFile } from 'ts-morph'
-import type { LocalRun, LocalCaseResult } from '@healify/reporter-core'
+import { parseRoleSuggestion, type LocalRun, type LocalCaseResult } from '@healify/reporter-core'
 import { isGitDirty } from './git-check'
 import { maskComments, countOccurrences, validatePath, type FixOptions, type FixOutcome } from './fix'
 
@@ -16,9 +16,28 @@ import { maskComments, countOccurrences, validatePath, type FixOptions, type Fix
  * muerto apuntando a un formato que no existe.
  */
 function parseRoleSelector(fixedSelector: string): { role: string; name: string } | null {
-  const match = fixedSelector.match(/^role\('([^']+)',\s*\{\s*name:\s*'([^']+)'\s*\}\s*\)$/)
-  if (!match) return null
-  return { role: match[1], name: match[2] }
+  // Se delega en `parseRoleSuggestion` en vez de repetir el regex acá: el formato lo produce
+  // `buildRoleSuggestion` y ahora escapa comillas simples (los nombres accesibles reales las
+  // tienen: "L'Oréal"). Dos regex separados para el mismo formato es lo que hacía que este
+  // camino se quedara atrás.
+  const parsed = parseRoleSuggestion(fixedSelector)
+  if (!parsed?.name) return null
+  return { role: parsed.role, name: parsed.name }
+}
+
+/**
+ * Escapa un valor para escribirlo entre comillas simples EN EL CÓDIGO DEL USUARIO.
+ *
+ * Acá no se está armando un string legible para un reporte: se está generando TypeScript que
+ * se guarda en el archivo. Un nombre accesible con apóstrofe ("L'Oréal", "Guardar 'borrador'")
+ * produciría `getByRole('button', { name: 'L'Oréal' })`, que no compila — `fix` dejaría el
+ * archivo roto.
+ *
+ * Hasta ahora este camino no se alcanzaba nunca, porque el parseo de la sugerencia fallaba
+ * antes por el mismo motivo. Al arreglar aquel, este pasó a ser alcanzable.
+ */
+function escapeForCode(value: string): string {
+  return value.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
 }
 
 // Método de Playwright -> cómo se arma la llamada final sobre el locator nuevo (sin el
@@ -26,19 +45,19 @@ function parseRoleSelector(fixedSelector: string): { role: string; name: string 
 const METHOD_TO_LOCATOR_CALL: Record<string, (role: string, name: string, args: string) => string> = {
   // .locator(selector) devuelve el Locator tal cual, sin encadenar ninguna acción (ej.
   // dentro de un expect(page.locator('#x')).toBeVisible()).
-  locator: (role, name) => `getByRole('${role}', { name: '${name}' })`,
-  click: (role, name) => `getByRole('${role}', { name: '${name}' }).click()`,
-  fill: (role, name, args) => `getByRole('${role}', { name: '${name}' }).fill(${args})`,
-  type: (role, name, args) => `getByRole('${role}', { name: '${name}' }).type(${args})`,
-  check: (role, name) => `getByRole('${role}', { name: '${name}' }).check()`,
-  uncheck: (role, name) => `getByRole('${role}', { name: '${name}' }).uncheck()`,
-  selectOption: (role, name, args) => `getByRole('${role}', { name: '${name}' }).selectOption(${args})`,
-  hover: (role, name) => `getByRole('${role}', { name: '${name}' }).hover()`,
-  focus: (role, name) => `getByRole('${role}', { name: '${name}' }).focus()`,
-  blur: (role, name) => `getByRole('${role}', { name: '${name}' }).blur()`,
-  tap: (role, name) => `getByRole('${role}', { name: '${name}' }).tap()`,
-  dblclick: (role, name) => `getByRole('${role}', { name: '${name}' }).dblclick()`,
-  press: (role, name, args) => `getByRole('${role}', { name: '${name}' }).press(${args})`,
+  locator: (role, name) => `getByRole('${escapeForCode(role)}', { name: '${escapeForCode(name)}' })`,
+  click: (role, name) => `getByRole('${escapeForCode(role)}', { name: '${escapeForCode(name)}' }).click()`,
+  fill: (role, name, args) => `getByRole('${escapeForCode(role)}', { name: '${escapeForCode(name)}' }).fill(${args})`,
+  type: (role, name, args) => `getByRole('${escapeForCode(role)}', { name: '${escapeForCode(name)}' }).type(${args})`,
+  check: (role, name) => `getByRole('${escapeForCode(role)}', { name: '${escapeForCode(name)}' }).check()`,
+  uncheck: (role, name) => `getByRole('${escapeForCode(role)}', { name: '${escapeForCode(name)}' }).uncheck()`,
+  selectOption: (role, name, args) => `getByRole('${escapeForCode(role)}', { name: '${escapeForCode(name)}' }).selectOption(${args})`,
+  hover: (role, name) => `getByRole('${escapeForCode(role)}', { name: '${escapeForCode(name)}' }).hover()`,
+  focus: (role, name) => `getByRole('${escapeForCode(role)}', { name: '${escapeForCode(name)}' }).focus()`,
+  blur: (role, name) => `getByRole('${escapeForCode(role)}', { name: '${escapeForCode(name)}' }).blur()`,
+  tap: (role, name) => `getByRole('${escapeForCode(role)}', { name: '${escapeForCode(name)}' }).tap()`,
+  dblclick: (role, name) => `getByRole('${escapeForCode(role)}', { name: '${escapeForCode(name)}' }).dblclick()`,
+  press: (role, name, args) => `getByRole('${escapeForCode(role)}', { name: '${escapeForCode(name)}' }).press(${args})`,
 }
 
 /**

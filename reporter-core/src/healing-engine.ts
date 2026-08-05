@@ -25,6 +25,7 @@
  */
 
 import { parsePageSnapshot, existsInPage, findMatches, bestElementFor, type PageElement } from './page-snapshot'
+import { buildRoleSuggestion } from './role-locator'
 import { parseRoleSuggestion } from './role-locator'
 import { findRepertoireMatch, type HistoryEntry } from './repertoire'
 
@@ -360,7 +361,7 @@ function generateHealingStrategies(selector: string, analysis: SelectorAnalysis,
   if (analysis.element === 'button') {
     const action = extractActionFromSelector(selector, actions)
     strategies.push({
-      selector: `role('button', { name: '${action}' })`,
+      selector: buildRoleSuggestion('button', action),
       type: 'ROLE',
       confidence: 0.92,
       explanation: `Se detectó un ${analysis.type} inestable; se cambió por un selector basado en accesibilidad (ARIA role) para mayor robustez.`,
@@ -403,7 +404,7 @@ function generateHealingStrategies(selector: string, analysis: SelectorAnalysis,
 
   if (analysis.element === 'link') {
     strategies.push({
-      selector: `role('link', { name: '${extractActionFromSelector(selector, actions)}' })`,
+      selector: buildRoleSuggestion('link', extractActionFromSelector(selector, actions)),
       type: 'ROLE',
       confidence: 0.91,
       explanation: `Selector por rol de enlace con texto. Muy estable y accesible.`,
@@ -428,7 +429,7 @@ function generateHealingStrategies(selector: string, analysis: SelectorAnalysis,
 
   if (analysis.type === 'XPATH') {
     strategies.push({
-      selector: `role('button')`,
+      selector: buildRoleSuggestion('button'),
       type: 'ROLE',
       confidence: 0.82,
       explanation: `Se reemplazó el XPath frágil por un selector de rol. Los XPath dependen de la estructura exacta del DOM que cambia frecuentemente.`,
@@ -444,7 +445,7 @@ function generateHealingStrategies(selector: string, analysis: SelectorAnalysis,
   // 'visible=' — al menos señala accesibilidad como dirección, requiere revisión manual.
   if (NTH_POSITION_RE.test(selector) && analysis.element === 'element') {
     strategies.push({
-      selector: `role('button')`,
+      selector: buildRoleSuggestion('button'),
       type: 'ROLE',
       confidence: 0.76,
       explanation: `Selector basado en posición (nth-child/nth-of-type) — depende del orden exacto de hermanos en el DOM, se rompe con solo agregar/quitar un elemento vecino. Se propone un selector de rol como punto de partida; revisar manualmente para afinar el name.`,
@@ -562,7 +563,7 @@ function generateHealingStrategies(selector: string, analysis: SelectorAnalysis,
     // de ancestros de por medio (`.card .title` → `visible=card .title`, ni CSS válido).
     if (strategies.length === 0) {
       strategies.push({
-        selector: `role('button')`,
+        selector: buildRoleSuggestion('button'),
         type: 'ROLE',
         confidence: 0.74,
         explanation: `Selector compuesto con combinador CSS (\`${selector}\`) — depende de la ruta de ancestros/hermanos en el DOM, se rompe con cualquier cambio de markup aunque el elemento buscado no haya cambiado. El elemento objetivo (${target}) no tiene un atributo estable reconocible; se propone un selector de rol como punto de partida, revisar manualmente para afinar el name.`,
@@ -638,7 +639,7 @@ function applyPageEvidence(
     // usuario a un test que sigue fallando y encima parece un bug de Healify.
     const inFrame = real.frame
     survivors.unshift({
-      selector: `role('${real.role}', { name: '${real.name}' })`,
+      selector: buildRoleSuggestion(real.role, real.name),
       type: 'ROLE',
       confidence: inFrame ? 0.88 : 0.97,
       explanation: inFrame
