@@ -27,9 +27,11 @@
     "healify-ai": "dist/cli.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "LICENSE"
   ],
   "scripts": {
+    "prepack": "node ../scripts/sync-license.mjs",
     "build": "tsc --emitDeclarationOnly && esbuild src/index.ts src/cli.ts src/detect-ram.ts --bundle --platform=node --outdir=dist --format=cjs",
     "test": "vitest run"
   },

@@ -203,25 +203,32 @@ async function cmdChat(): Promise<void> {
   askQuestion();
 }
 
+/**
+ * Ollama solo condiciona la lista de modelos YA INSTALADOS. El catálogo y la RAM del sistema
+ * son datos locales que no necesitan que Ollama esté corriendo, y son justo lo que querés
+ * mirar ANTES de bajar nada: cortar con exit 1 ahí obligaba a levantar el servidor para poder
+ * leer una tabla estática.
+ */
 async function cmdModels(): Promise<void> {
   console.log('\n📦 Modelos de Ollama\n');
 
   const config = loadConfig();
   const ollamaUrl = config.ai?.ollamaUrl || 'http://localhost:11434';
   const running = await checkOllamaRunning(ollamaUrl);
-  if (!running) {
-    console.log('❌ Ollama no está corriendo');
-    process.exit(1);
-  }
-
-  const installed = await getInstalledModels(ollamaUrl);
   const ram = getSystemRAM();
 
   console.log(`RAM del sistema: ${ram}GB\n`);
 
-  if (installed.length > 0) {
-    console.log('Instalados:');
-    installed.forEach(m => console.log(`  ✅ ${m.name}`));
+  if (running) {
+    const installed = await getInstalledModels(ollamaUrl);
+    if (installed.length > 0) {
+      console.log('Instalados:');
+      installed.forEach(m => console.log(`  ✅ ${m.name}`));
+    } else {
+      console.log('Instalados: ninguno todavía (usá `ollama pull <modelo>`)');
+    }
+  } else {
+    console.log('Ollama no está corriendo — no se puede saber qué tenés instalado.');
   }
 
   console.log('\nModelos recomendados:');

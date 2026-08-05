@@ -101,6 +101,27 @@ jobs:
             exit 1
           fi
 
+      # Los 7 paquetes declaran "license": "MIT" pero el archivo vive en la raiz del REPO, y npm
+      # solo lo mete en el tarball si esta en la raiz del PAQUETE. Lo resuelve un `prepack` que
+      # copia el original (scripts/sync-license.mjs), y esa clase de arreglo es exactamente la
+      # que deja de correr sin que nadie se entere. Un tarball publicado no se corrige: hay que
+      # quemar una version nueva. Por eso se verifica el tarball de verdad, no el script.
+      - name: LICENSE llega a los 7 tarballs
+        run: |
+          FALTAN=""
+          for pkg in reporter-core test-runner cypress-plugin selenium-plugin webdriverio-plugin ai-local cli; do
+            if npm pack --workspace="$pkg" --dry-run 2>&1 | grep -q "LICENSE"; then
+              echo "  ok  $pkg"
+            else
+              echo "  --  $pkg"
+              FALTAN="$FALTAN $pkg"
+            fi
+          done
+          if [ -n "$FALTAN" ]; then
+            echo "::error::Estos paquetes se publicarian sin el texto de la licencia:$FALTAN"
+            exit 1
+          fi
+
 
   # ─── Unit Tests ────────────────────────────────────────────────────────────
   # Multi-OS porque Healify es sensible a Windows (paths, CRLF), y multi-Node porque 22 es

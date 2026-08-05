@@ -83,6 +83,18 @@ ai-local/node_modules
 # (era el unico de los 7), asi que el repo cargaba un build viejo que nadie miraba.
 webdriverio-plugin/dist
 webdriverio-plugin/node_modules
+
+# Copias del LICENSE de la raiz que genera scripts/sync-license.mjs en cada `prepack`.
+# npm solo mete el LICENSE en el tarball si esta en la raiz DEL PAQUETE, pero versionar 7
+# copias del mismo texto es pedirles que diverjan. El original es uno solo; estas son
+# derivadas, y CI verifica que efectivamente lleguen al tarball.
+reporter-core/LICENSE
+test-runner/LICENSE
+cypress-plugin/LICENSE
+selenium-plugin/LICENSE
+webdriverio-plugin/LICENSE
+ai-local/LICENSE
+cli/LICENSE
 cypress-plugin/tests/cypress/videos
 
 # Superpowers brainstorming companion artifacts (ephemeral, not project content)

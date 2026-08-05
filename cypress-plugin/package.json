@@ -24,9 +24,11 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "LICENSE"
   ],
   "scripts": {
+    "prepack": "node ../scripts/sync-license.mjs",
     "build": "tsc --emitDeclarationOnly && esbuild src/index.ts --bundle --platform=node --outdir=dist --format=cjs --external:cypress && esbuild src/support.ts --bundle --platform=browser --outfile=dist/support.js --format=cjs",
     "test": "vitest run"
   },

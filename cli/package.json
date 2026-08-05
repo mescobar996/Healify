@@ -17,9 +17,11 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "LICENSE"
   ],
   "scripts": {
+    "prepack": "node ../scripts/sync-license.mjs",
     "build": "tsc --emitDeclarationOnly && esbuild src/index.ts --bundle --platform=node --outdir=dist --format=cjs --external:ts-morph",
     "test": "vitest run"
   },
@@ -30,7 +32,7 @@
     "access": "public"
   },
   "dependencies": {
-    "ts-morph": "^21.0.0"
+    "ts-morph": "^28.0.0"
   },
   "devDependencies": {
     "@healify/ai-local": "*",

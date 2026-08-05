@@ -13,7 +13,8 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "LICENSE"
   ],
   "exports": {
     ".": {
@@ -22,6 +23,7 @@
     }
   },
   "scripts": {
+    "prepack": "node ../scripts/sync-license.mjs",
     "build": "tsc -p tsconfig.json",
     "test": "vitest run"
   },
