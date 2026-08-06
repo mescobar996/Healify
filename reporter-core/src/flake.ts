@@ -29,6 +29,41 @@ const VERDICT_RANK: Record<FlakeVerdict, number> = {
   'insufficient-data': 3,
 }
 
+/** La regla de veredicto, en un solo lugar — la usan `detectFlakyTests` y `flakeVerdictFor`,
+ * que si no podrían responder distinto sobre el mismo test. */
+function verdictFrom(passed: number, failed: number, minRuns: number): FlakeVerdict {
+  const total = passed + failed
+  if (total < minRuns) return 'insufficient-data'
+  if (failed === 0) return 'healthy'
+  return failed === total ? 'always-failing' : 'flaky'
+}
+
+/**
+ * Veredicto de un test puntual, sin construir la lista entera.
+ *
+ * Existe para el motor de sanado, que necesita preguntar por UN test mientras decide qué
+ * hacer con él. `detectFlakyTests` sigue siendo la vista para el comando `flake`.
+ *
+ * Mismo criterio de agrupación que `defectId` y `detectFlakyTests`: `testFile` + `testName`.
+ */
+export function flakeVerdictFor(
+  runs: RunRecord[],
+  testName: string,
+  testFile?: string,
+  opts: { minRuns?: number } = {}
+): FlakeVerdict {
+  let passed = 0
+  let failed = 0
+  for (const run of runs) {
+    for (const outcome of run.tests) {
+      if (outcome.testName !== testName || outcome.testFile !== testFile) continue
+      if (outcome.passed) passed++
+      else failed++
+    }
+  }
+  return verdictFrom(passed, failed, opts.minRuns ?? 2)
+}
+
 /**
  * Agrupa los outcomes por `testFile` + `testName` (mismo criterio que `defectId`: mismo
  * nombre en archivos distintos es otro test) y clasifica cada uno.
@@ -53,8 +88,7 @@ export function detectFlakyTests(runs: RunRecord[], opts: { minRuns?: number } =
   const tests: FlakyTest[] = []
   for (const group of byKey.values()) {
     const total = group.passed + group.failed
-    const verdict: FlakeVerdict =
-      total < minRuns ? 'insufficient-data' : group.failed === 0 ? 'healthy' : group.failed === total ? 'always-failing' : 'flaky'
+    const verdict = verdictFrom(group.passed, group.failed, minRuns)
     tests.push({
       testName: group.testName,
       testFile: group.testFile,

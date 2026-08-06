@@ -1,6 +1,8 @@
 import { analyzeAndHeal, type HealResponse } from './healing-engine'
 import { extractSelectorFromError } from './selector-extractor'
 import { diagnoseFailure, type FailureCause } from './failure-cause'
+import { flakeVerdictFor, type FlakeVerdict } from './flake'
+import type { RunRecord } from './runs'
 import { buildDefectId, severityFor, type Severity } from './qa-report'
 import { resolveThresholds, type HealifyConfig } from './config'
 import type { HistoryEntry } from './repertoire'
@@ -21,6 +23,11 @@ export interface LocalCaseInput {
   /** Repertorio ya leído por el adapter (`.healify/history.jsonl`) — se consulta solo cuando
    * esta corrida no pudo verificar nada por su cuenta. Ver `repertoire.ts`. */
   repertoire?: HistoryEntry[]
+  /** Corridas anteriores ya leídas por el adapter (`.healify/runs.jsonl`), mismo patrón que
+   * `repertoire`. Sirven para saber si este test venía fallando siempre o de a ratos: un
+   * selector realmente roto falla SIEMPRE, así que un test intermitente con el mismo selector
+   * es evidencia en contra de que el problema sea el locator. Ver `runs.ts` y `flake.ts`. */
+  runHistory?: RunRecord[]
   /** Datos del reporte QA que solo el adapter conoce. Todos opcionales: el adapter que no
    * los tenga (Selenium/WebdriverIO no tienen concepto de suite) simplemente los omite y el
    * render los saltea — nunca se rellenan con un placeholder. */
@@ -52,6 +59,9 @@ export interface LocalCaseResult {
   cause: FailureCause
   /** Fragmento del error que determinó la causa — para auditar el veredicto. */
   causeSignal?: string
+  /** Qué dicen las corridas anteriores sobre este test. `undefined` cuando el adapter no pasó
+   * historial de corridas (Selenium/WebdriverIO curan en vivo y no tienen concepto de suite). */
+  flakeVerdict?: FlakeVerdict
   /** Identificador estable del defecto: el mismo selector roto en el mismo archivo devuelve
    * siempre el mismo ID, corrida tras corrida. */
   defectId: string
@@ -187,12 +197,31 @@ export function runLocalHealing(input: LocalCaseInput, config: HealifyConfig = {
     maxAlternatives: thresholds.maxAlternatives,
   })
 
-  const status: LocalCaseStatus =
+  const statusPorConfianza: LocalCaseStatus =
     heal.confidence >= thresholds.minConfidence
       ? 'healed'
       : heal.confidence >= thresholds.reviewConfidence
         ? 'review'
         : 'unresolved'
+
+  // Lo que dicen las corridas anteriores sobre este test, si el adapter las pasó.
+  const flakeVerdict = input.runHistory
+    ? flakeVerdictFor(input.runHistory, input.testName, input.testFile)
+    : undefined
+
+  // Un selector realmente roto falla SIEMPRE: si el elemento no está, no está en ninguna
+  // corrida. Que este test haya pasado en algunas con el mismo selector es evidencia de que
+  // el locator resuelve, y de que lo intermitente es otra cosa — una carrera, un dato, un
+  // servicio lento.
+  //
+  // No se descarta la sugerencia (puede haber render condicional, y ahí el locator por rol sí
+  // ayuda), pero se baja a `review`: `fix` solo aplica los `healed`, así que esto frena la
+  // aplicación automática sin esconderle nada al usuario. Reportar es el trabajo acá, no curar.
+  const esFlaky = flakeVerdict === 'flaky'
+  const status: LocalCaseStatus = esFlaky && statusPorConfianza === 'healed' ? 'review' : statusPorConfianza
+  const notaFlaky = esFlaky
+    ? ' Ojo: este test viene pasando en algunas corridas y fallando en otras con el mismo selector. Un selector roto falla siempre, así que lo más probable es que el problema no sea el locator sino algo intermitente. La sugerencia queda para revisión manual y no se aplica sola.'
+    : ''
 
   return {
     testName: input.testName,
@@ -202,12 +231,13 @@ export function runLocalHealing(input: LocalCaseInput, config: HealifyConfig = {
     status,
     fixedSelector: heal.fixedSelector,
     confidence: heal.confidence,
-    explanation: heal.explanation,
+    explanation: heal.explanation + notaFlaky,
     selectorType: heal.selectorType,
     verified: heal.verified,
     fromRepertoire: heal.fromRepertoire,
     cause: diagnosis.cause,
     causeSignal: diagnosis.signal,
+    flakeVerdict,
     defectId: buildDefectId(input.testFile, selector),
     severity: severityFor(status),
     expected: `El selector ${selector} encuentra un elemento en la página.`,

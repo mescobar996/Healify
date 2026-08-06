@@ -1,6 +1,32 @@
 # Changelog
 
 ## Sin publicar
+### El veredicto de flakiness llega a la decisión de curar
+
+`detectFlakyTests` y `healify flake` ya distinguían un test intermitente de uno siempre roto,
+pero ese veredicto **nunca llegaba al motor de sanado**: Healify proponía y aplicaba un selector
+nuevo igual, sin mirar si el test venía pasando a veces.
+
+El razonamiento que ahora se aplica: **un selector realmente roto falla siempre**. Si el elemento
+no está, no está en ninguna corrida. Que el mismo test haya pasado en otras corridas con el mismo
+selector es evidencia de que el locator resuelve, y de que lo intermitente es otra cosa — una
+carrera, un dato, un servicio lento.
+
+- **`flakeVerdictFor(runs, testName, testFile)`** — veredicto de un test puntual sin construir la
+  lista entera. Comparte la regla con `detectFlakyTests` mediante un único `verdictFrom()`, así
+  el comando `flake` y el motor no pueden responder distinto sobre el mismo test (hay un test que
+  compara las dos salidas).
+- **`LocalCaseInput.runHistory`** — las corridas anteriores, que el adapter pasa igual que el
+  repertorio. El reporter de Playwright las lee en `onBegin`, **antes** de que esta corrida agregue
+  la suya: si las leyera al final, el test que acaba de fallar contaminaría su propio veredicto.
+- **Un test flaky no se auto-aplica.** Baja de `healed` a `review` y la explicación dice por qué.
+  La sugerencia **no** se descarta: puede haber render condicional, y ahí el locator por rol sí
+  ayuda. Como `fix` solo aplica los `healed`, bajar a `review` frena la aplicación automática sin
+  esconderle nada al usuario.
+- Sin `runHistory` el comportamiento es idéntico al anterior — Selenium y WebdriverIO curan en
+  vivo, no tienen concepto de suite y nunca lo van a pasar.
+- 12 tests nuevos (804 en total).
+
 
 ### El historial pasa a ser accionable, y sobrevive a CI
 

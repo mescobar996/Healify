@@ -4,8 +4,9 @@ import type { FullResult, TestCase, TestResult } from '@playwright/test/reporter
 const { mockWriteFileSync } = vi.hoisted(() => ({ mockWriteFileSync: vi.fn() }))
 vi.mock('node:fs', () => ({ writeFileSync: mockWriteFileSync }))
 
-const { mockRunLocalHealing, mockLoadConfig } = vi.hoisted(() => {
+const { mockRunLocalHealing, mockLoadConfig, mockReadRunRecords } = vi.hoisted(() => {
   const mockLoadConfig = vi.fn(() => ({ minConfidence: 0.95 }))
+  const mockReadRunRecords = vi.fn(() => [])
   const mockRunLocalHealing = vi.fn((input: { testName: string; testFile?: string; errorMessage: string }, _config?: unknown) => ({
     testName: input.testName,
     testFile: input.testFile,
@@ -17,7 +18,7 @@ const { mockRunLocalHealing, mockLoadConfig } = vi.hoisted(() => {
     explanation: '',
     selectorType: 'UNKNOWN',
   }))
-  return { mockRunLocalHealing, mockLoadConfig }
+  return { mockRunLocalHealing, mockLoadConfig, mockReadRunRecords }
 })
 
 vi.mock('@healify/reporter-core', () => ({
@@ -56,6 +57,7 @@ vi.mock('@healify/reporter-core', () => ({
     unresolved: 0,
   })),
   readRepertoire: vi.fn(() => []),
+  readRunRecords: mockReadRunRecords,
   loadConfig: mockLoadConfig,
   appendRunRecord: vi.fn(),
 }))
@@ -83,6 +85,9 @@ function makeResult(overrides?: Record<string, unknown>): TestResult {
 describe('HealifyReporter', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    // clearAllMocks borra las llamadas pero NO los mockReturnValue: sin esto, el historial
+    // que setea un test se filtraría a los siguientes según el orden de ejecución.
+    mockReadRunRecords.mockReturnValue([])
   })
 
   it('does nothing when the test passed', () => {
@@ -121,6 +126,34 @@ describe('HealifyReporter', () => {
     expect(mockLoadConfig).toHaveBeenCalledTimes(1)
     expect(mockRunLocalHealing.mock.calls[0][1]).toEqual({ minConfidence: 0.95 })
     expect(mockRunLocalHealing.mock.calls[1][1]).toEqual({ minConfidence: 0.95 })
+  })
+
+  it('lee las corridas anteriores una sola vez y se las pasa al motor', () => {
+    // Sin este cableado, `flakeVerdictFor` nunca recibe datos y el motor no puede distinguir
+    // un selector roto de un test intermitente — la lógica existiría sin llegar a usarse.
+    const corridas = [
+      { type: 'run', runId: 'r1', timestamp: '2026-08-01T10:00:00.000Z', project: 'p', framework: 'Playwright', total: 1, passed: 1, failed: 0, tests: [{ testName: 'root > should log in', testFile: 'tests/login.spec.ts', passed: true }] },
+    ]
+    mockReadRunRecords.mockReturnValue(corridas as never)
+
+    const reporter = new HealifyReporter()
+    reporter.onBegin({ projects: [], version: '1.58.0' } as never, { allTests: () => [] } as never)
+    reporter.onTestEnd(makeTest(), makeResult())
+    reporter.onTestEnd(makeTest(), makeResult())
+
+    expect(mockReadRunRecords).toHaveBeenCalledTimes(1)
+    expect(mockRunLocalHealing.mock.calls[0][0].runHistory).toBe(corridas)
+    expect(mockRunLocalHealing.mock.calls[1][0].runHistory).toBe(corridas)
+  })
+
+  it('lee las corridas en onBegin, antes de que esta corrida agregue la suya', () => {
+    // Si se leyeran en onEnd, el test que acaba de fallar contaminaría su propio veredicto:
+    // se contaría a sí mismo como evidencia de intermitencia.
+    const reporter = new HealifyReporter()
+
+    reporter.onBegin({ projects: [], version: '1.58.0' } as never, { allTests: () => [] } as never)
+
+    expect(mockReadRunRecords).toHaveBeenCalledTimes(1)
   })
 
   it('corre la heurística local para un test fallido', () => {
