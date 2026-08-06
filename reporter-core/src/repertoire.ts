@@ -1,6 +1,7 @@
 import { readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import type { LocalCaseStatus } from './local-mode'
+import type { FailureCause } from './failure-cause'
 
 /**
  * El repertorio: memoria de curaciones pasadas, leída de `.healify/history.jsonl`.
@@ -24,6 +25,10 @@ export interface HistoryEntry {
   confidence: number
   /** true si esta curación se confirmó contra la página real en el momento en que se grabó. */
   verified?: boolean
+  /** Por qué falló el test, según `diagnoseFailure()`. Opcional a propósito: los historiales
+   * escritos antes de que existiera la clasificación no lo tienen, y un archivo viejo tiene
+   * que seguir leyéndose sin migración. Ver `computeChronic()`. */
+  cause?: FailureCause
 }
 
 const HISTORY_RELATIVE_PATH = join('.healify', 'history.jsonl')

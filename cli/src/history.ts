@@ -5,13 +5,15 @@ import {
   parseHistoryLines,
   computeTopRecurrent,
   computeRebroken,
+  computeChronic,
   type HistoryEntry,
   type RecurrentSelector,
   type RebrokenSelector,
+  type ChronicSelector,
 } from '@healify/reporter-core'
 
-export type { HistoryEntry, RecurrentSelector, RebrokenSelector }
-export { computeTopRecurrent, computeRebroken }
+export type { HistoryEntry, RecurrentSelector, RebrokenSelector, ChronicSelector }
+export { computeTopRecurrent, computeRebroken, computeChronic }
 
 const HISTORY_RELATIVE_PATH = join('.healify', 'history.jsonl')
 
@@ -37,6 +39,7 @@ export function appendHistory(run: LocalRun, cwd: string = process.cwd()): void 
         selectorType: c.selectorType,
         confidence: c.confidence,
         verified: c.verified,
+        cause: c.cause,
       }
       return JSON.stringify(entry)
     })

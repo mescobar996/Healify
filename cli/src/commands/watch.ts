@@ -110,7 +110,7 @@ export function startFixWatch(
 
 /** Punto de entrada del CLI. Imprime el encabezado y arranca el loop, que no termina nunca. */
 export function runFixWatch(reportPath: string, opts: ApplyOptions, intervalMs: number): void {
-  const flags = [opts.dryRun ? '--dry-run' : '', opts.ast ? '' : '--no-ast', opts.pageObjects ? '' : '--no-pom']
+  const flags = [opts.dryRun ? '--dry-run' : '', opts.recordHistory ? '--record-history' : '', opts.ast ? '' : '--no-ast', opts.pageObjects ? '' : '--no-pom']
     .filter(Boolean)
     .join(' ')
 

@@ -344,6 +344,107 @@ jobs:
         run: npm test
         working-directory: gh-action
 
+  # ─── La Action, ejecutada de verdad ────────────────────────────────────────
+  # Los tests de arriba prueban run.js en aislamiento; nada probaba que el action.yml en sí sea
+  # válido y arranque. Cuando pasó de `node20` a composite eso dejó de ser un detalle: un YAML
+  # mal formado, un input mal mapeado o un `uses:` inexistente solo aparecen al invocarla. Se
+  # invoca la copia local (`./`), no una versión publicada.
+  gh-action-run:
+    name: gh-action se ejecuta (composite)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # Sin esto `npx @healify/cli` bajaría la versión PUBLICADA de npm en vez de la del PR,
+      # y el job estaría probando código viejo. Con el workspace instalado y buildeado, npx
+      # resuelve al binario local.
+      #
+      # El segundo install no es redundante: `cli/dist` está gitignoreado, así que en un runner
+      # limpio `npm ci` corre cuando `cli/dist/index.js` todavía no existe y npm no deja el bin
+      # link de `healify`. Resultado: `npx @healify/cli` moría con `sh: healify: not found`.
+      # Reinstalar después del build rehace los links con el destino ya presente.
+      - name: Install and build
+        run: |
+          npm ci
+          npm run build
+          npm install --ignore-scripts --no-audit --no-fund
+
+      # Si el link no está, el fallo tiene que decir ESO y no disfrazarse de "la Action no
+      # escribió el historial" tres pasos más abajo.
+      - name: Assert the local CLI is reachable
+        run: |
+          if [ ! -e node_modules/.bin/healify ]; then
+            echo "::error::node_modules/.bin/healify no existe — npx no va a poder resolver el CLI local."
+            ls -la node_modules/.bin | head -20
+            exit 1
+          fi
+          npx @healify/cli --version
+
+      # `fix` necesita un reporte para leer. Uno mínimo alcanza: lo que se prueba acá es que
+      # la Action arranque y llegue a ejecutar el CLI de punta a punta, no la heurística.
+      - name: Seed a report
+        run: |
+          cat > healify-report.json <<'JSON'
+          {
+            "project": "healify-ci",
+            "framework": "Playwright",
+            "generatedAt": "2026-08-06T00:00:00.000Z",
+            "cases": [
+              {
+                "testName": "smoke de la action",
+                "testFile": "e2e/smoke.spec.ts",
+                "selector": "#add-to-cart",
+                "errorMessage": "Waiting for selector '#add-to-cart' failed",
+                "status": "healed",
+                "fixedSelector": "[data-testid='add-to-cart']",
+                "confidence": 0.95,
+                "explanation": "",
+                "selectorType": "TESTID",
+                "cause": "selector",
+                "defectId": "HLF-CI0001",
+                "severity": "major"
+              }
+            ]
+          }
+          JSON
+
+      - name: Run the local action
+        uses: ./
+        with:
+          project-path: '.'
+
+      # La Action reporta los fallos del CLI en el comentario de la PR, no con un exit code
+      # (a propósito: un job rojo sin explicación es peor). Así que el job tiene que mirar el
+      # efecto observable. Si el CLI no corrió, --record-history no escribió nada.
+      #
+      # Este chequeo es la red contra el bug que encontró esta misma PR: la Action comentaba
+      # "All Clear ✅" cuando el CLI ni siquiera arrancaba. Un verde no puede volver a
+      # significar "no se ejecutó nada".
+      - name: Assert Healify actually ran
+        run: |
+          if [ ! -f .healify/history.jsonl ]; then
+            echo "::error::La Action terminó sin escribir .healify/history.jsonl — el CLI no llegó a correr."
+            exit 1
+          fi
+          echo "history.jsonl escrito:"
+          cat .healify/history.jsonl
+          grep -q '"cause"' .healify/history.jsonl || {
+            echo "::error::El historial no tiene el campo cause."
+            exit 1
+          }
+
   # ─── CLI de punta a punta ──────────────────────────────────────────────────
   # Invoca el binario del CLI como lo haría un usuario, sobre reportes de verdad en un tmpdir.
   # No corría en ningún lado: su config decía `**/*.test.ts`, que desde la raíz del repo barría

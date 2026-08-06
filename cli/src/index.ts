@@ -112,6 +112,17 @@ function printHistoryReport(report: HistoryReport): void {
     return
   }
 
+  // Primero lo accionable: un conteo no le dice a nadie qué hacer, una recomendación sí.
+  if (report.chronic.length > 0) {
+    console.log('Selectores crónicos (3+ roturas) — acá conviene dejar de parchear:')
+    for (const c of report.chronic) {
+      const donde = c.testFile ? ` (${c.testFile})` : ''
+      console.log(`  ${c.selector}${donde}`)
+      console.log(`    ${c.recommendation}`)
+    }
+    console.log('')
+  }
+
   console.log('Top selectores recurrentes:')
   for (const r of report.topRecurrent) {
     console.log(`  ${r.count}x  ${r.selector}`)
@@ -233,6 +244,7 @@ Comandos:
                                                         --no-pom no busca el selector en los page objects cuando no está en el archivo de test
                                                        --interactive pregunta caso por caso en vez de aplicar todo solo (necesita una terminal real)
                                                         --watch [--interval <ms>] se queda vigilando el reporte y re-aplica en cada corrida nueva (Ctrl+C para salir)
+                                                        --record-history graba .healify/history.jsonl aunque sea --dry-run (para CI, que nunca toca archivos)
   history                                    Muestra selectores recurrentes y re-rotos de .healify/history.jsonl (se graba en cada fix real, no en --dry-run)
   report [reporte.json] [--dry-run]          Reporta los defectos de la corrida a tu Jira (o webhook) — dedupe por defectId, opt-in (agile.enabled: true)
                                                         --dry-run imprime qué se reportaría sin tocar la red

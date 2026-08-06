@@ -68,6 +68,17 @@ export interface ApplyOptions {
   /** Reescribir las sugerencias `role(...)` con AST (`page.click` → `page.getByRole`). */
   ast: boolean
   pageObjects: boolean
+  /** Grabar el historial aunque sea `--dry-run`. Existe para CI: la Action corre siempre en
+   * dry-run porque su promesa es no tocar archivos, y sin esto nunca acumularía historial —
+   * `computeChronic`/`computeRebroken` verían siempre una sola corrida y no podrían concluir
+   * nada. `.healify/history.jsonl` es el registro propio de Healify, no un archivo de test:
+   * escribirlo no rompe la promesa de no modificar el código del usuario. */
+  recordHistory?: boolean
+}
+
+/** El historial se graba en un fix real, o cuando se pide explícitamente en dry-run. */
+function shouldRecordHistory(opts: Pick<ApplyOptions, 'dryRun' | 'recordHistory'>): boolean {
+  return !opts.dryRun || opts.recordHistory === true
 }
 
 /**
@@ -114,13 +125,14 @@ export function applyFixOnce(reportPath: string, opts: ApplyOptions): boolean {
     return false
   }
 
-  if (!opts.dryRun) appendHistory(run, process.cwd())
+  if (shouldRecordHistory(opts)) appendHistory(run, process.cwd())
   printOutcomes(applyRun(run, run, opts), run, opts.ast)
   return true
 }
 
 export function runFix(args: string[]): void {
   const dryRun = args.includes('--dry-run')
+  const recordHistory = args.includes('--record-history')
   const force = args.includes('--force')
   const pr = args.includes('--pr')
   const ast = !args.includes('--no-ast')
@@ -132,7 +144,7 @@ export function runFix(args: string[]): void {
   // PR por cada corrida, o preguntar mientras el usuario está mirando otra cosa). Se delega
   // antes de leer nada, porque en watch el reporte puede todavía no existir.
   if (args.includes('--watch')) {
-    return runFixWatch(reportPath, { dryRun, force, ast, pageObjects }, parseInterval(args))
+    return runFixWatch(reportPath, { dryRun, force, ast, pageObjects, recordHistory }, parseInterval(args))
   }
 
   let run: LocalRun
@@ -152,7 +164,7 @@ export function runFix(args: string[]): void {
 
   console.log(`Healify fix — ${reportPath}${ast ? '' : ' (--no-ast)'}${canPrompt ? ' (interactivo)' : ''}\n`)
 
-  if (!dryRun) appendHistory(run, process.cwd())
+  if (shouldRecordHistory({ dryRun, recordHistory })) appendHistory(run, process.cwd())
 
   let runForFix = run
   let declinedOutcomes: FixOutcome[] = []

@@ -17,6 +17,36 @@ inputs:
     description: 'Directory to run Healify in (for monorepos where the test project is not at the repo root)'
     required: false
     default: '.'
+  history-cache:
+    description: 'Keep .healify/history.jsonl across runs so Healify can tell you which selectors keep breaking. Set to false to disable.'
+    required: false
+    default: 'true'
+# Composite, no `node20`, y la razón importa: un action `node20` no puede restaurar un cache
+# (eso es un step, no una llamada de librería) y tampoco puede depender de `@actions/cache`,
+# porque `gh-action/node_modules` está gitignoreado y GitHub no instala dependencias de un
+# action. Composite resuelve las dos cosas sin agregar una sola dependencia: `actions/cache`
+# es un step más y `run.js` sigue corriendo con cero deps de runtime.
 runs:
-  using: 'node20'
-  main: 'gh-action/run.js'
+  using: 'composite'
+  steps:
+    # El cache es por rama, con fallback a la rama base — que es la semántica correcta acá:
+    # una PR arranca sabiendo qué se venía rompiendo en main. La key lleva run_id para que
+    # cada corrida guarde una entrada nueva en vez de pisar la anterior.
+    - name: Restore Healify history
+      if: inputs.history-cache != 'false'
+      uses: actions/cache@v4
+      with:
+        path: ${{ inputs.project-path }}/.healify
+        key: healify-history-${{ github.ref_name }}-${{ github.run_id }}
+        restore-keys: |
+          healify-history-${{ github.ref_name }}-
+          healify-history-
+
+    - name: Run Healify
+      shell: bash
+      run: node "$GITHUB_ACTION_PATH/gh-action/run.js"
+      env:
+        # En composite los inputs no llegan solos como INPUT_*: hay que mapearlos a mano.
+        # run.js los lee con guion bajo, no con guion medio.
+        INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
+        INPUT_PROJECT_PATH: ${{ inputs.project-path }}
