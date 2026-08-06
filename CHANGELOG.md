@@ -2,6 +2,42 @@
 
 ## Sin publicar
 
+### El historial pasa a ser accionable, y sobrevive a CI
+
+- **La causa se persiste.** `HistoryEntry.cause` es opcional a propósito: los historiales
+  escritos antes tienen que seguir leyéndose sin migración.
+- **Nuevo `computeChronic()`** — agrupa por `testFile`+`selector` (mismo criterio que
+  `defectId`), umbral de 3 roturas, ventana temporal y una recomendación en una línea. Ahora
+  `healify history` abre con lo accionable en vez de con un conteo:
+
+  ```
+  #add-to-cart (e2e/checkout.spec.ts)
+    Se rompió 3 veces en 21 días. En vez de volver a parchear el selector,
+    agregale un data-testid estable al elemento.
+
+  #total (e2e/carrito.spec.ts)
+    Se rompió 3 veces en 15 días, y 3 de 3 no fueron por el selector.
+    El locator no es el problema: revisá el flujo del test.
+  ```
+
+  La segunda recomendación es el pago de cruzar el clasificador de causa con el historial: sin
+  la causa persistida, ese selector recibiría el consejo del testid y mandaría a alguien a
+  cambiar un locator que nunca estuvo roto.
+- **Nuevo flag `--record-history`.** La Action corre `fix --dry-run` a propósito (su promesa es
+  no tocar archivos) y `appendHistory` estaba detrás de un `if (!dryRun)`: nunca dejaba rastro,
+  así que cachear `.healify/` habría cacheado un directorio vacío. Es defendible grabar en
+  dry-run porque `.healify/history.jsonl` es el registro propio de Healify, no el código del
+  usuario — y hay un test que verifica que los archivos de test siguen sin tocarse.
+- **La Action pasa a composite y cachea `.healify/`.** Un action `node20` no puede restaurar un
+  cache (es un step, no una llamada de librería) ni depender de `@actions/cache`, porque
+  `gh-action/node_modules` está gitignoreado y GitHub no instala dependencias de un action.
+  Composite resuelve las dos cosas sin agregar una sola dependencia. Cache por rama con
+  fallback a la base: una PR arranca sabiendo qué se venía rompiendo en main.
+- **Job de CI que ejecuta la Action de verdad.** Los tests de `gh-action` prueban `run.js` en
+  aislamiento; nada probaba que el `action.yml` arranque.
+- 14 tests nuevos (792 en total).
+
+
 ### Diagnóstico de causa antes de curar
 
 Healify pasa a preguntarse **por qué** falló un test antes de decidir si tiene algo que
