@@ -41,10 +41,12 @@ export {
   renderDashboardHtml,
   computeTopRecurrent,
   computeRebroken,
+  computeChronic,
   type DashboardStats,
   type TimelinePoint,
   type RecurrentSelector,
   type RebrokenSelector,
+  type ChronicSelector,
 } from './dashboard'
 export {
   appendRunRecord,

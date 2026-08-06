@@ -112,6 +112,17 @@ function printHistoryReport(report: HistoryReport): void {
     return
   }
 
+  // Primero lo accionable: un conteo no le dice a nadie qué hacer, una recomendación sí.
+  if (report.chronic.length > 0) {
+    console.log('Selectores crónicos (3+ roturas) — acá conviene dejar de parchear:')
+    for (const c of report.chronic) {
+      const donde = c.testFile ? ` (${c.testFile})` : ''
+      console.log(`  ${c.selector}${donde}`)
+      console.log(`    ${c.recommendation}`)
+    }
+    console.log('')
+  }
+
   console.log('Top selectores recurrentes:')
   for (const r of report.topRecurrent) {
     console.log(`  ${r.count}x  ${r.selector}`)
