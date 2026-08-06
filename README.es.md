@@ -42,7 +42,7 @@ Listo. Volvé a lo tuyo.
 
 Cuando tu test falla, tu framework ya guardó cómo estaba la página en ese momento exacto.
 Healify lee **esa** evidencia: ahí había un botón cuyo nombre accesible era *"Agregar al
-carrito"*. La sugerencia sale verificada contra lo que había de verdad en pantalla — no contra
+carrito"*. La sugerencia sale verificada contra lo que había de verdad en pantalla, no contra
 lo que un modelo de lenguaje cree que probablemente estaba.
 
 Por eso propone roles y nombres accesibles en vez de otro `id`: el `id` nuevo también va a
@@ -53,7 +53,7 @@ cambiar en el próximo deploy. El botón que dice "Agregar al carrito", no.
 Sin nube. Sin cuenta. Sin API key. Sin telemetría. Sin IA generativa.
 
 El análisis corre entero donde vos estás, con heurística determinista: mismo input, mismo
-resultado, siempre. Si trabajás con datos sensibles —banca, salud, gobierno— eso no es una
+resultado, siempre. Si trabajás con datos sensibles (banca, salud, gobierno) eso no es una
 comodidad, es el único requisito que importa.
 
 ## Contra lo que hay hoy
@@ -82,7 +82,7 @@ vive en un page object y no en el test.
 ## Te abre el ticket
 
 Un build en rojo que nadie triangula es un build en rojo que nadie arregla. Healify convierte
-cada selector roto en un **ticket de Jira o un issue de GitHub** — con la evidencia, los pasos,
+cada selector roto en un **ticket de Jira o un issue de GitHub**, con la evidencia, los pasos,
 el entorno, y el selector que propone en su lugar.
 
 ```bash
@@ -90,7 +90,7 @@ npx healify report --dry-run   # qué se reportaría exactamente, sin tocar la r
 ```
 
 El mismo selector roto nunca abre dos tickets: cada defecto lleva un id estable, y Healify
-comenta en el que ya existe en vez de crear otro. Opt-in y apagado por default — tus
+comenta en el que ya existe en vez de crear otro. Opt-in y apagado por default: tus
 credenciales, tu instancia, sin ninguna nube nuestra en el medio.
 
 **[→ Jira, GitHub Issues y webhooks](docs/jira.es.md)**
@@ -111,11 +111,11 @@ fix es real y aplicarlo es una tecla.
 
 ### Empezá acá
 
-**[📖 Documentación](docs/)** — instalación, comandos, configuración
+**[Documentación](docs/)** · instalación, comandos, configuración
 
-**[▶️ Ejemplos que se corren](examples/)** — proyectos completos, verificados en CI contra un browser real
+**[Ejemplos que se corren](examples/)** · proyectos completos, verificados en CI contra un browser real
 
-**[🌐 Demo](https://healify-sigma.vercel.app)**
+**[Demo](https://healify-sigma.vercel.app)**
 
 </div>
 

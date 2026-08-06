@@ -19,7 +19,7 @@
 
 ---
 
-A button changed its `id` in the last deploy. The product didn't change — an attribute generated
+A button changed its `id` in the last deploy. The product didn't change. An attribute generated
 by your bundler did, one that should never have mattered. And yet your suite goes red, someone
 drops what they were doing, opens the DOM by hand and hunts for the single line that needs
 touching.
@@ -43,7 +43,7 @@ Done. Back to what you were doing.
 
 When your test fails, your framework has **already captured** what the page looked like at that
 exact moment. Healify reads *that* evidence: there was a button whose accessible name was *"Add
-to cart"*. The suggestion is verified against what was actually on screen — not against what a
+to cart"*. The suggestion is verified against what was actually on screen, not against what a
 language model thinks was probably there.
 
 That's why it proposes roles and accessible names instead of another `id`: the new `id` will
@@ -54,7 +54,7 @@ change in the next deploy too. The button that says "Add to cart" won't.
 No cloud. No account. No API key. No telemetry. No generative AI.
 
 The whole analysis runs where you are, on deterministic heuristics: same input, same output,
-every time. If you work with sensitive data — banking, healthcare, government — that isn't a
+every time. If you work with sensitive data (banking, healthcare, government) that isn't a
 convenience, it's the only requirement that matters.
 
 ## How it compares
@@ -83,7 +83,7 @@ selector lives in a page object rather than in the test itself.
 ## It files the ticket for you
 
 A red build nobody triages is a red build nobody fixes. Healify turns each broken selector into
-a **Jira ticket or a GitHub issue** — with the evidence, the steps, the environment, and the
+a **Jira ticket or a GitHub issue**, with the evidence, the steps, the environment, and the
 selector it suggests instead.
 
 ```bash
@@ -91,8 +91,8 @@ npx healify report --dry-run   # exactly what it would file, without touching th
 ```
 
 The same broken selector never files twice: every defect carries a stable id, and Healify
-comments on the existing ticket instead of opening another one. Opt-in and off by default —
-your credentials, your instance, no cloud of ours in between.
+comments on the existing ticket instead of opening another one. Opt-in and off by default: your
+credentials, your instance, no cloud of ours in between.
 
 **[→ Jira, GitHub Issues and webhooks](docs/jira.md)**
 
@@ -112,11 +112,11 @@ real and applying it is one keystroke.
 
 ### Start here
 
-**[📖 Documentation](docs/)** — installation, commands, configuration
+**[Documentation](docs/)** · installation, commands, configuration
 
-**[▶️ Examples that actually run](examples/)** — complete projects, verified in CI against a real browser
+**[Examples that actually run](examples/)** · complete projects, verified in CI against a real browser
 
-**[🌐 Demo](https://healify-sigma.vercel.app)**
+**[Demo](https://healify-sigma.vercel.app)**
 
 </div>
 
