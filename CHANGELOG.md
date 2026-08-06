@@ -1,5 +1,34 @@
 # Changelog
 
+## Sin publicar
+
+### Diagnóstico de causa antes de curar
+
+Healify pasa a preguntarse **por qué** falló un test antes de decidir si tiene algo que
+proponer, y a abstenerse cuando la respuesta no es "un selector dejó de encontrar su
+elemento".
+
+- **Nuevo `diagnoseFailure()`** (`reporter-core/src/failure-cause.ts`): clasifica el fallo en
+  `selector`, `assertion`, `timing`, `navigation`, `runtime` o `unknown` a partir del mensaje
+  de error. Determinista, sin red y sin IA, igual que el resto del motor. El `errorMessage` ya
+  viajaba hasta el motor desde siempre y no lo leía nadie.
+- **El sanado se abstiene fuera de alcance.** Un fallo con causa identificada distinta de
+  `selector` se reporta con la causa nombrada, `status: unresolved` y sin corrección
+  propuesta. El caso que justifica todo esto:
+  `expect(page.locator('#total')).toHaveText('99')` menciona un locator, así que hasta ahora
+  el motor le proponía un selector nuevo — pero el elemento **se había encontrado**, lo que
+  falló fue el valor. Curar eso hace pasar el test tapando el defecto que acababa de
+  encontrar. Un falso verde es peor que un rojo.
+- **Regla de diseño: solo se clasifica como no-selector con una señal positiva.** Ante la duda
+  gana el comportamiento anterior, así que ningún fallo que Healify ya curaba deja de curarse.
+  En particular `Timed out ... waiting for locator('#x')` sigue siendo un selector roto: la
+  regla de timing cubre esperas de navegación y de carga, nunca un timeout a secas.
+- **`LocalCaseResult.cause` y `RunStats.causes`** exponen la clasificación, y `printSummary()`
+  agrega una segunda línea cuando hay fallos fuera de alcance. Sin eso quedaban contados como
+  `unresolved` a secas y parecía que Healify no supo resolverlos, cuando en realidad decidió
+  no meterse.
+- 21 tests nuevos (777 en total).
+
 ## Java en Maven Central (fuera del ciclo de versión npm)
 
 > Tampoco toca ningún paquete npm — `io.github.mescobar996:healify-selenium` tiene su propio

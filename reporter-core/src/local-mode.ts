@@ -1,5 +1,6 @@
 import { analyzeAndHeal, type HealResponse } from './healing-engine'
 import { extractSelectorFromError } from './selector-extractor'
+import { diagnoseFailure, type FailureCause } from './failure-cause'
 import { buildDefectId, severityFor, type Severity } from './qa-report'
 import { resolveThresholds, type HealifyConfig } from './config'
 import type { HistoryEntry } from './repertoire'
@@ -46,6 +47,11 @@ export interface LocalCaseResult {
   verified?: boolean
   /** true si `verified` viene del repertorio (una corrida anterior), no de esta corrida. */
   fromRepertoire?: boolean
+  /** Por qué falló el test, según `diagnoseFailure()`. Solo `selector` habilita una propuesta
+   * de corrección; el resto se reporta con la causa nombrada y sin tocar nada. */
+  cause: FailureCause
+  /** Fragmento del error que determinó la causa — para auditar el veredicto. */
+  causeSignal?: string
   /** Identificador estable del defecto: el mismo selector roto en el mismo archivo devuelve
    * siempre el mismo ID, corrida tras corrida. */
   defectId: string
@@ -88,6 +94,11 @@ export function runLocalHealing(input: LocalCaseInput, config: HealifyConfig = {
   const selector = extractSelectorFromError(input.errorMessage)
   const thresholds = resolveThresholds(config)
 
+  // Primero por qué falló, después qué proponer. Un sanador que asume que todo fallo es un
+  // selector roto puede hacer pasar un test tapando el defecto que acababa de encontrar
+  // (ver `failure-cause.ts`); saber la causa es lo que permite abstenerse a tiempo.
+  const diagnosis = diagnoseFailure(input.errorMessage)
+
   // Sanado apagado (`healEnabled: false` o `HEALIFY_HEAL_ENABLED=false`, el análogo del
   // `-Dheal-enabled=false` de Healenium): el fallo se sigue reportando —apagar el sanado no es
   // apagar el reporte— pero no se propone nada ni se corre el motor.
@@ -102,6 +113,36 @@ export function runLocalHealing(input: LocalCaseInput, config: HealifyConfig = {
       confidence: 0,
       explanation: 'Sanado desactivado por configuración (healEnabled: false / HEALIFY_HEAL_ENABLED=false). El fallo se reporta igual, pero no se propone ninguna corrección.',
       selectorType: 'UNKNOWN',
+      cause: diagnosis.cause,
+      causeSignal: diagnosis.signal,
+      defectId: buildDefectId(input.testFile, selector),
+      severity: severityFor('unresolved'),
+      expected: `El test "${input.testName}" termina sin errores.`,
+      actual: firstLine(input.errorMessage),
+      ...passthrough(input),
+    }
+  }
+
+  // Fuera de alcance: el fallo tiene una causa identificada que no es un selector roto
+  // (aserción, timing, navegación, runtime). Se reporta con la causa nombrada y sin proponer
+  // corrección — es la diferencia entre "no sé" y "sé que acá no me corresponde meterme".
+  //
+  // Solo entra con una señal POSITIVA de otra causa: `unknown` sigue de largo hacia la rama
+  // de abajo, que es la que ya existía, así que un fallo indeterminado se comporta igual que
+  // siempre.
+  if (!diagnosis.healable && diagnosis.cause !== 'unknown') {
+    return {
+      testName: input.testName,
+      testFile: input.testFile,
+      selector,
+      errorMessage: input.errorMessage,
+      status: 'unresolved',
+      fixedSelector: '',
+      confidence: 0,
+      explanation: diagnosis.rationale,
+      selectorType: 'UNKNOWN',
+      cause: diagnosis.cause,
+      causeSignal: diagnosis.signal,
       defectId: buildDefectId(input.testFile, selector),
       severity: severityFor('unresolved'),
       expected: `El test "${input.testName}" termina sin errores.`,
@@ -121,6 +162,8 @@ export function runLocalHealing(input: LocalCaseInput, config: HealifyConfig = {
       confidence: 0,
       explanation: 'No se pudo extraer un selector del mensaje de error.',
       selectorType: 'UNKNOWN',
+      cause: diagnosis.cause,
+      causeSignal: diagnosis.signal,
       defectId: buildDefectId(input.testFile, selector),
       severity: severityFor('unresolved'),
       expected: `El test "${input.testName}" termina sin errores.`,
@@ -163,6 +206,8 @@ export function runLocalHealing(input: LocalCaseInput, config: HealifyConfig = {
     selectorType: heal.selectorType,
     verified: heal.verified,
     fromRepertoire: heal.fromRepertoire,
+    cause: diagnosis.cause,
+    causeSignal: diagnosis.signal,
     defectId: buildDefectId(input.testFile, selector),
     severity: severityFor(status),
     expected: `El selector ${selector} encuentra un elemento en la página.`,

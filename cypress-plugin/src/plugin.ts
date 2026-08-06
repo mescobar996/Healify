@@ -119,6 +119,9 @@ export function HealifyCypressPlugin(
         selectorType: event.type === 'healed' ? 'HEALED' : 'UNKNOWN',
         verified: event.verified,
         fromRepertoire: event.fromRepertoire,
+        // El evento solo existe porque un selector no resolvió — la causa está dada por el
+        // hecho de que `healify:record-event` se haya disparado, no por el texto del error.
+        cause: 'selector',
         defectId: buildDefectId(event.testFile, event.originalSelector),
         severity: severityFor(status),
         expected: `El selector ${event.originalSelector} encuentra un elemento en la página.`,
