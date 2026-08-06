@@ -91,6 +91,15 @@ jobs:
 
       - name: Publish
         # El orden importa: reporter-core primero porque todos lo bundlean.
+        #
+        # @healify/mcp NO esta en esta lista todavia, y no es un olvido: trusted publishing
+        # tiene un problema de arranque. npm exige que el paquete YA EXISTA en el registry para
+        # poder configurarle un trusted publisher, y OIDC no puede hacer la primera publicacion
+        # (npm/cli#8544). Agregarlo aca antes de resolver eso haria fallar el job con un error
+        # de autenticacion, y con el la publicacion de los otros siete.
+        #
+        # El arranque es manual y de una sola vez, y esta documentado en PARA-MANANA.md.
+        # Despues de eso, se agrega `mcp` a este `for` y sigue el camino normal.
         run: |
           DRY=""
           if [ "${{ inputs.dry-run }}" = "true" ]; then DRY="--dry-run"; fi

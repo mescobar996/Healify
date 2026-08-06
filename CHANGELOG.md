@@ -1,6 +1,11 @@
 # Changelog
 
-## Sin publicar
+## 2.4.0
+
+> `@healify/mcp` sale con versionado propio (**0.1.0**), como la extensión de VS Code. Todavía
+> no se publica desde el workflow: npm exige que un paquete exista antes de poder configurarle
+> trusted publishing, así que su primera publicación es manual. Ver `PARA-MANANA.md`.
+
 ### Servidor MCP, y el README contra el rival que importa
 
 - **Nuevo paquete `@healify/mcp`** — servidor MCP por stdio con cuatro herramientas:
