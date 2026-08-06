@@ -361,10 +361,70 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # Sin esto `npx @healify/cli` bajaría la versión PUBLICADA de npm en vez de la del PR,
+      # y el job estaría probando código viejo. Con el workspace instalado y buildeado, npx
+      # resuelve al binario local.
+      - name: Install and build
+        run: npm ci && npm run build
+
+      # `fix` necesita un reporte para leer. Uno mínimo alcanza: lo que se prueba acá es que
+      # la Action arranque y llegue a ejecutar el CLI de punta a punta, no la heurística.
+      - name: Seed a report
+        run: |
+          cat > healify-report.json <<'JSON'
+          {
+            "project": "healify-ci",
+            "framework": "Playwright",
+            "generatedAt": "2026-08-06T00:00:00.000Z",
+            "cases": [
+              {
+                "testName": "smoke de la action",
+                "testFile": "e2e/smoke.spec.ts",
+                "selector": "#add-to-cart",
+                "errorMessage": "Waiting for selector '#add-to-cart' failed",
+                "status": "healed",
+                "fixedSelector": "[data-testid='add-to-cart']",
+                "confidence": 0.95,
+                "explanation": "",
+                "selectorType": "TESTID",
+                "cause": "selector",
+                "defectId": "HLF-CI0001",
+                "severity": "major"
+              }
+            ]
+          }
+          JSON
+
       - name: Run the local action
         uses: ./
         with:
           project-path: '.'
+
+      # La Action reporta los fallos del CLI en el comentario de la PR, no con un exit code
+      # (a propósito: un job rojo sin explicación es peor). Así que el job tiene que mirar el
+      # efecto observable. Si el CLI no corrió, --record-history no escribió nada.
+      #
+      # Este chequeo es la red contra el bug que encontró esta misma PR: la Action comentaba
+      # "All Clear ✅" cuando el CLI ni siquiera arrancaba. Un verde no puede volver a
+      # significar "no se ejecutó nada".
+      - name: Assert Healify actually ran
+        run: |
+          if [ ! -f .healify/history.jsonl ]; then
+            echo "::error::La Action terminó sin escribir .healify/history.jsonl — el CLI no llegó a correr."
+            exit 1
+          fi
+          echo "history.jsonl escrito:"
+          cat .healify/history.jsonl
+          grep -q '"cause"' .healify/history.jsonl || {
+            echo "::error::El historial no tiene el campo cause."
+            exit 1
+          }
 
   # ─── CLI de punta a punta ──────────────────────────────────────────────────
   # Invoca el binario del CLI como lo haría un usuario, sobre reportes de verdad en un tmpdir.

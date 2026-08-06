@@ -177,6 +177,68 @@ describe('buildComment', () => {
     expect(comment).toContain('<!-- healify-report -->')
     expect(comment).toContain('All Clear')
   })
+
+  describe('cuando el CLI no llegó a correr', () => {
+    // El bug que esto previene, encontrado ejecutando la Action de verdad en CI: `run()` se
+    // tragaba el error y devolvía el texto del fallo como si fuera salida normal. Ese texto no
+    // trae marcadores ✅/❌/✓/⚠, así que las tres banderas quedaban en false y la Action
+    // comentaba "All Clear ✅ — No broken selectors detected" sobre una corrida inexistente.
+    const ERROR_NPX = 'npm error could not determine executable to run'
+
+    it('no dice All Clear cuando doctor falló', () => {
+      const comment = buildComment(ERROR_NPX, '', { doctorOk: false })
+
+      expect(comment).not.toContain('All Clear')
+      expect(comment).toContain('Could not run')
+      expect(comment).toContain('this PR was not checked')
+      expect(comment).toContain('healify doctor')
+    })
+
+    it('no dice All Clear cuando fix falló', () => {
+      const comment = buildComment('', ERROR_NPX, { fixOk: false })
+
+      expect(comment).not.toContain('All Clear')
+      expect(comment).toContain('healify fix --dry-run')
+    })
+
+    it('nombra los dos comandos cuando fallaron los dos', () => {
+      const comment = buildComment(ERROR_NPX, ERROR_NPX, { doctorOk: false, fixOk: false })
+
+      expect(comment).toContain('healify doctor and healify fix --dry-run')
+    })
+
+    it('incluye la salida real del comando para poder diagnosticar', () => {
+      const comment = buildComment(ERROR_NPX, '', { doctorOk: false })
+      expect(comment).toContain(ERROR_NPX)
+    })
+
+    it('sigue diciendo All Clear cuando los dos comandos corrieron bien', () => {
+      const comment = buildComment('', '', { doctorOk: true, fixOk: true })
+      expect(comment).toContain('All Clear')
+    })
+  })
+})
+
+describe('run() distingue éxito de fallo', () => {
+  it('devuelve ok:true y la salida cuando el comando anda', () => {
+    mockExecSync.mockReturnValue('✅ ok\n')
+    expect(run('cmd')).toEqual({ ok: true, output: '✅ ok' })
+  })
+
+  it('devuelve ok:false cuando el comando falla, sin relanzar', () => {
+    // No relanzar es intencional: un CLI que falla tiene que terminar en un comentario que lo
+    // diga, no en un job rojo sin explicación. Pero el que llama tiene que poder distinguirlo.
+    mockExecSync.mockImplementation(() => {
+      const err = new Error('command failed')
+      err.stderr = Buffer.from('npm error could not determine executable to run')
+      throw err
+    })
+
+    const resultado = run('cmd')
+
+    expect(resultado.ok).toBe(false)
+    expect(resultado.output).toContain('npm error')
+  })
 })
 
 /** Cliente falso con la misma forma que devuelve `createClient()`. */

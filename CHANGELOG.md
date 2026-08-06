@@ -34,8 +34,32 @@
   Composite resuelve las dos cosas sin agregar una sola dependencia. Cache por rama con
   fallback a la base: una PR arranca sabiendo qué se venía rompiendo en main.
 - **Job de CI que ejecuta la Action de verdad.** Los tests de `gh-action` prueban `run.js` en
-  aislamiento; nada probaba que el `action.yml` arranque.
-- 14 tests nuevos (792 en total).
+  aislamiento; nada probaba que el `action.yml` arranque. Instala, buildea, siembra un reporte
+  y después **verifica que `.healify/history.jsonl` se haya escrito** — un job que pasa sin que
+  el CLI haya corrido no vale nada.
+
+### 🚨 La Action decía "All Clear" cuando no había corrido nada
+
+Encontrado por ese job nuevo, en su primera ejecución. Es un bug preexistente, no una regresión.
+
+`run()` atrapaba cualquier error del CLI y devolvía el texto del fallo **como si fuera salida
+normal**. Ese texto no trae marcadores `✅`/`❌`/`✓`/`⚠`, así que `buildComment` no encontraba
+nada que reportar y caía en su rama final:
+
+> ### Healify — All Clear ✅
+> No broken selectors detected. Healify doctor passed all checks.
+
+O sea que cualquier proyecto donde `@healify/cli` no estuviera instalado o accesible recibía un
+visto bueno en cada PR, sin que Healify se ejecutara jamás. La afirmación más fuerte que puede
+hacer la Action era justo la que emitía cuando no sabía nada.
+
+- `run()` ahora devuelve `{ ok, output }`. No relanza a propósito: un CLI que falla tiene que
+  terminar en un comentario que lo explique, no en un job rojo sin contexto.
+- Comentario nuevo **"Could not run ⚠️"** que dice qué comando falló, aclara *"this is not a
+  pass"* y adjunta la salida real del comando en un `<details>`.
+- 7 tests que cubren el falso verde.
+
+- 21 tests nuevos (799 en total).
 
 
 ### Diagnóstico de causa antes de curar

@@ -4,13 +4,26 @@ import { createClient } from './github-api.js'
 
 const MARKER = '<!-- healify-report -->'
 
+/**
+ * Corre un comando y devuelve `{ ok, output }`.
+ *
+ * Antes devolvía un string pelado y en el catch devolvía el texto del error, indistinguible
+ * de una salida exitosa. Eso producía el peor resultado posible: si el CLI no llegaba a
+ * correr, su mensaje de error no traía ningún marcador ✅/❌/✓/⚠, buildComment no encontraba
+ * nada que reportar y concluía "All Clear ✅ — No broken selectors detected". La Action decía
+ * que estaba todo bien sobre una corrida que nunca ocurrió.
+ *
+ * No se relanza el error a propósito: un fallo del CLI tiene que terminar en un comentario
+ * que lo diga, no en un job rojo sin explicación. Pero el que llama necesita poder
+ * distinguirlo, y para eso está `ok`.
+ */
 export function run(cmd, cwd = '.') {
   try {
-    return execSync(cmd, { encoding: 'utf-8', timeout: 60_000, stdio: ['pipe', 'pipe', 'pipe'], cwd }).trim()
+    return { ok: true, output: execSync(cmd, { encoding: 'utf-8', timeout: 60_000, stdio: ['pipe', 'pipe', 'pipe'], cwd }).trim() }
   } catch (err) {
     const stderr = err.stderr?.toString() || ''
     const stdout = err.stdout?.toString() || ''
-    return (stdout || stderr || err.message || '').trim()
+    return { ok: false, output: (stdout || stderr || err.message || '').trim() }
   }
 }
 
@@ -43,7 +56,41 @@ export function formatFixOutput(output) {
   return { applied, skipped }
 }
 
-export function buildComment(doctorOutput, fixOutput) {
+/** Primeras líneas útiles de la salida de un comando que falló, para el bloque de diagnóstico. */
+function errorExcerpt(output) {
+  return output.split('\n').filter((l) => l.trim()).slice(0, 6).join('\n').slice(0, 800)
+}
+
+export function buildComment(doctorOutput, fixOutput, opts = {}) {
+  const { doctorOk = true, fixOk = true } = opts
+
+  // Si un comando no llegó a correr, no hay nada que interpretar: su salida es un mensaje de
+  // error, no un reporte. Decirlo es obligatorio — el silencio acá se leía como "All Clear",
+  // que es la afirmación más fuerte que puede hacer la Action y era exactamente la falsa.
+  if (!doctorOk || !fixOk) {
+    const cuales = [!doctorOk && 'healify doctor', !fixOk && 'healify fix --dry-run'].filter(Boolean).join(' and ')
+    const salida = errorExcerpt(!doctorOk ? doctorOutput : fixOutput)
+    return [
+      `${MARKER}`,
+      '',
+      '### Healify — Could not run ⚠️',
+      '',
+      `\`${cuales}\` failed to run, so **this PR was not checked**. This is not a pass.`,
+      '',
+      'Most likely `@healify/cli` is not installed or reachable in this project. Check that your',
+      'workflow installs dependencies before this action, and that `project-path` points at the',
+      'directory holding your test project.',
+      '',
+      '<details><summary>Command output</summary>',
+      '',
+      '```',
+      salida || '(no output)',
+      '```',
+      '',
+      '</details>',
+    ].join('\n')
+  }
+
   const checks = formatDoctor(doctorOutput)
   const { applied, skipped } = formatFixOutput(fixOutput)
 
@@ -156,16 +203,18 @@ async function main() {
 
   // Run Healify
   console.log(`Running Healify doctor in '${projectPath}'...`)
-  const doctorOutput = run(`npx @healify/cli doctor`, projectPath)
+  const doctor = run(`npx @healify/cli doctor`, projectPath)
+  if (!doctor.ok) console.log('healify doctor failed — the PR comment will say so instead of reporting a pass.')
 
   // --record-history acumula .healify/history.jsonl entre corridas sin tocar ni un archivo de
   // test. Sin esto la Action no deja rastro y el historial restaurado del cache estaría siempre
   // vacío: "este selector se rompió 5 veces" nunca podría afirmarse desde CI.
   console.log(`Running Healify fix --dry-run in '${projectPath}'...`)
-  const fixOutput = run(`npx @healify/cli fix --dry-run --record-history`, projectPath)
+  const fix = run(`npx @healify/cli fix --dry-run --record-history`, projectPath)
+  if (!fix.ok) console.log('healify fix failed — the PR comment will say so instead of reporting a pass.')
 
   // Build comment
-  const comment = buildComment(doctorOutput, fixOutput)
+  const comment = buildComment(doctor.output, fix.output, { doctorOk: doctor.ok, fixOk: fix.ok })
 
   const result = await postComment(createClient(token), owner, repo, prNumber, comment)
   console.log(`Healify PR comment ${result}.`)
