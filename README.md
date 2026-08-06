@@ -6,7 +6,6 @@
 
   <a href="https://www.npmjs.com/package/@healify/cli"><img src="https://img.shields.io/npm/v/@healify/cli" alt="npm" /></a>
   <a href="https://github.com/mescobar996/Healify/actions/workflows/ci.yml"><img src="https://github.com/mescobar996/Healify/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
-  <img src="https://img.shields.io/badge/tests-711%20passing-brightgreen" />
   <img src="https://img.shields.io/badge/license-MIT-blue" />
   <img src="https://img.shields.io/badge/100%25%20local-true-blue" />
 
@@ -96,6 +95,16 @@ comments on the existing ticket instead of opening another one. Opt-in and off b
 your credentials, your instance, no cloud of ours in between.
 
 **[→ Jira, GitHub Issues and webhooks](docs/jira.md)**
+
+## And it works in your editor
+
+There's a [VS Code extension](vscode-extension/). Fragile selectors get underlined as you type.
+The ones that actually broke get a verified fix on `Ctrl+.`
+
+The two are deliberately different. Before you run anything, Healify can tell you a selector
+looks brittle, but it won't suggest a replacement: without seeing the page, any specific name
+would be made up. After a run, it knows the element exists and what it's called, so the fix is
+real and applying it is one keystroke.
 
 ---
 

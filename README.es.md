@@ -6,7 +6,6 @@
 
   <a href="https://www.npmjs.com/package/@healify/cli"><img src="https://img.shields.io/npm/v/@healify/cli" alt="npm" /></a>
   <a href="https://github.com/mescobar996/Healify/actions/workflows/ci.yml"><img src="https://github.com/mescobar996/Healify/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
-  <img src="https://img.shields.io/badge/tests-711%20passing-brightgreen" />
   <img src="https://img.shields.io/badge/license-MIT-blue" />
   <img src="https://img.shields.io/badge/100%25%20local-true-blue" />
 
@@ -95,6 +94,16 @@ comenta en el que ya existe en vez de crear otro. Opt-in y apagado por default �
 credenciales, tu instancia, sin ninguna nube nuestra en el medio.
 
 **[→ Jira, GitHub Issues y webhooks](docs/jira.es.md)**
+
+## Y funciona en tu editor
+
+Hay una [extensión de VS Code](vscode-extension/). Los selectores frágiles quedan subrayados
+mientras escribís. Los que se rompieron de verdad traen un fix verificado con `Ctrl+.`
+
+Los dos niveles son distintos a propósito. Antes de correr nada, Healify puede decirte que un
+selector es frágil, pero no te propone reemplazo: sin ver la página, cualquier nombre concreto
+sería inventado. Después de una corrida sabe que el elemento existe y cómo se llama, así que el
+fix es real y aplicarlo es una tecla.
 
 ---
 
