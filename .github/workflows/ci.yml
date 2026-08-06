@@ -370,8 +370,27 @@ jobs:
       # Sin esto `npx @healify/cli` bajaría la versión PUBLICADA de npm en vez de la del PR,
       # y el job estaría probando código viejo. Con el workspace instalado y buildeado, npx
       # resuelve al binario local.
+      #
+      # El segundo install no es redundante: `cli/dist` está gitignoreado, así que en un runner
+      # limpio `npm ci` corre cuando `cli/dist/index.js` todavía no existe y npm no deja el bin
+      # link de `healify`. Resultado: `npx @healify/cli` moría con `sh: healify: not found`.
+      # Reinstalar después del build rehace los links con el destino ya presente.
       - name: Install and build
-        run: npm ci && npm run build
+        run: |
+          npm ci
+          npm run build
+          npm install --ignore-scripts --no-audit --no-fund
+
+      # Si el link no está, el fallo tiene que decir ESO y no disfrazarse de "la Action no
+      # escribió el historial" tres pasos más abajo.
+      - name: Assert the local CLI is reachable
+        run: |
+          if [ ! -e node_modules/.bin/healify ]; then
+            echo "::error::node_modules/.bin/healify no existe — npx no va a poder resolver el CLI local."
+            ls -la node_modules/.bin | head -20
+            exit 1
+          fi
+          npx @healify/cli --version
 
       # `fix` necesita un reporte para leer. Uno mínimo alcanza: lo que se prueba acá es que
       # la Action arranque y llegue a ejecutar el CLI de punta a punta, no la heurística.
