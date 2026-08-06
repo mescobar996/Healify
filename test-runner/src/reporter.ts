@@ -14,6 +14,7 @@ import {
   writeAuditReport,
   loadConfig,
   appendRunRecord,
+  readRunRecords,
   type HealifyConfig,
   type LocalCaseResult,
   type CaseAttachment,
@@ -21,6 +22,7 @@ import {
   type HistoryEntry,
   type AuditEntry,
   type RunOutcome,
+  type RunRecord,
 } from '@healify/reporter-core'
 
 /**
@@ -41,6 +43,7 @@ export default class HealifyReporter implements Reporter {
   private startedAt = Date.now()
   private environment: RunEnvironment = baseEnvironment('Playwright')
   private repertoire: HistoryEntry[] = []
+  private runHistory: RunRecord[] = []
   private healifyConfig: HealifyConfig = {}
 
   onBegin(config: FullConfig, suite: Suite): void {
@@ -53,6 +56,10 @@ export default class HealifyReporter implements Reporter {
     // corre. Solo entra en juego cuando esta corrida no pudo verificar nada por su cuenta
     // (ver el comentario de cabecera de reporter-core/src/repertoire.ts).
     this.repertoire = readRepertoire(process.cwd())
+    // Las corridas ANTERIORES, leídas antes de que esta agregue la suya en onEnd — si se
+    // leyeran después, el test que acaba de fallar contaminaría su propio veredicto. Misma
+    // política que el repertorio: una sola lectura por corrida.
+    this.runHistory = readRunRecords(process.cwd())
 
     // El navegador y la baseURL viven en el project que Playwright resolvió, no en la config
     // cruda. Se toma el primero: con varios projects el reporte igual dice cuál miró.
@@ -112,6 +119,7 @@ export default class HealifyReporter implements Reporter {
         attachments: collectAttachments(result),
         domContext,
         repertoire: this.repertoire,
+        runHistory: this.runHistory,
       }, this.healifyConfig)
       this.localResults.push(healResult)
 
