@@ -23,16 +23,31 @@
 # hacer dentro de las 72 h y quema la versión para siempre.
 name: Release
 
+# `v*.*.*` y no `v*`: el alias movil `v2` existe para los que consumen la GitHub Action
+# (`uses: mescobar996/Healify@v2`), no para publicar. Con el patron viejo, mover el alias
+# disparaba un SEGUNDO release en paralelo con el del tag de version, y el guard de
+# idempotencia no alcanzaba a verlo: `npm view` corria antes de que la otra corrida publicara,
+# pasaba el chequeo, e intentaba publicar igual. Eso es lo que paso en 2.4.0 — E403 "cannot
+# publish over the previously published versions" en selenium-plugin, con los siete paquetes
+# ya publicados correctamente por la otra corrida. El artefacto queda bien y el release queda
+# en rojo, que es la peor combinacion: entrena a ignorar los rojos.
 on:
   push:
     tags:
-      - 'v*'
+      - 'v*.*.*'
   workflow_dispatch:
     inputs:
       dry-run:
         description: 'Correr npm publish --dry-run (no publica nada)'
         type: boolean
         default: true
+
+# Cinturon y tiradores: aunque el filtro de arriba ya evita el caso conocido, dos releases no
+# pueden solaparse nunca. `cancel-in-progress: false` a proposito — cortar un publish por la
+# mitad deja algunos paquetes publicados y otros no, que es mucho peor que esperar.
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 permissions:
   contents: read
