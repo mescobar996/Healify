@@ -1,6 +1,8 @@
 import { describe, it, expect, vi } from 'vitest'
 
-const { mockReadRepertoire } = vi.hoisted(() => ({ mockReadRepertoire: vi.fn(() => []) }))
+// Sin anotar el retorno, `vi.fn(() => [])` infiere `never[]` y cualquier mockReturnValue
+// posterior falla al tipar. Lo detecto tsc recien cuando el tsconfig dejo de excluir los tests.
+const { mockReadRepertoire } = vi.hoisted(() => ({ mockReadRepertoire: vi.fn((): unknown[] => []) }))
 
 vi.mock('@healify/reporter-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@healify/reporter-core')>()

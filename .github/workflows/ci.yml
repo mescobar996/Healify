@@ -47,7 +47,11 @@ jobs:
       - name: Type check cypress-plugin
         run: npx tsc --noEmit -p cypress-plugin/tsconfig.json
 
-      - name: Type check cli
+      # El tsconfig de cli EXCLUIA src/__tests__, asi que sus tests nunca pasaron por tsc. Eso
+      # dejo pasar helpers que construian LocalCaseResult sin campos requeridos y mocks
+      # `vi.fn(() => [])` que inferian never[]: doce errores que solo aparecian en runtime, o
+      # ni siquiera. Ahora el chequeo los cubre; el emit usa tsconfig.build.json.
+      - name: Type check cli (incluye los tests)
         run: npx tsc --noEmit -p cli/tsconfig.json
 
       - name: Type check selenium-plugin

@@ -31,6 +31,9 @@ function makeCase(overrides: Partial<LocalCaseResult> = {}): LocalCaseResult {
     confidence: 0.95,
     explanation: '',
     selectorType: 'TESTID',
+    cause: 'selector',
+    defectId: 'HLF-TEST01',
+    severity: 'major',
     ...overrides,
   }
 }

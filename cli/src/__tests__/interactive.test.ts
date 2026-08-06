@@ -16,6 +16,7 @@ function makeCase(overrides: Partial<LocalCaseResult> = {}): LocalCaseResult {
     verified: true,
     defectId: 'HLF-ABC123',
     severity: 'minor',
+    cause: 'selector',
     ...overrides,
   }
 }

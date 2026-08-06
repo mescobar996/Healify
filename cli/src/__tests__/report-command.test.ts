@@ -7,7 +7,8 @@ const { mockLoadConfig, mockResolveAgile, mockReportDefects, mockBuildAgileDefec
   mockLoadConfig: vi.fn(() => ({})),
   mockResolveAgile: vi.fn(() => ({ enabled: false, provider: 'jira', issueType: 'Bug', priorityBySeverity: {}, labels: [] })),
   mockReportDefects: vi.fn(),
-  mockBuildAgileDefects: vi.fn(() => []),
+  // Anotado por el mismo motivo que en heal-command: `() => []` infiere `never[]`.
+  mockBuildAgileDefects: vi.fn((): unknown[] => []),
 }))
 
 vi.mock('@healify/reporter-core', async (importOriginal) => {
@@ -35,6 +36,7 @@ function makeCase(): LocalCaseResult {
     confidence: 0,
     explanation: '',
     selectorType: 'ID',
+    cause: 'selector',
     defectId: 'HLF-AABB11',
     severity: 'blocker',
     expected: 'El botón "Comprar ahora" es visible.',

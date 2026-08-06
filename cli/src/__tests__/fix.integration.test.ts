@@ -57,6 +57,9 @@ describe('fix — flujo completo con un reporte realista', () => {
           confidence: 0.95,
           explanation: '',
           selectorType: 'TESTID',
+          cause: 'selector',
+          defectId: 'HLF-TEST01',
+          severity: 'major',
         },
         {
           testName: 'inicia sesión',
@@ -68,6 +71,9 @@ describe('fix — flujo completo con un reporte realista', () => {
           confidence: 0.92,
           explanation: '',
           selectorType: 'ROLE',
+          cause: 'selector',
+          defectId: 'HLF-TEST01',
+          severity: 'major',
         },
         {
           testName: 'aplica cupón',
@@ -79,6 +85,9 @@ describe('fix — flujo completo con un reporte realista', () => {
           confidence: 0.83,
           explanation: '',
           selectorType: 'TEXT',
+          cause: 'selector',
+          defectId: 'HLF-TEST01',
+          severity: 'major',
         },
       ],
     }
