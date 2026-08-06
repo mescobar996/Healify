@@ -40,6 +40,7 @@ selenium-plugin/node_modules
 ai-local/dist
 ai-local/node_modules
 webdriverio-plugin/dist
+mcp/dist
 webdriverio-plugin/node_modules
 
 # Copias del LICENSE de la raiz que genera scripts/sync-license.mjs en cada `prepack`.
@@ -53,6 +54,7 @@ selenium-plugin/LICENSE
 webdriverio-plugin/LICENSE
 ai-local/LICENSE
 cli/LICENSE
+mcp/LICENSE
 
 # ─── Extension de VS Code ──────────────────────────────────────────────────
 vscode-extension/node_modules

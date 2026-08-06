@@ -1,0 +1,41 @@
+{
+  "name": "@healify/mcp",
+  "version": "0.1.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mescobar996/Healify.git",
+    "directory": "mcp"
+  },
+  "homepage": "https://healify-sigma.vercel.app",
+  "bugs": {
+    "url": "https://github.com/mescobar996/Healify/issues"
+  },
+  "description": "Servidor MCP de Healify: le deja a un agente preguntar si un selector es frágil y por qué falló un test, con respuestas deterministas y locales.",
+  "bin": {
+    "healify-mcp": "dist/index.js"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "LICENSE"
+  ],
+  "scripts": {
+    "prepack": "node ../scripts/sync-license.mjs",
+    "build": "tsc -p tsconfig.build.json --emitDeclarationOnly && esbuild src/index.ts --bundle --platform=node --outdir=dist --format=cjs",
+    "test": "vitest run"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@healify/reporter-core": "*",
+    "@types/node": "^26.1.2",
+    "esbuild": "^0.28.1",
+    "typescript": "^5.4.0",
+    "vitest": "^4.0.18"
+  }
+}

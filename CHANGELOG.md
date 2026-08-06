@@ -1,6 +1,40 @@
 # Changelog
 
 ## Sin publicar
+### Servidor MCP, y el README contra el rival que importa
+
+- **Nuevo paquete `@healify/mcp`** — servidor MCP por stdio con cuatro herramientas:
+  `healify_analyze_selector`, `healify_diagnose_failure`, `healify_report_summary` y
+  `healify_chronic_selectors`.
+
+  Es el complemento del MCP oficial de Playwright, no su reemplazo. Ese le da a un agente un
+  browser; la falla documentada de los agentes haciendo eso es el exceso de confianza — clickear
+  lo primero que matchea, inventar lo que no pueden ver. Healify contesta determinista, desde
+  evidencia que ya está en disco.
+
+  **La misma regla que rige la extensión de VS Code, ahora en una tercera superficie:** sin haber
+  visto la página no se propone un nombre concreto. `healify_analyze_selector` devuelve siempre
+  `verifiedReplacementAvailable: false`, y hay un test que recorre cuatro tipos de selector para
+  garantizar que la respuesta nunca incluya un reemplazo inventado. Un agente que recibe
+  `role('button', { name: 'Submit' })` deducido lo aplica sin dudar.
+
+- **Cero dependencias de runtime**, como los otros seis paquetes. MCP sobre stdio es JSON-RPC 2.0
+  delimitado por saltos de línea con cuatro mensajes: entra en `protocol.ts` y se testea
+  alimentándole líneas, sin levantar un cliente.
+
+- **El `tsconfig.json` del paquete NO excluye `src/__tests__`** — el chequeo de tipos cubre los
+  tests. La exclusión que tiene `cli` es justamente el agujero que dejó pasar un helper sin el
+  campo `cause`. El emit usa un `tsconfig.build.json` aparte para que los `.d.ts` de los tests no
+  terminen publicados.
+
+- **README y README.es reposicionados.** La tabla comparaba contra Healenium, que dejó de ser el
+  rival relevante: Playwright ahora trae su propio agente healer. La tabla nueva compara los tres
+  y agrega la fila que más distingue a Healify — **cuándo se niega**. Y dice de frente el límite:
+  los selectores rotos son cerca de un cuarto de los fallos de un e2e, y "arreglar" una aserción
+  fallida cambiando el selector tapa el bug que el test acababa de encontrar.
+
+- 33 tests nuevos (837 en total).
+
 ### El veredicto de flakiness llega a la decisión de curar
 
 `detectFlakyTests` y `healify flake` ya distinguían un test intermitente de uno siempre roto,

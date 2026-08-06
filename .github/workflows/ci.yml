@@ -56,6 +56,11 @@ jobs:
       - name: Type check webdriverio-plugin
         run: npx tsc --noEmit -p webdriverio-plugin/tsconfig.json
 
+      # Sin -p tsconfig.build.json a proposito: el tsconfig base incluye src/__tests__, asi que
+      # aca los tests del paquete SI pasan por el chequeo de tipos.
+      - name: Type check mcp
+        run: npx tsc --noEmit -p mcp/tsconfig.json
+
       - name: Type check ai-local
         run: npx tsc --noEmit -p ai-local/tsconfig.json
 
@@ -106,10 +111,10 @@ jobs:
       # copia el original (scripts/sync-license.mjs), y esa clase de arreglo es exactamente la
       # que deja de correr sin que nadie se entere. Un tarball publicado no se corrige: hay que
       # quemar una version nueva. Por eso se verifica el tarball de verdad, no el script.
-      - name: LICENSE llega a los 7 tarballs
+      - name: LICENSE llega a los 8 tarballs
         run: |
           FALTAN=""
-          for pkg in reporter-core test-runner cypress-plugin selenium-plugin webdriverio-plugin ai-local cli; do
+          for pkg in reporter-core test-runner cypress-plugin selenium-plugin webdriverio-plugin ai-local mcp cli; do
             if npm pack --workspace="$pkg" --dry-run 2>&1 | grep -q "LICENSE"; then
               echo "  ok  $pkg"
             else

@@ -10,6 +10,7 @@
     "cypress-plugin",
     "selenium-plugin",
     "webdriverio-plugin",
+    "mcp",
     "cli"
   ],
   "scripts": {

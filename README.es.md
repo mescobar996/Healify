@@ -58,19 +58,28 @@ comodidad, es el único requisito que importa.
 
 ## Contra lo que hay hoy
 
-Antes de escribir una línea se investigaron 15 herramientas del rubro
-([el análisis completo](docs/research/competitive-gaps.md)):
+Playwright ya trae su propio agente healer, y toda herramienta de testing vende "self-healing".
+La etiqueta tapa cosas muy distintas, así que acá está dónde se para Healify:
 
-| | Healify | El resto |
-|---|---|---|
-| **Para empezar** | Un `npx` | Docker + Postgres, o una cuenta en la nube |
-| **Cómo decide** | Heurística determinista, auditable | Un LLM que contesta distinto cada vez, o un backend cerrado |
-| **Qué sale de tu máquina** | Nada | El DOM de tu aplicación |
-| **Costo** | Cero, para siempre | Infraestructura, o suscripción |
+| | Healify | El healer de Playwright | Healenium |
+|---|---|---|---|
+| **Cómo decide** | Heurística determinista, auditable | Un LLM, respuesta distinta cada vez | Similitud contra una base de datos |
+| **Qué sale de tu máquina** | Nada | Tu DOM va a un modelo | Nada, pero necesita un servidor |
+| **Para empezar** | Un `npx` | Una API key y presupuesto | Docker + Postgres |
+| **Cuándo se niega** | Lo dice, y por qué | Casi nunca: va a proponer algo | Con score de similitud bajo |
+| **Costo** | Cero, para siempre | Por token, para siempre | Infraestructura |
 
-Healenium, el referente del rubro, está muy bien hecho. Resuelve otro problema: el tuyo no
-necesita una base de datos, necesita que alguien te diga "usá esto" antes de que se te enfríe
-el café.
+**El límite, dicho de frente:** los selectores rotos explican alrededor de un cuarto de los
+fallos de un e2e. El resto es timing, datos de prueba, errores de runtime y aserciones que fallan
+de verdad. Healify nombra ese cuarto y se niega con el resto en vez de adivinar — una herramienta
+que "arregla" una aserción fallida cambiando el selector hace pasar el test tapando el bug que
+acababa de encontrar. Eso es peor que un build en rojo.
+
+Healenium está muy bien hecho y resuelve otro problema: el tuyo no necesita una base de datos,
+necesita que alguien te diga "usá esto" antes de que se te enfríe el café.
+
+<sub>Antes de escribir una línea se investigaron 15 herramientas del rubro
+([el análisis completo](docs/research/competitive-gaps.md)).</sub>
 
 ## Funciona donde ya estás
 
@@ -104,6 +113,22 @@ Los dos niveles son distintos a propósito. Antes de correr nada, Healify puede 
 selector es frágil, pero no te propone reemplazo: sin ver la página, cualquier nombre concreto
 sería inventado. Después de una corrida sabe que el elemento existe y cómo se llama, así que el
 fix es real y aplicarlo es una tecla.
+
+## Y tu agente le puede preguntar
+
+Hay un [servidor MCP](mcp/). Apuntá Claude, Cursor o cualquier cliente MCP a tu proyecto de tests
+y puede preguntar si un selector es frágil, por qué falló un test, y cuáles se vienen rompiendo
+siempre.
+
+```json
+{ "mcpServers": { "healify": { "command": "npx", "args": ["-y", "@healify/mcp"] } } }
+```
+
+Es el complemento del MCP de Playwright, no su reemplazo. Ese le da a un agente un browser real.
+La falla documentada de los agentes haciendo eso es el exceso de confianza: clickear lo primero
+que matchea, inventar lo que no pueden ver. Healify contesta determinista, desde evidencia que ya
+está en disco, y dice cuándo no sabe — incluido negarse a nombrar un reemplazo que no verificó
+contra una página real.
 
 ---
 
