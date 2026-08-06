@@ -1,4 +1,5 @@
 import { buildDefectId, severityFor, environmentRows, normalizeRun, baseEnvironment, statsFromCases, SEVERITY_LABEL, type RunEnvironment, type RunStats } from './qa-report'
+import { FAILURE_CAUSE_LABEL, type FailureCause } from './failure-cause'
 import type { LocalCaseResult } from './local-mode'
 
 export { baseEnvironment, statsFromCases, type RunEnvironment, type RunStats }
@@ -52,6 +53,9 @@ export function buildLocalRunFromEvents(
       explanation: e.explanation ?? '',
       selectorType: e.type === 'healed' ? 'HEALED' : 'UNKNOWN',
       verified: e.verified,
+      // Un HealingEvent solo se emite cuando un selector no resolvió: la causa no se infiere
+      // del mensaje acá porque ya la determina el hecho de que exista el evento.
+      cause: 'selector',
       defectId: buildDefectId(undefined, e.originalSelector),
       severity: severityFor(status),
       expected: `El selector ${e.originalSelector} encuentra un elemento en la página.`,
@@ -77,6 +81,17 @@ export function buildLocalRunFromEvents(
 export function printSummary(cases: LocalCaseResult[]): void {
   const count = (status: LocalCaseResult['status']) => cases.filter((c) => c.status === status).length
   console.log(`Healed: ${count('healed')} | Review: ${count('review')} | Unresolved: ${count('unresolved')}`)
+
+  // Segunda línea solo cuando hay fallos que no son selectores rotos. Sin esto el resumen
+  // los cuenta como "unresolved" a secas y parece que Healify no supo resolverlos, cuando en
+  // realidad decidió no meterse. Es la diferencia entre no poder y no corresponder.
+  const outOfScope = cases.filter((c) => c.cause !== 'selector' && c.cause !== 'unknown')
+  if (outOfScope.length > 0) {
+    const byCause = new Map<FailureCause, number>()
+    for (const c of outOfScope) byCause.set(c.cause, (byCause.get(c.cause) ?? 0) + 1)
+    const detail = [...byCause.entries()].map(([cause, n]) => `${FAILURE_CAUSE_LABEL[cause]}: ${n}`).join(' | ')
+    console.log(`Fuera de alcance del sanado (${outOfScope.length}) — ${detail}`)
+  }
 }
 
 function escapeHtml(value: string): string {

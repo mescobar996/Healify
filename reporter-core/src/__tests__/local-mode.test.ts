@@ -153,4 +153,66 @@ describe('runLocalHealing — config del proyecto', () => {
     expect(sinConfig.selectorType).not.toBe('TESTID')
     expect(conConfig.selectorType).toBe('TESTID')
   })
+
+  describe('se abstiene cuando la causa del fallo no es un selector', () => {
+    it('no propone corrección para una aserción fallida que menciona un locator', () => {
+      // El caso peligroso: el mensaje trae `locator('#total')`, así que el extractor devuelve
+      // un selector y hasta ahora el motor proponía uno nuevo. Pero el elemento se encontró:
+      // lo que falló fue el valor. Curarlo haría pasar el test tapando el defecto real.
+      const result = runLocalHealing({
+        testName: 'el carrito suma bien',
+        testFile: 'e2e/carrito.spec.ts',
+        errorMessage: "expect(page.locator('#total')).toHaveText('99')\n\nExpected: \"99\"\nReceived: \"12\"",
+      })
+
+      expect(result.cause).toBe('assertion')
+      expect(result.status).toBe('unresolved')
+      expect(result.fixedSelector).toBe('')
+      expect(result.confidence).toBe(0)
+      expect(result.explanation).toContain('tapando el defecto')
+    })
+
+    it('no propone corrección para un error de runtime', () => {
+      const result = runLocalHealing({
+        testName: 'login',
+        errorMessage: "TypeError: Cannot read properties of undefined (reading 'click')",
+      })
+
+      expect(result.cause).toBe('runtime')
+      expect(result.status).toBe('unresolved')
+      expect(result.fixedSelector).toBe('')
+      expect(result.causeSignal).toContain('TypeError')
+    })
+
+    it('no propone corrección cuando la app no estaba levantada', () => {
+      const result = runLocalHealing({
+        testName: 'home carga',
+        errorMessage: 'page.goto: net::ERR_CONNECTION_REFUSED at http://localhost:3000/',
+      })
+
+      expect(result.cause).toBe('navigation')
+      expect(result.status).toBe('unresolved')
+      expect(result.fixedSelector).toBe('')
+    })
+
+    it('sigue curando un selector roto de verdad — la abstención no puede comerse el caso principal', () => {
+      const result = runLocalHealing({
+        testName: 'agrega al carrito',
+        testFile: 'e2e/checkout.spec.ts',
+        errorMessage: "Waiting for selector '#add-to-cart-btn' failed",
+      })
+
+      expect(result.cause).toBe('selector')
+      expect(result.status).not.toBe('unresolved')
+      expect(result.fixedSelector).not.toBe('')
+    })
+
+    it('un fallo indeterminado se comporta igual que antes del clasificador', () => {
+      const result = runLocalHealing({ testName: 't', errorMessage: 'el test falló' })
+
+      expect(result.cause).toBe('unknown')
+      expect(result.status).toBe('unresolved')
+      expect(result.explanation).toBe('No se pudo extraer un selector del mensaje de error.')
+    })
+  })
 })

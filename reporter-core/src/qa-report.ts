@@ -11,6 +11,7 @@ import { createHash } from 'node:crypto'
 import { release } from 'node:os'
 import type { LocalCaseStatus, LocalCaseResult } from './local-mode'
 import type { LocalRun } from './local-report'
+import type { FailureCause } from './failure-cause'
 
 export type Severity = 'blocker' | 'major' | 'minor'
 
@@ -35,7 +36,25 @@ export interface RunStats {
   healed: number
   review: number
   unresolved: number
+  /** Cuántos fallos hubo de cada causa. Es la medida honesta del alcance de la herramienta:
+   * `selector` es lo que Healify puede corregir, el resto es lo que solo puede señalar. */
+  causes: Record<FailureCause, number>
   durationMs?: number
+}
+
+const EMPTY_CAUSE_COUNTS: Record<FailureCause, number> = {
+  selector: 0,
+  assertion: 0,
+  timing: 0,
+  navigation: 0,
+  runtime: 0,
+  unknown: 0,
+}
+
+function countCauses(cases: LocalCaseResult[]): Record<FailureCause, number> {
+  const counts = { ...EMPTY_CAUSE_COUNTS }
+  for (const c of cases) counts[c.cause]++
+  return counts
 }
 
 /** Entorno mínimo que cualquier adapter puede armar sin datos del framework. */
@@ -63,6 +82,7 @@ export function statsFromCases(
     healed: count('healed'),
     review: count('review'),
     unresolved: count('unresolved'),
+    causes: countCauses(cases),
     durationMs: suite?.durationMs,
   }
 }

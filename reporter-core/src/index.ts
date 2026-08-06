@@ -55,6 +55,7 @@ export {
   type RunOutcome,
 } from './runs'
 export { detectFlakyTests, type FlakyTest, type FlakeVerdict } from './flake'
+export { diagnoseFailure, FAILURE_CAUSE_LABEL, type FailureCause, type FailureDiagnosis } from './failure-cause'
 export { createJiraClient, toAdf } from './jira'
 export { createGithubIssuesClient } from './github-issues'
 export { postJson } from './webhook'
