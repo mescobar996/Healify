@@ -1,4 +1,4 @@
-# Publicación de los 7 paquetes a npm con Trusted Publishing (OIDC) + provenance.
+# Publicación de los 8 paquetes a npm con Trusted Publishing (OIDC) + provenance.
 #
 # NO hay token. npm confía en este workflow porque cada paquete tiene configurado, del lado de
 # npmjs.com, un "trusted publisher" que apunta exactamente a este repo y a este archivo. El
@@ -16,10 +16,10 @@
 #     así que se actualiza a mano abajo. Sin esto npm ni intenta el intercambio OIDC y falla
 #     pidiendo autenticación.
 #   - `repository.url` en cada package.json apuntando a ESTE repo.
-#   - El trusted publisher configurado en npmjs.com para LOS 7 paquetes, con workflow
+#   - El trusted publisher configurado en npmjs.com para LOS 8 paquetes, con workflow
 #     `release.yml`. Si cambia el nombre de este archivo, hay que actualizarlo allá.
 #
-# Se dispara con un tag `v*`. El publish es irreversible: un `npm unpublish` solo se puede
+# Se dispara con un tag de version. El publish es irreversible: un `npm unpublish` solo se puede
 # hacer dentro de las 72 h y quema la versión para siempre.
 name: Release
 
@@ -31,10 +31,16 @@ name: Release
 # publish over the previously published versions" en selenium-plugin, con los siete paquetes
 # ya publicados correctamente por la otra corrida. El artefacto queda bien y el release queda
 # en rojo, que es la peor combinacion: entrena a ignorar los rojos.
+#
+# `mcp-v*`: @healify/mcp tiene su propia linea de versiones (0.1.0), como la extension de VS
+# Code, porque su ciclo no es el de los paquetes 2.x. Arrastrar los siete a un 2.4.1 solo para
+# publicarlo seria ruido. El guard de idempotencia hace que un tag `mcp-v*` saltee los siete ya
+# publicados y suba unicamente el que cambio.
 on:
   push:
     tags:
       - 'v*.*.*'
+      - 'mcp-v*'
   workflow_dispatch:
     inputs:
       dry-run:
@@ -107,18 +113,15 @@ jobs:
       - name: Publish
         # El orden importa: reporter-core primero porque todos lo bundlean.
         #
-        # @healify/mcp NO esta en esta lista todavia, y no es un olvido: trusted publishing
-        # tiene un problema de arranque. npm exige que el paquete YA EXISTA en el registry para
-        # poder configurarle un trusted publisher, y OIDC no puede hacer la primera publicacion
-        # (npm/cli#8544). Agregarlo aca antes de resolver eso haria fallar el job con un error
-        # de autenticacion, y con el la publicacion de los otros siete.
-        #
-        # El arranque es manual y de una sola vez, y esta documentado en PARA-MANANA.md.
-        # Despues de eso, se agrega `mcp` a este `for` y sigue el camino normal.
+        # `mcp` entro a esta lista el 2026-08-06, despues de romper a mano el huevo-y-gallina de
+        # trusted publishing: npm exige que el paquete YA EXISTA para poder configurarle un
+        # trusted publisher, y OIDC no puede hacer la primera publicacion (npm/cli#8544). Se
+        # publico un placeholder 0.0.0 deprecado, se configuro el trust con `npm trust github`,
+        # y desde aca el camino es el mismo que el de los otros siete.
         run: |
           DRY=""
           if [ "${{ inputs.dry-run }}" = "true" ]; then DRY="--dry-run"; fi
-          for pkg in reporter-core test-runner cypress-plugin selenium-plugin webdriverio-plugin ai-local cli; do
+          for pkg in reporter-core test-runner cypress-plugin selenium-plugin webdriverio-plugin ai-local mcp cli; do
             echo "::group::publish $pkg"
             NAME=$(node -p "require('./$pkg/package.json').name")
             VER=$(node -p "require('./$pkg/package.json').version")
