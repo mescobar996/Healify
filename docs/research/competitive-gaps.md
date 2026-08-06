@@ -1,5 +1,29 @@
 # Healify vs. la competencia — gap analysis
 
+> ### Actualización 2026-08-06
+>
+> Lo de abajo es el relevamiento del **2026-08-03** y se conserva tal cual: es el análisis que
+> justificó el diseño, y reescribirlo borraría el razonamiento. Pero dos cosas cambiaron desde
+> entonces y conviene leerlo con eso en la cabeza.
+>
+> **Healify hoy:** v2.4.0, 837 tests, **8 paquetes** — se sumó `@healify/mcp`.
+>
+> **El rival relevante dejó de ser Healenium.** Playwright ahora trae su propio flujo de agentes
+> planner / generator / **healer**, un MCP server oficial y ARIA snapshots que asertan contra el
+> árbol de accesibilidad. Eso último es, textualmente, el argumento central de Healify. La
+> diferencia que queda es la que siempre fue el punto: lo de ellos es un LLM que contesta
+> distinto cada vez, lo de acá es heurística determinista y auditable.
+>
+> **Y apareció el dato que define el techo.** Una medición de QA Wolf sobre suites de producción
+> ubica los selectores rotos en torno al **28% de los fallos**; el resto es timing, datos de
+> prueba, errores de runtime y cambios visuales o de interacción. Healify respondió nombrando la
+> causa antes de curar y **negándose fuera de alcance** (v2.4.0), en vez de tratar todo fallo
+> como un selector roto — que es lo que produce el falso verde: hacer pasar un test tapando el
+> defecto que acababa de encontrar.
+>
+> Fuente de las dos novedades: corrida de `last30days` del 2026-08-06 sobre "flaky e2e tests and
+> brittle selectors" (Reddit + Hacker News + web).
+
 **Fecha:** 2026-08-03 · **Healify:** v2.0.0 (700 tests, 7 paquetes)
 **Método:** búsqueda GitHub (`gh api search/repositories`, orden por stars) + docs oficiales + web (ventana ~30 días de actividad, motor `last30days` v3.18.4 + búsquedas dirigidas).
 
