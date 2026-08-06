@@ -158,8 +158,11 @@ async function main() {
   console.log(`Running Healify doctor in '${projectPath}'...`)
   const doctorOutput = run(`npx @healify/cli doctor`, projectPath)
 
+  // --record-history acumula .healify/history.jsonl entre corridas sin tocar ni un archivo de
+  // test. Sin esto la Action no deja rastro y el historial restaurado del cache estaría siempre
+  // vacío: "este selector se rompió 5 veces" nunca podría afirmarse desde CI.
   console.log(`Running Healify fix --dry-run in '${projectPath}'...`)
-  const fixOutput = run(`npx @healify/cli fix --dry-run`, projectPath)
+  const fixOutput = run(`npx @healify/cli fix --dry-run --record-history`, projectPath)
 
   // Build comment
   const comment = buildComment(doctorOutput, fixOutput)

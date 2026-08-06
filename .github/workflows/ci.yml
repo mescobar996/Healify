@@ -344,6 +344,28 @@ jobs:
         run: npm test
         working-directory: gh-action
 
+  # ─── La Action, ejecutada de verdad ────────────────────────────────────────
+  # Los tests de arriba prueban run.js en aislamiento; nada probaba que el action.yml en sí sea
+  # válido y arranque. Cuando pasó de `node20` a composite eso dejó de ser un detalle: un YAML
+  # mal formado, un input mal mapeado o un `uses:` inexistente solo aparecen al invocarla. Se
+  # invoca la copia local (`./`), no una versión publicada.
+  gh-action-run:
+    name: gh-action se ejecuta (composite)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run the local action
+        uses: ./
+        with:
+          project-path: '.'
+
   # ─── CLI de punta a punta ──────────────────────────────────────────────────
   # Invoca el binario del CLI como lo haría un usuario, sobre reportes de verdad en un tmpdir.
   # No corría en ningún lado: su config decía `**/*.test.ts`, que desde la raíz del repo barría
