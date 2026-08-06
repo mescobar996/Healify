@@ -59,19 +59,27 @@ convenience, it's the only requirement that matters.
 
 ## How it compares
 
-Fifteen tools in this space were researched before a single line was written
-([full analysis](docs/research/competitive-gaps.md)):
+Playwright now ships its own healer agent, and every testing vendor sells "self-healing." The
+label covers wildly different things, so here is where Healify actually sits:
 
-| | Healify | Everyone else |
-|---|---|---|
-| **To get started** | One `npx` | Docker + Postgres, or a cloud account |
-| **How it decides** | Deterministic heuristics you can audit | An LLM that answers differently every time, or a closed backend |
-| **What leaves your machine** | Nothing | Your app's DOM |
-| **Cost** | Zero, forever | Infrastructure to run, or a subscription |
+| | Healify | Playwright's healer agent | Healenium |
+|---|---|---|---|
+| **How it decides** | Deterministic heuristics you can audit | An LLM, different answer each run | Similarity scoring against a database |
+| **What leaves your machine** | Nothing | Your DOM goes to a model | Nothing, but needs a server |
+| **To get started** | One `npx` | An API key and a budget | Docker + Postgres |
+| **When it refuses** | Says so, and why | Rarely - it will propose something | On low similarity score |
+| **Cost** | Zero, forever | Per token, forever | Infrastructure to run |
 
-Healenium, the reference implementation in this space, is genuinely well built. It solves a
-different problem: yours doesn't need a database, it needs someone to tell you "use this instead"
-before your coffee gets cold.
+**The honest limit, up front:** broken selectors are roughly a quarter of why e2e tests fail. The
+rest is timing, test data, runtime errors and real assertion failures. Healify names that quarter
+and refuses the rest instead of guessing — a tool that "fixes" a failing assertion by swapping the
+selector makes the test pass while hiding the bug it just caught. That is worse than a red build.
+
+Healenium is genuinely well built and solves a different problem: yours doesn't need a database,
+it needs someone to tell you "use this instead" before your coffee gets cold.
+
+<sub>Fifteen tools in this space were researched before a single line was written
+([full analysis](docs/research/competitive-gaps.md)).</sub>
 
 ## Works where you already are
 
@@ -105,6 +113,21 @@ The two are deliberately different. Before you run anything, Healify can tell yo
 looks brittle, but it won't suggest a replacement: without seeing the page, any specific name
 would be made up. After a run, it knows the element exists and what it's called, so the fix is
 real and applying it is one keystroke.
+
+## And your agent can ask it questions
+
+There's an [MCP server](mcp/). Point Claude, Cursor or any MCP client at your test project and it
+can ask whether a selector is brittle, why a test failed, and which selectors keep breaking.
+
+```json
+{ "mcpServers": { "healify": { "command": "npx", "args": ["-y", "@healify/mcp"] } } }
+```
+
+This is the complement to Playwright's MCP server, not a replacement. That one lets an agent
+drive a browser. The documented failure of agents doing that is over-confidence: clicking the
+first thing that matches, inventing what they can't see. Healify answers deterministically, from
+evidence already on disk, and says plainly when it doesn't know — including refusing to name a
+replacement it hasn't verified against a real page.
 
 ---
 
