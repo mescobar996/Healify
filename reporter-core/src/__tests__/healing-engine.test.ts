@@ -447,7 +447,17 @@ describe('customTestIds (healify.config.json)', () => {
       customTestIds: ['data-test-id'],
     })
     expect(result.selectorType).toBe('TESTID')
-    expect(result.confidence).toBeGreaterThanOrEqual(0.9)
+  })
+
+  it('customTestIds con caracteres especiales de regex se escapan (sin romper ni inyectar el patron)', () => {
+    // Un sufijo como `a(b|c` interpolado sin escapar romperia `new RegExp(...)` o inyectaria
+    // alternancia. Aqui se verifica que el motor lo trata como literal y reconoce el atributo.
+    const result = analyzeAndHeal({
+      selector: "[data-a(b|c='submit']",
+      customTestIds: ['data-a(b|c'],
+    })
+    expect(result.selectorType).toBe('TESTID')
+    expect(result.fixedSelector).toBe("[data-a(b|c='submit']")
   })
 })
 

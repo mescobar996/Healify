@@ -291,8 +291,19 @@ function extractFieldName(selector: string, fields: Record<string, string>): str
   return 'Field'
 }
 
+/**
+ * Escapa caracteres especiales de regex. Necesario porque `customTestIds` viene de la
+ * configuración del proyecto (controlable por quien escribe el healify.config) y se interpola
+ * directo en un `new RegExp(...)` en `extractTestid`: un sufijo como `foo(bar` o `a|b` sin
+ * escapar rompería o inyectaría el patrón (ReDoS/inyección de regex). Se usa un escape propio
+ * en vez de `RegExp.escape` para seguir funcionando en Node 18 (el `engines` del paquete).
+ */
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
 function extractTestid(selector: string, testIds: readonly string[] = TESTID_ATTRS): string {
-  const suffixes = testIds.map((t) => t.replace('data-', ''))
+  const suffixes = testIds.map((t) => t.replace('data-', '')).map(escapeRegExp)
   const match = selector.match(new RegExp(`data-(?:${suffixes.join('|')})=['"]([^'"]+)['"]`))
   return match ? match[1] : 'element'
 }
