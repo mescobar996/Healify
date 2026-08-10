@@ -54,7 +54,7 @@ runs:
     # cada corrida guarde una entrada nueva en vez de pisar la anterior.
     - name: Restore Healify history
       if: inputs.history-cache != 'false'
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: ${{ inputs.project-path }}/.healify
         key: healify-history-${{ github.ref_name }}-${{ github.run_id }}
