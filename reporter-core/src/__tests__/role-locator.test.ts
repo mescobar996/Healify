@@ -188,7 +188,7 @@ describe('nombres con comillas', () => {
     expect(resuelto.value).toBeTruthy()
   })
 
-  it('sin nombre sigue funcionando igual', () => {
-    expect(parseRoleSuggestion(buildRoleSuggestion('button'))).toEqual({ role: 'button' })
+  it('sin nombre devuelve null — un role sin nombre no es una sugerencia aplicable (MEJORA 2)', () => {
+    expect(buildRoleSuggestion('button')).toBeNull()
   })
 })

@@ -175,6 +175,11 @@ describe('evidencia y transiciones', () => {
 
     const result = await reportDefects(makeRun([caso]), c)
 
+    // El mensaje del outcome fallido es la pista más útil cuando esto se rompe (mismo patrón
+    // que el primer test del archivo): el adjunto faltante no debe convertir el ticket en `failed`.
+    const failed = result.outcomes.find((o) => o.action === 'failed')
+    expect(failed, failed && 'message' in failed ? failed.message : '').toBeUndefined()
+
     expect(result.outcomes[0].action).toBe('created')
     expect(jira.issues[0].attachments).toEqual([])
   })

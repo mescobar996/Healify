@@ -56,6 +56,9 @@ El análisis corre entero donde vos estás, con heurística determinista: mismo 
 resultado, siempre. Si trabajás con datos sensibles (banca, salud, gobierno) eso no es una
 comodidad, es el único requisito que importa.
 
+Por eso las únicas métricas que guarda Healify son **locales**: `heal --stats` acumula lo que
+curó en `~/.healify/stats.json` e imprime un resumen — nada sale nunca de la máquina.
+
 ## Contra lo que hay hoy
 
 Playwright ya trae su propio agente healer, y toda herramienta de testing vende "self-healing".
@@ -104,6 +107,28 @@ credenciales, tu instancia, sin ninguna nube nuestra en el medio.
 
 **[→ Jira, GitHub Issues y webhooks](docs/jira.es.md)**
 
+## Y arregla la PR antes de que la mires
+
+Hay una [GitHub Action](docs/github-action.es.md). En cada PR corre `doctor` y el fix en dry-run,
+y deja un comentario con qué se rompió y qué cambiaría — sin permisos de bot, sin "all clear"
+cuando en realidad no corrió nada.
+
+Para `workflow_dispatch` (manual) y `schedule` (diario) va más lejos: lee el log de tus tests
+fallidos, cura cada selector roto y abre una **PR con los fixes ya aplicados**. ¿Le preocupa no
+poder parsear tu log? Lo dice y para — jamás inventa una curación que no pueda respaldar con
+evidencia.
+
+```yaml
+steps:
+  - uses: actions/checkout@v4
+  - uses: mescobar996/Healify@v2
+    with:
+      github-token: ${{ secrets.GITHUB_TOKEN }}
+      test-log-path: test-output.log   # workflow_dispatch/schedule: log -> PR
+```
+
+**[→ Referencia completa de la action](docs/github-action.es.md) · [→ ejemplo auto-PR](examples/github-action-auto-pr/)**
+
 ## Y funciona en tu editor
 
 Hay una [extensión de VS Code](vscode-extension/). Los selectores frágiles quedan subrayados
@@ -118,7 +143,10 @@ fix es real y aplicarlo es una tecla.
 
 Hay un [servidor MCP](mcp/). Apuntá Claude, Cursor o cualquier cliente MCP a tu proyecto de tests
 y puede preguntar si un selector es frágil, por qué falló un test, y cuáles se vienen rompiendo
-siempre.
+siempre. Responde en la sintaxis del framework que estés usando (`framework: playwright | cypress
+| selenium | webdriverio`), y `healify_batch_analyze_selectors` cura una página entera de
+locators rotos de una vez — con resultados cacheados localmente por 5 minutos, para que un agente
+que martilla sobre los mismos selectores no los recompute.
 
 ```json
 { "mcpServers": { "healify": { "command": "npx", "args": ["-y", "@healify/mcp"] } } }

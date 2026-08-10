@@ -1,0 +1,6 @@
+Running 2 tests using 1 worker
+
+  ✓ e2e/home.spec.ts:5:3 › Home › renders header (1.2s)
+  ✓ e2e/about.spec.ts:10:3 › About › shows team (0.8s)
+
+  2 passed (2.0s)

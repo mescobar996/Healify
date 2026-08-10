@@ -1,0 +1,19 @@
+Running 3 tests using 1 worker
+
+  1) e2e/login.spec.ts:15:3 › Login flow › logs in with valid credentials ─────────
+
+    Error: locator.click: Timeout 5000ms exceeded.
+    Call log:
+      - waiting for locator('[data-testid="login-button"]')
+      -   locator resolved to 0 elements
+      -   element is not attached to the DOM
+
+      2) e2e/cart.spec.ts:42:3 › Cart › adds item to cart ─────────────────────────
+
+    Error: expect(received).toBeVisible() timed out after 5000ms.
+    Call log:
+      - waiting for getByRole('button', { name: 'Add to cart' })
+
+  3) e2e/search.spec.ts:8:3 › Search › shows results ─────────────────────────────
+
+    Error: Element not found: .search-result-card

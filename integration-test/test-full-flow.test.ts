@@ -449,4 +449,27 @@ describe('Healify Full Flow Integration', () => {
     expect(content).not.toContain('#audit-a')
     expect(content).not.toContain('#audit-b')
   })
+
+  it('heal: sugiere el data-testid real del DOM como alternativa verificada, por stdin/stdout', () => {
+    // Flujo completo por el CLI real (JSON in/out): el probe del browser le manda al motor los
+    // elementos de la página con su testid real, y el motor responde con la sugerencia TESTID
+    // como alternativa a solo un paso del role verificado.
+    const input = JSON.stringify({
+      selector: '#comprar-ahora-a1b2c3',
+      pageElements: [{ role: 'button', name: 'Comprar', testId: 'add-to-cart', testIdAttr: 'data-testid' }],
+    })
+
+    const raw = execSync(`node "${cliPath}" heal`, {
+      cwd: testDir,
+      encoding: 'utf-8',
+      input,
+    })
+
+    const output = JSON.parse(raw)
+
+    expect(output.fixedSelector).toBe("role('button', { name: 'Comprar' })")
+    expect(output.verified).toBe(true)
+    expect(output.alternatives[0]).toEqual({ selector: "[data-testid='add-to-cart']", confidence: 0.94 })
+    expect(output.locator).toEqual({ strategy: 'xpath', value: expect.stringContaining('Comprar') })
+  })
 })

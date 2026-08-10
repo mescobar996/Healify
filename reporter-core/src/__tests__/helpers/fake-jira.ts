@@ -212,6 +212,14 @@ export async function startFakeJira(options: { existingIssues?: FakeJiraIssue[] 
     url: `http://127.0.0.1:${port}`,
     issues,
     requests,
-    close: () => new Promise<void>((resolve) => server.close(() => resolve())),
+    // `closeAllConnections()` fuerza el cierre de las conexiones keep-alive que dejó el pool
+    // de undici (el fetch global). Sin esto, si el OS reusa el puerto entre tests, undici puede
+    // reutilizar una conexión que ya cerró el server anterior y el request siguiente explota con
+    // un ECONNRESET intermitente (`failed` en vez de `created`) — el flake de agile-http:178.
+    close: () =>
+      new Promise<void>((resolve) => {
+        server.closeAllConnections?.()
+        server.close(() => resolve())
+      }),
   }
 }

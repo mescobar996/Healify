@@ -8,6 +8,9 @@ import {
   FAILURE_CAUSE_LABEL,
   type LocalCaseResult,
 } from '@healify/reporter-core'
+import { adaptSelectorText, isTestFramework, TEST_FRAMEWORKS } from './framework'
+import { analyzeBatchSelectors, type BatchDeps } from './batch'
+import { cacheKey, getCached, setCached, DEFAULT_TTL_MS, DEFAULT_CACHE_PATH } from './cache'
 import type { ToolDefinition } from './protocol'
 
 /**
@@ -33,18 +36,55 @@ function resolvePath(path: string): string {
   return isAbsolute(path) ? path : join(process.cwd(), path)
 }
 
-export function analyzeSelector(args: Record<string, unknown>): string {
+export interface SelectorToolDeps {
+  cachePath?: string
+  ttlMs?: number
+  now?: number
+}
+
+const NOTE_SIN_FRAMEWORK =
+  'Análisis estático, sin ver la página. Alcanza para decir si el selector es frágil y por qué, ' +
+  'pero NO para proponer un reemplazo concreto: cualquier nombre accesible saldría de un ' +
+  'diccionario, no de la pantalla. Para obtener un reemplazo verificado hay que correr los ' +
+  'tests y leer el healify-report.json con healify_report_summary.'
+
+const NOTE_CON_FRAMEWORK = (framework: string) =>
+  `Análisis estático, sin ver la página. La sugerencia adaptada a ${framework} es la mejor ` +
+  'heurística del motor (verified: false): NO es un reemplazo confirmado contra la página. ' +
+  'Para un reemplazo verificado hay que correr los tests y leer el healify-report.json con healify_report_summary.'
+
+function isAnalyzeOutput(value: unknown): value is Record<string, unknown> {
+  if (typeof value !== 'object' || value === null) return false
+  const candidate = value as Record<string, unknown>
+  return typeof candidate.selector === 'string' && typeof candidate.selectorType === 'string'
+}
+
+export function analyzeSelector(args: Record<string, unknown>, deps: SelectorToolDeps = {}): string {
   const selector = args.selector
   if (typeof selector !== 'string' || !selector.trim()) {
     throw new Error('Falta el argumento "selector" (string).')
   }
 
+  const framework = args.framework
+  if (framework !== undefined && !isTestFramework(framework)) {
+    throw new Error('framework inválido: se espera playwright | cypress | selenium | webdriverio.')
+  }
+  const pageUrl = typeof args.pageUrl === 'string' && args.pageUrl ? args.pageUrl : undefined
+
+  // El análisis es determinista: cachear el output completo por (selector, pageUrl, framework)
+  // es seguro. El cache vive en ~/.healify/mcp-cache.json y se invalida a los 5 minutos.
+  const cachePath = deps.cachePath ?? DEFAULT_CACHE_PATH
+  const ttlMs = deps.ttlMs ?? DEFAULT_TTL_MS
+  const now = deps.now ?? Date.now()
+  const key = cacheKey(selector, pageUrl, framework, 'analyze')
+  const cached = getCached(cachePath, key, ttlMs, now)
+  // Guarda de forma: solo se sirve un valor que tenga la forma de esta herramienta. Un valor
+  // huérfano con la forma de otra herramienta se ignora y se computa fresco.
+  if (isAnalyzeOutput(cached)) return json(cached)
+
   const heal = analyzeAndHeal({ selector })
 
-  // `analyzeAndHeal` sin htmlContext SIEMPRE devuelve verified:false y un nombre deducido de
-  // diccionarios. Ese campo no se expone como si fuera una corrección: se expone la
-  // clasificación, que sí es confiable, y se dice explícitamente qué falta para proponer algo.
-  return json({
+  const output = {
     selector,
     selectorType: heal.selectorType,
     fragile: heal.robustnessImprovement > 0,
@@ -52,12 +92,33 @@ export function analyzeSelector(args: Record<string, unknown>): string {
     stableAgainstDOMChanges: heal.technicalDetails.stableAgainstDOMChanges,
     accessibilityCompliant: heal.technicalDetails.accessibilityCompliant,
     verifiedReplacementAvailable: false,
-    note:
-      'Análisis estático, sin ver la página. Alcanza para decir si el selector es frágil y por qué, ' +
-      'pero NO para proponer un reemplazo concreto: cualquier nombre accesible saldría de un ' +
-      'diccionario, no de la pantalla. Para obtener un reemplazo verificado hay que correr los ' +
-      'tests y leer el healify-report.json con healify_report_summary.',
-  })
+    ...(framework
+      ? {
+          framework,
+          suggestion: adaptSelectorText(heal.fixedSelector, framework),
+          note: NOTE_CON_FRAMEWORK(framework),
+        }
+      : { note: NOTE_SIN_FRAMEWORK }),
+  }
+
+  setCached(cachePath, key, output, ttlMs, now)
+  return json(output)
+}
+
+export async function batchAnalyzeSelectorsTool(args: Record<string, unknown>, deps: BatchDeps = {}): Promise<string> {
+  const selectors = args.selectors
+  if (!Array.isArray(selectors) || selectors.length === 0 || !selectors.every((s) => typeof s === 'string')) {
+    throw new Error('Falta el argumento "selectors" (array de strings, no vacío).')
+  }
+
+  const framework = args.framework
+  if (framework !== undefined && !isTestFramework(framework)) {
+    throw new Error('framework inválido: se espera playwright | cypress | selenium | webdriverio.')
+  }
+  const pageUrl = typeof args.pageUrl === 'string' && args.pageUrl ? args.pageUrl : undefined
+
+  const result = await analyzeBatchSelectors(selectors as string[], pageUrl, framework, deps)
+  return json(result)
 }
 
 export function diagnoseFailureTool(args: Record<string, unknown>): string {
@@ -166,6 +227,12 @@ export const TOOLS: ToolDefinition[] = [
       type: 'object',
       properties: {
         selector: { type: 'string', description: 'El selector a analizar, ej. "#add-to-cart-btn" o "//div[3]/button".' },
+        pageUrl: { type: 'string', description: 'URL de la página, opcional. Forma parte de la clave del cache, no del análisis.' },
+        framework: {
+          type: 'string',
+          enum: TEST_FRAMEWORKS,
+          description: 'Sintaxis objetivo de la sugerencia: playwright | cypress | selenium | webdriverio. Sin este argumento no se devuelve sugerencia.',
+        },
       },
       required: ['selector'],
     },
@@ -210,5 +277,29 @@ export const TOOLS: ToolDefinition[] = [
       },
     },
     handler: chronicSelectors,
+  },
+  {
+    name: 'healify_batch_analyze_selectors',
+    description:
+      'Analiza varios selectores de una vez: procesa hasta 5 en paralelo, cachea el resultado localmente por 5 minutos y corta cada análisis a los 30s. ' +
+      'Devuelve por cada selector la sugerencia adaptada al framework elegido y su confianza; los que no se pudieron analizar van a "errors" con su código, sin tumbar el lote.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        selectors: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Los selectores a analizar, ej. ["#add-to-cart-btn", "[data-testid=\'buy\']"].',
+        },
+        pageUrl: { type: 'string', description: 'URL de la página, opcional. Forma parte de la clave del cache.' },
+        framework: {
+          type: 'string',
+          enum: TEST_FRAMEWORKS,
+          description: 'Sintaxis objetivo de las sugerencias: playwright | cypress | selenium | webdriverio.',
+        },
+      },
+      required: ['selectors'],
+    },
+    handler: batchAnalyzeSelectorsTool,
   },
 ]

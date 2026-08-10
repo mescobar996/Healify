@@ -83,7 +83,7 @@ function el(tagName: string, attrs: Record<string, string> = {}, options: ElOpti
   return node
 }
 
-function runProbe(document: FakeRoot): { role: string; name: string; frame?: string }[] {
+function runProbe(document: FakeRoot): { role: string; name: string; frame?: string; testId?: string; testIdAttr?: string; shadowDepth?: number; shadowPath?: string[] }[] {
   return new Function('document', BROWSER_PROBE_SCRIPT)(document)
 }
 
@@ -106,7 +106,9 @@ describe('BROWSER_PROBE_SCRIPT — recorrido del DOM', () => {
       el('my-checkout', {}, { shadow: [el('button', {}, { text: 'Pagar' })] }),
     ])
 
-    expect(runProbe(document)).toEqual([{ role: 'button', name: 'Pagar' }])
+    expect(runProbe(document)).toEqual([
+      { role: 'button', name: 'Pagar', shadowDepth: 1, shadowPath: ['my-checkout'] },
+    ])
   })
 
   it('atraviesa shadow roots anidados', () => {
@@ -116,7 +118,9 @@ describe('BROWSER_PROBE_SCRIPT — recorrido del DOM', () => {
       }),
     ])
 
-    expect(runProbe(document)).toEqual([{ role: 'button', name: 'Confirmar' }])
+    expect(runProbe(document)).toEqual([
+      { role: 'button', name: 'Confirmar', shadowDepth: 2, shadowPath: ['outer-widget', 'inner-widget'] },
+    ])
   })
 
   it('el shadow DOM NO se marca con frame — es el mismo contexto de locator que su documento', () => {
@@ -191,6 +195,109 @@ describe('BROWSER_PROBE_SCRIPT — recorrido del DOM', () => {
       { role: 'combobox', name: 'País' },
     ])
   })
+
+  describe('captura de testid real del DOM (MEJORA 1)', () => {
+    it('incluye data-testid con su atributo, sin cambiar el resto del entry', () => {
+      const document = root([el('button', { 'data-testid': 'add-to-cart' }, { text: 'Comprar' })])
+
+      expect(runProbe(document)).toEqual([
+        { role: 'button', name: 'Comprar', testId: 'add-to-cart', testIdAttr: 'data-testid' },
+      ])
+    })
+
+    it('conserva el atributo real: data-cy no se reescribe a data-testid (Cero Inventos)', () => {
+      const document = root([el('button', { 'data-cy': 'confirmar' }, { text: 'Confirmar' })])
+
+      expect(runProbe(document)).toEqual([
+        { role: 'button', name: 'Confirmar', testId: 'confirmar', testIdAttr: 'data-cy' },
+      ])
+    })
+
+    it('sin atributo de test-id, el entry no lleva el campo — nada que inventar', () => {
+      const document = root([el('button', {}, { text: 'Comprar' })])
+
+      expect(runProbe(document)).toEqual([{ role: 'button', name: 'Comprar' }])
+    })
+
+    it('el testid sobrevive dentro de un shadow root — es el mismo contexto de locator', () => {
+      const document = root([el('my-checkout', {}, { shadow: [el('button', { 'data-test': 'pagar' }, { text: 'Pagar' })] })])
+
+      expect(runProbe(document)).toEqual([
+        { role: 'button', name: 'Pagar', testId: 'pagar', testIdAttr: 'data-test', shadowDepth: 1, shadowPath: ['my-checkout'] },
+      ])
+    })
+
+    it('el testid viaja junto al frame del iframe', () => {
+      const document = root([
+        el('iframe', { id: 'checkout' }, { frameDoc: [el('button', { 'data-qa': 'pago-final' }, { text: 'Pagar' })] }),
+      ])
+
+      expect(runProbe(document)).toEqual([
+        { role: 'button', name: 'Pagar', testId: 'pago-final', testIdAttr: 'data-qa', frame: 'iframe#checkout' },
+      ])
+    })
+  })
+})
+
+describe('BROWSER_PROBE_SCRIPT — recorrido de shadow DOM (MEJORA 3)', () => {
+  it('registra shadowDepth=1 y el host del shadow root para un elemento adentro', () => {
+    const document = root([el('x-card', {}, { shadow: [el('button', {}, { text: 'Ver' })] })])
+
+    expect(runProbe(document)).toEqual([
+      { role: 'button', name: 'Ver', shadowDepth: 1, shadowPath: ['x-card'] },
+    ])
+  })
+
+  it('registra la cadena completa de shadow anidado (componente dentro de componente)', () => {
+    const document = root([
+      el('outer-widget', {}, {
+        shadow: [el('inner-widget', {}, { shadow: [el('button', {}, { text: 'Confirmar' })] })],
+      }),
+    ])
+
+    expect(runProbe(document)).toEqual([
+      { role: 'button', name: 'Confirmar', shadowDepth: 2, shadowPath: ['outer-widget', 'inner-widget'] },
+    ])
+  })
+
+  it('un host con id se identifica por #id en el path, no por el tag genérico', () => {
+    const document = root([
+      el('my-checkout', { id: 'payment' }, { shadow: [el('button', {}, { text: 'Pagar' })] }),
+    ])
+
+    expect(runProbe(document)[0].shadowPath).toEqual(['#payment'])
+  })
+
+  it('un elemento en light DOM no lleva campos de shadow', () => {
+    const document = root([el('button', {}, { text: 'Comprar' })])
+
+    expect(runProbe(document)[0].shadowDepth).toBeUndefined()
+    expect(runProbe(document)[0].shadowPath).toBeUndefined()
+  })
+
+  it('el contexto de shadow arranca de cero dentro de un iframe — otro documento, otro path', () => {
+    const document = root([
+      el('iframe', { id: 'checkout' }, {
+        frameDoc: [el('x-widget', {}, { shadow: [el('button', {}, { text: 'Pagar' })] })],
+      }),
+    ])
+
+    expect(runProbe(document)).toEqual([
+      { role: 'button', name: 'Pagar', frame: 'iframe#checkout', shadowDepth: 1, shadowPath: ['x-widget'] },
+    ])
+  })
+
+  it('el shadow anidado no interfiere con el testid ni con el frame del elemento', () => {
+    const document = root([
+      el('outer-widget', {}, {
+        shadow: [el('inner-widget', { id: 'inner' }, { shadow: [el('button', { 'data-test': 'ok' }, { text: 'Listo' })] })],
+      }),
+    ])
+
+    expect(runProbe(document)).toEqual([
+      { role: 'button', name: 'Listo', testId: 'ok', testIdAttr: 'data-test', shadowDepth: 2, shadowPath: ['outer-widget', '#inner'] },
+    ])
+  })
 })
 
 describe('domContextFromProbeResult', () => {
@@ -204,6 +311,43 @@ describe('domContextFromProbeResult', () => {
     expect(parsePageSnapshot(domContext)).toEqual([
       { role: 'button', name: 'Comprar' },
       { role: 'link', name: 'Inicio' },
+    ])
+  })
+
+  it('conserva testId y testIdAttr en el ida y vuelta (MEJORA 1)', () => {
+    const domContext = domContextFromProbeResult([
+      { role: 'button', name: 'Comprar', testId: 'add-to-cart', testIdAttr: 'data-testid' },
+      { role: 'button', name: 'Pagar', testId: 'pago-final', testIdAttr: 'data-qa', frame: 'iframe#checkout' },
+    ])
+
+    expect(domContext).toBeDefined()
+    expect(parsePageSnapshot(domContext)).toEqual([
+      { role: 'button', name: 'Comprar', testId: 'add-to-cart', testIdAttr: 'data-testid' },
+      { role: 'button', name: 'Pagar', testId: 'pago-final', testIdAttr: 'data-qa', frame: 'iframe#checkout' },
+    ])
+  })
+
+  it('conserva shadowDepth y shadowPath en el ida y vuelta (MEJORA 3)', () => {
+    const domContext = domContextFromProbeResult([
+      { role: 'button', name: 'Confirmar', shadowDepth: 2, shadowPath: ['outer-widget', 'inner-widget'] },
+      { role: 'button', name: 'Pagar', shadowDepth: 1, shadowPath: ['#payment'], frame: 'iframe#checkout' },
+    ])
+
+    expect(domContext).toBeDefined()
+    expect(parsePageSnapshot(domContext)).toEqual([
+      { role: 'button', name: 'Confirmar', shadowDepth: 2, shadowPath: ['outer-widget', 'inner-widget'] },
+      { role: 'button', name: 'Pagar', shadowDepth: 1, shadowPath: ['#payment'], frame: 'iframe#checkout' },
+    ])
+  })
+
+  it('descarta un shadowPath con entradas que no son strings en vez de romper', () => {
+    const domContext = domContextFromProbeResult([
+      { role: 'button', name: 'Pagar', shadowDepth: 1, shadowPath: ['x-card', 42] as unknown as string[] },
+    ])
+
+    expect(domContext).toBeDefined()
+    expect(parsePageSnapshot(domContext)).toEqual([
+      { role: 'button', name: 'Pagar', shadowDepth: 1, shadowPath: ['x-card'] },
     ])
   })
 

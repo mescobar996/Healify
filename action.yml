@@ -21,6 +21,26 @@ inputs:
     description: 'Keep .healify/history.jsonl across runs so Healify can tell you which selectors keep breaking. Set to false to disable.'
     required: false
     default: 'true'
+  # Los inputs de abajo habilitan el modo "auto-PR", pensado para workflow_dispatch (manual) y
+  # schedule (diario): la action lee el log de tests fallidos, extrae los selectores rotos y abre
+  # una PR con las correcciones aplicadas. En pull_request estos inputs no tienen efecto — el
+  # flujo de comentario clásico sigue intacto.
+  test-log-path:
+    description: 'Path to the failed test log (relative to project-path) to analyze in workflow_dispatch/schedule runs. The workflow must run your tests and redirect output to this file.'
+    required: false
+    default: 'test-output.log'
+  auto-pr:
+    description: 'In workflow_dispatch/schedule runs, open a PR with the applied fixes. Set to false to apply fixes without opening a PR.'
+    required: false
+    default: 'true'
+  fail-on-unsupported:
+    description: 'Fail the job when Healify cannot analyze the log (missing file, no selectors found, or CLI error). Default false: logs and continues so scheduled runs do not go red for informational runs.'
+    required: false
+    default: 'false'
+  labels:
+    description: 'Comma-separated labels to apply to the auto-generated PR.'
+    required: false
+    default: ''
 # Composite, no `node20`, y la razón importa: un action `node20` no puede restaurar un cache
 # (eso es un step, no una llamada de librería) y tampoco puede depender de `@actions/cache`,
 # porque `gh-action/node_modules` está gitignoreado y GitHub no instala dependencias de un
@@ -50,3 +70,7 @@ runs:
         # run.js los lee con guion bajo, no con guion medio.
         INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
         INPUT_PROJECT_PATH: ${{ inputs.project-path }}
+        INPUT_TEST_LOG_PATH: ${{ inputs.test-log-path }}
+        INPUT_AUTO_PR: ${{ inputs.auto-pr }}
+        INPUT_FAIL_ON_UNSUPPORTED: ${{ inputs.fail-on-unsupported }}
+        INPUT_LABELS: ${{ inputs.labels }}

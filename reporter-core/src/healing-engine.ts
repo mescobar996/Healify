@@ -25,8 +25,7 @@
  */
 
 import { parsePageSnapshot, existsInPage, findMatches, bestElementFor, type PageElement } from './page-snapshot'
-import { buildRoleSuggestion } from './role-locator'
-import { parseRoleSuggestion } from './role-locator'
+import { buildRoleSuggestion, buildGenericRoleHint, parseRoleSuggestion } from './role-locator'
 import { findRepertoireMatch, type HistoryEntry } from './repertoire'
 
 export interface HealRequest {
@@ -98,9 +97,18 @@ interface HealingStrategy {
   explanation: string
   robustnessGain: number
   technicalReason: string
-  /** Escalera de atributos estables: 1=testid, 3=name, 4=aria-label/role, 5=texto visible, 6=clase.
+  /** Escalera de atributos estables: 0=role verificado en vivo, 1=testid real del DOM,
+   * 3=name, 4=aria-label/role, 5=texto visible, 6=clase.
    * (2="id estable" no tiene candidato propio hoy — no existe ese caso en el motor.) */
   priority: number
+  /**
+   * Verdadero solo para estrategias que nacen de confrontar el selector contra la página real
+   * (`applyPageEvidence`): el elemento existe y la sugerencia se basa en lo que había en
+   * pantalla, no en adivinanzas del texto del selector. Es lo que decide `verified` — no la
+   * priority: una pista degradada (rol sin nombre) vive en priority 4 pero sigue siendo
+   * evidencia real, y así conserva su confidence sin re-ajustar.
+   */
+  pageVerified?: boolean
 }
 
 // Atributos volátiles: generados por build tools (css-in-js, hashing) o por IDs con timestamp/hash —
@@ -372,7 +380,7 @@ function generateHealingStrategies(selector: string, analysis: SelectorAnalysis,
   if (analysis.element === 'button') {
     const action = extractActionFromSelector(selector, actions)
     strategies.push({
-      selector: buildRoleSuggestion('button', action),
+      selector: buildRoleSuggestion('button', action)!,
       type: 'ROLE',
       confidence: 0.92,
       explanation: `Se detectó un ${analysis.type} inestable; se cambió por un selector basado en accesibilidad (ARIA role) para mayor robustez.`,
@@ -415,7 +423,7 @@ function generateHealingStrategies(selector: string, analysis: SelectorAnalysis,
 
   if (analysis.element === 'link') {
     strategies.push({
-      selector: buildRoleSuggestion('link', extractActionFromSelector(selector, actions)),
+      selector: buildRoleSuggestion('link', extractActionFromSelector(selector, actions))!,
       type: 'ROLE',
       confidence: 0.91,
       explanation: `Selector por rol de enlace con texto. Muy estable y accesible.`,
@@ -440,7 +448,7 @@ function generateHealingStrategies(selector: string, analysis: SelectorAnalysis,
 
   if (analysis.type === 'XPATH') {
     strategies.push({
-      selector: buildRoleSuggestion('button'),
+      selector: buildGenericRoleHint('button'),
       type: 'ROLE',
       confidence: 0.82,
       explanation: `Se reemplazó el XPath frágil por un selector de rol. Los XPath dependen de la estructura exacta del DOM que cambia frecuentemente.`,
@@ -456,7 +464,7 @@ function generateHealingStrategies(selector: string, analysis: SelectorAnalysis,
   // 'visible=' — al menos señala accesibilidad como dirección, requiere revisión manual.
   if (NTH_POSITION_RE.test(selector) && analysis.element === 'element') {
     strategies.push({
-      selector: buildRoleSuggestion('button'),
+      selector: buildGenericRoleHint('button'),
       type: 'ROLE',
       confidence: 0.76,
       explanation: `Selector basado en posición (nth-child/nth-of-type) — depende del orden exacto de hermanos en el DOM, se rompe con solo agregar/quitar un elemento vecino. Se propone un selector de rol como punto de partida; revisar manualmente para afinar el name.`,
@@ -574,7 +582,7 @@ function generateHealingStrategies(selector: string, analysis: SelectorAnalysis,
     // de ancestros de por medio (`.card .title` → `visible=card .title`, ni CSS válido).
     if (strategies.length === 0) {
       strategies.push({
-        selector: buildRoleSuggestion('button'),
+        selector: buildGenericRoleHint('button'),
         type: 'ROLE',
         confidence: 0.74,
         explanation: `Selector compuesto con combinador CSS (\`${selector}\`) — depende de la ruta de ancestros/hermanos en el DOM, se rompe con cualquier cambio de markup aunque el elemento buscado no haya cambiado. El elemento objetivo (${target}) no tiene un atributo estable reconocible; se propone un selector de rol como punto de partida, revisar manualmente para afinar el name.`,
@@ -644,24 +652,90 @@ function applyPageEvidence(
   // `bestElementFor` igual busca entre los elementos interactivos de la página.
   const real = bestElementFor(pageElements, selector, expectedRole)
   if (real) {
-    // El elemento existe, pero adentro de un iframe: un locator a nivel top no lo encuentra
-    // igual. Se sugiere igual (es la mejor pista que hay) pero con la confianza bajada y
-    // diciendo explícitamente que falta cambiar de contexto — sugerirlo callado manda al
-    // usuario a un test que sigue fallando y encima parece un bug de Healify.
     const inFrame = real.frame
-    survivors.unshift({
-      selector: buildRoleSuggestion(real.role, real.name),
-      type: 'ROLE',
-      confidence: inFrame ? 0.88 : 0.97,
-      explanation: inFrame
-        ? `Verificado contra la página: hay un ${real.role} con el nombre accesible "${real.name}", pero está DENTRO del iframe ${inFrame}. Un locator a nivel de página no lo encuentra: primero hay que entrar al frame (\`frameLocator('${inFrame}')\` en Playwright, \`switchTo().frame(...)\` en Selenium) y recién ahí aplicar el selector.`
-        : `Verificado contra la página: hay un ${real.role} con el nombre accesible "${real.name}". El nombre se leyó del árbol de accesibilidad capturado cuando el test falló, no se dedujo del texto del selector.`,
-      robustnessGain: 50,
-      technicalReason: inFrame
-        ? `Confirmed against the accessibility tree captured at failure time, but inside iframe ${inFrame}: a frame switch is required before this locator resolves`
-        : `Confirmed against the accessibility tree captured at failure time: role=${real.role}, name=${real.name}`,
-      priority: 0,
-    })
+
+    // MEJORA 3 — el elemento puede vivir dentro de shadow DOM. Un locator CSS/XPath plano NO
+    // resuelve ahí: los selectores no atraviesan shadowRoots por especificación, hay que hacer
+    // pierce de cada nivel. Igual que el frame, sugerirlo callado manda al usuario a un test
+    // que sigue fallando; se avisa la cadena exacta (shadowDepth + shadowPath) para que sepa
+    // qué pierce hacer. `shadowChain`/`pierceNote` van vacíos cuando el elemento está en
+    // light DOM, así las ramas de abajo quedan exactamente como antes en ese caso.
+    const inShadow = (real.shadowDepth ?? 0) > 0
+    const shadowChain = inShadow && real.shadowPath?.length ? ` (${real.shadowPath.join(' > ')})` : ''
+    const pierceNote = inShadow
+      ? ` vive dentro de ${real.shadowDepth} shadow root${real.shadowDepth === 1 ? '' : 's'}${shadowChain} — los selectores CSS/XPath no atraviesan shadow DOM por especificación, hay que hacer pierce de cada nivel (\`.shadow()\` en Cypress, \`.shadowRoot\` en Selenium/WebdriverIO) antes de que el selector resuelva`
+      : ''
+    const pierceReason = inShadow
+      ? `; nested ${real.shadowDepth} shadow root${real.shadowDepth === 1 ? '' : 's'} deep (${real.shadowPath?.join(' > ') ?? '?'}): CSS/XPath cannot pierce shadow DOM, each shadowRoot must be pierced before the locator resolves`
+      : ''
+
+    // El elemento tiene nombre accesible: se propone el role verificado en vivo (priority 0),
+    // la sugerencia más confiable del motor. Su texto se leyó del árbol de accesibilidad
+    // capturado cuando el test falló, no se dedujo del selector. Si además vive en un iframe
+    // o dentro de shadow DOM, la confianza baja y el texto avisa qué hay que hacer antes de
+    // aplicar el locator — sugerirlo callado manda al usuario a un test que sigue fallando y
+    // encima parece un bug de Healify.
+    if (real.name) {
+      survivors.unshift({
+        selector: buildRoleSuggestion(real.role, real.name)!,
+        type: 'ROLE',
+        confidence: inFrame || inShadow ? 0.88 : 0.97,
+        explanation: inFrame
+          ? `Verificado contra la página: hay un ${real.role} con el nombre accesible "${real.name}", pero está DENTRO del iframe ${inFrame}. Un locator a nivel de página no lo encuentra: primero hay que entrar al frame (\`frameLocator('${inFrame}')\` en Playwright, \`switchTo().frame(...)\` en Selenium) y recién ahí aplicar el selector.${pierceNote ? ` Además${pierceNote}.` : ''}`
+          : inShadow
+            ? `Verificado contra la página: hay un ${real.role} con el nombre accesible "${real.name}", pero${pierceNote}.`
+            : `Verificado contra la página: hay un ${real.role} con el nombre accesible "${real.name}". El nombre se leyó del árbol de accesibilidad capturado cuando el test falló, no se dedujo del texto del selector.`,
+        robustnessGain: 50,
+        technicalReason: inFrame
+          ? `Confirmed against the accessibility tree captured at failure time, but inside iframe ${inFrame}: a frame switch is required before this locator resolves${pierceReason}`
+          : `Confirmed against the accessibility tree captured at failure time: role=${real.role}, name=${real.name}${pierceReason}`,
+        priority: 0,
+        pageVerified: true,
+      })
+    }
+
+    // MEJORA 1 — sugerir el data-testid REAL del DOM. El probe en vivo (Selenium/WebdriverIO/
+    // Cypress) trae el atributo de test-id del elemento encontrado: si existe, se propone como
+    // estrategia TESTID justo después del role verificado (priority 1), que es el único que lo
+    // supera. El testid se lee del DOM, no se inventa (regla "Cero Inventos"), y se conserva el
+    // atributo original (data-cy/data-test/...) para no reescribir a uno que no existe.
+    //
+    // MEJORA 2 — si el elemento NO tiene nombre accesible, el testid pasa a ser la sugerencia
+    // principal (index 0): es la mejor señal estable disponible en ese caso.
+    if (real.testId) {
+      const attr = real.testIdAttr ?? 'data-testid'
+      const esTestidPrincipal = !real.name
+      survivors.splice(esTestidPrincipal ? 0 : 1, 0, {
+        selector: `[${attr}='${real.testId}']`,
+        type: 'TESTID',
+        confidence: 0.94,
+        explanation: esTestidPrincipal
+          ? `Verificado contra la página: el elemento sigue presente pero NO expone nombre accesible; conserva el atributo ${attr}="${real.testId}", que es la señal más estable disponible en este caso.${pierceNote ? ` Además${pierceNote}.` : ''}`
+          : `Verificado contra la página: el elemento sigue presente y conserva el atributo ${attr}="${real.testId}". Es el selector más estable disponible — solo el role verificado en vivo lo supera.${pierceNote ? ` Además${pierceNote}.` : ''}`,
+        robustnessGain: 50,
+        technicalReason: `The real DOM element still carries a stable ${attr} attribute${pierceReason}`,
+        priority: 1,
+        pageVerified: true,
+      })
+    }
+
+    // MEJORA 2 — sin nombre accesible y sin testid: no hay ninguna señal estable que proponer.
+    // Un role('X') a secas matchea de más y no tiene XPath ejecutable, así que se degrada a una
+    // pista de revisión manual (confianza baja, priority alta) en vez de sugerirse como si
+    // fuera un selector aplicable. Sigue siendo evidencia de que el elemento existe.
+    if (!real.name && !real.testId) {
+      survivors.unshift({
+        selector: buildGenericRoleHint(real.role),
+        type: 'ROLE',
+        confidence: 0.7,
+        explanation: `Verificado contra la página: hay un ${real.role} en pantalla, pero SIN nombre accesible. Un role('${real.role}') sin name matchearía todos los de ese tipo — requiere revisión manual antes de aplicar.${pierceNote ? ` Además${pierceNote}.` : ''}`,
+        robustnessGain: 20,
+        technicalReason: `The element exists but has no accessible name; a nameless role locator is ambiguous and requires manual review${pierceReason}`,
+        priority: 4,
+        pageVerified: true,
+      })
+    }
+
     return { strategies: survivors, sawPage: true }
   }
 
@@ -719,7 +793,9 @@ export function analyzeAndHeal(request: HealRequest): HealResponse {
   if (pageElements.length > 0) {
     const evidence = applyPageEvidence(strategies, pageElements, selector, analysis)
     strategies = evidence.strategies
-    verified = evidence.sawPage && strategies[0]?.priority === 0
+    // `pageVerified` y no `priority === 0`: una pista degradada (rol sin nombre) vive en
+    // priority 4 pero nace igual de la evidencia de la página, y así conserva su confidence.
+    verified = evidence.sawPage && strategies[0]?.pageVerified === true
   }
 
   // El repertorio (historial de curaciones ya confirmadas) es un fallback, no una fuente

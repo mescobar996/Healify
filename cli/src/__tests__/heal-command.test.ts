@@ -1,15 +1,28 @@
 import { describe, it, expect, vi } from 'vitest'
+import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'fs'
+import { dirname, join } from 'path'
 
 // Sin anotar el retorno, `vi.fn(() => [])` infiere `never[]` y cualquier mockReturnValue
 // posterior falla al tipar. Lo detecto tsc recien cuando el tsconfig dejo de excluir los tests.
 const { mockReadRepertoire } = vi.hoisted(() => ({ mockReadRepertoire: vi.fn((): unknown[] => []) }))
+
+// Las estadísticas viven en `~/.healify/stats.json` — los tests redirigen homedir a un
+// directorio temporal para no escribir ni leer el home real de quien corra la suite.
+const { TEST_HOME } = vi.hoisted(() => ({
+  TEST_HOME: require('path').join(process.env.TEMP || process.env.TMP || '.', 'healify-cli-test-home'),
+}))
 
 vi.mock('@healify/reporter-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@healify/reporter-core')>()
   return { ...actual, readRepertoire: mockReadRepertoire }
 })
 
-import { runHeal } from '../commands/heal'
+vi.mock('node:os', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:os')>()
+  return { ...actual, homedir: () => TEST_HOME }
+})
+
+import { runHeal, readHealStats, emptyHealStats, accumulateHealStats, formatHealStatsSummary } from '../commands/heal'
 
 describe('runHeal', () => {
   it('input inválido (sin selector) devuelve error, no tira', () => {
@@ -49,6 +62,20 @@ describe('runHeal', () => {
         strategy: 'xpath',
         value: expect.stringContaining("normalize-space(.)='Comprar'"),
       })
+    }
+  })
+
+  it('MEJORA 1: el data-testid real del DOM se expone como alternativa del bridge (confianza 0.94)', () => {
+    const result = runHeal({
+      selector: '#comprar-ahora-a1b2c3',
+      pageElements: [{ role: 'button', name: 'Comprar', testId: 'add-to-cart', testIdAttr: 'data-testid' }],
+    })
+
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      // Solo el role verificado en vivo (priority 0) supera al testid (priority 1).
+      expect(result.output.fixedSelector).toBe("role('button', { name: 'Comprar' })")
+      expect(result.output.alternatives?.[0]).toEqual({ selector: "[data-testid='add-to-cart']", confidence: 0.94 })
     }
   })
 
@@ -118,5 +145,104 @@ describe('runHeal', () => {
     if (result.ok) {
       expect(result.output.selectorType).not.toBe('TESTID')
     }
+  })
+})
+
+describe('métricas locales (sin telemetría externa)', () => {
+  it('mide el tiempo de cada fase y lo expone en el output', () => {
+    const result = runHeal({ selector: '#comprar-ahora-a1b2c3' }, process.cwd(), { statsPath: null })
+
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      const { timings } = result.output
+      expect(timings.probeMs).toBeGreaterThanOrEqual(0)
+      expect(timings.analysisMs).toBeGreaterThanOrEqual(0)
+      expect(timings.healingMs).toBeGreaterThanOrEqual(0)
+      expect(timings.totalMs).toBeGreaterThanOrEqual(0)
+      expect(timings.healingMs).toBe(Math.max(0, timings.totalMs - timings.probeMs - timings.analysisMs))
+    }
+  })
+
+  it('acumula en stats.json: total analizado, tipos más comunes y promedio de healing', () => {
+    const statsPath = join(TEST_HOME, 'stats-acumula.json')
+    try { unlinkSync(statsPath) } catch { /* no existe todavía */ }
+    mkdirSync(dirname(statsPath), { recursive: true })
+
+    runHeal(
+      { selector: '#comprar-ahora-a1b2c3', pageElements: [{ role: 'button', name: 'Comprar' }] },
+      process.cwd(),
+      { statsPath }
+    )
+    runHeal({ selector: "[data-testid='add-to-cart']" }, process.cwd(), { statsPath })
+    // Sin nombre accesible ni testid: sugerencia que requiere revisión → fallida.
+    runHeal({ selector: '#btn-aceptar', pageElements: [{ role: 'button', name: '' }] }, process.cwd(), { statsPath })
+
+    const stats = readHealStats(statsPath)
+    expect(stats.totalAnalyzed).toBe(3)
+    expect(stats.healed).toBe(2)
+    expect(stats.failed).toBe(1)
+    expect(stats.byType.role).toBe(2)
+    expect(stats.byType.testid).toBe(1)
+    expect(stats.avgHealingMs).toBe(Math.round(stats.totalHealingMs / stats.totalAnalyzed))
+  })
+
+  it('una sugerencia que requiere revisión manual cuenta como fallida, no como sanada', () => {
+    const statsPath = join(TEST_HOME, 'stats-revision.json')
+    try { unlinkSync(statsPath) } catch { /* no existe todavía */ }
+    mkdirSync(dirname(statsPath), { recursive: true })
+
+    runHeal({ selector: '#btn-aceptar', pageElements: [{ role: 'button', name: '' }] }, process.cwd(), { statsPath })
+
+    const stats = readHealStats(statsPath)
+    expect(stats.totalAnalyzed).toBe(1)
+    expect(stats.healed).toBe(0)
+    expect(stats.failed).toBe(1)
+  })
+
+  it('statsPath: null desactiva el guardado — el heal sigue funcionando igual', () => {
+    const statsPath = join(TEST_HOME, 'stats-null.json')
+    try { unlinkSync(statsPath) } catch { /* no existe todavía */ }
+
+    const result = runHeal({ selector: '#x' }, process.cwd(), { statsPath: null })
+
+    expect(result.ok).toBe(true)
+    expect(existsSync(statsPath)).toBe(false)
+  })
+
+  it('readHealStats tolera un archivo ausente o corrupto — arranca de cero', () => {
+    expect(readHealStats(join(TEST_HOME, 'no-existe.json'))).toEqual(emptyHealStats())
+
+    const corrupto = join(TEST_HOME, 'stats-corrupto.json')
+    mkdirSync(dirname(corrupto), { recursive: true })
+    writeFileSync(corrupto, '{ no es json')
+    expect(readHealStats(corrupto)).toEqual(emptyHealStats())
+  })
+
+  it('accumulateHealStats promedia el tiempo de healing y cuenta por tipo en minúscula', () => {
+    const first = accumulateHealStats(emptyHealStats(), 'healed', 'ROLE', 200)
+    const second = accumulateHealStats(first, 'healed', 'TESTID', 300)
+
+    expect(second.totalAnalyzed).toBe(2)
+    expect(second.healed).toBe(2)
+    expect(second.byType).toEqual({ role: 1, testid: 1 })
+    expect(second.totalHealingMs).toBe(500)
+    expect(second.avgHealingMs).toBe(250)
+  })
+
+  it('formatHealStatsSummary arma el resumen humano del ejemplo', () => {
+    const stats = {
+      totalAnalyzed: 3,
+      healed: 3,
+      failed: 0,
+      byType: { role: 2, testid: 1 },
+      totalHealingMs: 702,
+      avgHealingMs: 234,
+    }
+
+    expect(formatHealStatsSummary(stats)).toBe('✅ 3 selectores sanados (2 roles, 1 testid) en 234ms — tasa de éxito: 100%')
+  })
+
+  it('el resumen sin datos todavía no inventa conteos', () => {
+    expect(formatHealStatsSummary(emptyHealStats())).toBe('✅ 0 selectores sanados en 0ms — tasa de éxito: 0%')
   })
 })

@@ -67,6 +67,61 @@ reemplazarlo.
 `verifiedReplacementAvailable` es siempre `false` acá, a propósito. Para un reemplazo verificado
 hay que correr los tests y leer el reporte con `healify_report_summary`.
 
+Con el parámetro opcional `framework`, la herramienta además devuelve la mejor heurística del
+motor adaptada a la sintaxis del framework:
+
+```json
+{ "selector": "#btn-ingresar", "framework": "cypress" }
+```
+
+```json
+{
+  "selector": "#btn-ingresar",
+  "selectorType": "ROLE",
+  "framework": "cypress",
+  "suggestion": "cy.contains('button', 'Ingresar')",
+  "note": "Análisis estático, sin ver la página. La sugerencia adaptada a cypress es la mejor heurística del motor (verified: false): NO es un reemplazo confirmado contra la página..."
+}
+```
+
+Valores aceptados: `playwright` (getByRole), `cypress` (cy.get/cy.contains), `selenium`
+(By.cssSelector/By.xpath) y `webdriverio` ($). La sugerencia sigue siendo heurística sin
+verificación — la nota lo dice explícito, no es un reemplazo confirmado.
+
+Los resultados se cachean localmente 5 minutos en `~/.healify/mcp-cache.json` (clave:
+`selector + pageUrl + framework`). Un cache corrupto se ignora y se vuelve a analizar.
+
+### `healify_batch_analyze_selectors`
+
+Analiza varios selectores de una vez, con límite de 5 en paralelo, cache local y timeout de 30
+segundos por análisis. Los que no se pueden analizar no tumban el lote: van a `errors` con su
+código.
+
+```json
+{
+  "selectors": ["#btn-ingresar", "[data-testid='add-to-cart']"],
+  "framework": "playwright"
+}
+```
+
+```json
+{
+  "results": [
+    {
+      "original": "#btn-ingresar",
+      "suggestions": ["getByRole('button', { name: 'Ingresar' })"],
+      "confidence": 0.89
+    },
+    {
+      "original": "[data-testid='add-to-cart']",
+      "suggestions": ["[data-testid='add-to-cart']"],
+      "confidence": 0.95
+    }
+  ],
+  "errors": []
+}
+```
+
 ### `healify_diagnose_failure`
 
 Por qué falló un test, a partir de su mensaje de error: `selector`, `assertion`, `timing`,

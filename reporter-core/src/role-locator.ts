@@ -39,10 +39,26 @@ function unescapeSingleQuoted(value: string): string {
  * **Este es el único lugar donde se arma ese string.** Antes se interpolaba a mano en cada punto
  * de `healing-engine.ts` que proponía un rol, y con eso alcanzaba para que un apóstrofe del DOM
  * lo rompiera. Si aparece otra interpolación suelta, el bug vuelve.
+ *
+ * Devuelve `null` si no hay nombre accesible: un `role('button')` a secas matchea de más y no
+ * tiene XPath ejecutable (`resolveLocatorStrategy` lo marca `unsupported`), así que no es una
+ * sugerencia aplicable. Quien quiera proponer un rol genérico como pista de revisión manual usa
+ * `buildGenericRoleHint`.
  */
-export function buildRoleSuggestion(role: string, name?: string): string {
-  if (name === undefined || name === '') return `role('${escapeSingleQuoted(role)}')`
+export function buildRoleSuggestion(role: string, name?: string): string | null {
+  if (name === undefined || name === '') return null
   return `role('${escapeSingleQuoted(role)}', { name: '${escapeSingleQuoted(name)}' })`
+}
+
+/**
+ * Rol genérico SIN nombre accesible, como pista de revisión manual — no una sugerencia aplicable:
+ * `role('button')` a secas casi siempre matchea de más y no tiene XPath ejecutable. Se usa solo
+ * donde el selector no da ninguna señal de identidad (XPath, nth-child, objetivo de un combinador
+ * sin atributos estables, o un elemento real sin nombre) para no caer al fallback `visible=`, y
+ * queda bien claro en el texto que requiere revisión manual.
+ */
+export function buildGenericRoleHint(role: string): string {
+  return `role('${escapeSingleQuoted(role)}')`
 }
 
 /**

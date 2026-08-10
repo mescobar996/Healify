@@ -15,7 +15,7 @@
 | `healify report [report.json]` | Reports the run's defects to your Jira (or a webhook). Deduped by `defectId`, opt-in. |
 | `healify dashboard [--out <path>]` | Generates `healify-dashboard.html`, the offline view of your healing history (same look as `healify-report.html`). |
 | `healify flake [--min-runs <n>]` | Detects flaky tests (green on some runs, red on others) from `.healify/runs.jsonl`, which the Playwright/Cypress reporters record on every run. |
-| `healify heal` | The engine over JSON on stdin/stdout, so you can drive it from Python/Java/C#/etc. |
+| `healify heal [--stats]` | The engine over JSON on stdin/stdout, so you can drive it from Python/Java/C#/etc. `--stats` prints the summary of the stats accumulated in `~/.healify/stats.json` (to stderr, so stdout stays pure JSON). |
 | `healify probe-script` | Prints the script to probe the DOM with `execute_script()` (input for `heal`). |
 | `healify explain [selector]` | Explains why a selector is brittle and what the engine proposes. |
 | `healify ai <setup\|status\|explain\|chat\|models>` | Optional local AI via Ollama. |
@@ -60,4 +60,15 @@ nothing. Turn it off with `--no-pom`.
 ```bash
 echo '{"testFile":"test.py","testName":"test_login","selector":"#old-btn","errorMessage":"..."}' | npx @healify/cli@latest heal
 # -> {"fixedSelector":"[data-testid='login']","confidence":0.95,"verified":true,...}
+```
+
+Every run measures its own phases (`probeMs`, `analysisMs`, `healingMs`, `totalMs`) and, unless
+you pass `--stats`-free output, accumulates them in `~/.healify/stats.json`. Nothing leaves the
+machine — there's no telemetry. `--stats` prints the summary on stderr so the JSON on stdout
+stays parseable:
+
+```bash
+echo '{"selector":"#old-btn"}' | npx @healify/cli@latest heal --stats
+# stdout: {"fixedSelector":"[data-testid='login']","confidence":0.95,"verified":true,...}
+# stderr: ✅ 42 selectores sanados (21 roles, 17 testids, 4 css) en 238ms — tasa de éxito: 78%
 ```

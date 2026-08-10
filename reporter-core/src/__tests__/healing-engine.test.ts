@@ -324,6 +324,75 @@ describe('evidencia de la página real (htmlContext)', () => {
 
     expect(result.fixedSelector).not.toContain("name: 'Login'")
   })
+
+  describe('MEJORA 1: sugerir el data-testid real del DOM', () => {
+    it('un elemento con data-testid genera una sugerencia TESTID — confianza 0.94, solo por debajo del role verificado', () => {
+      const result = analyzeAndHeal({
+        selector: '#comprar-ahora-a1b2c3',
+        htmlContext: `- button "Comprar" [testid=add-to-cart]`,
+      })
+
+      // El role verificado en vivo (priority 0) gana; el testid (priority 1) es la primera alternativa.
+      expect(result.verified).toBe(true)
+      expect(result.fixedSelector).toBe("role('button', { name: 'Comprar' })")
+      expect(result.alternatives?.[0]).toEqual({ selector: "[data-testid='add-to-cart']", confidence: 0.94 })
+    })
+
+    it('conserva el atributo real: data-cy no se reescribe a data-testid (Cero Inventos)', () => {
+      const result = analyzeAndHeal({
+        selector: '#comprar-ahora-a1b2c3',
+        htmlContext: `- button "Comprar" [testid=add-to-cart] [testid-attr=data-cy]`,
+      })
+
+      expect(result.alternatives?.[0]).toEqual({ selector: "[data-cy='add-to-cart']", confidence: 0.94 })
+    })
+
+    it('sin testid en el elemento, no hay sugerencia TESTID — nada que leer del DOM', () => {
+      const result = analyzeAndHeal({
+        selector: '#comprar-ahora-a1b2c3',
+        htmlContext: `- button "Comprar"`,
+      })
+
+      expect(result.alternatives?.some((a) => a.selector.startsWith('[data-')) ?? false).toBe(false)
+    })
+  })
+
+  describe('MEJORA 2: deducir el rol del htmlContext y degradar el role sin nombre', () => {
+    it('una clase .card sin keyword genera ROLE si el DOM lo permite', () => {
+      const result = analyzeAndHeal({ selector: '.card', htmlContext: '- button "Card"' })
+
+      expect(result.verified).toBe(true)
+      expect(result.fixedSelector).toBe("role('button', { name: 'Card' })")
+      expect(result.confidence).toBe(0.97)
+      expect(result.needsReview).toBe(false)
+    })
+
+    it('un rol SIN nombre accesible y SIN testid se degrada a pista de revisión (confidence 0.7, priority 4)', () => {
+      const result = analyzeAndHeal({ selector: '#btn-aceptar', htmlContext: '- button' })
+
+      expect(result.verified).toBe(true)
+      expect(result.fixedSelector).toBe("role('button')")
+      expect(result.confidence).toBe(0.7)
+      expect(result.needsReview).toBe(true)
+    })
+
+    it('un rol CON nombre accesible conserva confidence 0.97 y priority 0', () => {
+      const result = analyzeAndHeal({ selector: '#comprar-ahora-a1b2c3', htmlContext: '- button "Comprar"' })
+
+      expect(result.verified).toBe(true)
+      expect(result.fixedSelector).toBe("role('button', { name: 'Comprar' })")
+      expect(result.confidence).toBe(0.97)
+      expect(result.needsReview).toBe(false)
+    })
+
+    it('sin nombre pero CON testid, el testid real se vuelve la sugerencia principal', () => {
+      const result = analyzeAndHeal({ selector: '#btn-aceptar', htmlContext: '- button [testid=acepta-terminos]' })
+
+      expect(result.verified).toBe(true)
+      expect(result.fixedSelector).toBe("[data-testid='acepta-terminos']")
+      expect(result.confidence).toBe(0.94)
+    })
+  })
 })
 
 describe('repertorio (memoria de curaciones verificadas)', () => {
@@ -484,5 +553,80 @@ describe('elemento verificado dentro de un iframe', () => {
 
     expect(result.confidence).toBe(0.97)
     expect(result.explanation).not.toContain('iframe')
+  })
+})
+
+describe('elemento verificado dentro de shadow DOM (MEJORA 3)', () => {
+  it('avisa que hay que hacer pierce del shadow root y baja la confianza (espeja el caso frame)', () => {
+    const result = analyzeAndHeal({
+      selector: '#pagar-btn-a1b2c3',
+      htmlContext: '- button "Pagar" [shadow-depth=1] [shadow-path=x-checkout]',
+    })
+
+    expect(result.verified).toBe(true)
+    expect(result.fixedSelector).toBe("role('button', { name: 'Pagar' })")
+    expect(result.confidence).toBe(0.88)
+    expect(result.explanation).toContain('x-checkout')
+    expect(result.explanation).toContain('.shadow()')
+    expect(result.explanation).toContain('no atraviesan shadow DOM')
+    expect(result.needsReview).toBe(false)
+  })
+
+  it('shadow anidado: la explicación incluye la cadena completa de hosts a atravesar', () => {
+    const result = analyzeAndHeal({
+      selector: '#confirmar-x1y2',
+      htmlContext: '- button "Confirmar" [shadow-depth=2] [shadow-path=outer-widget>inner-widget]',
+    })
+
+    expect(result.verified).toBe(true)
+    expect(result.confidence).toBe(0.88)
+    expect(result.explanation).toContain('2 shadow roots')
+    expect(result.explanation).toContain('outer-widget > inner-widget')
+  })
+
+  it('sin nombre pero CON testid dentro de shadow: el testid principal avisa el pierce', () => {
+    const result = analyzeAndHeal({
+      selector: '#btn-pagar',
+      htmlContext: '- button [testid=pago-final] [shadow-depth=1] [shadow-path=x-checkout]',
+    })
+
+    expect(result.verified).toBe(true)
+    expect(result.fixedSelector).toBe("[data-testid='pago-final']")
+    expect(result.confidence).toBe(0.94)
+    expect(result.explanation).toContain('x-checkout')
+    expect(result.explanation).toContain('.shadow()')
+  })
+
+  it('degradado (sin nombre y sin testid) dentro de shadow conserva 0.7 y avisa el pierce', () => {
+    const result = analyzeAndHeal({
+      selector: '#btn-aceptar',
+      htmlContext: '- button [shadow-depth=1] [shadow-path=x-card]',
+    })
+
+    expect(result.verified).toBe(true)
+    expect(result.fixedSelector).toBe("role('button')")
+    expect(result.confidence).toBe(0.7)
+    expect(result.explanation).toContain('x-card')
+    expect(result.explanation).toContain('shadow')
+  })
+
+  it('frame + shadow combinados: avisa ambas fronteras de acceso', () => {
+    const result = analyzeAndHeal({
+      selector: '#pagar-btn-a1b2c3',
+      htmlContext: '- button "Pagar" [shadow-depth=1] [shadow-path=x-checkout] [frame=iframe#checkout]',
+    })
+
+    expect(result.verified).toBe(true)
+    expect(result.confidence).toBe(0.88)
+    expect(result.explanation).toContain('iframe#checkout')
+    expect(result.explanation).toContain('frameLocator')
+    expect(result.explanation).toContain('shadow')
+  })
+
+  it('un elemento en light DOM no arrastra la advertencia de shadow', () => {
+    const result = analyzeAndHeal({ selector: '#pagar-btn-a1b2c3', htmlContext: '- button "Pagar"' })
+
+    expect(result.confidence).toBe(0.97)
+    expect(result.explanation).not.toContain('shadow')
   })
 })

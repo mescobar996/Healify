@@ -189,6 +189,36 @@ describe('elementos dentro de iframes', () => {
     expect(parsePageSnapshot(formatPageElements(elements))).toEqual(elements)
   })
 
+  describe('testid real del DOM (MEJORA 1)', () => {
+    it('formatea y vuelve a parsear el testid con su atributo', () => {
+      const elements = [{ role: 'button', name: 'Comprar', testId: 'add-to-cart', testIdAttr: 'data-testid' }]
+
+      expect(formatPageElements(elements)).toBe('- button "Comprar" [testid=add-to-cart] [testid-attr=data-testid]')
+      expect(parsePageSnapshot(formatPageElements(elements))).toEqual(elements)
+    })
+
+    it('convive con el frame: testid antes de [frame=...] para que el parser ancle bien', () => {
+      const elements = [
+        { role: 'button', name: 'Pagar', testId: 'pago-final', testIdAttr: 'data-qa', frame: 'iframe#checkout' },
+      ]
+
+      expect(formatPageElements(elements)).toBe('- button "Pagar" [testid=pago-final] [testid-attr=data-qa] [frame=iframe#checkout]')
+      expect(parsePageSnapshot(formatPageElements(elements))).toEqual(elements)
+    })
+
+    it('los snapshots de Playwright no traen testid — nada gana el campo por accidente', () => {
+      expect(parsePageSnapshot('- button "Comprar" [ref=e8] [cursor=pointer]')).toEqual([
+        { role: 'button', name: 'Comprar' },
+      ])
+    })
+
+    it('un elemento con testid pero sin nombre accesible no pierde el testid', () => {
+      const elements = [{ role: 'generic', name: '', testId: 'contenedor', testIdAttr: 'data-testid' }]
+
+      expect(parsePageSnapshot(formatPageElements(elements))).toEqual(elements)
+    })
+  })
+
   it('los snapshots de Playwright no traen [frame=...], así que nada gana el campo por accidente', () => {
     const parsed = parsePageSnapshot('- button "Comprar" [ref=e8] [cursor=pointer]')
 
@@ -224,5 +254,55 @@ describe('elementos dentro de iframes', () => {
     ]
 
     expect(bestNameFor(elements, 'button', '#comprar-x9y8')).toBe('Comprar')
+  })
+})
+
+describe('shadow DOM anidado (MEJORA 3)', () => {
+  it('formatea y vuelve a parsear shadowDepth y shadowPath', () => {
+    const elements = [
+      { role: 'button', name: 'Confirmar', shadowDepth: 2, shadowPath: ['outer-widget', 'inner-widget'] },
+    ]
+
+    expect(formatPageElements(elements)).toBe('- button "Confirmar" [shadow-depth=2] [shadow-path=outer-widget>inner-widget]')
+    expect(parsePageSnapshot(formatPageElements(elements))).toEqual(elements)
+  })
+
+  it('convive con testid y frame: shadow va antes de [frame=...] para que el parser ancle bien', () => {
+    const elements = [
+      {
+        role: 'button',
+        name: 'Pagar',
+        testId: 'pago-final',
+        testIdAttr: 'data-qa',
+        shadowDepth: 1,
+        shadowPath: ['x-card'],
+        frame: 'iframe#checkout',
+      },
+    ]
+
+    expect(formatPageElements(elements)).toBe(
+      '- button "Pagar" [testid=pago-final] [testid-attr=data-qa] [shadow-depth=1] [shadow-path=x-card] [frame=iframe#checkout]'
+    )
+    expect(parsePageSnapshot(formatPageElements(elements))).toEqual(elements)
+  })
+
+  it('conserva el shadowPath de un elemento sin nombre accesible', () => {
+    const elements = [{ role: 'generic', name: '', shadowDepth: 1, shadowPath: ['x-card'] }]
+
+    expect(parsePageSnapshot(formatPageElements(elements))).toEqual(elements)
+  })
+
+  it('los snapshots de Playwright no traen [shadow-depth=...], así que nada gana el campo por accidente', () => {
+    const parsed = parsePageSnapshot('- button "Comprar" [ref=e8] [level=3] [cursor=pointer]')
+
+    expect(parsed).toEqual([{ role: 'button', name: 'Comprar' }])
+    expect(parsed[0].shadowDepth).toBeUndefined()
+    expect(parsed[0].shadowPath).toBeUndefined()
+  })
+
+  it('bestElementFor encuentra igual al elemento dentro de shadow: mismo documento, sin frame', () => {
+    const elements = [{ role: 'button', name: 'Pagar', shadowDepth: 1, shadowPath: ['x-card'] }]
+
+    expect(bestElementFor(elements, '#pagar-ahora-a1b2c3', 'button')).toEqual(elements[0])
   })
 })

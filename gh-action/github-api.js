@@ -71,5 +71,22 @@ export function createClient(token, fetchImpl = globalThis.fetch) {
     updateComment(owner, repo, commentId, body) {
       return request('PATCH', `/repos/${owner}/${repo}/issues/comments/${commentId}`, { body })
     },
+
+    /** Rama por defecto del repo — la base sobre la que se abre el PR auto-generado. */
+    async getDefaultBranch(owner, repo) {
+      const data = await request('GET', `/repos/${owner}/${repo}`)
+      return data?.default_branch ?? 'main'
+    },
+
+    /** Abre la PR. `head` y `base` son nombres de rama, no refs completas. */
+    async createPullRequest(owner, repo, { title, body, head, base }) {
+      return request('POST', `/repos/${owner}/${repo}/pulls`, { title, body, head, base })
+    },
+
+    /** Aplica labels a una issue/PR. Los labels que no existan se crean solos. */
+    async addLabels(owner, repo, issueNumber, labels) {
+      if (!labels || labels.length === 0) return null
+      return request('POST', `/repos/${owner}/${repo}/issues/${issueNumber}/labels`, { labels })
+    },
   }
 }

@@ -1,5 +1,122 @@
 # Changelog
 
+## 2.5.0
+
+> El motor deja de curar a ciegas: el probe en vivo ahora le trae el **testid real** del DOM y le
+> dice cuánto shadow DOM hay que atravesar, el CLI mide su propio trabajo sin telemetría, el MCP
+> procesa lotes y habla el idioma de cada framework, y la Action pasa del comentario a la PR.
+
+### El motor aprende del DOM real: el testid, el nombre ausente y el shadow anidado
+
+- **MEJORA 1 — el data-testid se lee, no se adivina.** El probe en vivo (Selenium/WebdriverIO/
+  Cypress) trae ahora `testId` y `testIdAttr` del elemento encontrado: si el DOM conserva un
+  `data-testid`/`data-cy`/`data-qa`/`data-test`/`data-e2e`, el motor lo propone como estrategia
+  `TESTID` en `priority 1`, justo debajo del role verificado en vivo. Se conserva el atributo
+  REAL (`data-cy` en vez de `data-testid`): reescribirlo a otro nombre inventaría un selector
+  que no existe en el DOM (regla "Cero Inventos"). Un testid que se lee de la pantalla no tiene
+  precio de confianza: `0.94`.
+
+- **MEJORA 2 — un rol sin nombre deja de venderse como cura.** `buildRoleSuggestion` devuelve
+  `null` sin nombre accesible: `role('button')` a secas matchea de más y no tiene XPath
+  ejecutable, así que no es una sugerencia aplicable. Donde antes se interpolarba ese rol
+  genérico (XPath, `nth-child`, objetivo de combinador sin atributos estables), ahora se usa
+  `buildGenericRoleHint` — una pista de revisión manual en `priority 4`, con el texto diciendo
+  que requiere revisión antes de aplicar, en vez de caer al fallback `visible=`.
+
+- **MEJORA 2 (cont.) — el veredicto se desacopla de la prioridad.** Nueva bandera
+  `pageVerified` en la estrategia: es lo que decide `verified`, no `priority === 0`. Una pista
+  degradada (rol sin nombre) vive en `priority 4` pero nace igual de la evidencia real de la
+  página, así que conserva su confidence sin re-ajustarla. Y si el elemento real NO expone
+  nombre accesible pero sí testid, el testid pasa a ser la sugerencia principal (index 0): es
+  la mejor señal estable disponible en ese caso.
+
+- **MEJORA 3 — el shadow DOM anidado se avisa, no se calla.** El probe registra `shadowDepth` y
+  `shadowPath` (la cadena de hosts, `['x-card', 'inner-widget']`): los selectores CSS/XPath NO
+  atraviesan shadow roots por especificación, así que sugerir un locator plano callado mandaría
+  al usuario a un test que sigue fallando y encima parecería un bug de Healify. Ahora la
+  explicación dice exactamente qué pierce hacer (`.shadow()` en Cypress, `.shadowRoot` en
+  Selenium/WebdriverIO), igual que ya avisaba el cambio de contexto de iframe. El `pierceNote`
+  va vacío en light DOM, así que las ramas de siempre quedan idénticas.
+
+- **Sin nombre y sin testid no se invierte nada.** Un elemento real sin ninguna señal estable
+  termina en la pista genérica de revisión manual — evidencia de que el elemento existe, con
+  `pageVerified: true`, pero sin pretender ser un locator aplicable.
+
+### `--stats`: el healing se mide sin mandar un byte a la nube
+
+- **Nuevo flag `healify heal --stats`.** Cada corrida ya medía sus fases (`probeMs`,
+  `analysisMs`, `healingMs`, `totalMs` en el output) y ahora además acumula estadísticas en
+  `~/.healify/stats.json`: total analizado, sanados vs. fallidos (una sugerencia que requiere
+  revisión manual cuenta como fallida), conteo por tipo de selector y tiempo promedio. Todo
+  local — no hay telemetría, nada sale de la máquina.
+
+- **Va a stderr a propósito.** `stdout` sigue siendo JSON puro para no romperle el parsing al
+  caller de cualquier lenguaje; el resumen humano (`✅ 3 selectores sanados (2 roles, 1 testid)
+  en 234ms — tasa de éxito: 67%`) se imprime en `stderr`.
+
+- **Tolerante por diseño.** El archivo ausente o corrupto arranca de cero, y un fallo de
+  escritura (sin permisos, disco lleno) no rompe el heal: las métricas son menos importantes
+  que curar.
+
+### El MCP procesa lotes, cachea y habla el idioma de cada framework
+
+- **Nueva herramienta `healify_batch_analyze_selectors`.** Procesa hasta 5 selectores en
+  paralelo, corta cada análisis a los 30s y los que fallan van a `errors` con su código sin
+  tumbar el lote — para un agente que tiene que revisar una página con veinte locators rotos.
+
+- **Cache local de 5 minutos.** El análisis es determinista, así que cachear el output por
+  `(selector, pageUrl, framework)` en `~/.healify/mcp-cache.json` es seguro, y se invalida por
+  TTL. Solo se sirve un valor que tenga la forma de la herramienta que lo pide: un valor
+  huérfano con la forma de otra herramienta se ignora y se computa fresco.
+
+- **`framework` opcional en `healify_analyze_selector`** (y en el batch). El motor propone en su
+  propio dialecto (`role(...)`, `:has-text`, `visible=`), que no se puede pegar en cualquier
+  archivo: Cypress no entiende `getByRole` sin librería extra y Selenium no tiene `:has-text`.
+  El nuevo `framework.ts` traduce la sugerencia a la sintaxis idiomática de
+  playwright/cypress/selenium/webdriverio — conversión 1:1 y determinista. La nota sigue
+  siendo honesta: sin ver la página, la sugerencia es la mejor heurística (`verified: false`),
+  no un reemplazo confirmado.
+
+### La Action pasa del comentario a la PR
+
+- **Modo auto-PR para `workflow_dispatch` y `schedule`.** Nuevos inputs: `test-log-path`,
+  `auto-pr`, `fail-on-unsupported` y `labels`. El flujo: log → selectores → `healify heal` por
+  selector → reporte → `healify fix` real → rama + commit + push → PR + comentario con la
+  tabla de cambios. En `pull_request` nada cambia: el flujo de comentario clásico sigue intacto.
+
+- **`log-parser.js` — extracción sin dependencias.** La action no puede importar
+  `@healify/reporter-core` (es TypeScript y vale la regla de cero deps de runtime), así que los
+  patrones de extracción viven portados desde `selector-extractor.ts`, con el mismo cuidado de
+  `QUOTED_CONTENT`. Sirve tanto para Playwright (cabeceras `N) archivo.spec.ts`) como para
+  Cypress (`Running:`), deduplica por `testFile::selector` y descarta los selectores que no se
+  pueden extraer — alimentar al motor con "Unknown selector" produciría una sugerencia basura.
+
+- **`report-builder.js` — del heal al reporte.** Traduce la salida de `healify heal` al shape
+  `LocalCaseResult` que ya conoce `fix`, replicando los umbrales de estado de `local-mode.ts`
+  (healed ≥ 0.90 / review ≥ 0.80 / unresolved el resto). Un fallo puntual de un selector no
+  aborta el lote: ese caso queda `unresolved` y se ve en el comentario.
+
+- **`fail-on-unsupported` para los crons.** Cuando Healify no pudo trabajar (no hay log, no se
+  extrajo ningún selector o el CLI falló), el usuario puede pedir que el job falle para que el
+  problema no pase en silencio en un cron. Default `false`: se registra y se sigue, para que un
+  correr informativo no ponga en rojo una corrida programada.
+
+- **Plantilla en `examples/github-action-auto-pr/`** con su README: vive ahí a propósito, si
+  estuviera en `.github/workflows/` del repo Healify correría en cada PR de acá haciendo un
+  no-op. Es para copiar, no un workflow activo.
+
+### Fix de tests flaky
+
+- El fake server de Jira (`helpers/fake-jira.ts`) cerraba el server sin soltar las conexiones
+  del pool keep-alive de undici: con puertos efímeros, si el OS reutilizaba un puerto entre
+  tests, undici podía reusar una conexión ya cerrada por el server anterior → `ECONNRESET`
+  intermitente → el caso caía como `failed`. Ahora `close()` llama a
+  `server.closeAllConnections?.()` antes de `server.close()`, y la aserción del caso HTTP
+  incluye el mensaje del outcome para diagnóstico si vuelve a pasar. 25+ corridas seguidas
+  verdes después del fix.
+
+- 128 tests nuevos (965 en total).
+
 ## 2.4.0
 
 > `@healify/mcp` sale con versionado propio (**0.1.0**), como la extensión de VS Code. Todavía

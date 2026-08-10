@@ -80,7 +80,10 @@ página, repertorio — todo del lado del servidor, vos solo mandás lo que tu d
   "locator": {
     "strategy": "xpath",
     "value": "//button[normalize-space(.)='Comprar'] | ..."
-  }
+  },
+  "alternatives": [
+    { "selector": "[data-testid='add-to-cart']", "confidence": 0.94 }
+  ]
 }
 ```
 
@@ -88,6 +91,13 @@ página, repertorio — todo del lado del servidor, vos solo mandás lo que tu d
 ejecutar tal cual, sin que tengas que entender la sintaxis `role(...)` de Playwright.
 `strategy` es `"css"`, `"xpath"` o `"unsupported"` (nada confiable para reintentar — tratalo
 como si `heal` no hubiera encontrado nada).
+
+`alternatives` (opcional, el mismo concepto que `recovery-tries` de Healenium) son las
+siguientes sugerencias del motor, ordenadas por prioridad. La primera es la que solo pierde
+contra la ganadora — el equivalente de `recovery-tries` de Healenium, expuesto para que puedas
+reintentar con el `locator` de cada una si el principal falla. Si el elemento real de la página
+conserva un atributo de test-id, el motor lo sugiere acá como `[data-testid='...']` con
+confianza alta — leído del DOM real, nunca inventado.
 
 **Salida (error):**
 

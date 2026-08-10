@@ -10,9 +10,15 @@ import { formatPageElements, type PageElement } from './page-snapshot'
  * original falló — Selenium y WebdriverIO ya tienen el browser abierto en la mano, no hace
  * falta que ningún framework les regale nada.
  *
- * Devuelve `{ role, name, frame? }[]` de los elementos interactivos de la página, con el mismo
- * criterio de nombre accesible en toda la escalera: aria-label, texto visible, placeholder,
- * valor — el primero que exista.
+ * Devuelve `{ role, name, frame?, testId?, testIdAttr?, shadowDepth?, shadowPath? }[]` de los
+ * elementos interactivos de la página, con el mismo criterio de nombre accesible en toda la
+ * escalera: aria-label, texto visible, placeholder, valor — el primero que exista. Cuando el
+ * elemento tiene un atributo de test-id (data-testid/data-cy/data-qa/data-test/data-e2e) se
+ * incluye con su nombre de atributo real, para que el motor pueda sugerir ese testid sin
+ * inventarlo ni reescribirlo. Cuando el elemento vive dentro de shadow DOM (MEJORA 3) se
+ * incluye cuántos shadowRoots hay que atravesar (`shadowDepth`) y la cadena de hosts
+ * (`shadowPath`, ej. `['x-card', 'inner-widget']`) — los selectores CSS/XPath no atraviesan
+ * shadow DOM por especificación, así que el motor necesita saberlo para avisar el pierce.
  *
  * **Atraviesa shadow DOM abierto e iframes same-origin.** Un `querySelectorAll` plano sobre
  * `document` no ve nada dentro de un `shadowRoot`: en una app hecha con web components
@@ -176,6 +182,23 @@ function healifyNameOf(el) {
   return '';
 }
 
+/* Atributo de test-id del elemento, en el orden de preferencia del motor (TESTID_ATTRS de
+   healing-engine.ts). '' si ninguno. Se conserva el atributo REAL (data-cy en vez de
+   data-testid): reescribir a otro atributo inventaría un selector que no existe en el DOM. */
+function healifyTestIdAttr(el) {
+  var t = el.getAttribute('data-testid');
+  if (t) return 'data-testid';
+  t = el.getAttribute('data-cy');
+  if (t) return 'data-cy';
+  t = el.getAttribute('data-qa');
+  if (t) return 'data-qa';
+  t = el.getAttribute('data-test');
+  if (t) return 'data-test';
+  t = el.getAttribute('data-e2e');
+  if (t) return 'data-e2e';
+  return '';
+}
+
 /* Identificador del iframe, para que el usuario sepa a qué contexto cambiar. Se elige la
    forma que además sea un selector CSS válido, así se puede pegar tal cual en
    frameLocator()/switchTo().frame(). Se sacan comillas y saltos de línea, que sí romperían
@@ -191,7 +214,15 @@ function healifyFrameLabel(el, index) {
   return raw.replace(/[\\r\\n"]/g, '');
 }
 
-function healifyScan(root, framePath, depth) {
+/* Identificador del HOST de un shadow root, para el shadowPath: el componente que hay que
+   atravesar para llegar al elemento. Se prefiere el id (selector CSS válido, desambiguador
+   entre varios hosts del mismo tag) y se cae al tag name del componente. */
+function healifyShadowLabel(el) {
+  var id = el.getAttribute('id');
+  return id ? '#' + id : (el.tagName ? el.tagName.toLowerCase() : 'unknown');
+}
+
+function healifyScan(root, framePath, depth, shadowDepth, shadowPath) {
   if (depth > MAX_DEPTH || results.length >= MAX_NODES) return;
 
   var nodes = root.querySelectorAll('*');
@@ -208,21 +239,38 @@ function healifyScan(root, framePath, depth) {
       var role = healifyRoleOf(el, tag);
       if (role) {
         var entry = { role: role, name: healifyNameOf(el) };
+        var testIdAttr = healifyTestIdAttr(el);
+        if (testIdAttr) {
+          entry.testId = el.getAttribute(testIdAttr);
+          entry.testIdAttr = testIdAttr;
+        }
         if (framePath) entry.frame = framePath;
+        if (shadowDepth > 0) {
+          entry.shadowDepth = shadowDepth;
+          entry.shadowPath = shadowPath;
+        }
         results.push(entry);
       }
     }
 
-    /* Shadow DOM abierto: mismo contexto de locator que el documento que lo contiene
-       (Playwright y los selectores CSS lo atraviesan solos), así que NO lleva marca de frame. */
-    if (el.shadowRoot) healifyScan(el.shadowRoot, framePath, depth + 1);
+    /* Shadow DOM abierto (MEJORA 3): mismo contexto de locator que el documento que lo
+       contiene en el sentido de que no exige cambiar de documento (a diferencia del iframe),
+       pero los selectores CSS/XPath NO lo atraviesan por especificación — hay que hacer pierce
+       de cada shadowRoot. Se registra cuántos niveles de shadow hay que atravesar
+       (shadowDepth) y la cadena de componentes hosts (shadowPath), para que el motor avise
+       cómo llegar al elemento en vez de sugerir un locator que nunca resuelve. */
+    if (el.shadowRoot) {
+      healifyScan(el.shadowRoot, framePath, depth + 1, (shadowDepth || 0) + 1,
+        (shadowPath || []).concat(healifyShadowLabel(el)));
+    }
 
     if (tag === 'iframe' || tag === 'frame') {
       var label = healifyFrameLabel(el, frameIndex);
       frameIndex++;
       try {
         var doc = el.contentDocument;
-        if (doc) healifyScan(doc, framePath ? framePath + ' > ' + label : label, depth + 1);
+        /* El documento del iframe es otro documento: el contexto de shadow arranca de cero ahí. */
+        if (doc) healifyScan(doc, framePath ? framePath + ' > ' + label : label, depth + 1, 0, undefined);
       } catch (e) {
         /* cross-origin: inaccesible por seguridad, se saltea sin romper el resto del scan */
       }
@@ -230,7 +278,7 @@ function healifyScan(root, framePath, depth) {
   }
 }
 
-healifyScan(document, '', 0);
+healifyScan(document, '', 0, 0, undefined);
 return results;
 `.trim()
 
@@ -249,7 +297,24 @@ export function domContextFromProbeResult(raw: unknown): string | undefined {
       const candidate = item as Partial<PageElement>
       return typeof candidate.role === 'string' && typeof candidate.name === 'string'
     })
-    .map((item) => (typeof item.frame === 'string' && item.frame ? item : { role: item.role, name: item.name }))
+    .map((item) => {
+      // No se confía en el objeto crudo: se reconstruye campo por campo y se preservan
+      // testId/testIdAttr cuando existen (el testid real del DOM es la MEJORA 1) y
+      // shadowDepth/shadowPath cuando el elemento vive dentro de shadow DOM (MEJORA 3).
+      const clean: PageElement = { role: item.role, name: item.name }
+      if (typeof item.frame === 'string' && item.frame) clean.frame = item.frame
+      if (typeof item.testId === 'string' && item.testId) {
+        clean.testId = item.testId
+        if (typeof item.testIdAttr === 'string' && item.testIdAttr) clean.testIdAttr = item.testIdAttr
+      }
+      if (typeof item.shadowDepth === 'number' && item.shadowDepth > 0) {
+        clean.shadowDepth = item.shadowDepth
+        if (Array.isArray(item.shadowPath)) {
+          clean.shadowPath = item.shadowPath.filter((s): s is string => typeof s === 'string')
+        }
+      }
+      return clean
+    })
 
   if (elements.length === 0) return undefined
   return formatPageElements(elements)

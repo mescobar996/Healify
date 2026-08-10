@@ -1,14 +1,27 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { TOOLS, analyzeSelector, diagnoseFailureTool, reportSummary, chronicSelectors } from '../tools'
+import { TOOLS, analyzeSelector, diagnoseFailureTool, reportSummary, chronicSelectors, batchAnalyzeSelectorsTool } from '../tools'
+import { cacheKey } from '../cache'
 
 const parse = (texto: string) => JSON.parse(texto)
 
 describe('healify_analyze_selector', () => {
+  let dir: string
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'healify-mcp-analyze-'))
+  })
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  const deps = () => ({ cachePath: join(dir, 'cache.json') })
+
   it('marca un ID dinámico como frágil y explica por qué', () => {
-    const r = parse(analyzeSelector({ selector: '#btn-a1b2c3d4' }))
+    const r = parse(analyzeSelector({ selector: '#btn-a1b2c3d4' }, deps()))
 
     expect(r.fragile).toBe(true)
     expect(r.detectedIssue).toBeTruthy()
@@ -19,7 +32,7 @@ describe('healify_analyze_selector', () => {
     // nombre sacado de diccionarios; exponerlo como corrección haría que un agente lo aplique
     // con total confianza y termine con un test que sigue roto pero parece arreglado.
     for (const selector of ['#login-btn', '//div[3]/button', '.card > .title', "[data-testid='buy']"]) {
-      const r = parse(analyzeSelector({ selector }))
+      const r = parse(analyzeSelector({ selector }, deps()))
 
       expect(r.verifiedReplacementAvailable).toBe(false)
       expect(r).not.toHaveProperty('suggestedSelector')
@@ -29,13 +42,183 @@ describe('healify_analyze_selector', () => {
   })
 
   it('un testid no se marca como frágil', () => {
-    const r = parse(analyzeSelector({ selector: "[data-testid='add-to-cart']" }))
+    const r = parse(analyzeSelector({ selector: "[data-testid='add-to-cart']" }, deps()))
     expect(r.selectorType).toBe('TESTID')
   })
 
   it('sin selector, error claro', () => {
-    expect(() => analyzeSelector({})).toThrow(/selector/)
-    expect(() => analyzeSelector({ selector: '   ' })).toThrow(/selector/)
+    expect(() => analyzeSelector({}, deps())).toThrow(/selector/)
+    expect(() => analyzeSelector({ selector: '   ' }, deps())).toThrow(/selector/)
+  })
+})
+
+describe('healify_analyze_selector con framework', () => {
+  let dir: string
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'healify-mcp-fw-'))
+  })
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  const deps = () => ({ cachePath: join(dir, 'cache.json') })
+
+  it('devuelve la sugerencia adaptada a cada framework', () => {
+    const selector = '#btn-ingresar'
+
+    expect(parse(analyzeSelector({ selector, framework: 'playwright' }, deps())).suggestion).toBe("getByRole('button', { name: 'Ingresar' })")
+    expect(parse(analyzeSelector({ selector, framework: 'cypress' }, deps())).suggestion).toBe("cy.contains('button', 'Ingresar')")
+    expect(parse(analyzeSelector({ selector, framework: 'selenium' }, deps())).suggestion).toMatch(/^By\.xpath\("/)
+    expect(parse(analyzeSelector({ selector, framework: 'webdriverio' }, deps())).suggestion).toMatch(/^\$\("/)
+  })
+
+  it('un framework inválido da un error claro, no una sugerencia rara', () => {
+    expect(() => analyzeSelector({ selector: '#a', framework: 'nope' }, deps())).toThrow(/framework/)
+  })
+
+  it('sin framework no se expone suggestion, se conserva la nota original', () => {
+    const r = parse(analyzeSelector({ selector: '#btn-ingresar' }, deps()))
+    expect(r).not.toHaveProperty('suggestion')
+    expect(r.note).toContain('NO')
+  })
+})
+
+describe('cache local de análisis', () => {
+  let dir: string
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'healify-mcp-cachetool-'))
+  })
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  const cachePath = () => join(dir, 'cache.json')
+
+  it('escribe el cache en disco tras el primer análisis', () => {
+    analyzeSelector({ selector: '#btn-ingresar' }, { cachePath: cachePath() })
+    expect(existsSync(cachePath())).toBe(true)
+  })
+
+  it('un hit con timestamp fresco devuelve lo cacheado sin re-analizar', () => {
+    const selector = '#btn-ingresar'
+    const key = cacheKey(selector, undefined, 'cypress')
+    // Valor "caché" deliberadamente distinto: si el resultado es ESTE, se leyó del cache
+    // (y pasó la guarda de forma, que exige selector y selectorType).
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(
+      cachePath(),
+      JSON.stringify({ [key]: { value: { selector, selectorType: 'ROLE', desdeCache: true }, timestamp: Date.now() } }),
+      'utf-8'
+    )
+
+    const r = parse(analyzeSelector({ selector, framework: 'cypress' }, { cachePath: cachePath() }))
+
+    expect(r.desdeCache).toBe(true)
+  })
+
+  it('un hit vencido por TTL se ignora y se computa fresco', () => {
+    const selector = '#btn-ingresar'
+    const key = cacheKey(selector, undefined, 'cypress')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(
+      cachePath(),
+      JSON.stringify({
+        [key]: { value: { selector, selectorType: 'ROLE', desdeCache: true }, timestamp: Date.now() - 6 * 60 * 1000 },
+      }),
+      'utf-8'
+    )
+
+    const r = parse(analyzeSelector({ selector, framework: 'cypress' }, { cachePath: cachePath() }))
+
+    expect(r).not.toHaveProperty('desdeCache')
+    expect(r.suggestion).toBe("cy.contains('button', 'Ingresar')")
+  })
+
+  it('un cache corrupto no rompe el análisis', () => {
+    writeFileSync(cachePath(), '{no es json', 'utf-8')
+
+    const r = parse(analyzeSelector({ selector: '[data-testid=\'add-to-cart\']' }, { cachePath: cachePath() }))
+
+    expect(r.selectorType).toBe('TESTID')
+  })
+})
+
+describe('healify_batch_analyze_selectors', () => {
+  let dir: string
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'healify-mcp-batchtool-'))
+  })
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  const deps = () => ({ cachePath: join(dir, 'cache.json') })
+
+  it('analiza los tres selectores en orden, con sugerencias y confianza', async () => {
+    const r = parse(await batchAnalyzeSelectorsTool(
+      { selectors: ["[data-testid='add-to-cart']", '#btn-ingresar', '#user-correo'] },
+      deps()
+    ))
+
+    expect(r.errors).toEqual([])
+    expect(r.results).toHaveLength(3)
+    expect(r.results.map((res: { original: string }) => res.original)).toEqual([
+      "[data-testid='add-to-cart']",
+      '#btn-ingresar',
+      '#user-correo',
+    ])
+    expect(r.results[0].suggestions).toContain("[data-testid='add-to-cart']")
+    expect(r.results[1].suggestions).toContain("role('button', { name: 'Ingresar' })")
+    for (const res of r.results) {
+      expect(res.confidence).toBeGreaterThan(0)
+    }
+  })
+
+  it('adapta las sugerencias al framework pedido', async () => {
+    const r = parse(await batchAnalyzeSelectorsTool({ selectors: ['#btn-ingresar'], framework: 'cypress' }, deps()))
+
+    expect(r.results[0].suggestions[0]).toBe("cy.contains('button', 'Ingresar')")
+  })
+
+  it('un selector inválido va a errors estructurado, sin tumbar el resto', async () => {
+    const r = parse(await batchAnalyzeSelectorsTool({ selectors: ['#btn-ingresar', '', '#user-correo'] }, deps()))
+
+    expect(r.results).toHaveLength(2)
+    expect(r.errors).toEqual([{ original: '', code: 'INVALID_INPUT', message: 'Selector vacío.' }])
+  })
+
+  it('sin selectors o con selectors vacíos, error claro', async () => {
+    await expect(batchAnalyzeSelectorsTool({}, deps())).rejects.toThrow(/selectors/)
+    await expect(batchAnalyzeSelectorsTool({ selectors: [] }, deps())).rejects.toThrow(/selectors/)
+  })
+
+  it('un framework inválido también se rechaza en batch', async () => {
+    await expect(batchAnalyzeSelectorsTool({ selectors: ['#a'], framework: 'nope' }, deps())).rejects.toThrow(/framework/)
+  })
+
+  it('ignora entradas que dejó otra herramienta en el cache', async () => {
+    // Simula una entrada de healify_analyze_selector (misma clave con kind 'analyze'): el batch
+    // no debe leerla como si fuera suya, ni siquiera si el valor tiene otra forma.
+    const key = cacheKey('#btn-ingresar', undefined, 'cypress', 'analyze')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(
+      join(dir, 'cache.json'),
+      JSON.stringify({ [key]: { value: { selector: '#btn-ingresar', desdeAnalisis: true }, timestamp: Date.now() } }),
+      'utf-8'
+    )
+
+    const r = parse(await batchAnalyzeSelectorsTool({ selectors: ['#btn-ingresar'], framework: 'cypress' }, deps()))
+
+    expect(r.errors).toEqual([])
+    expect(r.results).toHaveLength(1)
+    expect(r.results[0].original).toBe('#btn-ingresar')
+    expect(r.results[0].suggestions[0]).toBe("cy.contains('button', 'Ingresar')")
   })
 })
 
@@ -159,8 +342,8 @@ describe('healify_chronic_selectors', () => {
 })
 
 describe('TOOLS', () => {
-  it('los cuatro tienen nombre, descripción y schema de objeto', () => {
-    expect(TOOLS).toHaveLength(4)
+  it('las cinco tienen nombre, descripción y schema de objeto', () => {
+    expect(TOOLS).toHaveLength(5)
     for (const t of TOOLS) {
       expect(t.name).toMatch(/^healify_/)
       expect(t.description.length).toBeGreaterThan(30)

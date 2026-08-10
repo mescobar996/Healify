@@ -1,0 +1,61 @@
+name: Healify — auto-fix de selectores rotos
+
+# Dos triggers, dos modos:
+#   pull_request         → la action comenta en la PR (doctor + fix --dry-run), nunca toca archivos.
+#   workflow_dispatch    → manual: corre los tests, analiza el log y abre una PR con los fixes.
+#   schedule             → diario: mismo flujo que workflow_dispatch, sin que nadie lo dispare.
+#
+# El flujo auto-PR asume que los tests generan un log con la salida del runner (Playwright o
+# Cypress). El job los corre con continue-on-error y redirige la salida a test-output.log; la
+# action lee ese archivo, extrae los selectores rotos y abre la PR.
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * *' # todos los días 06:00 UTC
+
+permissions:
+  # El modo comentario necesita pull-requests; el modo auto-PR además contents (para pushear la
+  # rama del fix). Si solo usás el modo comentario, bajá contents a `read`.
+  contents: write
+  pull-requests: write
+
+jobs:
+  healify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Sin esto el job no tiene la identidad de git para hacer el commit del auto-fix.
+          # `fetch-depth: 0` evita "shallow update not allowed" al pushear la rama nueva.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      # Corré tus tests redirigiendo la salida al archivo que lee la action. Ajustá el comando a
+      # tu framework (`npx playwright test`, `npx cypress run`, etc.). `continue-on-error` es
+      # obligatorio: queremos el log aunque la suite falle — es justo lo que la action analiza.
+      - name: Run tests (capture log)
+        run: npx playwright test 2>&1 | tee test-output.log
+        continue-on-error: true
+
+      - uses: mescobar996/Healify@v2
+        with:
+          project-path: '.'
+          test-log-path: 'test-output.log'
+          # En pull_request este input no tiene efecto (siempre comenta). En dispatch/schedule
+          # controla si se abre la PR con los fixes. `false` aplica los fixes sin abrir PR.
+          auto-pr: 'true'
+          # Si el log no tiene selectores extraíbles y esto es true, el job falla (útil en el
+          # cron: que un fallo silencioso no pase desapercibido). Default: false.
+          fail-on-unsupported: 'false'
+          # Labels que se le aplican a la PR auto-generada.
+          labels: 'healify,auto-fix'

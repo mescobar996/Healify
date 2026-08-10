@@ -3,7 +3,7 @@ import { BROWSER_PROBE_SCRIPT } from '@healify/reporter-core'
 import { init, type InitReport, type FrameworkInitResult } from './commands/init'
 import { doctor, type DoctorReport } from './commands/doctor'
 import { history, type HistoryReport } from './commands/history'
-import { runHeal } from './commands/heal'
+import { runHeal, readHealStats, formatHealStatsSummary } from './commands/heal'
 import { runExplain } from './commands/explain'
 import { runFix } from './commands/fix-pr'
 import { runReport } from './commands/report'
@@ -178,8 +178,13 @@ function readStdinWithTimeout(timeoutMs: number = 5000): Promise<string> {
  * `healify heal` — el motor expuesto para cualquier lenguaje que pueda spawnear un
  * subproceso: JSON por stdin, JSON por stdout. Ver `commands/heal.ts` para el contrato
  * completo y `docs/adapters/README.md` para ejemplos de integración.
+ *
+ * `--stats` imprime el resumen de las estadísticas acumuladas en `~/.healify/stats.json`.
+ * Va a stderr a propósito: stdout sigue siendo JSON puro, para no romperle el parsing al
+ * caller de cualquier lenguaje.
  */
-async function runHealCommand(): Promise<void> {
+async function runHealCommand(args: string[]): Promise<void> {
+  const showStats = args.includes('--stats')
   let raw: string
   try {
     raw = await readStdinWithTimeout(5000)
@@ -202,6 +207,7 @@ async function runHealCommand(): Promise<void> {
     process.exit(1)
   }
   console.log(JSON.stringify(result.output))
+  if (showStats) console.error(formatHealStatsSummary(readHealStats()))
 }
 
 function runReportCommand(args: string[]): void {
@@ -252,7 +258,8 @@ Comandos:
                                                         --out cambia la ruta del archivo (default: healify-dashboard.html)
   flake [--min-runs <n>]                     Detecta tests flaky (verde en unas corridas, rojo en otras) sobre .healify/runs.jsonl, lo que registran los reporters de Playwright/Cypress en cada corrida
                                                         --min-runs cambia la cantidad mínima de corridas para opinar (default: 2)
-  heal                                       Motor vía JSON por stdin/stdout, para usar desde Python/Java/C#/etc. Ver docs/adapters/README.md
+  heal [--stats]                              Motor vía JSON por stdin/stdout, para usar desde Python/Java/C#/etc. Ver docs/adapters/README.md
+                                                        --stats imprime el resumen de las estadísticas acumuladas en ~/.healify/stats.json (sin telemetría: nunca sale de tu máquina)
   probe-script                               Imprime el script que hay que correr con execute_script() para sondear el DOM (insumo de "heal")
   explain [selector] [--json]                Explica POR QUÉ un selector es frágil y qué propone el motor. Sin args, analiza el último fallo del reporte
 
@@ -289,7 +296,7 @@ function main(): void {
   if (command === 'report') return runReportCommand(args.slice(1))
   if (command === 'dashboard') return runDashboardCommand(args.slice(1))
   if (command === 'flake') return runFlakeCommand(args.slice(1))
-  if (command === 'heal') { runHealCommand().then(() => {}); return }
+  if (command === 'heal') { runHealCommand(args.slice(1)).then(() => {}); return }
   if (command === 'explain') return runExplainCommand(args.slice(1))
   if (command === 'probe-script') return console.log(BROWSER_PROBE_SCRIPT)
   

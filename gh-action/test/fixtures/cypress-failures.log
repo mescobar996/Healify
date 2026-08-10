@@ -1,0 +1,28 @@
+Running:  npx cypress run
+
+================================================================================
+
+  (Run Starting)
+
+  ┌────────────────────────────────────────────────────────────────────────────┐
+  │ Cypress:    13.6.0                                                        │
+  │ Browser:    Electron 114                                                  │
+  │ Specs:      1 found (cypress/e2e/login.cy.ts)                             │
+  └────────────────────────────────────────────────────────────────────────────┘
+
+
+  Running:  cypress/e2e/login.cy.ts                                            (1 of 1)
+
+  Login form
+    ✓ shows the form
+    ✗ logs in with valid credentials
+
+  AssertionError: Timed out retrying after 4000ms: cy.get() Expected to find element: `#login-form` but never did.
+
+  Because this error occurred during a `cy.get()` command, Cypress will stop
+  the test after this failure.
+
+  (Screenshots)
+  (Video)
+
+  1 passing, 1 failing, 1 pending

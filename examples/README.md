@@ -60,6 +60,22 @@ en vez de tirar `NoSuchElementError`.
 cd examples/selenium-live-heal && npm install && node serve.mjs & npm test
 ```
 
+## [GitHub Action — modo auto-PR](github-action-auto-pr/)
+
+El workflow que copiar en un proyecto con suite para el modo auto-PR de la
+[action](../docs/github-action.es.md): `workflow_dispatch` (manual) y `schedule` (diario) corren
+tus tests redirigiendo la salida a un log, la action parsea el log, aplica los fixes en una rama
+y abre una PR con los selectores curados.
+
+> Vive en `examples/` a propósito: si estuviera en `.github/workflows/` del repo Healify, correría
+> en cada PR de acá haciendo un no-op. Es una plantilla para copiar, no un workflow activo.
+
+```bash
+# Copiarlo al proyecto que tiene tests:
+cp examples/github-action-auto-pr/healify.yml .github/workflows/healify.yml
+# Ajustar el comando de tests y el nombre de usuario en `uses: mescobar996/Healify@...`.
+```
+
 ---
 
 Los tres ejemplos encontraron bugs reales en features ya publicadas, invisibles para 715 tests

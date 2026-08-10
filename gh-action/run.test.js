@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const { mockExecSync } = vi.hoisted(() => ({ mockExecSync: vi.fn() }))
 vi.mock('node:child_process', () => ({ execSync: mockExecSync }))
 
-const { formatDoctor, formatFixOutput, buildComment, findOrCreateComment, postComment, run } = await import('./run.js')
+const { formatDoctor, formatFixOutput, buildComment, findOrCreateComment, postComment, run, runHeal, buildAutoPrBody, buildAutoPrComment } = await import('./run.js')
 const { createClient } = await import('./github-api.js')
 
 beforeEach(() => {
@@ -376,6 +376,49 @@ describe('createClient', () => {
       else process.env.GITHUB_API_URL = original
     }
   })
+
+  describe('endpoints del flujo auto-PR', () => {
+    it('getDefaultBranch devuelve la rama por defecto del repo', async () => {
+      const { fetchImpl, calls } = fakeFetch([{ status: 200, body: { default_branch: 'main' } }])
+      const branch = await createClient('t', fetchImpl).getDefaultBranch('o', 'r')
+      expect(branch).toBe('main')
+      expect(calls[0].url).toBe('https://api.github.com/repos/o/r')
+    })
+
+    it('createPullRequest manda title, body, head y base al endpoint de pulls', async () => {
+      const { fetchImpl, calls } = fakeFetch([{ status: 201, body: { number: 12, html_url: 'https://github.com/o/r/pull/12' } }])
+      const pr = await createClient('t', fetchImpl).createPullRequest('o', 'r', {
+        title: 'healify: auto-fix 1 broken selector',
+        body: '## Healify Auto-Fix',
+        head: 'healify/fix-20260810-120000',
+        base: 'main',
+      })
+      expect(pr.number).toBe(12)
+      expect(calls[0].init.method).toBe('POST')
+      expect(calls[0].url).toBe('https://api.github.com/repos/o/r/pulls')
+      expect(JSON.parse(calls[0].init.body)).toEqual({
+        title: 'healify: auto-fix 1 broken selector',
+        body: '## Healify Auto-Fix',
+        head: 'healify/fix-20260810-120000',
+        base: 'main',
+      })
+    })
+
+    it('addLabels manda los labels al endpoint de issues', async () => {
+      const { fetchImpl, calls } = fakeFetch([{ status: 200, body: [] }])
+      await createClient('t', fetchImpl).addLabels('o', 'r', 12, ['healify', 'auto-fix'])
+      expect(calls[0].init.method).toBe('POST')
+      expect(calls[0].url).toBe('https://api.github.com/repos/o/r/issues/12/labels')
+      expect(JSON.parse(calls[0].init.body)).toEqual({ labels: ['healify', 'auto-fix'] })
+    })
+
+    it('addLabels no hace nada cuando no hay labels', async () => {
+      const { fetchImpl, calls } = fakeFetch([])
+      const result = await createClient('t', fetchImpl).addLabels('o', 'r', 12, [])
+      expect(result).toBeNull()
+      expect(calls).toHaveLength(0)
+    })
+  })
 })
 
 describe('run', () => {
@@ -399,5 +442,90 @@ describe('run', () => {
       'npx @healify/cli doctor',
       expect.objectContaining({ cwd: '.' })
     )
+  })
+})
+
+describe('runHeal', () => {
+  it('manda el selector por stdin y parsea la salida JSON', () => {
+    const output = JSON.stringify({ fixedSelector: '[data-testid="btn"]', confidence: 0.95, needsReview: false })
+    mockExecSync.mockReturnValue(`${output}\n`)
+
+    const result = runHeal('#old', 'e2e/login.spec.ts', 'Error: Element not found: #old')
+
+    expect(mockExecSync).toHaveBeenCalledWith(
+      'npx @healify/cli heal',
+      expect.objectContaining({
+        input: JSON.stringify({ selector: '#old', testFile: 'e2e/login.spec.ts', errorMessage: 'Error: Element not found: #old' }),
+        cwd: '.',
+      })
+    )
+    expect(result).toEqual({ ok: true, output: JSON.parse(output) })
+  })
+
+  it('devuelve { ok: false, error } cuando el comando falla', () => {
+    const err = new Error('command failed')
+    err.stdout = Buffer.from(JSON.stringify({ error: 'Input inválido' }))
+    mockExecSync.mockImplementation(() => {
+      throw err
+    })
+
+    const result = runHeal('#old')
+
+    expect(result.ok).toBe(false)
+    expect(result.error).toBe('Input inválido')
+  })
+
+  it('no se rompe si la salida de error no es JSON', () => {
+    const err = new Error('spawn npx ENOENT')
+    err.stderr = Buffer.from('npx: command not found')
+    mockExecSync.mockImplementation(() => {
+      throw err
+    })
+
+    const result = runHeal('#old')
+    expect(result.ok).toBe(false)
+    expect(result.error).toContain('command not found')
+  })
+})
+
+describe('buildAutoPrBody', () => {
+  it('arma la tabla de cambios con archivo, original y corregido', () => {
+    const body = buildAutoPrBody(
+      ['e2e/login.spec.ts — #old → [data-testid="btn"]', 'e2e/cart.spec.ts — .cart-empty → [data-testid="cart-empty"]'],
+      [],
+      'playwright',
+      'main'
+    )
+
+    expect(body).toContain('## Healify Auto-Fix')
+    expect(body).toContain('| `e2e/login.spec.ts` | `#old` | `[data-testid="btn"]` |')
+    expect(body).toContain('| `e2e/cart.spec.ts` | `.cart-empty` | `[data-testid="cart-empty"]` |')
+    expect(body).toContain('2 selectores rotos')
+    expect(body).toContain('desde `main`')
+  })
+
+  it('incluye la sección de revisión manual cuando hay salteados', () => {
+    const body = buildAutoPrBody(['e2e/login.spec.ts — #old → [data-testid="btn"]'], ['e2e/home.spec.ts — saltado: ambiguo'], 'playwright', 'main')
+    expect(body).toContain('Para revisión manual (1)')
+    expect(body).toContain('ambiguo')
+  })
+
+  it('no pluraliza cuando hay un solo selector', () => {
+    const body = buildAutoPrBody(['e2e/login.spec.ts — #old → [data-testid="btn"]'], [], 'playwright', 'main')
+    expect(body).toContain('1 selector roto')
+  })
+})
+
+describe('buildAutoPrComment', () => {
+  it('lleva el marcador y la tabla de cambios', () => {
+    const comment = buildAutoPrComment(['e2e/login.spec.ts — #old → [data-testid="btn"]'], [], 'playwright')
+    expect(comment).toContain('<!-- healify-report -->')
+    expect(comment).toContain('Healify — Auto-Fix playwright')
+    expect(comment).toContain('| `e2e/login.spec.ts` | `#old` | `[data-testid="btn"]` |')
+  })
+
+  it('avisa cuando quedan casos para revisión', () => {
+    const comment = buildAutoPrComment([], ['e2e/home.spec.ts — saltado: ambiguo'], 'playwright')
+    expect(comment).toContain('1 quedaron para revisión manual')
   })
 })

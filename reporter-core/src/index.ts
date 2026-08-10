@@ -7,6 +7,7 @@ export { isPlaywrightOnlySelector } from './selector-compat'
 export { parsePageSnapshot, formatPageElements, existsInPage, findMatches, bestElementFor, bestNameFor, selectorTokens, type PageElement } from './page-snapshot'
 export {
   buildRoleSuggestion,
+  buildGenericRoleHint,
   parseRoleSuggestion,
   roleSuggestionToXPath,
   roleSuggestionToPlaywrightSelector,

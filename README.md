@@ -57,6 +57,9 @@ The whole analysis runs where you are, on deterministic heuristics: same input, 
 every time. If you work with sensitive data (banking, healthcare, government) that isn't a
 convenience, it's the only requirement that matters.
 
+That's why the only metrics Healify keeps are **local**: `heal --stats` accumulates what it
+healed in `~/.healify/stats.json` and prints a summary — nothing ever leaves the machine.
+
 ## How it compares
 
 Playwright now ships its own healer agent, and every testing vendor sells "self-healing." The
@@ -104,6 +107,28 @@ credentials, your instance, no cloud of ours in between.
 
 **[→ Jira, GitHub Issues and webhooks](docs/jira.md)**
 
+## And it fixes the PR before you look at it
+
+There's a [GitHub Action](docs/github-action.md). On every PR it runs `doctor` and the dry-run
+fix, and posts a comment with what broke and what it would change — no bot admin rights, no
+"all clear" when nothing actually ran.
+
+For `workflow_dispatch` (manual) and `schedule` (daily) it goes further: reads your failed test
+log, heals every broken selector, and opens a **pull request with the fixes already applied**.
+Worried it can't parse your log? It says so and stops — it never fabricates a healing it can't
+back with evidence.
+
+```yaml
+steps:
+  - uses: actions/checkout@v4
+  - uses: mescobar996/Healify@v2
+    with:
+      github-token: ${{ secrets.GITHUB_TOKEN }}
+      test-log-path: test-output.log   # workflow_dispatch/schedule: log -> PR
+```
+
+**[→ Full action reference](docs/github-action.md) · [→ auto-PR example](examples/github-action-auto-pr/)**
+
 ## And it works in your editor
 
 There's a [VS Code extension](vscode-extension/). Fragile selectors get underlined as you type.
@@ -117,7 +142,11 @@ real and applying it is one keystroke.
 ## And your agent can ask it questions
 
 There's an [MCP server](mcp/). Point Claude, Cursor or any MCP client at your test project and it
-can ask whether a selector is brittle, why a test failed, and which selectors keep breaking.
+can ask whether a selector is brittle, why a test failed, and which selectors keep breaking. It
+answers in the syntax of the framework you're actually using (`framework: playwright | cypress |
+selenium | webdriverio`), and `healify_batch_analyze_selectors` heals a whole page of broken
+locators at once — results cached locally for 5 minutes, so an agent hammering the same selectors
+doesn't recompute them.
 
 ```json
 { "mcpServers": { "healify": { "command": "npx", "args": ["-y", "@healify/mcp"] } } }

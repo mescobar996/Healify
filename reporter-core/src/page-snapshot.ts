@@ -38,6 +38,37 @@ export interface PageElement {
    * selector sin decirlo manda al usuario a un test que sigue fallando.
    */
   frame?: string
+  /**
+   * Valor del atributo de test-id presente en el elemento real (data-testid, data-cy, ...).
+   * Solo lo trae el probe en vivo (`browser-probe.ts`) — el snapshot de accesibilidad de
+   * Playwright no expone atributos. Lo usa el motor para sugerir ese testid como estrategia
+   * sin inventarlo (regla "Cero Inventos").
+   */
+  testId?: string
+  /**
+   * Cuál atributo es (`data-testid`, `data-cy`, `data-qa`, `data-test`, `data-e2e`).
+   * Se conserva para no reescribir la sugerencia a otro atributo que no existe en el DOM.
+   */
+  testIdAttr?: string
+  /**
+   * Cuántos shadow roots ABIERTOS hay que atravesar (pierce) para llegar al elemento.
+   * Ausente (o 0) para light DOM; 1 = dentro de un shadow root; 2 = componente dentro de
+   * componente (shadow anidado). Solo lo trae el probe en vivo (`browser-probe.ts`).
+   *
+   * Importa porque los selectores CSS/XPath NO atraviesan shadow DOM por especificación: un
+   * locator plano no encuentra lo que vive adentro de un shadowRoot, hay que hacer pierce de
+   * cada nivel primero. A diferencia del `frame`, el elemento sigue en el MISMO documento —
+   * el shadow root es solo una frontera de acceso, no de contexto.
+   */
+  shadowDepth?: number
+  /**
+   * Cadena de componentes hosts desde el documento hasta el shadowRoot que contiene
+   * directamente al elemento (`['x-card', 'inner-widget']`). El último elemento es el host
+   * cuyo shadowRoot hay que abrir para llegar al elemento. Junto con `shadowDepth` le da al
+   * motor la información exacta del pierce traversal (`.shadow()`, `.shadowRoot`,
+   * locator encadenado). Solo lo trae el probe en vivo.
+   */
+  shadowPath?: string[]
 }
 
 /**
@@ -50,7 +81,20 @@ export function formatPageElements(elements: PageElement[]): string {
   return elements
     .map((e) => {
       const base = e.name ? `- ${e.role} "${e.name.replace(/"/g, '\\"')}"` : `- ${e.role}`
-      return e.frame ? `${base} [frame=${e.frame}]` : base
+      // El testid va antes del frame a propósito: FRAME_ATTR ancla al final de línea, y la
+      // etiqueta del frame puede traer corchetes propios que no deben absorber el testid. Los
+      // atributos de shadow (MEJORA 3) también van antes del frame, por el mismo motivo.
+      const attrs: string[] = []
+      if (e.testId) {
+        attrs.push(`[testid=${e.testId}]`)
+        if (e.testIdAttr) attrs.push(`[testid-attr=${e.testIdAttr}]`)
+      }
+      if (e.shadowDepth && e.shadowDepth > 0) {
+        attrs.push(`[shadow-depth=${e.shadowDepth}]`)
+        if (e.shadowPath && e.shadowPath.length > 0) attrs.push(`[shadow-path=${e.shadowPath.join('>')}]`)
+      }
+      if (e.frame) attrs.push(`[frame=${e.frame}]`)
+      return attrs.length ? `${base} ${attrs.join(' ')}` : base
     })
     .join('\n')
 }
@@ -70,6 +114,26 @@ const TEXT_LINE = /^\s*-\s+text:\s*(.+?)\s*$/
  * `formatPageElements` siempre pone este atributo último, el último `]` de la línea es el cierre.
  */
 const FRAME_ATTR = /\[frame=(.+)\]\s*$/
+
+/**
+ * `[testid=add-to-cart]` y `[testid-attr=data-cy]` — los escribe `formatPageElements` a partir
+ * del testid que trae el probe en vivo. `[testid-attr=...]` no puede colisionar con `[testid=...]`
+ * (la regex pide el `=` pegado a `testid`), y ninguno de los dos existe en los snapshots de
+ * Playwright, así que nada gana el campo por accidente.
+ */
+const TESTID_ATTR = /\[testid=([^\]]+)\]/
+const TESTID_ATTR_NAME = /\[testid-attr=([^\]]+)\]/
+
+/**
+ * `[shadow-depth=2]` y `[shadow-path=outer-widget>inner-widget]` (MEJORA 3) — los escribe
+ * `formatPageElements` a partir de los datos de shadow que trae el probe en vivo. Ninguno de
+ * los dos existe en los snapshots de Playwright (que usan `[ref=...]`, `[level=...]`,
+ * `[active]`, `[cursor=...]`), así que nada gana los campos por accidente. El path se
+ * serializa unido con `>` (los hosts son tags o `#ids`, sin espacios ni corchetes) y se
+ * vuelve a partir por `>` al parsear.
+ */
+const SHADOW_DEPTH_ATTR = /\[shadow-depth=(\d+)\]/
+const SHADOW_PATH_ATTR = /\[shadow-path=([^\]]+)\]/
 
 /**
  * Extrae los elementos del árbol. Tolerante por diseño: cualquier línea que no encaje se
@@ -101,6 +165,16 @@ export function parsePageSnapshot(markdown: string | undefined): PageElement[] {
     const element: PageElement = { role, name: match[2] ? unescapeName(match[2]) : '' }
     const frameMatch = line.match(FRAME_ATTR)
     if (frameMatch) element.frame = frameMatch[1]
+    const testIdMatch = line.match(TESTID_ATTR)
+    if (testIdMatch) {
+      element.testId = testIdMatch[1]
+      const attrMatch = line.match(TESTID_ATTR_NAME)
+      if (attrMatch) element.testIdAttr = attrMatch[1]
+    }
+    const shadowDepthMatch = line.match(SHADOW_DEPTH_ATTR)
+    if (shadowDepthMatch) element.shadowDepth = parseInt(shadowDepthMatch[1], 10)
+    const shadowPathMatch = line.match(SHADOW_PATH_ATTR)
+    if (shadowPathMatch) element.shadowPath = shadowPathMatch[1].split('>')
     elements.push(element)
   }
 
@@ -184,17 +258,25 @@ function bestElementIn(
     const name = bestNameIn(elements, preferredRole, selector)
     // Se devuelve el elemento real (no uno reconstruido) para no perder `frame` en el camino.
     if (name !== null) return findMatches(elements, preferredRole, name)[0] ?? { role: preferredRole, name }
+    // Sin un nombre accesible ganador, si hay UN solo elemento de ese rol, es el buscado
+    // aunque no tenga nombre. El rol esperado es pista suficiente cuando no hay ambigüedad:
+    // un botón sin nombre en la página sigue siendo el botón que el selector buscaba.
+    const roleMatches = findMatches(elements, preferredRole)
+    if (roleMatches.length === 1) return roleMatches[0]
   }
 
   const tokens = selectorTokens(selector)
   if (tokens.length === 0) return null
 
   const scored = elements
-    .filter((e) => INTERACTIVE_ROLES.includes(e.role) && e.name.length > 0)
+    .filter((e) => INTERACTIVE_ROLES.includes(e.role) && (e.name.length > 0 || (e.testId?.length ?? 0) > 0))
     .map((element) => {
       const nameTokens = selectorTokens(element.name)
-      const score = nameTokens.filter((nameToken) =>
-        tokens.some((token) => token === nameToken || token.startsWith(nameToken) || nameToken.startsWith(token))
+      // Un testid real del DOM también cuenta como identidad: un elemento sin nombre pero con
+      // `[testid=acepta-terminos]` puede coincidir con `#acepta-terminos-...` por su testid.
+      const idTokens = element.testId ? selectorTokens(element.testId) : []
+      const score = [...nameTokens, ...idTokens].filter((token) =>
+        tokens.some((t) => t === token || t.startsWith(token) || token.startsWith(t))
       ).length
       return { element, score }
     })
