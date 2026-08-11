@@ -554,6 +554,21 @@ describe('elemento verificado dentro de un iframe', () => {
     expect(result.confidence).toBe(0.97)
     expect(result.explanation).not.toContain('iframe')
   })
+
+  it('iframes anidados: la cadena completa de frames va a frameLocator y baja la confianza', () => {
+    const result = analyzeAndHeal({
+      selector: '#pagar-btn-a1b2c3',
+      htmlContext: '- button "Pagar" [frame=iframe#outer > iframe[name=pago]]',
+    })
+
+    expect(result.verified).toBe(true)
+    expect(result.fixedSelector).toBe("role('button', { name: 'Pagar' })")
+    expect(result.confidence).toBe(0.88)
+    expect(result.explanation).toContain('iframe#outer > iframe[name=pago]')
+    expect(result.explanation).toContain('frameLocator')
+    expect(result.explanation).not.toContain('shadow')
+    expect(result.needsReview).toBe(false)
+  })
 })
 
 describe('elemento verificado dentro de shadow DOM (MEJORA 3)', () => {

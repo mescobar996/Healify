@@ -194,6 +194,8 @@ Requires Node 20+.
 
 **[Examples that actually run](examples/)** · complete projects, verified in CI against a real browser
 
+**[Security](SECURITY.md)** · how to report a vulnerability
+
 **[Demo](https://healify-sigma.vercel.app)**
 
 </div>
