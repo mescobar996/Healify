@@ -1,6 +1,42 @@
 # Changelog
 
-## 2.5.0
+## 2.6.0
+
+> El histórico deja de ser un archivo muerto: `healify dashboard --serve` levanta un servidor
+> local con una UI React que navega por los selectores, sus sugerencias y su tendencia — todo
+> 100% local, sin telemetría.
+
+### `healify dashboard --serve`: el dashboard web local
+
+- **Nuevo comando `healify dashboard --serve`.** Levanta un servidor Express en
+  `http://127.0.0.1:5173` que sirve la UI React (`dashboard-web/`) y una API JSON. Sin `--serve`
+  el comando sigue generando el HTML offline de siempre — comportamiento intacto.
+
+- **Datos reales, cero inventos.** La API lee en cada request `~/.healify/stats.json` (agregados
+  de `healify heal --stats`) y `.healify/history.jsonl` (el historial por selector). Un selector
+  se agrega por `sha256(testFile + selector)`, con su recuento de roturas, última sugerencia,
+  última cura, primera/última aparición y si es crónico (3+ roturas).
+
+- **API REST local:**
+  - `GET /api/stats` → stats.json + resumen del histórico con timeline.
+  - `GET /api/selectors` → lista de selectores agregada, ordenada por roturas.
+  - `GET /api/selectors/:id` → detalle de un selector (historial + tendencia). 404 si no existe.
+
+- **UI React en `dashboard-web/`.** Vite + React + TypeScript con la paleta de la landing:
+  `DashboardLayout` con sidebar, `StatsOverview` con tarjetas de totales, `SelectorList` con
+  filtro por tipo, `SelectorDetail` con historial y `TrendChart` (Chart.js), y
+  `ChronicSelectors` para los selectores crónicos. SPA con fallback: cualquier ruta responde el
+  HTML de la app, nunca 404.
+
+- **Auto-puerto.** Si el puerto pedido (default 5173) está ocupado, prueba los siguientes hasta
+  10 intentos y usa el primero libre. `--port 0` deja que el SO asigne un efímero. El mensaje
+  siempre muestra el puerto real en uso.
+
+- **`--open`** abre el navegador al arrancar. Ctrl+C cierra el servidor limpio. Sin la UI
+  compilada, el servidor igual responde la API con una página de fallback con links — los datos
+  nunca se quedan sin servir por falta de la app.
+
+
 
 > El motor deja de curar a ciegas: el probe en vivo ahora le trae el **testid real** del DOM y le
 > dice cuánto shadow DOM hay que atravesar, el CLI mide su propio trabajo sin telemetría, el MCP

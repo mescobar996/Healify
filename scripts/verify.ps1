@@ -1,6 +1,6 @@
 # Build + test los workspaces, imprime un resumen de una línea por paquete.
 # Equivalente PowerShell de verify.sh para entornos Windows.
-$packages = @("reporter-core", "test-runner", "cypress-plugin", "cli", "selenium-plugin", "webdriverio-plugin", "ai-local")
+$packages = @("reporter-core", "test-runner", "cypress-plugin", "cli", "selenium-plugin", "webdriverio-plugin", "ai-local", "dashboard-web")
 $results = @()
 $failed = 0
 

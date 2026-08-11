@@ -7,7 +7,7 @@ import { runHeal, readHealStats, formatHealStatsSummary } from './commands/heal'
 import { runExplain } from './commands/explain'
 import { runFix } from './commands/fix-pr'
 import { runReport } from './commands/report'
-import { runDashboard } from './commands/dashboard'
+import { runDashboard, runDashboardServe, type DashboardServeResult } from './commands/dashboard'
 import { runFlake } from './commands/flake'
 import { getVersion } from './version'
 import { runAiSetup, runAiStatus, runAiExplain, runAiChat, runAiModels } from './commands/ai'
@@ -217,7 +217,24 @@ function runReportCommand(args: string[]): void {
   })
 }
 
+function printDashboardServeResult(result: DashboardServeResult): void {
+  console.log(result.lines.join('\n'))
+  if (!result.ok) return process.exit(1)
+  const close = result.close
+  if (!close) return
+  const shutdown = () => {
+    close().then(() => process.exit(0))
+  }
+  process.on('SIGINT', shutdown)
+  process.on('SIGTERM', shutdown)
+}
+
 function runDashboardCommand(args: string[]): void {
+  if (args.includes('--serve')) {
+    // El servidor mantiene el event loop vivo: no hace falta nada más para que el proceso dure.
+    runDashboardServe(args).then(printDashboardServeResult)
+    return
+  }
   const result = runDashboard(args)
   console.log(result.lines.join('\n'))
   if (!result.ok) process.exit(1)
@@ -254,8 +271,11 @@ Comandos:
   history                                    Muestra selectores recurrentes y re-rotos de .healify/history.jsonl (se graba en cada fix real, no en --dry-run)
   report [reporte.json] [--dry-run]          Reporta los defectos de la corrida a tu Jira (o webhook) — dedupe por defectId, opt-in (agile.enabled: true)
                                                         --dry-run imprime qué se reportaría sin tocar la red
-  dashboard [--out <path>]                   Genera healify-dashboard.html, la vista offline del histórico (misma estética que healify-report.html)
+  dashboard [--out <path>] [--serve] [--port <n>] [--open]   Genera healify-dashboard.html, la vista offline del histórico (misma estética que healify-report.html)
                                                         --out cambia la ruta del archivo (default: healify-dashboard.html)
+                                                        --serve levanta un servidor local con la UI de dashboard-web + la API JSON (stats.json + history.jsonl)
+                                                        --port cambia el puerto del servidor (default: 5173)
+                                                        --open abre el navegador al arrancar el servidor
   flake [--min-runs <n>]                     Detecta tests flaky (verde en unas corridas, rojo en otras) sobre .healify/runs.jsonl, lo que registran los reporters de Playwright/Cypress en cada corrida
                                                         --min-runs cambia la cantidad mínima de corridas para opinar (default: 2)
   heal [--stats]                              Motor vía JSON por stdin/stdout, para usar desde Python/Java/C#/etc. Ver docs/adapters/README.md

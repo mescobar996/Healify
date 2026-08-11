@@ -2,7 +2,7 @@
 # Build + test los workspaces, imprime un resumen de una línea por paquete.
 set -uo pipefail
 
-packages=(reporter-core test-runner cypress-plugin cli selenium-plugin webdriverio-plugin ai-local mcp)
+packages=(reporter-core test-runner cypress-plugin cli selenium-plugin webdriverio-plugin ai-local mcp dashboard-web)
 results=()
 failed=0
 

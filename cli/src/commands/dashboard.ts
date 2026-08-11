@@ -2,6 +2,10 @@ import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { buildDashboardStats, renderDashboardHtml, type DashboardStats } from '@healify/reporter-core'
 import { readHistory } from '../history'
+import { runDashboardServe, type DashboardServeResult } from './dashboard-serve'
+
+export type { DashboardServeResult }
+export { runDashboardServe, createDashboardApp, resolveUiDir, buildSelectorSummaries, buildSelectorDetail, buildStatsOverview } from './dashboard-serve'
 
 export interface DashboardCommandResult {
   ok: boolean
@@ -11,12 +15,13 @@ export interface DashboardCommandResult {
 }
 
 /**
- * `healify dashboard [--out <path>]` — la vista HTML del histórico que `healify history`
- * solo muestra en texto plano. Mismo estándar visual que `healify-report.html`, 100% offline.
+ * `healify dashboard [--out <path>] [--serve] [--port <n>] [--open]` — la vista HTML del
+ * histórico que `healify history` solo muestra en texto plano, o, con `--serve`, el mismo
+ * dashboard como servidor local con UI React + API JSON.
  *
  * La lógica vive acá, separada de `index.ts` (que solo imprime) — patrón `commands/history.ts`.
  * El render es del paquete `reporter-core` (puro, testeado); este comando solo lee el
- * historial y escribe el archivo.
+ * historial y escribe el archivo. `--serve` delega en `dashboard-serve.ts`.
  */
 export function runDashboard(args: string[], cwd: string = process.cwd()): DashboardCommandResult {
   const outIndex = args.indexOf('--out')

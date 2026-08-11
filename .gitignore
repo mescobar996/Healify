@@ -42,6 +42,8 @@ ai-local/node_modules
 webdriverio-plugin/dist
 mcp/dist
 webdriverio-plugin/node_modules
+dashboard-web/dist
+dashboard-web/node_modules
 
 # Copias del LICENSE de la raiz que genera scripts/sync-license.mjs en cada `prepack`.
 # npm solo mete el LICENSE en el tarball si esta en la raiz DEL PAQUETE, pero versionar 7
