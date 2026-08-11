@@ -158,6 +158,32 @@ first thing that matches, inventing what they can't see. Healify answers determi
 evidence already on disk, and says plainly when it doesn't know — including refusing to name a
 replacement it hasn't verified against a real page.
 
+## And you can see the whole picture
+
+`healify dashboard --serve` lifts a local server with Healify's interactive dashboard, showing
+your accumulated statistics and the history of broken selectors — all from data that stays on
+your machine.
+
+```bash
+healify dashboard --serve                 # port 5173 by default
+healify dashboard --serve --port 8080     # any other port
+healify dashboard --serve --open          # opens the browser for you
+```
+
+What it shows:
+
+- **Aggregates from `~/.healify/stats.json`**: total analyzed, healed, failures, per-type
+  breakdown, average healing time.
+- **History from `.healify/history.jsonl`**: recurring selectors, re-broken ones, chronic
+  (3+ breaks), daily trend.
+- **JSON API** (optional): `GET /api/stats`, `GET /api/selectors`, `GET /api/selectors/:id`.
+- **React UI**: served from `dashboard-web/dist` when built; otherwise the server still answers
+  the API with a fallback page.
+
+Requires Node 20+.
+
+**[→ Full dashboard reference](docs/DASHBOARD.md)**
+
 ---
 
 <div align="center">

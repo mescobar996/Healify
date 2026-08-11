@@ -158,6 +158,33 @@ que matchea, inventar lo que no pueden ver. Healify contesta determinista, desde
 está en disco, y dice cuándo no sabe — incluido negarse a nombrar un reemplazo que no verificó
 contra una página real.
 
+## Y ves el cuadro completo
+
+`healify dashboard --serve` levanta un servidor local con el dashboard interactivo de Healify,
+mostrando las estadísticas acumuladas y el historial de selectores rotos — todo con datos que
+nunca salen de tu máquina.
+
+```bash
+healify dashboard --serve                 # puerto 5173 por defecto
+healify dashboard --serve --port 8080     # otro puerto
+healify dashboard --serve --open          # abre el navegador automáticamente
+```
+
+Lo que muestra:
+
+- **Agregados de `~/.healify/stats.json`**: total analizados, curados, fallas, por tipo,
+  tiempo medio.
+- **Historial de `.healify/history.jsonl`**: selectores recurrentes, re-rotos, crónicos
+  (3+ roturas), tendencia diaria.
+- **API JSON**: (opcional) hay endpoints `GET /api/stats`, `GET /api/selectors`,
+  `GET /api/selectors/:id`.
+- **UI React**: se sirve desde `dashboard-web/dist` si existe; si no, el servidor igual sirve
+  la API y una página de fallback.
+
+Requiere Node 20+.
+
+**[→ Referencia completa del dashboard](docs/DASHBOARD.md)**
+
 ---
 
 <div align="center">
