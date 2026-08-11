@@ -1,8 +1,0 @@
-{
-  "name": "@healify/cypress-plugin",
-  "description": "Self-healing selectors for Cypress. When a test fails due to a broken selector, Healify analyzes the DOM and proposes alternatives — 100% local, no API key required.",
-  "link": "https://github.com/mescobar96/healify",
-  "npm": "@healify/cypress-plugin",
-  "keywords": ["testing", "selectors", "healing", "self-healing", "locators", "debugging"],
-  "badge": "community"
-}
