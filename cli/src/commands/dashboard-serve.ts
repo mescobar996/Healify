@@ -107,7 +107,7 @@ export function buildSelectorSummaries(entries: HistoryEntry[]): SelectorSummary
   }
 
   const summaries: SelectorSummary[] = []
-  for (const [key, list] of byKey) {
+  for (const [, list] of byKey) {
     const sorted = [...list].sort((a, b) => a.timestamp.localeCompare(b.timestamp))
     const first = sorted[0]
     const last = sorted[sorted.length - 1]

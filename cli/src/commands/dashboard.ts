@@ -2,7 +2,7 @@ import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { buildDashboardStats, renderDashboardHtml, type DashboardStats } from '@healify/reporter-core'
 import { readHistory } from '../history'
-import { runDashboardServe, type DashboardServeResult } from './dashboard-serve'
+import type { DashboardServeResult } from './dashboard-serve'
 
 export type { DashboardServeResult }
 export { runDashboardServe, createDashboardApp, resolveUiDir, buildSelectorSummaries, buildSelectorDetail, buildStatsOverview } from './dashboard-serve'
