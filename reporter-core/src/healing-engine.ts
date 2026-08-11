@@ -671,15 +671,19 @@ function applyPageEvidence(
 
     // El elemento tiene nombre accesible: se propone el role verificado en vivo (priority 0),
     // la sugerencia más confiable del motor. Su texto se leyó del árbol de accesibilidad
-    // capturado cuando el test falló, no se dedujo del selector. Si además vive en un iframe
-    // o dentro de shadow DOM, la confianza baja y el texto avisa qué hay que hacer antes de
-    // aplicar el locator — sugerirlo callado manda al usuario a un test que sigue fallando y
-    // encima parece un bug de Healify.
+    // capturado cuando el test falló, no se dedujo del selector.
+    //
+    // La confianza solo baja dentro de un iframe: entrar a un frame requiere un paso extra que
+    // ningún locator de rol hace solo (`frameLocator`/`switchTo().frame`). El shadow DOM NO
+    // penaliza — los locators de rol atraviesan shadow roots por especificación en Cypress
+    // (`findAcrossShadowRoots`) y Playwright (`getByRole` piercea el shadow abierto), a
+    // diferencia de un locator CSS/XPath plano. Se avisa la cadena shadowDepth/shadowPath como
+    // información del pierce, pero la sugerencia sigue siendo aplicable sin revisión humana.
     if (real.name) {
       survivors.unshift({
         selector: buildRoleSuggestion(real.role, real.name)!,
         type: 'ROLE',
-        confidence: inFrame || inShadow ? 0.88 : 0.97,
+        confidence: inFrame ? 0.88 : 0.97,
         explanation: inFrame
           ? `Verificado contra la página: hay un ${real.role} con el nombre accesible "${real.name}", pero está DENTRO del iframe ${inFrame}. Un locator a nivel de página no lo encuentra: primero hay que entrar al frame (\`frameLocator('${inFrame}')\` en Playwright, \`switchTo().frame(...)\` en Selenium) y recién ahí aplicar el selector.${pierceNote ? ` Además${pierceNote}.` : ''}`
           : inShadow

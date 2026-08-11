@@ -201,7 +201,7 @@ describe('fixAst con nombres que llevan comillas', () => {
         makeCase({
           testFile: file,
           selector: '#save-btn',
-          fixedSelector: buildRoleSuggestion('button', "Guardar 'borrador'"),
+          fixedSelector: buildRoleSuggestion('button', "Guardar 'borrador'")!,
         }),
       ])
     )
@@ -223,7 +223,7 @@ describe('fixAst con nombres que llevan comillas', () => {
     // error 1375 que no tiene nada que ver con lo que se está probando acá.
     writeFileSync(file, `export {}\nawait page.click('#save-btn')`)
 
-    fixAst(makeRun([makeCase({ testFile: file, selector: '#save-btn', fixedSelector: buildRoleSuggestion('button', "L'Oreal") })]))
+    fixAst(makeRun([makeCase({ testFile: file, selector: '#save-btn', fixedSelector: buildRoleSuggestion('button', "L'Oreal")! })]))
 
     const proyecto = new Project({ useInMemoryFileSystem: true })
     const sf = proyecto.createSourceFile('t.ts', readFileSync(file, 'utf-8'))

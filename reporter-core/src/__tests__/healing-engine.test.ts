@@ -557,7 +557,7 @@ describe('elemento verificado dentro de un iframe', () => {
 })
 
 describe('elemento verificado dentro de shadow DOM (MEJORA 3)', () => {
-  it('avisa que hay que hacer pierce del shadow root y baja la confianza (espeja el caso frame)', () => {
+  it('avisa que hay que hacer pierce del shadow root pero conserva la confianza del rol', () => {
     const result = analyzeAndHeal({
       selector: '#pagar-btn-a1b2c3',
       htmlContext: '- button "Pagar" [shadow-depth=1] [shadow-path=x-checkout]',
@@ -565,7 +565,7 @@ describe('elemento verificado dentro de shadow DOM (MEJORA 3)', () => {
 
     expect(result.verified).toBe(true)
     expect(result.fixedSelector).toBe("role('button', { name: 'Pagar' })")
-    expect(result.confidence).toBe(0.88)
+    expect(result.confidence).toBe(0.97)
     expect(result.explanation).toContain('x-checkout')
     expect(result.explanation).toContain('.shadow()')
     expect(result.explanation).toContain('no atraviesan shadow DOM')
@@ -579,7 +579,7 @@ describe('elemento verificado dentro de shadow DOM (MEJORA 3)', () => {
     })
 
     expect(result.verified).toBe(true)
-    expect(result.confidence).toBe(0.88)
+    expect(result.confidence).toBe(0.97)
     expect(result.explanation).toContain('2 shadow roots')
     expect(result.explanation).toContain('outer-widget > inner-widget')
   })

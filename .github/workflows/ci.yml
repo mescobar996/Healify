@@ -360,6 +360,11 @@ jobs:
   # invoca la copia local (`./`), no una versión publicada.
   gh-action-run:
     name: gh-action se ejecuta (composite)
+    # El job solo tiene sentido en pull_request: en push no hay PR para analizar y la Action
+    # (run.js) despacha a runAutoPrFlow, que exige un test-output.log que no existe — el CLI
+    # sale sin escribir history.jsonl y el assert de abajo falla. Ese fallo es pre-existente
+    # y ajeno a esta PR; restringirlo a PR evita rojo en cada push a main.
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
