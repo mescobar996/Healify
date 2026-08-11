@@ -20,7 +20,7 @@ export function DashboardLayout() {
             Selectores
           </NavLink>
           <NavLink to="/chronic" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
-            Crónicos
+            🔥 Crónicos
           </NavLink>
         </nav>
         <div className="sidebar-foot">

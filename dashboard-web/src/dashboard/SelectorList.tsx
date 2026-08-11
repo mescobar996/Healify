@@ -64,7 +64,10 @@ export function SelectorList() {
                 <tr key={s.id}>
                   <td>
                     <Link to={`/selectors/${s.id}`} className="selector-cell">
-                      <code>{s.selector}</code>
+                      <span className="selector-row">
+                        <code>{s.selector}</code>
+                        {s.chronic ? <span className="pill pill-chronic">Crónico</span> : null}
+                      </span>
                       {s.testFile ? <span className="muted">{s.testFile}</span> : null}
                     </Link>
                   </td>

@@ -21,7 +21,7 @@ export function ChronicSelectors() {
   return (
     <div className="page">
       <header className="page-head">
-        <h1>Selectores crónicos</h1>
+        <h1>🔥 Selectores Crónicos</h1>
         <p className="sub">3+ roturas en el histórico — acá conviene dejar de parchear.</p>
       </header>
 
