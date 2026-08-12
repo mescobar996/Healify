@@ -9,6 +9,16 @@
 # regla es anti-regresión: no puede bajar de donde está hoy.
 set -uo pipefail
 
+# Detectar WSL: `bash` del PATH de Windows puede resolver a C:\WINDOWS\system32\bash.exe (WSL),
+# que usa un Node de Linux contra los node_modules de Windows — los binarios nativos de rollup/v8
+# no existen para esa combinación y vitest crashea con MODULE_NOT_FOUND. En ese caso delegamos al
+# equivalente PowerShell nativo de Windows (mismos umbrales, mismo formato de salida).
+if [ -r /proc/version ] && grep -qi microsoft /proc/version 2>/dev/null; then
+  script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+  ps1_path=$(wslpath -w "$script_dir/coverage.ps1" 2>/dev/null || echo "$script_dir/coverage.ps1")
+  exec powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$ps1_path" "$@"
+fi
+
 packages=(reporter-core test-runner cypress-plugin cli selenium-plugin webdriverio-plugin)
 # Umbral mínimo de líneas por paquete. Mantener en sintonía con la realidad: si un paquete
 # llega a 80%, súbelo a 80 acá (y en coverage.ps1).

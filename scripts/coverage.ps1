@@ -23,7 +23,10 @@ $failed = 0
 foreach ($pkg in $packages) {
   $threshold = $thresholds[$pkg]
   Push-Location $pkg
-  $out = npx vitest run --coverage --coverage.provider=v8 --coverage.include='src/**' --coverage.reporter=text --coverage.thresholds.lines=$threshold 2>&1
+  # cmd /c mezcla stdout+stderr como texto plano: vitest escribe a stderr y con la
+  # redirección nativa de PS 5.1 cada línea se vuelve un NativeCommandError terminante
+  # ($ErrorActionPreference="Stop") que mata el script antes del resumen.
+  $out = cmd /c "npx vitest run --coverage --coverage.provider=v8 --coverage.include='src/**' --coverage.reporter=text --coverage.thresholds.lines=$threshold 2>&1"
   $status = $LASTEXITCODE
   Pop-Location
 

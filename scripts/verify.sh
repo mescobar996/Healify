@@ -2,6 +2,16 @@
 # Build + test los workspaces, imprime un resumen de una línea por paquete.
 set -uo pipefail
 
+# Detectar WSL: `bash` del PATH de Windows puede resolver a C:\WINDOWS\system32\bash.exe (WSL),
+# que usa un Node de Linux contra los node_modules de Windows — los binarios nativos no existen
+# para esa combinación y el build/test crashea. En ese caso delegamos al equivalente PowerShell
+# nativo de Windows (mismos paquetes, mismo formato de salida).
+if [ -r /proc/version ] && grep -qi microsoft /proc/version 2>/dev/null; then
+  script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+  ps1_path=$(wslpath -w "$script_dir/verify.ps1" 2>/dev/null || echo "$script_dir/verify.ps1")
+  exec powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$ps1_path" "$@"
+fi
+
 packages=(reporter-core test-runner cypress-plugin cli selenium-plugin webdriverio-plugin ai-local mcp dashboard-web)
 results=()
 failed=0
