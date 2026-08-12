@@ -43,6 +43,10 @@ umbral mínimo de líneas cubiertas. **Cada paquete tiene su propio umbral**, de
 Si trabajás en un paquete, mantené su cobertura por encima del umbral. Si el paquete supera
 el 80%, subí su umbral a 80 en ambos scripts.
 
+> **Windows + WSL:** si `bash` del PATH resuelve a WSL (`C:\WINDOWS\system32\bash.exe`), los
+> scripts detectan WSL en `/proc/version` y delegan automáticamente al equivalente
+> PowerShell — mismos umbrales, mismo resumen. Con Git Bash corren el `.sh` directamente.
+
 ## Estructura del monorepo
 
 El repo usa workspaces en la raíz (no hay carpeta `packages/`):
