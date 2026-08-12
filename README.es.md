@@ -174,8 +174,9 @@ Lo que muestra:
 
 - **Agregados de `~/.healify/stats.json`**: total analizados, curados, fallas, por tipo,
   tiempo medio.
-- **Historial de `.healify/history.jsonl`**: selectores recurrentes, re-rotos, crónicos
-  (3+ roturas), tendencia diaria.
+- **Historial de `.healify/history.jsonl`**: selectores recurrentes, re-rotos, tendencia diaria.
+  Una sección dedicada **🔥 Selectores Crónicos** lista cada selector que se rompió 3 o más veces,
+  y una insignia roja **Crónico** los marca en la lista principal de selectores.
 - **API JSON**: (opcional) hay endpoints `GET /api/stats`, `GET /api/selectors`,
   `GET /api/selectors/:id`.
 - **UI React**: se sirve desde `dashboard-web/dist` si existe; si no, el servidor igual sirve
@@ -184,6 +185,34 @@ Lo que muestra:
 Requiere Node 20+.
 
 **[→ Referencia completa del dashboard](docs/DASHBOARD.md)**
+
+## El repositorio
+
+Healify es un monorepo npm con 9 workspaces, cada uno un paquete `@healify/*`:
+
+| Paquete | Rol |
+|---|---|
+| `reporter-core` | El motor de healing — heurística, sondeo de DOM, repertorio y config compartida (privado, no se publica) |
+| `cli` | La interfaz de línea de comandos (`fix`, `init`, `doctor`, `history`, `heal`, `probe-script`, `ai`) |
+| `test-runner` | Adapter de Playwright |
+| `cypress-plugin` | Adapter de Cypress |
+| `selenium-plugin` | Adapter de Selenium |
+| `webdriverio-plugin` | Adapter de WebdriverIO |
+| `dashboard-web` | UI React del dashboard local |
+| `ai-local` | IA local opcional vía Ollama |
+| `mcp` | Servidor MCP para agentes de IA |
+
+**Madurez:** 987 tests unitarios, todos pasando. El CI corre coverage con **umbrales
+anti-regresión** definidos en `scripts/coverage.sh` (Bash) y `scripts/coverage.ps1`
+(PowerShell): los paquetes que ya superan 80% deben mantenerse ahí, el resto conserva su piso
+actual. Cobertura de líneas actual por paquete: `reporter-core` 91%, `selenium-plugin` 100%,
+`webdriverio-plugin` 88%, `cli` 63.4%, `cypress-plugin` 57.7%, `test-runner` 79.4%.
+
+Un detalle a tener en cuenta antes de tocar código: los workspaces se importan entre sí como
+`@healify/reporter-core`, que resuelve al `dist/` compilado — así que corré `npm run build`
+antes de testear un adapter desde cero.
+
+**[→ Guía para contribuir](CONTRIBUTING.md)** · instalación, comandos de desarrollo, política de commits y cómo añadir un adapter nuevo.
 
 ---
 

@@ -174,8 +174,9 @@ What it shows:
 
 - **Aggregates from `~/.healify/stats.json`**: total analyzed, healed, failures, per-type
   breakdown, average healing time.
-- **History from `.healify/history.jsonl`**: recurring selectors, re-broken ones, chronic
-  (3+ breaks), daily trend.
+- **History from `.healify/history.jsonl`**: recurring selectors, re-broken ones, daily trend.
+  A dedicated **🔥 Selectores Crónicos** section lists every selector that has broken 3 or more
+  times, and a red **Crónico** badge marks them right in the main selectors list.
 - **JSON API** (optional): `GET /api/stats`, `GET /api/selectors`, `GET /api/selectors/:id`.
 - **React UI**: served from `dashboard-web/dist` when built; otherwise the server still answers
   the API with a fallback page.
@@ -183,6 +184,34 @@ What it shows:
 Requires Node 20+.
 
 **[→ Full dashboard reference](docs/DASHBOARD.md)**
+
+## The repository
+
+Healify is an npm monorepo with 9 workspaces, each an `@healify/*` package:
+
+| Package | Role |
+|---|---|
+| `reporter-core` | The healing engine — heuristics, DOM probing, repertoire and shared config (private, not published) |
+| `cli` | The command-line interface (`fix`, `init`, `doctor`, `history`, `heal`, `probe-script`, `ai`) |
+| `test-runner` | Playwright adapter |
+| `cypress-plugin` | Cypress adapter |
+| `selenium-plugin` | Selenium adapter |
+| `webdriverio-plugin` | WebdriverIO adapter |
+| `dashboard-web` | React UI for the local dashboard |
+| `ai-local` | Optional local AI via Ollama |
+| `mcp` | MCP server for AI agents |
+
+**Maturity:** 987 unit tests, all passing. The CI runs coverage with **anti-regression
+thresholds** defined in `scripts/coverage.sh` (Bash) and `scripts/coverage.ps1` (PowerShell):
+packages already above 80% must stay there, the rest hold their current floor. Current line
+coverage per package: `reporter-core` 91%, `selenium-plugin` 100%, `webdriverio-plugin` 88%,
+`cli` 63.4%, `cypress-plugin` 57.7%, `test-runner` 79.4%.
+
+Gotchas worth knowing before you touch code: the workspaces import each other as
+`@healify/reporter-core`, which resolves to the built `dist/` — so run `npm run build` before
+testing an adapter from scratch.
+
+**[→ Contributing guide](CONTRIBUTING.md)** · install, dev commands, commit policy and how to add a new adapter.
 
 ---
 
