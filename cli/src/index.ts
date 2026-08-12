@@ -295,6 +295,16 @@ Flags globales:
   --help, -h                                 Muestra esta ayuda`)
 }
 
+/**
+ * Los comandos asíncronos que se disparan fire-and-forget (heal, ai) nunca deben morir con un
+ * `unhandledRejection` y un stack trace sin contexto: el CLI es la cara del motor y un fallo
+ * inesperado se reporta igual de limpio que un error conocido.
+ */
+function handleCommandError(error: unknown): void {
+  console.error(`Error: ${error instanceof Error ? error.message : String(error)}`)
+  process.exit(1)
+}
+
 function main(): void {
   const args = process.argv.slice(2)
   const command = args[0]
@@ -316,18 +326,18 @@ function main(): void {
   if (command === 'report') return runReportCommand(args.slice(1))
   if (command === 'dashboard') return runDashboardCommand(args.slice(1))
   if (command === 'flake') return runFlakeCommand(args.slice(1))
-  if (command === 'heal') { runHealCommand(args.slice(1)).then(() => {}); return }
+  if (command === 'heal') { void runHealCommand(args.slice(1)).catch(handleCommandError); return }
   if (command === 'explain') return runExplainCommand(args.slice(1))
   if (command === 'probe-script') return console.log(BROWSER_PROBE_SCRIPT)
-  
+
   // Comandos IA
   if (command === 'ai') {
     const aiCommand = args[1]
-    if (aiCommand === 'setup') { runAiSetup().then(() => {}); return }
-    if (aiCommand === 'status') { runAiStatus().then(() => {}); return }
-    if (aiCommand === 'explain') { runAiExplain(args.slice(2)).then(() => {}); return }
-    if (aiCommand === 'chat') { runAiChat().then(() => {}); return }
-    if (aiCommand === 'models') { runAiModels().then(() => {}); return }
+    if (aiCommand === 'setup') { void runAiSetup().catch(handleCommandError); return }
+    if (aiCommand === 'status') { void runAiStatus().catch(handleCommandError); return }
+    if (aiCommand === 'explain') { void runAiExplain(args.slice(2)).catch(handleCommandError); return }
+    if (aiCommand === 'chat') { void runAiChat().catch(handleCommandError); return }
+    if (aiCommand === 'models') { void runAiModels().catch(handleCommandError); return }
     console.log('Uso: healify ai <setup|status|explain|chat|models>')
     process.exit(1)
   }
