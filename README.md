@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="logo-healify.png" alt="Healify" width="110" />
+  <img src="public/logo-static.svg" alt="Healify Logo" width="64" style="filter: drop-shadow(0 0 20px rgba(16,185,129,0.4))" />
 
   <h3>Fix your E2E tests before you even notice.</h3>
   <p><strong>E2E tests fail because of broken selectors. Fixing them is tedious and repetitive.<br/>Healify does it for you — local and deterministic, with zero data leaving your machine.</strong></p>

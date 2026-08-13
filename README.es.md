@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="logo-healify.png" alt="Healify" width="110" />
+  <img src="public/logo-static.svg" alt="Logo de Healify" width="64" style="filter: drop-shadow(0 0 20px rgba(16,185,129,0.4))" />
 
   <h3>Repará tus tests E2E antes de que te enteres.</h3>
   <p><strong>Los tests E2E fallan por selectores rotos. Arreglarlos es tedioso y repetitivo.<br/>Healify lo hace por vos — local y determinista, sin que un solo dato salga de tu máquina.</strong></p>

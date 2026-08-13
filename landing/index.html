@@ -11,7 +11,8 @@
 <link rel="alternate" hreflang="en" href="https://healify-sigma.vercel.app/">
 <link rel="alternate" hreflang="es" href="https://healify-sigma.vercel.app/es/">
 <link rel="alternate" hreflang="x-default" href="https://healify-sigma.vercel.app/">
-<link rel="icon" href="healify-mark.png">
+<link rel="icon" href="/public/logo-static.svg">
+<link rel="apple-touch-icon" href="/public/apple-touch-icon.png">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://healify-sigma.vercel.app/">
 <meta property="og:title" content="Healify — Fix broken test selectors, 100% locally">
@@ -56,7 +57,7 @@ button{font:inherit;cursor:pointer}
 .nav{position:sticky;top:0;z-index:30;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);background:rgba(0,0,0,.55);border-bottom:1px solid var(--border)}
 .nav-inner{height:58px;display:flex;align-items:center;justify-content:space-between;gap:16px}
 .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;color:var(--fg2)}
-.brand img{width:26px;height:26px;border-radius:7px}
+.brand img{width:32px;height:32px;border-radius:8px}
 .nav-right{display:flex;align-items:center;gap:12px}
 .navlink{font-size:13px;font-weight:500;color:var(--muted);transition:color .15s ease;padding:8px 4px}.navlink:hover{color:var(--fg2)}
 .icon{width:38px;height:38px;border-radius:10px;border:1px solid var(--border);display:grid;place-items:center;color:var(--muted);transition:all .15s}
@@ -82,6 +83,15 @@ button{font:inherit;cursor:pointer}
 .hero .anim{animation:fade-up .8s cubic-bezier(.16,1,.3,1) both}
 .hero .anim:nth-child(2){animation-delay:.1s}.hero .anim:nth-child(3){animation-delay:.2s}.hero .anim:nth-child(4){animation-delay:.3s}
 @keyframes fade-up{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+/* Logo Healify: escudo + H, flotación y glow verde-cian. */
+.logo-float{animation:logoFloat 3s ease-in-out infinite}
+@keyframes logoFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.logo-glow{filter:drop-shadow(0 0 20px rgba(16,185,129,.4))}
+.hero-logo-wrap{position:relative;display:grid;place-items:center;margin-bottom:34px}
+.hero-logo-halo{position:absolute;inset:-42px;border-radius:50%;background:radial-gradient(closest-side,rgba(16,185,129,.2),rgba(6,182,212,.14) 55%,transparent);filter:blur(26px)}
+.hero-logo{position:relative;width:64px;height:64px;filter:drop-shadow(0 0 30px rgba(6,182,212,.5))}
+@media(min-width:768px){.hero-logo{width:80px;height:80px}}
 
 /* Terminal — demo del CLI. */
 .terminal{width:100%;max-width:960px;margin-top:14px;border-radius:18px;border:1px solid var(--border);background:linear-gradient(145deg,rgba(18,32,31,.58),rgba(7,13,19,.5));backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:var(--shadow-2);overflow:hidden;text-align:left}
@@ -141,7 +151,7 @@ button{font:inherit;cursor:pointer}
 .reveal.in{opacity:1;transform:translateY(0)}
 
 @media(prefers-reduced-motion:reduce){
-  .hero .anim,.logo,.reveal{animation:none!important;transition:none!important;opacity:1;transform:none}
+  .hero .anim,.logo,.logo-float,.reveal{animation:none!important;transition:none!important;opacity:1;transform:none}
 }
 </style>
 <script type="application/ld+json">
@@ -171,7 +181,7 @@ button{font:inherit;cursor:pointer}
 
 <header class="nav">
   <div class="wrap nav-inner">
-    <a class="brand" href="#"><img width="26" height="26" src="/healify-mark.png" alt="Healify logo">Healify</a>
+    <a class="brand" href="#"><img width="32" height="32" src="/public/logo.svg" alt="Healify logo" class="logo-float logo-glow">Healify</a>
     <div class="nav-right">
       <a href="/es/" class="navlink" hreflang="es" lang="es">Español</a>
       <a href="https://github.com/mescobar996/Healify" target="_blank" rel="noopener" class="icon" aria-label="GitHub — source code">
@@ -183,6 +193,10 @@ button{font:inherit;cursor:pointer}
 </header>
 
 <main class="wrap hero" id="instalar">
+  <div class="hero-logo-wrap anim">
+    <div class="hero-logo-halo" aria-hidden="true"></div>
+    <img class="hero-logo logo-float" src="/public/logo.svg" alt="Healify logo — shield with an H" width="64" height="64">
+  </div>
   <h1 class="h1 anim">Repair your E2E tests with <em>one command.</em></h1>
   <p class="lead anim">Healify detects and repairs broken selectors automatically — without sending data to the cloud.</p>
   <div class="ctas anim">
