@@ -7,7 +7,7 @@
 # test-runner) quedan en su nivel actual para no romper el CI — anti-regresión.
 $ErrorActionPreference = "Stop"
 
-$packages = @("reporter-core", "test-runner", "cypress-plugin", "cli", "selenium-plugin", "webdriverio-plugin")
+$packages = @("reporter-core", "test-runner", "cypress-plugin", "cli", "selenium-plugin", "webdriverio-plugin", "ai-local", "mcp", "dashboard-web")
 # Umbral mínimo de líneas por paquete. Mantener en sintonía con coverage.sh.
 $thresholds = @{
   "reporter-core"     = 80
@@ -16,6 +16,9 @@ $thresholds = @{
   "cli"               = 80
   "selenium-plugin"   = 80
   "webdriverio-plugin" = 80
+  "ai-local"          = 30
+  "mcp"               = 80
+  "dashboard-web"     = 70
 }
 $results = @()
 $failed = 0

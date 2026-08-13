@@ -19,9 +19,10 @@ if [ -r /proc/version ] && grep -qi microsoft /proc/version 2>/dev/null; then
   exec powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$ps1_path" "$@"
 fi
 
-packages=(reporter-core test-runner cypress-plugin cli selenium-plugin webdriverio-plugin)
+packages=(reporter-core test-runner cypress-plugin cli selenium-plugin webdriverio-plugin ai-local mcp dashboard-web)
 # Umbral mínimo de líneas por paquete. Mantener en sintonía con la realidad: si un paquete
-# llega a 80%, súbelo a 80 acá (y en coverage.ps1).
+# llega a 80%, súbelo a 80 acá (y en coverage.ps1). Los que todavía no llegan (ai-local,
+# dashboard-web) conservan un piso por debajo de su nivel actual — anti-regresión.
 declare -A thresholds=(
   [reporter-core]=80
   [test-runner]=79
@@ -29,6 +30,9 @@ declare -A thresholds=(
   [cli]=80
   [selenium-plugin]=80
   [webdriverio-plugin]=80
+  [ai-local]=30
+  [mcp]=80
+  [dashboard-web]=70
 )
 results=()
 failed=0
