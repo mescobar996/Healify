@@ -4,7 +4,7 @@
   <h3>Fix your E2E tests before you even notice.</h3>
   <p><strong>E2E tests fail because of broken selectors. Fixing them is tedious and repetitive.<br/>Healify does it for you — local and deterministic, with zero data leaving your machine.</strong></p>
 
-  <img src="https://img.shields.io/badge/version-2.6.0-blue" alt="version 2.6.0" />
+  <img src="https://img.shields.io/badge/version-2.7.0-blue" alt="version 2.7.0" />
   <img src="https://img.shields.io/badge/tests-1113%20passing-brightgreen" alt="1113 tests passing" />
   <img src="https://img.shields.io/badge/coverage-91.8%25-brightgreen" alt="91.8% CLI coverage" />
   <a href="https://github.com/mescobar996/Healify/actions/workflows/ci.yml"><img src="https://github.com/mescobar996/Healify/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>

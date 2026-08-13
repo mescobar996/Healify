@@ -4,7 +4,7 @@
   <h3>Repará tus tests E2E antes de que te enteres.</h3>
   <p><strong>Los tests E2E fallan por selectores rotos. Arreglarlos es tedioso y repetitivo.<br/>Healify lo hace por vos — local y determinista, sin que un solo dato salga de tu máquina.</strong></p>
 
-  <img src="https://img.shields.io/badge/version-2.6.0-blue" alt="versión 2.6.0" />
+  <img src="https://img.shields.io/badge/version-2.7.0-blue" alt="versión 2.7.0" />
   <img src="https://img.shields.io/badge/tests-1113%20passing-brightgreen" alt="1113 tests en verde" />
   <img src="https://img.shields.io/badge/coverage-91.8%25-brightgreen" alt="91.8% cobertura del CLI" />
   <a href="https://github.com/mescobar996/Healify/actions/workflows/ci.yml"><img src="https://github.com/mescobar996/Healify/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
