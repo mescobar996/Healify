@@ -90,7 +90,7 @@ export function describeReadError(reportPath: string, error: unknown): { message
   }
 }
 
-export type SkipReason = 'ambiguous' | 'dirty-git' | 'not-found' | 'not-substitutable' | 'declined'
+export type SkipReason = 'ambiguous' | 'dirty-git' | 'not-found' | 'not-substitutable' | 'declined' | 'low-confidence'
 
 export type FixOutcome =
   | {

@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import type { LocalRun } from '@healify/reporter-core'
+import { parseRoleSuggestion } from '@healify/reporter-core'
 import { fix, describeReadError, type FixOutcome } from '../fix'
 import { fixAst } from '../fix-ast'
 import { detectGitHubCLI, createBranch, createCommit, createPRInstructions, createPRWithGH } from '../pr'
@@ -7,6 +8,7 @@ import { appendHistory } from '../history'
 import { runInteractiveFix } from '../interactive'
 import { promptLine } from '../prompt'
 import { runFixWatch, parseInterval, parseReportPath } from './watch'
+import { snapshotFiles, restoreSnapshot, runValidation, type FileSnapshot } from '../validate'
 
 /** Escapa caracteres especiales de Markdown que podrían romper el formato de tabla. */
 function sanitizeMarkdownCell(value: string): string {
@@ -27,6 +29,8 @@ function reasonText(outcome: Extract<FixOutcome, { status: 'skipped' }>, astUsed
         : 'la sugerencia no es un valor de selector sustituible directamente (formato de rol legible) — sacá --no-ast para que se reescriba sola, o revisá y aplicá a mano'
     case 'declined':
       return 'vos decidiste no aplicarlo'
+    case 'low-confidence':
+      return 'la confianza está por debajo del umbral (--min-confidence) — solo sugerencia, sin tocar archivos'
   }
 }
 
@@ -36,6 +40,8 @@ export function printOutcomes(outcomes: FixOutcome[], run: LocalRun, astUsed: bo
     console.log('Ningún selector roto en la última corrida — no hay nada que aplicar.')
     return
   }
+
+  const caseByKey = new Map(run.cases.map((c) => [`${c.testFile}::${c.selector}`, c]))
 
   let applied = 0
   let skipped = 0
@@ -48,7 +54,18 @@ export function printOutcomes(outcomes: FixOutcome[], run: LocalRun, astUsed: bo
       const where = outcome.appliedIn
         ? `${outcome.appliedIn} (page object de ${outcome.testFile})`
         : outcome.testFile
-      console.log(`✓ ${where} — ${outcome.selector} → ${outcome.fixedSelector}`)
+      // Contexto del cambio: confianza, si se verificó contra la página y el rol/nombre que
+      // coincidió — transparencia de qué se cambió y por qué (feedback de Reddit).
+      const original = caseByKey.get(`${outcome.testFile}::${outcome.selector}`)
+      const details: string[] = []
+      if (original) {
+        details.push(`${Math.round((original.confidence ?? 0) * 100)}%`)
+        if (original.verified) details.push('verificada en la página')
+        const role = parseRoleSuggestion(original.fixedSelector)
+        if (role) details.push(`${role.role} "${role.name}"`)
+      }
+      const context = details.length > 0 ? ` (${details.join(' · ')})` : ''
+      console.log(`✓ ${where} — ${outcome.selector} → ${outcome.fixedSelector}${context}`)
     } else {
       skipped++
       console.log(`⚠ ${outcome.testFile} — saltado: ${reasonText(outcome, astUsed)}`)
@@ -75,6 +92,9 @@ export interface ApplyOptions {
    * nada. `.healify/history.jsonl` es el registro propio de Healify, no un archivo de test:
    * escribirlo no rompe la promesa de no modificar el código del usuario. */
   recordHistory?: boolean
+  /** Piso de confianza para aplicar: los healed con confianza menor se saltean como
+   * `low-confidence` (solo sugerencia). undefined = sin filtro (comportamiento previo). */
+  minConfidence?: number
 }
 
 /** El historial se graba en un fix real, o cuando se pide explícitamente en dry-run. */
@@ -92,17 +112,32 @@ function shouldRecordHistory(opts: Pick<ApplyOptions, 'dryRun' | 'recordHistory'
  * verified originales); `runForFix` puede diferir cuando `--interactive` filtró casos.
  */
 export function applyRun(run: LocalRun, runForFix: LocalRun, opts: ApplyOptions): FixOutcome[] {
-  const { dryRun, force, ast, pageObjects } = opts
-  const outcomes = fix(runForFix, { dryRun, force, pageObjects })
+  const { dryRun, force, ast, pageObjects, minConfidence } = opts
 
-  if (!ast) return outcomes
+  // Filtro de confianza: "auto-apply gana confianza". Los casos healed bajo el umbral no se
+  // aplican (ni pasan al AST): se reportan como low-confidence y el usuario decide.
+  let confidenceSkipped: FixOutcome[] = []
+  let fixRun = runForFix
+  if (minConfidence !== undefined) {
+    confidenceSkipped = runForFix.cases
+      .filter((c) => c.status === 'healed' && (c.confidence ?? 0) < minConfidence)
+      .map((c) => ({ testFile: c.testFile ?? '', selector: c.selector, status: 'skipped' as const, reason: 'low-confidence' as const }))
+    fixRun = {
+      ...runForFix,
+      cases: runForFix.cases.filter((c) => !(c.status === 'healed' && (c.confidence ?? 0) < minConfidence)),
+    }
+  }
+
+  const outcomes = fix(fixRun, { dryRun, force, pageObjects })
+
+  if (!ast) return [...confidenceSkipped, ...outcomes]
 
   const notSubstitutableKeys = new Set(
     outcomes
       .filter((o): o is Extract<FixOutcome, { status: 'skipped' }> => o.status === 'skipped' && o.reason === 'not-substitutable')
       .map((o) => `${o.testFile}::${o.selector}`)
   )
-  const astRun: LocalRun = { ...runForFix, cases: runForFix.cases.filter((c) => notSubstitutableKeys.has(`${c.testFile}::${c.selector}`)) }
+  const astRun: LocalRun = { ...fixRun, cases: fixRun.cases.filter((c) => notSubstitutableKeys.has(`${c.testFile}::${c.selector}`)) }
   const astByKey = new Map(fixAst(astRun, { dryRun, force }).map((o) => [`${o.testFile}::${o.selector}`, o]))
 
   for (let i = 0; i < outcomes.length; i++) {
@@ -110,7 +145,7 @@ export function applyRun(run: LocalRun, runForFix: LocalRun, opts: ApplyOptions)
     if (astOutcome) outcomes[i] = astOutcome
   }
 
-  return outcomes
+  return [...confidenceSkipped, ...outcomes]
 }
 
 /**
@@ -140,13 +175,29 @@ export function runFix(args: string[]): void {
   const ast = !args.includes('--no-ast')
   const pageObjects = !args.includes('--no-pom')
   const interactive = args.includes('--interactive')
+  const suggestOnly = args.includes('--suggest-only')
+  const validate = args.includes('--validate')
   const reportPath = parseReportPath(args)
+
+  // Umbral de confianza: default 0.8 (80%) — por debajo, solo sugerencia.
+  let minConfidence = 0.8
+  const minConfidenceIndex = args.indexOf('--min-confidence')
+  if (minConfidenceIndex >= 0) {
+    minConfidence = Number(args[minConfidenceIndex + 1])
+    if (!Number.isFinite(minConfidence) || minConfidence < 0 || minConfidence > 1) {
+      console.error('--min-confidence debe ser un número entre 0 y 1 (ej. 0.9).')
+      process.exit(1)
+    }
+  }
+  const testCommandIndex = args.indexOf('--test-command')
+  const testCommand = testCommandIndex >= 0 ? args[testCommandIndex + 1] : undefined
 
   // --watch es un loop: no termina, y --pr/--interactive no tienen sentido adentro (crear una
   // PR por cada corrida, o preguntar mientras el usuario está mirando otra cosa). Se delega
   // antes de leer nada, porque en watch el reporte puede todavía no existir.
   if (args.includes('--watch')) {
-    return runFixWatch(reportPath, { dryRun, force, ast, pageObjects, recordHistory }, parseInterval(args))
+    if (validate) console.log('--validate no aplica con --watch (la validación corre en cada pasada suelta).\n')
+    return runFixWatch(reportPath, { dryRun, force, ast, pageObjects, recordHistory, minConfidence }, parseInterval(args))
   }
 
   let run: LocalRun
@@ -164,7 +215,12 @@ export function runFix(args: string[]): void {
     console.log('--interactive pedido, pero no hay una terminal para preguntar — sigo en modo automático.\n')
   }
 
-  console.log(`Healify fix — ${reportPath}${ast ? '' : ' (--no-ast)'}${canPrompt ? ' (interactivo)' : ''}\n`)
+  const modeNote = suggestOnly
+    ? ' (solo sugerencias — no se modifica ningún archivo)'
+    : validate
+      ? ' (con validación post-fix)'
+      : ''
+  console.log(`Healify fix — ${reportPath}${ast ? '' : ' (--no-ast)'}${canPrompt ? ' (interactivo)' : ''}${modeNote} · confianza mínima ${minConfidence}\n`)
 
   if (shouldRecordHistory({ dryRun, recordHistory })) appendHistory(run, process.cwd())
 
@@ -182,7 +238,43 @@ export function runFix(args: string[]): void {
     }
   }
 
-  const outcomes = applyRun(run, runForFix, { dryRun, force, ast, pageObjects })
+  // --validate: primero se calcula qué se aplicaría (dry-run, no escribe nada), se snapshotan
+  // esos archivos, y recién después se aplica de verdad y se corre el test del caso.
+  const wantsValidation = validate && !dryRun && !suggestOnly
+  let snapshot: FileSnapshot | undefined
+  let validationFiles: string[] = []
+  if (wantsValidation) {
+    const dryOutcomes = applyRun(run, runForFix, { dryRun: true, force, ast, pageObjects, minConfidence })
+    const applied = dryOutcomes.filter((o): o is Extract<FixOutcome, { status: 'applied' }> => o.status === 'applied')
+    if (applied.length > 0) {
+      const touchedFiles = [...new Set(applied.map((o) => o.appliedIn ?? o.testFile))]
+      snapshot = snapshotFiles(touchedFiles)
+      validationFiles = [...new Set(applied.map((o) => o.testFile).filter((f): f is string => Boolean(f)))]
+    }
+  }
+
+  const outcomes = applyRun(run, runForFix, { dryRun: dryRun || suggestOnly, force, ast, pageObjects, minConfidence })
+
+  // Validación post-fix: si el test vuelve a fallar, se revierte y el proceso sale con error
+  // ANTES de tocar la rama/PR. "Auto-apply gana confianza".
+  if (wantsValidation && validationFiles.length > 0) {
+    const result = runValidation(run, validationFiles, testCommand)
+    if (!result.ran) {
+      const hint = testCommand
+        ? '--test-command definido pero vacío.'
+        : `no sé correr los tests de ${run.framework ?? 'este framework'} automáticamente — usá --test-command para indicar el comando.`
+      console.warn(`--validate: ${hint} Se omitió la validación; el fix queda aplicado sin confirmar.`)
+    } else if (!result.ok) {
+      if (snapshot) restoreSnapshot(snapshot)
+      console.error(`✗ Validación falló: ${result.command}\n${result.output}`)
+      console.error('El fix se revirtió — el selector candidato no pasa el test que la originó.')
+      process.exit(1)
+    } else {
+      console.log(`✅ Validación: ${result.command} pasó — el fix queda aplicado.`)
+    }
+  } else if (validate && (dryRun || suggestOnly)) {
+    console.log('--validate: no hay cambios que validar (sin aplicar archivos).')
+  }
 
   // Map original case data for PR body (confidence, originalSelector, verified come from run.cases)
   const caseByKey = new Map(run.cases.map(c => [`${c.testFile}::${c.selector}`, c]))

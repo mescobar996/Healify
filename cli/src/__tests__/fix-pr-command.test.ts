@@ -16,6 +16,9 @@ const mocks = vi.hoisted(() => ({
   mockParseInterval: vi.fn(),
   mockParseReportPath: vi.fn(),
   mockExit: vi.fn(),
+  mockSnapshotFiles: vi.fn(),
+  mockRestoreSnapshot: vi.fn(),
+  mockRunValidation: vi.fn(),
 }))
 
 vi.mock('node:fs', async (importOriginal) => {
@@ -41,6 +44,11 @@ vi.mock('../commands/watch', () => ({
   runFixWatch: mocks.mockRunFixWatch,
   parseInterval: mocks.mockParseInterval,
   parseReportPath: mocks.mockParseReportPath,
+}))
+vi.mock('../validate', () => ({
+  snapshotFiles: mocks.mockSnapshotFiles,
+  restoreSnapshot: mocks.mockRestoreSnapshot,
+  runValidation: mocks.mockRunValidation,
 }))
 
 import { applyRun, applyFixOnce, runFix, printOutcomes } from '../commands/fix-pr'
@@ -218,6 +226,7 @@ describe('applyFixOnce', () => {
 
 describe('runFix', () => {
   beforeEach(() => {
+    vi.clearAllMocks()
     mocks.mockParseReportPath.mockReturnValue('healify-report.json')
     mocks.mockReadFileSync.mockReturnValue(JSON.stringify(RUN))
     mocks.mockFix.mockReturnValue([APPLIED])
@@ -369,5 +378,62 @@ describe('runFix', () => {
 
     runFix(['--pr', 'healify-report.json'])
     expect(error.mock.calls.flat().join('\n')).toContain('❌ Error creating PR: auth failed')
+  })
+
+  it('--suggest-only no modifica archivos (aplica con dry-run) y avisa en el header', () => {
+    const { log } = spyConsole()
+    runFix(['--suggest-only', 'healify-report.json'])
+    expect(mocks.mockFix).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ dryRun: true }))
+    expect(log.mock.calls.flat().join('\n')).toContain('solo sugerencias — no se modifica ningún archivo')
+  })
+
+  it('--min-confidence filtra los healed que no llegan al umbral', () => {
+    const { log } = spyConsole()
+    mocks.mockFix.mockReturnValue([])
+    runFix(['--min-confidence', '0.99', 'healify-report.json'])
+    const all = log.mock.calls.flat().join('\n')
+    expect(all).toContain('confianza mínima 0.99')
+    expect(all).toContain('saltado: la confianza está por debajo del umbral')
+    // El caso de RUN tiene confidence 0.95 < 0.99: no debe llegar a fix()
+    expect(mocks.mockFix.mock.calls[0][0].cases).toEqual([])
+  })
+
+  it('--min-confidence inválido sale con error', () => {
+    spyConsole()
+    expect(() => runFix(['--min-confidence', 'noventa', 'healify-report.json'])).toThrow('PROCESS_EXIT:1')
+  })
+
+  it('--validate: test que pasa deja el fix aplicado', () => {
+    const { log } = spyConsole()
+    mocks.mockSnapshotFiles.mockReturnValue(new Map())
+    mocks.mockRunValidation.mockReturnValue({ ran: true, ok: true, command: 'npx playwright test a.spec.ts', output: '' })
+    runFix(['--validate', 'healify-report.json'])
+    expect(mocks.mockRestoreSnapshot).not.toHaveBeenCalled()
+    expect(log.mock.calls.flat().join('\n')).toContain('Validación: npx playwright test a.spec.ts pasó')
+  })
+
+  it('--validate: test que falla revierte el fix y sale con 1', () => {
+    spyConsole()
+    mocks.mockSnapshotFiles.mockReturnValue(new Map([['e2e/checkout.spec.ts', 'original']]))
+    mocks.mockRunValidation.mockReturnValue({ ran: true, ok: false, command: 'npx playwright test a.spec.ts', output: 'FAIL' })
+    expect(() => runFix(['--validate', 'healify-report.json'])).toThrow('PROCESS_EXIT:1')
+    expect(mocks.mockRestoreSnapshot).toHaveBeenCalled()
+  })
+
+  it('--validate: framework sin comando conocido avisa y deja el fix', () => {
+    spyConsole()
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    mocks.mockSnapshotFiles.mockReturnValue(new Map())
+    mocks.mockRunValidation.mockReturnValue({ ran: false, ok: false, command: null, reason: 'no-framework' })
+    runFix(['--validate', 'healify-report.json'])
+    expect(mocks.mockRestoreSnapshot).not.toHaveBeenCalled()
+    expect(warn.mock.calls.flat().join('\n')).toContain('Se omitió la validación')
+  })
+
+  it('--validate con --dry-run no intenta validar nada', () => {
+    const { log } = spyConsole()
+    runFix(['--validate', '--dry-run', 'healify-report.json'])
+    expect(mocks.mockRunValidation).not.toHaveBeenCalled()
+    expect(log.mock.calls.flat().join('\n')).toContain('no hay cambios que validar')
   })
 })
