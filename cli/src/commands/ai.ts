@@ -6,6 +6,7 @@
 
 import { readFileSync, existsSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import * as readline from 'node:readline'
 import {
   HealifyAI,
   getSystemRAM,
@@ -171,7 +172,6 @@ export async function runAiChat(): Promise<void> {
 
   console.log('\n💬 Chat con Healify AI (escribe "salir" para terminar)\n')
 
-  const readline = require('node:readline')
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,

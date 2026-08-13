@@ -305,8 +305,7 @@ function handleCommandError(error: unknown): void {
   process.exit(1)
 }
 
-function main(): void {
-  const args = process.argv.slice(2)
+export function runCli(args: string[]): void {
   const command = args[0]
 
   // --version/-v en cualquier posición imprime la versión y no ejecuta nada. Sin esto, un
@@ -346,4 +345,8 @@ function main(): void {
   if (command) process.exit(1)
 }
 
-main()
+// Solo se dispara cuando el binario corre como entrypoint: importar index.ts desde un test
+// (o desde otro módulo) no debe ejecutar comandos con efectos secundarios.
+if (require.main === module) {
+  runCli(process.argv.slice(2))
+}
