@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<style>
+  :root{
+    --bg:#000000; --card:#0A0A0D; --card2:#101012;
+    --fg:#EDEDED; --muted:#8B8B93;
+    --border:rgba(255,255,255,.09); --border2:rgba(255,255,255,.16);
+    --accent:#8B5CF6; --accent2:#A78BFA;
+    --healed:#34D399; --review:#E8B94D; --unresolved:#E85C4A;
+    --healed-soft:rgba(52,211,153,.12); --review-soft:rgba(232,185,77,.12); --unresolved-soft:rgba(232,92,74,.12);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#000;color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;padding:24px}
+  .sheet{max-width:1040px;margin:0 auto;background:var(--card);border:1px solid var(--border);border-radius:18px;overflow:hidden}
+  .bar{height:44px;padding:0 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:var(--card2)}
+  .bar .t{font-family:ui-monospace,"JetBrains Mono",monospace;font-size:12px;color:var(--muted)}
+  .bar .dot{width:8px;height:8px;border-radius:50%;background:var(--healed);display:inline-block;margin-right:7px;box-shadow:0 0 0 3px var(--healed-soft)}
+  .body{padding:20px}
+  .vitals{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+  .vital{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+  .vital .n{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
+  .vital .l{margin-top:6px;font-size:11px;color:var(--muted)}
+  .vital.green .n{color:var(--healed)} .vital.yellow .n{color:var(--review)} .vital.red .n{color:var(--unresolved)}
+  .head{display:flex;align-items:baseline;justify-content:space-between;margin:4px 0 12px}
+  .head h2{font-size:15px;font-weight:600}
+  .head .count{font-size:12px;color:var(--muted)}
+  .row{display:flex;align-items:center;gap:12px;background:var(--card2);border:1px solid var(--border);border-radius:11px;padding:12px 14px;margin-bottom:8px}
+  .sel{font-family:ui-monospace,"JetBrains Mono",monospace;font-size:12.5px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .badge{flex:none;font-size:10px;font-weight:700;padding:3px 8px;border-radius:999px;letter-spacing:.04em;text-transform:uppercase}
+  .badge.chronic{background:var(--unresolved-soft);color:var(--unresolved);border:1px solid rgba(232,92,74,.3)}
+  .badge.healed{background:var(--healed-soft);color:var(--healed);border:1px solid rgba(52,211,153,.3)}
+  .meta{margin-left:auto;flex:none;font-family:ui-monospace,"JetBrains Mono",monospace;font-size:11px;color:var(--muted)}
+  .meter{flex:none;width:90px;height:4px;border-radius:2px;background:rgba(128,128,128,.18);overflow:hidden}
+  .meter span{display:block;height:100%}
+  .meter.green span{background:var(--healed)} .meter.yellow span{background:var(--review)}
+</style>
+</head>
+<body>
+  <div class="sheet">
+    <div class="bar"><span class="t"><span class="dot"></span>healify dashboard — 100% local</span><span class="t">stats.json · history.jsonl</span></div>
+    <div class="body">
+      <div class="vitals">
+        <div class="vital"><div class="n">38</div><div class="l">selectores sanados</div></div>
+        <div class="vital yellow"><div class="n">6</div><div class="l">a revisar</div></div>
+        <div class="vital red"><div class="n">2</div><div class="l">sin sugerencia</div></div>
+        <div class="vital green"><div class="n">46</div><div class="l">analizados</div></div>
+      </div>
+      <div class="head"><h2>Necesita tu atención</h2><span class="count">8 casos</span></div>
+      <div class="row">
+        <span class="sel">#btn-add-to-cart</span>
+        <span class="badge chronic">🔥 Crónico</span>
+        <span class="meter yellow"><span style="width:92%"></span></span>
+        <span class="meta">4 roturas</span>
+      </div>
+      <div class="row">
+        <span class="sel">[data-testid='checkout-submit']</span>
+        <span class="badge healed">Sanado</span>
+        <span class="meter green"><span style="width:95%"></span></span>
+        <span class="meta">92%</span>
+      </div>
+      <div class="row">
+        <span class="sel">//button[@class='submit']</span>
+        <span class="badge healed">Sanado</span>
+        <span class="meter green"><span style="width:97%"></span></span>
+        <span class="meta">97%</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -16,9 +16,11 @@ a claro.
   no carga).
 - `es/index.html` — versión en español (misma estructura).
 - `healify-mark.png` — el logo (usado en el nav y como favicon).
-- `report-screenshot.png` — **falta**: un screenshot real de `healify-report.html`. Mientras
-  no exista, la landing muestra un placeholder con link al reporte de ejemplo. Generá el
-  screenshot y guardalo acá con ese nombre exacto.
+- `report-screenshot.png` — captura del dashboard local de Healify (vitals + 🔥 Selectores
+  Crónicos), generada con Playwright a partir de un mockup fiel al diseño real. Se muestra
+  en la sección "El dashboard" de `index.html` y `es/index.html`. Regenerala si cambia el
+  diseño del dashboard: el mockup fuente vive en `scripts/dashboard-preview.html` (sin
+  build, se abre y se captura el `.sheet`).
 
 ## Desplegar en Vercel
 

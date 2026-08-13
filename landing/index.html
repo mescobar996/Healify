@@ -179,22 +179,7 @@ button{font:inherit;cursor:pointer}
 
 /* Preview del dashboard — mockup fiel a healify-dashboard.html (vitals + 🔥 crónicos) */
 .preview{margin-top:40px;border:1px solid var(--border);border-radius:18px;background:linear-gradient(180deg,var(--card2),var(--card));box-shadow:var(--shadow-2);overflow:hidden}
-.preview-bar{height:44px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:rgba(255,255,255,.015)}
-.preview-bar .bar-title{font-size:12px;color:var(--muted);font-family:'JetBrains Mono'}
-.preview-body{padding:18px;display:grid;grid-template-columns:1.2fr .8fr;gap:18px}
-@media(max-width:860px){.preview-body{grid-template-columns:1fr}}
-.pv{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-.pv-card{border:1px solid var(--border);background:#070708;border-radius:12px;padding:14px}
-.pv-n{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
-.pv-card.green .pv-n{color:#34D399}.pv-card.yellow .pv-n{color:#E8B94D}.pv-card.red .pv-n{color:#E85C4A}
-.pv-l{font-size:11px;color:var(--muted);margin-top:5px}
-.pl{display:flex;flex-direction:column;gap:8px}
-.pl-row{display:flex;align-items:center;gap:10px;border:1px solid var(--border);background:#070708;border-radius:10px;padding:10px 12px;font-size:12px}
-.pl-sel{font-family:'JetBrains Mono';color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pl-badge{flex:none;font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px;letter-spacing:.04em;text-transform:uppercase}
-.pl-badge.chronic{background:rgba(232,92,74,.12);color:#E85C4A;border:1px solid rgba(232,92,74,.3)}
-.pl-badge.healed{background:rgba(52,211,153,.12);color:#34D399;border:1px solid rgba(52,211,153,.3)}
-.pl-count{margin-left:auto;flex:none;color:var(--muted2);font-family:'JetBrains Mono';font-size:11px}
+.preview-img{display:block;width:100%;height:auto}
 </style>
 <script type="application/ld+json">
 {
@@ -361,20 +346,7 @@ button{font:inherit;cursor:pointer}
 <section id="preview" class="wrap section" style="padding-top:0">
   <div class="reveal in"><div style="font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accent2);margin-bottom:12px">The dashboard</div><h2 class="h2">The whole picture, on your machine.</h2><p class="sub">healify dashboard --serve lifts a local UI with your accumulated stats and healing history — including a 🔥 Selectores Crónicos section for selectors that keep breaking. All from data that never leaves your machine.</p></div>
   <div class="preview reveal in" aria-label="Vista previa del dashboard local de Healify">
-    <div class="preview-bar"><span class="bar-title">healify dashboard — 100% local</span><span style="display:flex;gap:7px"><i style="width:9px;height:9px;border-radius:50%;background:#34D399;display:block"></i><i style="width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.12);display:block"></i><i style="width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.12);display:block"></i></span></div>
-    <div class="preview-body">
-      <div class="pv">
-        <div class="pv-card green"><div class="pv-n">38</div><div class="pv-l">selectores sanados</div></div>
-        <div class="pv-card yellow"><div class="pv-n">6</div><div class="pv-l">a revisar</div></div>
-        <div class="pv-card red"><div class="pv-n">2</div><div class="pv-l">sin sugerencia</div></div>
-        <div class="pv-card"><div class="pv-n">46</div><div class="pv-l">analizados</div></div>
-      </div>
-      <div class="pl">
-        <div class="pl-row"><span class="pl-sel">#btn-add-to-cart</span><span class="pl-badge chronic">🔥 Crónico</span><span class="pl-count">4 roturas</span></div>
-        <div class="pl-row"><span class="pl-sel">[data-testid='checkout-submit']</span><span class="pl-badge healed">Sanado</span><span class="pl-count">92%</span></div>
-        <div class="pl-row"><span class="pl-sel">//button[@class='submit']</span><span class="pl-badge healed">Sanado</span><span class="pl-count">97%</span></div>
-      </div>
-    </div>
+    <img class="preview-img" src="report-screenshot.png" alt="Captura del dashboard local de Healify: selectores sanados, a revisar y el badge 🔥 Selectores Crónicos" width="1040" height="379" loading="lazy">
   </div>
 </section>
 
