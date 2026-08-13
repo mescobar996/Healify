@@ -11,8 +11,10 @@ a claro.
 
 ## Archivos
 
-- `index.html` — la landing completa (autocontenida: CSS y JS inline, cero dependencias
-  salvo Google Fonts, que degrada a monospace del sistema si no carga).
+- `index.html` — la landing completa (CSS y JS inline; las secciones de estadísticas y el
+  preview del dashboard usan Tailwind + Alpine por CDN, con CSS propio de respaldo si el CDN
+  no carga).
+- `es/index.html` — versión en español (misma estructura).
 - `healify-mark.png` — el logo (usado en el nav y como favicon).
 - `report-screenshot.png` — **falta**: un screenshot real de `healify-report.html`. Mientras
   no exista, la landing muestra un placeholder con link al reporte de ejemplo. Generá el
@@ -33,3 +35,7 @@ vercel --prod
 
 La landing NO menciona el modo cloud viejo (API key, servidor) porque ya no existe. Si
 editás el copy, mantené esa línea: nada de features que la herramienta no tiene.
+
+Los números de la sección de estadísticas y el footer (`1113 tests`, cobertura) son reales
+del repo: si cambian, actualizalos también en `healifyStats()` y en el footer de ambas
+versiones (`index.html` y `es/index.html`).

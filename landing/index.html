@@ -165,6 +165,36 @@ button{font:inherit;cursor:pointer}
 .docCard .arrow{margin-left:auto;color:var(--muted2);transition:.15s}
 .docCard:hover .arrow{color:var(--accent2);transform:translateX(2px)}
 .docKind{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--accent2);opacity:.85}
+
+/* Stats — contadores con Alpine, mismo lenguaje visual de .vital del reporte */
+.stats{margin-top:40px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.stats{grid-template-columns:1fr}}
+.stat{border:1px solid var(--border);background:var(--card);border-radius:14px;padding:20px 18px;transition:.15s}
+.stat:hover{border-color:var(--border2);transform:translateY(-1px)}
+.stat-n{font-size:30px;font-weight:800;letter-spacing:-.03em;color:var(--fg2);font-variant-numeric:tabular-nums;line-height:1}
+.stat-n .plus{color:var(--accent2)}
+.stat-l{margin-top:8px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.stat-dot{width:7px;height:7px;border-radius:50%;background:var(--accent2);box-shadow:0 0 0 3px var(--ringSoft);flex:none}
+
+/* Preview del dashboard — mockup fiel a healify-dashboard.html (vitals + 🔥 crónicos) */
+.preview{margin-top:40px;border:1px solid var(--border);border-radius:18px;background:linear-gradient(180deg,var(--card2),var(--card));box-shadow:var(--shadow-2);overflow:hidden}
+.preview-bar{height:44px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:rgba(255,255,255,.015)}
+.preview-bar .bar-title{font-size:12px;color:var(--muted);font-family:'JetBrains Mono'}
+.preview-body{padding:18px;display:grid;grid-template-columns:1.2fr .8fr;gap:18px}
+@media(max-width:860px){.preview-body{grid-template-columns:1fr}}
+.pv{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.pv-card{border:1px solid var(--border);background:#070708;border-radius:12px;padding:14px}
+.pv-n{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
+.pv-card.green .pv-n{color:#34D399}.pv-card.yellow .pv-n{color:#E8B94D}.pv-card.red .pv-n{color:#E85C4A}
+.pv-l{font-size:11px;color:var(--muted);margin-top:5px}
+.pl{display:flex;flex-direction:column;gap:8px}
+.pl-row{display:flex;align-items:center;gap:10px;border:1px solid var(--border);background:#070708;border-radius:10px;padding:10px 12px;font-size:12px}
+.pl-sel{font-family:'JetBrains Mono';color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-badge{flex:none;font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px;letter-spacing:.04em;text-transform:uppercase}
+.pl-badge.chronic{background:rgba(232,92,74,.12);color:#E85C4A;border:1px solid rgba(232,92,74,.3)}
+.pl-badge.healed{background:rgba(52,211,153,.12);color:#34D399;border:1px solid rgba(52,211,153,.3)}
+.pl-count{margin-left:auto;flex:none;color:var(--muted2);font-family:'JetBrains Mono';font-size:11px}
 </style>
 <script type="application/ld+json">
 {
@@ -185,6 +215,11 @@ button{font:inherit;cursor:pointer}
   "programmingLanguage": "TypeScript"
 }
 </script>
+<!-- Tailwind + Alpine por CDN para las secciones nuevas (stats con contadores y preview del
+     dashboard). El sitio sigue siendo estático sin build; si el CDN no carga, las secciones
+     caen a su CSS propio y el contenido sigue siendo legible. -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body>
 <a class="skip-link" href="#instalar">Skip to content</a>
@@ -210,7 +245,7 @@ button{font:inherit;cursor:pointer}
 </header>
 
 <main class="wrap hero" id="instalar">
-  <span class="badge"><span class="badge-dot"></span>v2.3.0 · 788 tests passing · 100% local · no AI · no cloud</span>
+  <span class="badge"><span class="badge-dot"></span>v2.3.0 · 1113 tests passing · 100% local · no AI · no cloud</span>
   <h1 class="h1">When a selector<br>breaks, <em>Healify</em><br>tells you how.</h1>
   <p class="lead">No more flaky tests because a <code>data-testid</code> changed. It runs offline, reads your real DOM and gives you the selector that actually works.</p>
   <div class="ctas">
@@ -313,9 +348,39 @@ button{font:inherit;cursor:pointer}
   </div>
 </section>
 
+<section id="stats" class="wrap section" style="padding-top:0" x-data="healifyStats()">
+  <div class="reveal in"><div style="font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accent2);margin-bottom:12px">By the numbers</div><h2 class="h2">Built, tested, measured.</h2><p class="sub">Healify ships with its own verification: a monorepo of 1113 unit tests and coverage floors that fail the CI if quality slips.</p></div>
+  <div class="stats reveal in">
+    <div class="stat"><div class="stat-n"><span x-text="fmt(tests)">0</span><span class="plus">+</span></div><div class="stat-l"><span class="stat-dot"></span>unit tests, all passing</div></div>
+    <div class="stat"><div class="stat-n"><span x-text="fmt(frameworks)">0</span></div><div class="stat-l"><span class="stat-dot"></span>frameworks supported</div></div>
+    <div class="stat"><div class="stat-n"><span x-text="fmt(packages)">0</span></div><div class="stat-l"><span class="stat-dot"></span>npm packages</div></div>
+    <div class="stat"><div class="stat-n"><span x-text="fmt(coverage)">0</span><span class="plus">%</span></div><div class="stat-l"><span class="stat-dot"></span>average line coverage</div></div>
+  </div>
+</section>
+
+<section id="preview" class="wrap section" style="padding-top:0">
+  <div class="reveal in"><div style="font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accent2);margin-bottom:12px">The dashboard</div><h2 class="h2">The whole picture, on your machine.</h2><p class="sub">healify dashboard --serve lifts a local UI with your accumulated stats and healing history — including a 🔥 Selectores Crónicos section for selectors that keep breaking. All from data that never leaves your machine.</p></div>
+  <div class="preview reveal in" aria-label="Vista previa del dashboard local de Healify">
+    <div class="preview-bar"><span class="bar-title">healify dashboard — 100% local</span><span style="display:flex;gap:7px"><i style="width:9px;height:9px;border-radius:50%;background:#34D399;display:block"></i><i style="width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.12);display:block"></i><i style="width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.12);display:block"></i></span></div>
+    <div class="preview-body">
+      <div class="pv">
+        <div class="pv-card green"><div class="pv-n">38</div><div class="pv-l">selectores sanados</div></div>
+        <div class="pv-card yellow"><div class="pv-n">6</div><div class="pv-l">a revisar</div></div>
+        <div class="pv-card red"><div class="pv-n">2</div><div class="pv-l">sin sugerencia</div></div>
+        <div class="pv-card"><div class="pv-n">46</div><div class="pv-l">analizados</div></div>
+      </div>
+      <div class="pl">
+        <div class="pl-row"><span class="pl-sel">#btn-add-to-cart</span><span class="pl-badge chronic">🔥 Crónico</span><span class="pl-count">4 roturas</span></div>
+        <div class="pl-row"><span class="pl-sel">[data-testid='checkout-submit']</span><span class="pl-badge healed">Sanado</span><span class="pl-count">92%</span></div>
+        <div class="pl-row"><span class="pl-sel">//button[@class='submit']</span><span class="pl-badge healed">Sanado</span><span class="pl-count">97%</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section class="wrap section" style="padding-top:0"><div class="cta reveal"><h2 class="h2" style="max-width:520px;text-align:center">Run your suite.<br>When something breaks, Healify will already be there.</h2><div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:6px"><a href="https://www.npmjs.com/package/@healify/cli" target="_blank" rel="noopener" class="btn btn-violet" style="height:44px;padding:0 22px;font-size:14px">npx @healify/cli@latest ↗</a></div><span style="font-family:'JetBrains Mono';font-size:12px;color:var(--muted2);margin-top:4px">MIT · 100% local · 0 tracking · Rosario, AR</span></div></section>
 
-<footer class="wrap foot"><span>788 tests · MIT © 2026 Matías Escobar · 0 data leaves your machine</span><span style="display:flex;gap:14px"><a href="https://www.npmjs.com/package/@healify/cli">npm</a><span style="opacity:.3">·</span><span>healify</span></span></footer>
+<footer class="wrap foot"><span>1113 tests · MIT © 2026 Matías Escobar · 0 data leaves your machine</span><span style="display:flex;gap:14px"><a href="https://www.npmjs.com/package/@healify/cli">npm</a><span style="opacity:.3">·</span><span>healify</span></span></footer>
 
 <script>
 (function(){
@@ -332,6 +397,33 @@ button{font:inherit;cursor:pointer}
     })
   })
 })();
+/* Contadores de la sección de estadísticas: arrancan en 0 y suben cuando la sección entra en
+   viewport. Números reales del repo (tests, cobertura); sin inventar métricas de producto. */
+window.healifyStats=function(){
+  const targets={tests:1113,frameworks:4,packages:8,coverage:93};
+  const state={tests:0,frameworks:0,packages:0,coverage:0,started:false};
+  return {
+    tests:0,frameworks:0,packages:0,coverage:0,
+    init(){
+      const el=this.$el;
+      const obs=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting&&!state.started){state.started=true;this.animate();obs.disconnect();}})},{threshold:.3});
+      obs.observe(el);
+    },
+    animate(){
+      const dur=900,t0=performance.now();
+      const tick=(t)=>{
+        const p=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-p,3);
+        this.tests=Math.round(targets.tests*e);
+        this.frameworks=Math.round(targets.frameworks*e);
+        this.packages=Math.round(targets.packages*e);
+        this.coverage=Math.round(targets.coverage*e);
+        if(p<1) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    },
+    fmt(n){return n.toLocaleString('en-US')}
+  };
+};
 </script>
 </body>
 </html>
