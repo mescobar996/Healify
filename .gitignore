@@ -88,4 +88,5 @@ examples/*/.healify/
 # Notas internas: utiles en local, ruido en un repo publico.
 PARA-MANANA.md
 
-# outputs temporales de evaluación.tmp/
+# Outputs temporales de evaluacion (npm run verify / coverage).
+.tmp/
