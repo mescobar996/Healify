@@ -202,11 +202,11 @@ Healify es un monorepo npm con 9 workspaces, cada uno un paquete `@healify/*`:
 | `ai-local` | IA local opcional vía Ollama |
 | `mcp` | Servidor MCP para agentes de IA |
 
-**Madurez:** 987 tests unitarios, todos pasando. El CI corre coverage con **umbrales
+**Madurez:** 1113 tests unitarios, todos pasando. El CI corre coverage con **umbrales
 anti-regresión** definidos en `scripts/coverage.sh` (Bash) y `scripts/coverage.ps1`
-(PowerShell): los paquetes que ya superan 80% deben mantenerse ahí, el resto conserva su piso
-actual. Cobertura de líneas actual por paquete: `reporter-core` 91%, `selenium-plugin` 100%,
-`webdriverio-plugin` 88%, `cli` 63.4%, `cypress-plugin` 57.7%, `test-runner` 79.4%.
+(PowerShell): todo paquete que ya supera 80% exige 80% (test-runner conserva su piso en 79).
+Cobertura de líneas actual por paquete: `reporter-core` 93.4%, `selenium-plugin` 98.8%,
+`webdriverio-plugin` 87.6%, `cli` 91.8%, `cypress-plugin` 94.8%, `test-runner` 79.5%.
 
 Un detalle a tener en cuenta antes de tocar código: los workspaces se importan entre sí como
 `@healify/reporter-core`, que resuelve al `dist/` compilado — así que corré `npm run build`
