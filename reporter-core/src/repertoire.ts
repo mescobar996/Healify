@@ -33,6 +33,11 @@ export interface HistoryEntry {
    * revirtió/descartó. `undefined` = todavía sin confirmar. Alimenta la métrica de eficacia
    * del dashboard (aceptados vs rechazados) — la tasa de "arreglos que se aceptan sin revert". */
   accepted?: boolean
+  /** Framework de la corrida que originó la entrada (Playwright, Cypress, Selenium,
+   * WebdriverIO…). Opcional a propósito: los historiales escritos antes de que existiera el
+   * campo no lo tienen, y un archivo viejo tiene que seguir leyéndose sin migración. Alimenta
+   * el desglose de eficacia por framework del dashboard. */
+  framework?: string
 }
 
 const HISTORY_RELATIVE_PATH = join('.healify', 'history.jsonl')

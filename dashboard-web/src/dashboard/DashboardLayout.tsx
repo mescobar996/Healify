@@ -22,6 +22,9 @@ export function DashboardLayout() {
           <NavLink to="/chronic" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
             🔥 Crónicos
           </NavLink>
+          <NavLink to="/efficacy" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
+            🎯 Eficacia
+          </NavLink>
         </nav>
         <div className="sidebar-foot">
           <span className="local-badge">100% local</span>

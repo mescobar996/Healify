@@ -198,8 +198,14 @@ Lo que muestra:
 - **Historial de `.healify/history.jsonl`**: selectores recurrentes, re-rotos, tendencia diaria.
   Una sección dedicada **🔥 Selectores Crónicos** lista cada selector que se rompió 3 o más veces,
   y una insignia roja **Crónico** los marca en la lista principal de selectores.
+- **🎯 Eficacia** (nuevo): cuántos fixes se aceptan de verdad. Un donut de aceptados vs
+  rechazados vs sin confirmar (`healify confirm`), la tasa de aceptación por framework
+  (Playwright, Cypress, Selenium, WebdriverIO — las entradas viejas se agrupan en "unknown"),
+  una tendencia de 7/30 días y el desglose por causa de fallo ("Selector roto", "Aserción",
+  "Timing / espera", …).
 - **API JSON**: (opcional) hay endpoints `GET /api/stats`, `GET /api/selectors`,
-  `GET /api/selectors/:id`.
+  `GET /api/selectors/:id`. `/api/stats` también acepta `?efficacy-window=7|30` para ajustar
+  la ventana de la tendencia de eficacia.
 - **UI React**: se sirve desde `dashboard-web/dist` si existe; si no, el servidor igual sirve
   la API y una página de fallback.
 

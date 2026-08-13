@@ -16,6 +16,12 @@ const fixture: StatsOverviewType = {
   totalHealingMs: 2976,
   healRate: 0.75,
   efficacy: { accepted: 3, rejected: 2, unconfirmed: 1, rate: 0.6 },
+  efficacyReport: {
+    totals: { accepted: 3, rejected: 2, pending: 1, rate: 0.6 },
+    byFramework: {},
+    trend: [],
+    byCause: {},
+  },
   history: {
     total: 5,
     healed: 4,

@@ -22,6 +22,20 @@ sugerencia inteligente", con un rediseño visual completo.
   cuántos fixes se aceptan sin revertir. El dashboard muestra `Eficacia de fixes`
   (aceptados · rechazados · sin confirmar).
 
+### Dashboard de eficacia (🎯 Eficacia)
+
+- **Nueva sección "Eficacia"** en el dashboard (`/efficacy`) con datos reales de
+  `.healify/history.jsonl`:
+  - Donut de aceptados vs rechazados vs sin confirmar + tasa global.
+  - Tasa de eficacia por framework (Playwright, Cypress, Selenium, WebdriverIO); las
+    entradas históricas sin framework se agrupan en "unknown" sin romper el total.
+  - Tendencia de aceptados/rechazados en ventanas de **7 y 30 días** (toggle en la UI;
+    agregación server-side vía `?efficacy-window=7|30`).
+  - Desglose por causa de fallo ("Selector roto", "Aserción", "Timing / espera", …).
+- **`HistoryEntry.framework`** — cada entrada nueva del historial registra el framework de la
+  corrida (campo opcional, back-compat total con historiales viejos).
+- Gráficos interactivos (hover con detalle) con Chart.js — sin dependencias nuevas.
+
 ### Visual overhaul
 
 - **Nuevo logo** escudo + H (SVG animado/estático + pack raster 512/192/180/32/16 + favicon.ico).

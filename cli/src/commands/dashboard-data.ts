@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { buildDashboardStats, type HistoryEntry, type TimelinePoint } from '@healify/reporter-core'
+import { buildDashboardStats, FAILURE_CAUSE_LABEL, type FailureCause, type HistoryEntry, type TimelinePoint } from '@healify/reporter-core'
 
 /**
  * Lógica pura del dashboard `--serve`: agrupar el historial por selector, calcular
@@ -52,6 +52,9 @@ export interface StatsOverview {
     unconfirmed: number
     rate: number | null
   }
+  /** Reporte de eficacia completo (sección "Eficacia" del dashboard): totales, desglose por
+   * framework, tendencia en la ventana pedida y desglose por causa de fallo. */
+  efficacyReport: EfficacyReport
   history: {
     total: number
     healed: number
@@ -62,6 +65,41 @@ export interface StatsOverview {
     lastSeen: string | null
     timeline: TimelinePoint[]
   }
+}
+
+/** Agregados de aceptación/rechazo de un grupo de entradas. `rate` es null hasta que haya
+ * al menos una confirmación (0/0 no es un número). */
+export interface EfficacyTotals {
+  accepted: number
+  rejected: number
+  /** Sin confirmar vía `healify confirm` — no cuentan para la tasa pero se reportan. */
+  pending: number
+  rate: number | null
+}
+
+/** Un día de la tendencia de eficacia. */
+export interface TrendEfficacyPoint {
+  date: string
+  accepted: number
+  rejected: number
+}
+
+/** Aceptación/rechazo por causa de fallo (clave = etiqueta de FAILURE_CAUSE_LABEL). */
+export interface CauseEfficacy {
+  accepted: number
+  rejected: number
+  total: number
+}
+
+/** Reporte de la sección "Eficacia": totales + desgloses que alimentan los gráficos. */
+export interface EfficacyReport {
+  totals: EfficacyTotals
+  /** Por framework; las entradas viejas sin campo `framework` caen en "unknown". */
+  byFramework: Record<string, EfficacyTotals>
+  /** Diario, desde (hoy - ventana + 1) hasta hoy, días sin datos en 0. */
+  trend: TrendEfficacyPoint[]
+  /** Por causa de fallo, con etiquetas locales ("Selector roto", "Aserción", …). */
+  byCause: Record<string, CauseEfficacy>
 }
 
 /** Clave canónica de agrupación: archivo + selector, la misma que usa computeChronic. */
@@ -147,8 +185,9 @@ export function buildSelectorDetail(entries: HistoryEntry[], id: string): Select
   return { ...summary, suggestions, timeline: timelinePerSelector(mine) }
 }
 
-/** Vistazo general: stats.json + resumen del histórico de history.jsonl. */
-export function buildStatsOverview(healStats: HealStatsLike, entries: HistoryEntry[]): StatsOverview {
+/** Vistazo general: stats.json + resumen del histórico de history.jsonl. `windowDays` es la
+ * ventana de la tendencia de eficacia (7 o 30); fuera de esos dos valores cae a 30. */
+export function buildStatsOverview(healStats: HealStatsLike, entries: HistoryEntry[], windowDays: number = 30): StatsOverview {
   const history = buildDashboardStats(entries)
   return {
     totalAnalyzed: healStats.totalAnalyzed,
@@ -159,6 +198,7 @@ export function buildStatsOverview(healStats: HealStatsLike, entries: HistoryEnt
     totalHealingMs: healStats.totalHealingMs,
     healRate: healStats.totalAnalyzed > 0 ? healStats.healed / healStats.totalAnalyzed : 0,
     efficacy: computeEfficacy(entries),
+    efficacyReport: computeEfficacyReport(entries, windowDays),
     history: {
       total: history.total,
       healed: history.healed,
@@ -185,6 +225,98 @@ function computeEfficacy(entries: HistoryEntry[]): StatsOverview['efficacy'] {
     unconfirmed: entries.length - confirmed,
     rate: confirmed > 0 ? accepted / confirmed : null,
   }
+}
+
+const EFFICACY_WINDOW_DAYS = 30
+
+function efficacyTotals(entries: HistoryEntry[]): EfficacyTotals {
+  const accepted = entries.filter((e) => e.accepted === true).length
+  const rejected = entries.filter((e) => e.accepted === false).length
+  const confirmed = accepted + rejected
+  return {
+    accepted,
+    rejected,
+    pending: entries.length - confirmed,
+    rate: confirmed > 0 ? accepted / confirmed : null,
+  }
+}
+
+/** Ventana válida para la tendencia de eficacia: solo 7 o 30 días; cualquier otra cosa cae
+ * al default — la UI nunca pide otra, y un valor raro no debe romper ni inventar rangos. */
+export function normalizeEfficacyWindow(value: string | undefined | null, fallback: number = EFFICACY_WINDOW_DAYS): number {
+  if (value === '7') return 7
+  if (value === '30') return 30
+  return fallback
+}
+
+/** Fecha UTC `YYYY-MM-DD` del día de un timestamp; null si el timestamp no parsea (entrada
+ * corrupta — se ignora, no rompe la tendencia). */
+function dayOf(timestamp: string): string | null {
+  const parsed = new Date(timestamp)
+  if (Number.isNaN(parsed.getTime())) return null
+  return parsed.toISOString().slice(0, 10)
+}
+
+/** Reporte completo de eficacia. La agregación es server-side a propósito: la UI solo
+ * renderiza lo que ya viene agregado (SC-003 del spec). `windowDays` limita la tendencia,
+ * no los totales — los totales y desgloses son siempre del historial completo. */
+export function computeEfficacyReport(entries: HistoryEntry[], windowDays: number = EFFICACY_WINDOW_DAYS): EfficacyReport {
+  const totals = efficacyTotals(entries)
+
+  const byFramework: Record<string, EfficacyTotals> = {}
+  const frameworkGroups = new Map<string, HistoryEntry[]>()
+  for (const e of entries) {
+    const key = (e.framework ?? 'unknown').toLowerCase()
+    const list = frameworkGroups.get(key)
+    if (list) list.push(e)
+    else frameworkGroups.set(key, [e])
+  }
+  for (const [key, group] of frameworkGroups) {
+    byFramework[key] = efficacyTotals(group)
+  }
+
+  const byCause: Record<string, CauseEfficacy> = {}
+  for (const e of entries) {
+    const cause: FailureCause = e.cause && e.cause in FAILURE_CAUSE_LABEL ? e.cause : 'unknown'
+    const label = FAILURE_CAUSE_LABEL[cause]
+    const current = byCause[label] ?? { accepted: 0, rejected: 0, total: 0 }
+    current.total += 1
+    if (e.accepted === true) current.accepted += 1
+    else if (e.accepted === false) current.rejected += 1
+    byCause[label] = current
+  }
+
+  const trend = buildEfficacyTrend(entries, windowDays)
+
+  return { totals, byFramework, byCause, trend }
+}
+
+/** Tendencia diaria de aceptados/rechazados desde (hoy - windowDays + 1) hasta hoy, con días
+ * sin datos en 0. Los timestamps futuros se ignoran (no son parte del pasado observable). */
+function buildEfficacyTrend(entries: HistoryEntry[], windowDays: number): TrendEfficacyPoint[] {
+  const today = new Date()
+  today.setUTCHours(0, 0, 0, 0)
+  const start = new Date(today)
+  start.setUTCDate(start.getUTCDate() - (windowDays - 1))
+
+  const byDay = new Map<string, TrendEfficacyPoint>()
+  const day = new Date(start)
+  while (day.getTime() <= today.getTime()) {
+    const key = day.toISOString().slice(0, 10)
+    byDay.set(key, { date: key, accepted: 0, rejected: 0 })
+    day.setUTCDate(day.getUTCDate() + 1)
+  }
+
+  for (const e of entries) {
+    const date = dayOf(e.timestamp)
+    if (!date) continue
+    const point = byDay.get(date)
+    if (!point) continue // fuera de la ventana
+    if (e.accepted === true) point.accepted += 1
+    else if (e.accepted === false) point.rejected += 1
+  }
+
+  return [...byDay.values()]
 }
 
 /** Forma mínima de `HealStats` que necesita el overview — evita acoplar la capa pura al storage. */

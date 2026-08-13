@@ -5,7 +5,11 @@ import { vi } from 'vitest'
 // Los tests verifican el render del dashboard, no el pixelado del gráfico.
 vi.mock('react-chartjs-2', () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const Stub = ({ data }: { data?: any }) => <div data-testid="trend-chart">{JSON.stringify(data ?? {})}</div>
+  const Stub = ({ data, 'data-testid': testId, ...rest }: { data?: any; 'data-testid'?: string }) => (
+    <div data-testid={testId ?? 'trend-chart'} {...rest}>
+      {JSON.stringify(data ?? {})}
+    </div>
+  )
   return {
     Chart: {
       register: vi.fn(),
@@ -13,7 +17,13 @@ vi.mock('react-chartjs-2', () => {
     CategoryScale: class {},
     LinearScale: class {},
     BarElement: class {},
+    ArcElement: class {},
+    LineElement: class {},
+    PointElement: class {},
     Tooltip: class {},
+    Legend: class {},
     Bar: Stub,
+    Line: Stub,
+    Doughnut: Stub,
   }
 })

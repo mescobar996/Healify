@@ -352,3 +352,91 @@ code {
   color: var(--muted);
   margin: 0;
 }
+
+.efficacy-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 26px;
+}
+
+.efficacy-grid .card {
+  margin-bottom: 0;
+}
+
+.efficacy-trend-card {
+  grid-column: 1 / -1;
+}
+
+.efficacy-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.efficacy-card-head h2 {
+  margin: 0;
+}
+
+.efficacy-toggle {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.efficacy-toggle button {
+  font: inherit;
+  font-size: 12px;
+  color: var(--muted);
+  background: none;
+  border: none;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.efficacy-toggle button.active {
+  color: #c4b5fd;
+  background: var(--ring-soft);
+}
+
+.efficacy-donut {
+  height: 220px;
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+.efficacy-chart {
+  height: 240px;
+}
+
+.efficacy-rate {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 14px;
+}
+
+.efficacy-rate-n {
+  font-size: 26px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #34d399;
+}
+
+.efficacy-rate-l {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+@media (max-width: 760px) {
+  .efficacy-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .efficacy-trend-card {
+    grid-column: auto;
+  }
+}

@@ -27,6 +27,8 @@ export interface StatsOverview {
     unconfirmed: number
     rate: number | null
   }
+  /** Reporte completo de la sección "Eficacia": totales + desgloses ya agregados server-side. */
+  efficacyReport: EfficacyReport
   history: {
     total: number
     healed: number
@@ -37,6 +39,36 @@ export interface StatsOverview {
     lastSeen: string | null
     timeline: TrendPoint[]
   }
+}
+
+/** Agregados de aceptación/rechazo de un grupo. rate null = sin confirmaciones. */
+export interface EfficacyTotals {
+  accepted: number
+  rejected: number
+  pending: number
+  rate: number | null
+}
+
+/** Un día de la tendencia de eficacia. */
+export interface TrendEfficacyPoint {
+  date: string
+  accepted: number
+  rejected: number
+}
+
+/** Aceptación/rechazo por causa de fallo (clave = etiqueta local, ej. "Selector roto"). */
+export interface CauseEfficacy {
+  accepted: number
+  rejected: number
+  total: number
+}
+
+/** Reporte de la sección "Eficacia" — espejo de lo que sirve /api/stats. */
+export interface EfficacyReport {
+  totals: EfficacyTotals
+  byFramework: Record<string, EfficacyTotals>
+  trend: TrendEfficacyPoint[]
+  byCause: Record<string, CauseEfficacy>
 }
 
 /** Un selector roto tal como aparece en .healify/history.jsonl, agregado por archivo+selector. */

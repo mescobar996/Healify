@@ -8,10 +8,16 @@ export {
   buildSelectorSummaries,
   buildSelectorDetail,
   buildStatsOverview,
+  computeEfficacyReport,
+  normalizeEfficacyWindow,
   type SelectorSummary,
   type SelectorSuggestion,
   type SelectorDetail,
   type StatsOverview,
+  type EfficacyReport,
+  type EfficacyTotals,
+  type TrendEfficacyPoint,
+  type CauseEfficacy,
 } from './dashboard-data'
 
 /**

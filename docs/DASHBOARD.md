@@ -29,20 +29,33 @@ Todo es 100% local, nada sale de la máquina:
 | `~/.healify/stats.json` | Agregados acumulados de `healify heal`: total analizados, curados, fallas, por tipo, tiempo medio. |
 | `.healify/history.jsonl` | Por selector: roturas, última sugerencia, última cura, primera/última aparición, si es crónico (3+ roturas), historial y tendencia. |
 
+## Secciones de la UI
+
+- **Resumen** (`/`) — tarjetas de stats.json, eficacia resumida y curaciones por día.
+- **Selectores** (`/selectors`) — lista agregada por archivo+selector, ordenada por roturas.
+- **🔥 Crónicos** (`/chronic`) — selectores con 3+ roturas.
+- **🎯 Eficacia** (`/efficacy`) — aceptados vs rechazados vs sin confirmar (`healify confirm`),
+  tasa por framework, tendencia de 7/30 días y desglose por causa de fallo. Todo agregado
+  server-side; la entrada histórica sin `framework` se agrupa en "unknown".
+
 ## API JSON
 
 El servidor expone tres endpoints:
 
 ```
-GET /api/stats              → resumen: stats.json + resumen del histórico (incluye timeline)
+GET /api/stats              → resumen: stats.json + resumen del histórico (incluye timeline y efficacyReport)
 GET /api/selectors          → lista de selectores agregada, ordenada por roturas
 GET /api/selectors/:id      → detalle de un selector (historial + tendencia)
 ```
+
+`/api/stats` acepta `?efficacy-window=7|30` para ajustar la ventana de la tendencia de eficacia
+(default 30; cualquier otro valor cae al default).
 
 Ejemplos:
 
 ```bash
 curl http://127.0.0.1:5173/api/stats
+curl "http://127.0.0.1:5173/api/stats?efficacy-window=7"
 curl http://127.0.0.1:5173/api/selectors
 curl http://127.0.0.1:5173/api/selectors/<sha256>
 ```

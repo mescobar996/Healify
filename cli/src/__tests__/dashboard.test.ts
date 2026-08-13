@@ -10,6 +10,7 @@ import {
   buildSelectorSummaries,
   buildSelectorDetail,
   buildStatsOverview,
+  computeEfficacyReport,
   resolveUiDir,
   createDashboardApp,
   selectorId,
@@ -129,6 +130,101 @@ describe('dashboard-serve: lógica pura', () => {
     expect(overview.efficacy.rate).toBeCloseTo(2 / 3)
   })
 
+  describe('computeEfficacyReport', () => {
+    function day(daysAgo: number): string {
+      const d = new Date()
+      d.setUTCDate(d.getUTCDate() - daysAgo)
+      d.setUTCHours(12, 0, 0, 0)
+      return d.toISOString()
+    }
+
+    it('totals: aceptados vs rechazados con rate sobre los confirmados (US1)', () => {
+      const entries: HistoryEntry[] = [
+        { ...makeEntry({ selector: '#a' }), accepted: true },
+        { ...makeEntry({ selector: '#b' }), accepted: true },
+        { ...makeEntry({ selector: '#c' }), accepted: true },
+        { ...makeEntry({ selector: '#d' }), accepted: false },
+        makeEntry({ selector: '#e' }),
+      ]
+      const report = computeEfficacyReport(entries)
+      expect(report.totals).toEqual({ accepted: 3, rejected: 1, pending: 1, rate: 0.75 })
+    })
+
+    it('rate es null sin confirmaciones (0/0 no es un número)', () => {
+      const report = computeEfficacyReport([makeEntry({ selector: '#a' }), makeEntry({ selector: '#b' })])
+      expect(report.totals.rate).toBeNull()
+      expect(report.totals.pending).toBe(2)
+    })
+
+    it('byFramework: agrupa por framework y entradas viejas caen en unknown (US2)', () => {
+      const entries: HistoryEntry[] = [
+        { ...makeEntry({ selector: '#a' }), accepted: true, framework: 'Playwright' },
+        { ...makeEntry({ selector: '#b' }), accepted: true, framework: 'Playwright' },
+        { ...makeEntry({ selector: '#c' }), accepted: false, framework: 'Playwright' },
+        { ...makeEntry({ selector: '#d' }), accepted: true, framework: 'Cypress' },
+        { ...makeEntry({ selector: '#e' }), accepted: false, framework: 'Cypress' },
+        { ...makeEntry({ selector: '#f' }), accepted: true },
+      ]
+      const report = computeEfficacyReport(entries)
+      expect(report.byFramework['playwright']).toEqual({ accepted: 2, rejected: 1, pending: 0, rate: 2 / 3 })
+      expect(report.byFramework['cypress']).toEqual({ accepted: 1, rejected: 1, pending: 0, rate: 0.5 })
+      expect(report.byFramework['unknown']).toEqual({ accepted: 1, rejected: 0, pending: 0, rate: 1 })
+      // El total global no cambia por el desglose: 4 aceptados + 2 rechazados.
+      expect(report.totals).toEqual({ accepted: 4, rejected: 2, pending: 0, rate: 4 / 6 })
+    })
+
+    it('trend: cubre la ventana pedida con días vacíos en 0 y filtra futuros (US3)', () => {
+      const entries: HistoryEntry[] = [
+        { ...makeEntry({ selector: '#a', timestamp: day(1) }), accepted: true },
+        { ...makeEntry({ selector: '#b', timestamp: day(2) }), accepted: false },
+        { ...makeEntry({ selector: '#c', timestamp: day(20) }), accepted: true },
+        { ...makeEntry({ selector: '#futuro', timestamp: new Date(Date.now() + 86400000).toISOString() }), accepted: true },
+      ]
+      const report7 = computeEfficacyReport(entries, 7)
+      expect(report7.trend).toHaveLength(7)
+      const acceptedTotal = report7.trend.reduce((sum, p) => sum + p.accepted, 0)
+      const rejectedTotal = report7.trend.reduce((sum, p) => sum + p.rejected, 0)
+      // El de hace 20 días y el futuro quedan fuera de la ventana de 7.
+      expect(acceptedTotal).toBe(1)
+      expect(rejectedTotal).toBe(1)
+
+      const report30 = computeEfficacyReport(entries, 30)
+      expect(report30.trend).toHaveLength(30)
+      const accepted30 = report30.trend.reduce((sum, p) => sum + p.accepted, 0)
+      expect(accepted30).toBe(2) // el de 20 días entra; el futuro no
+      // Los totales globales nunca se ven afectados por la ventana.
+      expect(report7.totals.accepted).toBe(3)
+      expect(report30.totals.accepted).toBe(3)
+    })
+
+    it('trend ignora timestamps corruptos sin romper el resto', () => {
+      const entries: HistoryEntry[] = [
+        { ...makeEntry({ selector: '#a', timestamp: 'no-es-fecha' }), accepted: true },
+        { ...makeEntry({ selector: '#b', timestamp: day(1) }), accepted: true },
+      ]
+      const report = computeEfficacyReport(entries, 7)
+      const acceptedTotal = report.trend.reduce((sum, p) => sum + p.accepted, 0)
+      expect(acceptedTotal).toBe(1)
+      expect(report.totals.accepted).toBe(2)
+    })
+
+    it('byCause: desglosa con etiquetas de FAILURE_CAUSE_LABEL y unknown para ausentes (US3)', () => {
+      const entries: HistoryEntry[] = [
+        { ...makeEntry({ selector: '#a' }), accepted: true, cause: 'selector' },
+        { ...makeEntry({ selector: '#b' }), accepted: false, cause: 'selector' },
+        { ...makeEntry({ selector: '#c' }), accepted: true, cause: 'assertion' },
+        { ...makeEntry({ selector: '#d' }), accepted: true },
+      ]
+      const report = computeEfficacyReport(entries)
+      expect(report.byCause['Selector roto']).toEqual({ accepted: 1, rejected: 1, total: 2 })
+      expect(report.byCause['Aserción']).toEqual({ accepted: 1, rejected: 0, total: 1 })
+      expect(report.byCause['Indeterminada']).toEqual({ accepted: 1, rejected: 0, total: 1 })
+      // El desglose suma exactamente el total general.
+      const sum = Object.values(report.byCause).reduce((acc, c) => acc + c.total, 0)
+      expect(sum).toBe(report.totals.accepted + report.totals.rejected + report.totals.pending)
+    })
+  })
+
   it('resolveUiDir devuelve null sin UI y detecta dashboard-web/dist', () => {
     expect(resolveUiDir(tmpdir())).toBeNull()
 
@@ -180,6 +276,26 @@ describe('dashboard-serve: API HTTP', () => {
     expect(body.totalAnalyzed).toBe(10)
     expect(body.history.total).toBe(3)
     expect(body.history.timeline.length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('GET /api/stats incluye efficacyReport con totales del historial real (contrato)', async () => {
+    const res = await fetch(`${base}/api/stats`)
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.efficacyReport.totals).toEqual({ accepted: 0, rejected: 0, pending: 3, rate: null })
+    expect(body.efficacyReport.trend).toHaveLength(30)
+    // Las 3 entradas del fixture tienen cause 'selector'.
+    expect(body.efficacyReport.byCause['Selector roto'].total).toBe(3)
+  })
+
+  it('GET /api/stats respeta ?efficacy-window=7 y rechaza valores raros con default', async () => {
+    const res7 = await fetch(`${base}/api/stats?efficacy-window=7`)
+    const body7 = await res7.json()
+    expect(body7.efficacyReport.trend).toHaveLength(7)
+
+    const resRaro = await fetch(`${base}/api/stats?efficacy-window=99`)
+    const bodyRaro = await resRaro.json()
+    expect(bodyRaro.efficacyReport.trend).toHaveLength(30)
   })
 
   it('GET /api/selectors devuelve la lista agregada', async () => {

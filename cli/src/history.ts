@@ -40,6 +40,7 @@ export function appendHistory(run: LocalRun, cwd: string = process.cwd()): void 
         confidence: c.confidence,
         verified: c.verified,
         cause: c.cause,
+        framework: run.framework,
       }
       return JSON.stringify(entry)
     })

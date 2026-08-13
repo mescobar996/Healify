@@ -197,7 +197,12 @@ What it shows:
 - **History from `.healify/history.jsonl`**: recurring selectors, re-broken ones, daily trend.
   A dedicated **🔥 Selectores Crónicos** section lists every selector that has broken 3 or more
   times, and a red **Crónico** badge marks them right in the main selectors list.
+- **🎯 Eficacia** (new): how many fixes are actually accepted. A donut of accepted vs rejected
+  vs unconfirmed (`healify confirm`), the acceptance rate per framework (Playwright, Cypress,
+  Selenium, WebdriverIO — older history entries group under "unknown"), a 7/30-day trend and a
+  breakdown by failure cause ("Selector roto", "Aserción", "Timing / espera", …).
 - **JSON API** (optional): `GET /api/stats`, `GET /api/selectors`, `GET /api/selectors/:id`.
+  `/api/stats` also accepts `?efficacy-window=7|30` to adjust the efficacy trend window.
 - **React UI**: served from `dashboard-web/dist` when built; otherwise the server still answers
   the API with a fallback page.
 

@@ -65,6 +65,8 @@ describe('--record-history', () => {
     const entrada = JSON.parse(readFileSync(historial(), 'utf-8').trim())
     expect(entrada.selector).toBe('#add-to-cart')
     expect(entrada.cause).toBe('selector')
+    // El framework de la corrida se graba en cada entrada — alimenta la eficacia por framework.
+    expect(entrada.framework).toBe('Playwright')
   })
 
   it('no toca los archivos de test — la promesa de dry-run se mantiene', () => {
