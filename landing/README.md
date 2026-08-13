@@ -34,14 +34,19 @@ Diseño minimalista: gradiente verde-cian-azul sutil, glassmorphism ligero
 
 ## Desplegar en Vercel
 
-El proyecto Vercel `healify` ya existe. Apuntá su **Root Directory** a `landing` (Project
-Settings → General → Root Directory → `landing`), sin build command (es estático). O desde
-la CLI:
+El proyecto Vercel dedicado es **`landing`** (producción: `landing-delta-seven-78.vercel.app`,
+canónico de la página: `healify-sigma.vercel.app`). El link local ya apunta a `landing`
+(`.vercel/project.json`), sin build command (estático — `vercel.json` fija `"framework": null`
+para anular cualquier preset del proyecto). Desde la CLI:
 
 ```bash
 cd landing
 vercel --prod
 ```
+
+> ⚠️ El proyecto `healify` es OTRO (framework Next.js) — no desplegar la landing ahí.
+> Si el dominio canónico da 404 o muestra "Login - Vercel", revisá en el dashboard:
+> Settings → Deployment Protection (desactivar para production) y Settings → Domains.
 
 ## Qué revisar antes de publicar
 
