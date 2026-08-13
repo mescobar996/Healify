@@ -1,4 +1,4 @@
-# Estado del proyecto — Healify 2.7.0
+# Estado del proyecto — Healify 2.7.1
 
 Fecha: 2026-08-13 · Rama: `main` · CI: ✅ verde.
 
@@ -10,7 +10,7 @@ Fecha: 2026-08-13 · Rama: `main` · CI: ✅ verde.
 | Cobertura | 9 paquetes medidos, todos sobre su umbral anti-regresión |
 | Lint | Limpio (`eslint .`) |
 | Verificación | `npm run verify:win` verde · `npm run build --workspaces` compila |
-| Versión | 2.7.0 (alineada en los package.json) |
+| Versión | 2.7.1 (alineada en los package.json) |
 
 ## Última feature: Dashboard de eficacia (002)
 
@@ -39,5 +39,5 @@ npm run lint         # eslint sin warnings
 ## Próximo release
 
 Publicar los paquetes en npm (`npm publish` por workspace, en orden de dependencias:
-reporter-core → adapters → ai-local → mcp → cli) y etiquetar `v2.7.0` en GitHub. El usuario
+reporter-core → adapters → ai-local → mcp → cli) y etiquetar `v2.7.1` en GitHub. El usuario
 lo hace manualmente; acá queda el checklist.

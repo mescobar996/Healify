@@ -2,7 +2,7 @@
   "name": "healify-vscode",
   "displayName": "Healify",
   "description": "Marca los selectores frágiles mientras escribís, y aplica la corrección verificada cuando un test se rompe. 100% local, sin IA, sin nube.",
-  "version": "2.7.0",
+  "version": "2.7.1",
   "publisher": "mescobar996",
   "private": true,
   "license": "MIT",
