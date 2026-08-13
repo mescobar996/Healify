@@ -352,10 +352,10 @@ button{font:inherit;cursor:pointer}
 <section id="stats" class="wrap section" style="padding-top:0" x-data="healifyStats()">
   <div class="reveal in"><div style="font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accent2);margin-bottom:12px">En números</div><h2 class="h2">Construido, probado, medido.</h2><p class="sub">Healify se verifica a sí mismo: un monorepo con 1113 tests unitarios y pisos de cobertura que encienden el CI si la calidad baja.</p></div>
   <div class="stats reveal in">
-    <div class="stat"><div class="stat-n"><span x-text="fmt(tests)">0</span><span class="plus">+</span></div><div class="stat-l"><span class="stat-dot"></span>tests unitarios, todos en verde</div></div>
-    <div class="stat"><div class="stat-n"><span x-text="fmt(frameworks)">0</span></div><div class="stat-l"><span class="stat-dot"></span>frameworks soportados</div></div>
-    <div class="stat"><div class="stat-n"><span x-text="fmt(packages)">0</span></div><div class="stat-l"><span class="stat-dot"></span>paquetes del workspace</div></div>
-    <div class="stat"><div class="stat-n"><span x-text="fmt(coverage)">0</span><span class="plus">%</span></div><div class="stat-l"><span class="stat-dot"></span>cobertura de líneas Cypress</div></div>
+    <div class="stat"><div class="stat-n"><span x-text="fmt(tests)">1113</span><span class="plus">+</span></div><div class="stat-l"><span class="stat-dot"></span>tests unitarios, todos en verde</div></div>
+    <div class="stat"><div class="stat-n"><span x-text="fmt(frameworks)">4</span></div><div class="stat-l"><span class="stat-dot"></span>frameworks soportados</div></div>
+    <div class="stat"><div class="stat-n"><span x-text="fmt(packages)">9</span></div><div class="stat-l"><span class="stat-dot"></span>paquetes del workspace</div></div>
+    <div class="stat"><div class="stat-n"><span x-text="fmt(coverage)">94.8</span><span class="plus">%</span></div><div class="stat-l"><span class="stat-dot"></span>cobertura de líneas Cypress</div></div>
   </div>
 </section>
 
@@ -372,8 +372,19 @@ button{font:inherit;cursor:pointer}
 
 <script>
 (function(){
-  const io=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in'); io.unobserve(e.target)}})},{threshold:.15});
-  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+  // Reveal al hacer scroll: fade-in + slide-up, con stagger dentro de cada grilla.
+  // Sin IntersectionObserver, o con prefers-reduced-motion, todo aparece directo.
+  const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const show=(el)=>{el.classList.add('in'); if(io) io.unobserve(el)};
+  let io=null;
+  if('IntersectionObserver' in window && !reduced){
+    io=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting) show(e.target)})},{threshold:.12,rootMargin:'0px 0px -8% 0px'});
+  }
+  document.querySelectorAll('.reveal').forEach(el=>{
+    const group=[...el.parentElement.children].filter(c=>c.classList.contains('reveal'));
+    if(group.length>1) el.style.setProperty('--reveal-delay',`${group.indexOf(el)*70}ms`);
+    if(io) io.observe(el); else el.classList.add('in');
+  });
   document.querySelectorAll('[data-copy],.copy').forEach(b=>{
     b.addEventListener('click',()=>{
       const attr=b.getAttribute('data-copy');
@@ -386,25 +397,28 @@ button{font:inherit;cursor:pointer}
   })
 })();
 /* Contadores de la sección de estadísticas: arrancan en 0 y suben cuando la sección entra en
-   viewport. Números reales del repo (tests, cobertura); sin inventar métricas de producto. */
+   viewport. Números reales del repo (tests, cobertura); sin inventar métricas de producto.
+   Sin Alpine (CDN caído) los valores ya vienen como texto estático real en el HTML. */
 window.healifyStats=function(){
   const targets={tests:1113,frameworks:4,packages:9,coverage:94.8};
-  const state={tests:0,frameworks:0,packages:0,coverage:0,started:false};
+  let started=false;
   return {
-    tests:0,frameworks:0,packages:0,coverage:0,
+    tests:targets.tests,frameworks:targets.frameworks,packages:targets.packages,coverage:targets.coverage,
     init(){
-      const el=this.$el;
-      const obs=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting&&!state.started){state.started=true;this.animate();obs.disconnect();}})},{threshold:.3});
-      obs.observe(el);
+      if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      if(!('IntersectionObserver' in window)){started=true;this.animate();return}
+      const obs=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting&&!started){started=true;this.animate();obs.disconnect()}})},{threshold:.3});
+      obs.observe(this.$el);
     },
     animate(){
+      const from={tests:0,frameworks:0,packages:0,coverage:0};
       const dur=900,t0=performance.now();
       const tick=(t)=>{
         const p=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-p,3);
-        this.tests=Math.round(targets.tests*e);
-        this.frameworks=Math.round(targets.frameworks*e);
-        this.packages=Math.round(targets.packages*e);
-        this.coverage=Math.round(targets.coverage*e*10)/10;
+        this.tests=Math.round((targets.tests-from.tests)*e+from.tests);
+        this.frameworks=Math.round((targets.frameworks-from.frameworks)*e+from.frameworks);
+        this.packages=Math.round((targets.packages-from.packages)*e+from.packages);
+        this.coverage=Math.round((targets.coverage-from.coverage)*e*10+from.coverage*10)/10;
         if(p<1) requestAnimationFrame(tick);
       };
       requestAnimationFrame(tick);
