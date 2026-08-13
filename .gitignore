@@ -23,6 +23,11 @@ Thumbs.db
 .vercel
 .claude/
 .opencode/
+
+# Spec Kit: scaffolding del agente (specify init), no contenido del proyecto
+.specify/
+.github/skills/
+
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

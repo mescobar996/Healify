@@ -5,7 +5,7 @@ description: "Task list para el Dashboard de Eficacia"
 
 # Tasks: Dashboard de Eficacia
 
-**Input**: Design documents from `/specs/002-efficacy-dashboard/`
+**Input**: Design documents from `docs/specs/002-efficacy-dashboard/`
 
 **Prerequisites**: plan.md (done), spec.md (done)
 

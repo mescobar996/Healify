@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="public/logo-static.svg" alt="Healify Logo" width="64" style="filter: drop-shadow(0 0 20px rgba(16,185,129,0.4))" />
+  <img src="landing/public/logo-static.svg" alt="Healify Logo" width="64" style="filter: drop-shadow(0 0 20px rgba(16,185,129,0.4))" />
 
   <h3>Healify repairs broken E2E selectors. Local and deterministic.</h3>
   <p><strong>Playwright · Cypress · Selenium · WebdriverIO</strong></p>

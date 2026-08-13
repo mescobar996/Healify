@@ -13,7 +13,7 @@ Reglas Estrictas de Desarrollo
 
 Flujo de Trabajo con la IA
 
-1. Ignora `archive/saas-full` y `docs/superpowers/plans` (ya excluidos en `.claudeignore`).
+1. Ignora `archive/saas-full` y `docs/superpowers/plans` si aparecieran (restos de etapas viejas, no se trackean).
 2. Para verificar el estado global, usa `npm run verify` (imprime un resumen limpio).
 3. Si necesitas ver el historial reciente o bugs pasados, pide leer `CONTEXT_HANDOFF.md` explícitamente.
 4. Devuelve solo el código modificado o nuevo, no repitas código intacto.

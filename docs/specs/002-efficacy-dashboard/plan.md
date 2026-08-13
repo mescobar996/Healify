@@ -1,8 +1,8 @@
 # Implementation Plan: Dashboard de Eficacia
 
-**Branch**: `002-efficacy-dashboard` | **Date**: 2026-08-13 | **Spec**: `specs/002-efficacy-dashboard/spec.md`
+**Branch**: `002-efficacy-dashboard` | **Date**: 2026-08-13 | **Spec**: `docs/specs/002-efficacy-dashboard/spec.md`
 
-**Input**: Feature specification from `/specs/002-efficacy-dashboard/spec.md`
+**Input**: Feature specification from `docs/specs/002-efficacy-dashboard/spec.md`
 
 ## Summary
 
@@ -47,7 +47,7 @@ Añadir al dashboard de Healify una sección "Eficacia" que muestra, con datos r
 ### Documentation (this feature)
 
 ```text
-specs/002-efficacy-dashboard/
+docs/specs/002-efficacy-dashboard/
 ├── spec.md              # Done (Spec Kit Paso 4)
 ├── plan.md              # This file (Paso 5)
 └── tasks.md             # Phase 2 output (Paso 6)
