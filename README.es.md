@@ -1,10 +1,10 @@
 <div align="center">
   <img src="logo-healify.png" alt="Healify" width="110" />
 
-  <h3>Tus tests se rompieron. No cambió nada del producto.</h3>
-  <p><strong>Healify encuentra el selector nuevo y te lo arregla.<br/>Sin mandar una sola línea de tu código a ningún lado.</strong></p>
+  <h3>Repará tus tests E2E antes de que te enteres.</h3>
+  <p><strong>Los tests E2E fallan por selectores rotos. Arreglarlos es tedioso y repetitivo.<br/>Healify lo hace por vos — local y determinista, sin que un solo dato salga de tu máquina.</strong></p>
 
-  <a href="https://www.npmjs.com/package/@healify/cli"><img src="https://img.shields.io/npm/v/@healify/cli?color=blue" alt="versión npm" /></a>
+  <img src="https://img.shields.io/badge/version-2.6.0-blue" alt="versión 2.6.0" />
   <img src="https://img.shields.io/badge/tests-1113%20passing-brightgreen" alt="1113 tests en verde" />
   <img src="https://img.shields.io/badge/coverage-91.8%25-brightgreen" alt="91.8% cobertura del CLI" />
   <a href="https://github.com/mescobar996/Healify/actions/workflows/ci.yml"><img src="https://github.com/mescobar996/Healify/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
@@ -21,21 +21,16 @@
 
 ---
 
-| 🧪 Tests | 📦 Workspaces | 🔒 Cobertura del CLI | ⚡ CI |
+| 🧪 Tests | 📦 Paquetes | 🔒 Cobertura del CLI | ⚡ CI |
 |---|---|---|---|
-| **1,113** en verde | **9** paquetes `@healify/*` | **91.8%** de líneas | ✅ verde en main |
+| **1,113** en verde | **9** workspaces `@healify/*` | **91.8%** de líneas | ✅ verde en main |
 
 ---
 
-Un botón cambió de `id` en el último deploy. No cambió el producto, cambió un atributo que nunca
-debió importar. Y aun así tu suite se pinta de rojo, alguien frena lo que estaba haciendo, abre
-el DOM a mano y busca la única línea que hay que tocar.
+## Se arregla solo, antes de que lo mires
 
-Eso no es un bug. Es un selector frágil. Y pasa todos los días.
-
-```bash
-npx @healify/cli@latest fix
-```
+Un botón cambió de `id` en el último deploy. El producto no cambió — pero tu suite se pinta de
+rojo y alguien frena lo que estaba haciendo para buscar a mano en el DOM. Ya no:
 
 ```diff
 - await page.click('#add-to-cart-btn')
@@ -43,6 +38,24 @@ npx @healify/cli@latest fix
 ```
 
 Listo. Volvé a lo tuyo.
+
+## Cinco razones para probarlo
+
+| | Feature | Qué significa |
+|---|---|---|
+| 🔒 | **100% local** | Sin nube, sin cuenta, sin telemetría — nada sale de tu máquina |
+| 🧠 | **Sin IA** | Heurística determinista: mismo input, mismo resultado, siempre |
+| 🌐 | **Multi-framework** | Un motor para Playwright, Cypress, Selenium y WebdriverIO |
+| 📊 | **Dashboard local** | Tus curaciones, historial y 🔥 selectores crónicos — `healify dashboard --serve` |
+| ⚡ | **Listo para CI** | `healify fix --pr` abre un PR con los fixes ya aplicados |
+
+## Probálo en 30 segundos
+
+```bash
+npm install -g @healify/cli
+cd tu-proyecto
+healify fix --pr
+```
 
 ---
 

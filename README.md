@@ -1,10 +1,10 @@
 <div align="center">
   <img src="logo-healify.png" alt="Healify" width="110" />
 
-  <h3>Your tests broke. Nothing about the product changed.</h3>
-  <p><strong>Healify finds the new selector and fixes it for you.<br/>Without sending a single line of your code anywhere.</strong></p>
+  <h3>Fix your E2E tests before you even notice.</h3>
+  <p><strong>E2E tests fail because of broken selectors. Fixing them is tedious and repetitive.<br/>Healify does it for you — local and deterministic, with zero data leaving your machine.</strong></p>
 
-  <a href="https://www.npmjs.com/package/@healify/cli"><img src="https://img.shields.io/npm/v/@healify/cli?color=blue" alt="npm version" /></a>
+  <img src="https://img.shields.io/badge/version-2.6.0-blue" alt="version 2.6.0" />
   <img src="https://img.shields.io/badge/tests-1113%20passing-brightgreen" alt="1113 tests passing" />
   <img src="https://img.shields.io/badge/coverage-91.8%25-brightgreen" alt="91.8% CLI coverage" />
   <a href="https://github.com/mescobar996/Healify/actions/workflows/ci.yml"><img src="https://github.com/mescobar996/Healify/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
@@ -21,22 +21,16 @@
 
 ---
 
-| 🧪 Tests | 📦 Workspaces | 🔒 CLI coverage | ⚡ CI |
+| 🧪 Tests | 📦 Packages | 🔒 CLI coverage | ⚡ CI |
 |---|---|---|---|
-| **1,113** all passing | **9** `@healify/*` packages | **91.8%** line coverage | ✅ green on main |
+| **1,113** all passing | **9** `@healify/*` workspaces | **91.8%** line coverage | ✅ green on main |
 
 ---
 
-A button changed its `id` in the last deploy. The product didn't change. An attribute generated
-by your bundler did, one that should never have mattered. And yet your suite goes red, someone
-drops what they were doing, opens the DOM by hand and hunts for the single line that needs
-touching.
+## It fixes itself, before you even look
 
-That's not a bug. It's a brittle selector. And it happens every day.
-
-```bash
-npx @healify/cli@latest fix
-```
+A button changed its `id` in the last deploy. The product didn't change — but your suite goes
+red, and someone drops what they're doing to hunt the DOM by hand. Not anymore:
 
 ```diff
 - await page.click('#add-to-cart-btn')
@@ -44,6 +38,24 @@ npx @healify/cli@latest fix
 ```
 
 Done. Back to what you were doing.
+
+## Five reasons to try it
+
+| | Feature | What it means |
+|---|---|---|
+| 🔒 | **100% local** | No cloud, no account, no telemetry — nothing leaves your machine |
+| 🧠 | **No AI** | Deterministic heuristics: same input, same output, every time |
+| 🌐 | **Multi-framework** | One engine for Playwright, Cypress, Selenium and WebdriverIO |
+| 📊 | **Local dashboard** | Your healings, history and 🔥 chronic selectors — `healify dashboard --serve` |
+| ⚡ | **CI-ready** | `healify fix --pr` opens a PR with the fixes already applied |
+
+## Try it in 30 seconds
+
+```bash
+npm install -g @healify/cli
+cd your-project
+healify fix --pr
+```
 
 ---
 
