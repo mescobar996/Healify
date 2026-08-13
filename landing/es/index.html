@@ -29,8 +29,8 @@
   --fg:#EDEEF0; --fg2:#FFFFFF; --muted:#8B8B93; --muted2:#5C5C66;
   --card:#0A0A0D; --card2:#101012;
   --border:rgba(255,255,255,.09); --border2:rgba(255,255,255,.16); --border-accent:rgba(139,92,246,.35);
-  --accent:#8B5CF6; --accent2:#A78BFA; --accent3:#C4B5FD;
-  --ring:rgba(139,92,246,.32); --ringSoft:rgba(139,92,246,.11);
+  --accent:#22C55E; --accent2:#22D3EE; --accent3:#A7F3D0;
+  --accent-blue:#2563EB; --ring:rgba(34,211,238,.32); --ringSoft:rgba(34,211,238,.11);
   --shadow-1:0 0 0 1px rgba(255,255,255,.06) inset;
   --shadow-2:0 16px 48px rgba(0,0,0,.8), 0 0 0 1px rgba(255,255,255,.04) inset;
   --radius:16px; --radius-sm:10px; --radius-full:999px;
@@ -47,8 +47,13 @@ button{font:inherit;cursor:pointer}
 /* Background system */
 .bg{position:fixed;inset:0;z-index:-2;pointer-events:none}
 .glow{position:absolute;border-radius:50%;filter:blur(64px);will-change:transform}
-.g1{top:-22%;left:50%;transform:translateX(-50%);width:900px;height:520px;background:radial-gradient(ellipse at center,rgba(139,92,246,.22) 0%,rgba(139,92,246,0) 70%)}
+.g1{top:-22%;left:42%;transform:translateX(-50%);width:900px;height:520px;background:radial-gradient(ellipse at center,rgba(34,197,94,.22) 0%,rgba(34,211,238,.11) 38%,rgba(34,197,94,0) 72%)}
+.g2{right:-12%;top:22%;width:520px;height:520px;background:radial-gradient(circle,rgba(37,99,235,.12),rgba(37,99,235,0) 70%)}
 .grid{position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.025;background-image:linear-gradient(rgba(255,255,255,.8) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.8) 1px,transparent 1px);background-size:36px 36px;mask-image:radial-gradient(ellipse at center,black 30%,transparent 80%)}
+.particles{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;opacity:.55}
+.particles i{position:absolute;width:3px;height:3px;border-radius:50%;background:var(--accent2);box-shadow:0 0 18px 4px rgba(34,211,238,.28);animation:float 9s ease-in-out infinite}
+.particles i:nth-child(1){left:12%;top:24%;animation-delay:-1s}.particles i:nth-child(2){left:28%;top:12%;animation-delay:-4s}.particles i:nth-child(3){left:73%;top:18%;animation-delay:-7s}.particles i:nth-child(4){left:86%;top:42%;animation-delay:-2s}.particles i:nth-child(5){left:59%;top:66%;animation-delay:-5s}.particles i:nth-child(6){left:18%;top:74%;animation-delay:-8s}.particles i:nth-child(7){left:44%;top:38%;animation-delay:-3s}.particles i:nth-child(8){left:94%;top:82%;animation-delay:-6s}
+@keyframes float{0%,100%{transform:translate3d(0,0,0);opacity:.35}50%{transform:translate3d(12px,-20px,0);opacity:1}}
 
 .wrap{max-width:1120px;margin:0 auto;position:relative}
 
@@ -64,16 +69,16 @@ button{font:inherit;cursor:pointer}
 .icon:hover{border-color:var(--border2);color:var(--fg2);background:rgba(255,255,255,.06);transform:translateY(-1px)}
 .btn{height:36px;padding:0 16px;border-radius:11px;font-size:13.5px;font-weight:600;letter-spacing:-.01em;display:inline-flex;align-items:center;gap:8px;transition:all .15s;border:1px solid transparent}
 .btn-white{background:var(--fg2);color:#000;border-color:rgba(255,255,255,.1)}.btn-white:hover{background:#EDEEF0;transform:translateY(-1px)}
-.btn-violet{background:linear-gradient(180deg,var(--accent2),var(--accent));color:#000;box-shadow:var(--shadow-1),0 8px 24px rgba(139,92,246,.28)}.btn-violet:hover{filter:brightness(1.08);transform:translateY(-1px);box-shadow:var(--shadow-1),0 12px 32px rgba(139,92,246,.36)}
+.btn-violet{background:linear-gradient(110deg,var(--accent),var(--accent2) 58%,#60A5FA);color:#00150b;box-shadow:var(--shadow-1),0 8px 28px rgba(34,211,238,.22)}.btn-violet:hover{filter:brightness(1.1);transform:translateY(-2px);box-shadow:var(--shadow-1),0 14px 38px rgba(34,211,238,.34)}
 
 /* Hero */
 .hero{padding:96px 24px 40px;display:flex;flex-direction:column;align-items:center;gap:26px;text-align:center}
 .badge{height:32px;display:inline-flex;align-items:center;gap:8px;padding:0 12px;border-radius:var(--radius-full);border:1px solid var(--border);background:rgba(255,255,255,.04);font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .badge-dot{width:5px;height:5px;border-radius:50%;background:var(--accent2);box-shadow:0 0 0 4px var(--ringSoft);animation:pulse 2.2s infinite}
 @keyframes pulse{0%,100%{box-shadow:0 0 0 4px var(--ringSoft)}50%{box-shadow:0 0 0 7px transparent}}
-.h1{max-width:780px;font-size:clamp(40px,6.2vw,68px);line-height:.88;letter-spacing:-.055em;font-weight:800;color:var(--fg2);text-wrap:balance}
+.h1{max-width:780px;font-size:clamp(40px,6.2vw,68px);line-height:.88;letter-spacing:-.065em;font-weight:800;color:var(--fg2);text-wrap:balance;text-shadow:0 0 44px rgba(34,211,238,.13),0 8px 30px rgba(0,0,0,.5)}
 .h1 em{font-style:normal;color:var(--accent2)}
-.lead{max-width:560px;font-size:16.5px;line-height:1.65;color:var(--muted);text-wrap:balance}
+.lead{max-width:580px;font-size:16.5px;line-height:1.65;color:rgba(237,238,240,.72);text-wrap:balance;background:rgba(7,20,19,.28);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:12px 18px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
 .lead code{font-size:14px;background:var(--bg2);border:1px solid var(--border);padding:1px 6px;border-radius:6px;color:var(--accent3)}
 .ctas{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center}
 .pill{height:40px;display:flex;align-items:center;gap:10px;padding:0 6px 0 14px;border-radius:12px;border:1px solid var(--border);background:var(--card);box-shadow:var(--shadow-1)}
@@ -117,8 +122,10 @@ button{font:inherit;cursor:pointer}
 .n:before{content:'';width:22px;height:1px;background:var(--border);display:inline-block}
 .features{margin-top:40px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 @media(max-width:900px){.features{grid-template-columns:1fr 1fr}} @media(max-width:560px){.features{grid-template-columns:1fr}}
-.feat{border:1px solid var(--border);background:var(--card);border-radius:14px;padding:18px 16px;display:flex;gap:12px;transition:.15s}
-.feat:hover{border-color:var(--border2);background:var(--card2);transform:translateY(-1px)}
+.feat{border:1px solid rgba(255,255,255,.12);background:linear-gradient(145deg,rgba(20,35,34,.58),rgba(10,14,18,.48));border-radius:16px;padding:20px 18px;display:flex;gap:14px;transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:0 12px 32px rgba(0,0,0,.18),var(--shadow-1)}
+.feat:hover{border-color:rgba(34,211,238,.42);background:linear-gradient(145deg,rgba(25,55,46,.7),rgba(12,22,28,.58));transform:translateY(-2px) scale(1.02);box-shadow:0 22px 52px rgba(0,0,0,.38),0 0 32px rgba(34,211,238,.1)}
+.feat:before{content:'✦';display:grid;place-items:center;flex:none;width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#00150b;font-size:18px;box-shadow:0 0 24px rgba(34,211,238,.2);transition:transform .25s ease}
+.feat:hover:before{transform:rotate(12deg) scale(1.08)}
 
 .feat h4{font-size:13.5px;font-weight:600;margin-bottom:4px} .feat p{font-size:12.5px;line-height:1.5;color:var(--muted)}
 
@@ -133,7 +140,8 @@ button{font:inherit;cursor:pointer}
 .pkgTag{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted2);border:1px solid var(--border);padding:3px 7px;border-radius:999px}
 .pkgDesc{font-size:12.5px;line-height:1.5;color:var(--muted);min-height:32px}
 
-.cta{border:1px solid var(--border);border-radius:20px;padding:48px 24px;background:radial-gradient(80% 80% at 50% 0%,rgba(139,92,246,.16) 0%,transparent 60%),var(--card);display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center;box-shadow:var(--shadow-1)}
+.cta{border:1px solid rgba(34,211,238,.25);border-radius:20px;padding:48px 24px;background:linear-gradient(125deg,rgba(22,101,52,.72),rgba(8,47,73,.82) 70%,rgba(3,7,18,.92));display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center;box-shadow:0 20px 70px rgba(0,0,0,.42),0 0 60px rgba(34,211,238,.12)}
+.cta .btn-violet{background:#F8FAFC;color:#07110d;box-shadow:0 12px 32px rgba(0,0,0,.24)}.cta .btn-violet:hover{background:#07110d;color:#F8FAFC;border-color:#F8FAFC}
 .foot{border-top:1px solid var(--border);padding:22px 24px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--muted2)}
 .foot a{padding:10px 12px;border-radius:8px;transition:color .15s ease}.foot a:hover{color:var(--fg2)}
 .reveal{opacity:0;transform:translateY(12px);transition:opacity .6s cubic-bezier(.16,1,.3,1),transform .6s cubic-bezier(.16,1,.3,1)}
@@ -180,6 +188,13 @@ button{font:inherit;cursor:pointer}
 /* Preview del dashboard — mockup fiel a healify-dashboard.html (vitals + 🔥 crónicos) */
 .preview{margin-top:40px;border:1px solid var(--border);border-radius:18px;background:linear-gradient(180deg,var(--card2),var(--card));box-shadow:var(--shadow-2);overflow:hidden}
 .preview-img{display:block;width:100%;height:auto}
+
+/* Glass layer: one instrument panel, not a stack of flat cards. */
+.terminal,.preview,.pkg,.docCard,.stat{background:linear-gradient(145deg,rgba(18,32,31,.58),rgba(7,13,19,.5));border-color:rgba(255,255,255,.12);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.terminal,.preview{box-shadow:0 24px 80px rgba(0,0,0,.5),0 0 46px rgba(34,211,238,.08),var(--shadow-1)}
+.reveal{will-change:opacity,transform}.reveal.in{animation:rise-in .7s cubic-bezier(.16,1,.3,1) both}
+@keyframes rise-in{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){.particles i,.reveal,.reveal.in,.feat:hover:before{animation:none;transition:none;transform:none}}
 </style>
 <script type="application/ld+json">
 {
@@ -208,7 +223,8 @@ button{font:inherit;cursor:pointer}
 </head>
 <body>
 <a class="skip-link" href="#instalar">Saltar al contenido</a>
-<div class="bg"><div class="glow g1"></div></div>
+<div class="bg"><div class="glow g1"></div><div class="glow g2"></div></div>
+<div class="particles" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
 <div class="grid"></div>
 
 <header class="nav">
@@ -338,8 +354,8 @@ button{font:inherit;cursor:pointer}
   <div class="stats reveal in">
     <div class="stat"><div class="stat-n"><span x-text="fmt(tests)">0</span><span class="plus">+</span></div><div class="stat-l"><span class="stat-dot"></span>tests unitarios, todos en verde</div></div>
     <div class="stat"><div class="stat-n"><span x-text="fmt(frameworks)">0</span></div><div class="stat-l"><span class="stat-dot"></span>frameworks soportados</div></div>
-    <div class="stat"><div class="stat-n"><span x-text="fmt(packages)">0</span></div><div class="stat-l"><span class="stat-dot"></span>paquetes npm</div></div>
-    <div class="stat"><div class="stat-n"><span x-text="fmt(coverage)">0</span><span class="plus">%</span></div><div class="stat-l"><span class="stat-dot"></span>cobertura media de líneas</div></div>
+    <div class="stat"><div class="stat-n"><span x-text="fmt(packages)">0</span></div><div class="stat-l"><span class="stat-dot"></span>paquetes del workspace</div></div>
+    <div class="stat"><div class="stat-n"><span x-text="fmt(coverage)">0</span><span class="plus">%</span></div><div class="stat-l"><span class="stat-dot"></span>cobertura de líneas Cypress</div></div>
   </div>
 </section>
 
@@ -372,7 +388,7 @@ button{font:inherit;cursor:pointer}
 /* Contadores de la sección de estadísticas: arrancan en 0 y suben cuando la sección entra en
    viewport. Números reales del repo (tests, cobertura); sin inventar métricas de producto. */
 window.healifyStats=function(){
-  const targets={tests:1113,frameworks:4,packages:8,coverage:93};
+  const targets={tests:1113,frameworks:4,packages:9,coverage:94.8};
   const state={tests:0,frameworks:0,packages:0,coverage:0,started:false};
   return {
     tests:0,frameworks:0,packages:0,coverage:0,
@@ -388,12 +404,12 @@ window.healifyStats=function(){
         this.tests=Math.round(targets.tests*e);
         this.frameworks=Math.round(targets.frameworks*e);
         this.packages=Math.round(targets.packages*e);
-        this.coverage=Math.round(targets.coverage*e);
+        this.coverage=Math.round(targets.coverage*e*10)/10;
         if(p<1) requestAnimationFrame(tick);
       };
       requestAnimationFrame(tick);
     },
-    fmt(n){return n.toLocaleString('es-AR')}
+    fmt(n){return Number.isInteger(n)?n.toLocaleString('es-AR'):n.toFixed(1)}
   };
 };
 </script>
