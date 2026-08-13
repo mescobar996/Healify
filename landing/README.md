@@ -3,23 +3,21 @@
 Landing estática (HTML/CSS/JS puro, sin build, sin framework) para
 [healify-sigma.vercel.app](https://healify-sigma.vercel.app).
 
-Diseño hecho con Claude Design y traducido a HTML/CSS/JS vanilla para que sea desplegable
-como sitio estático (el formato original de Claude Design depende de un runtime propietario
-que no corre en Vercel). Hereda el sistema de diseño del reporte HTML de la herramienta:
-negro/violeta (`#8B5CF6`), tipografía system + JetBrains Mono, dark por defecto con toggle
-a claro.
+Diseño minimalista: gradiente verde-cian-azul sutil, glassmorphism ligero
+(`backdrop-filter: blur(8px)`), CTA ámbar de contraste, secciones con aire generoso
+(py-24). Sin dependencias externas: cero CDN, fuentes locales.
 
 ## Archivos
 
-- `index.html` — la landing completa (CSS y JS inline; los contadores de estadísticas usan
-  Alpine por CDN, con los valores reales como texto estático de respaldo si el CDN no carga).
-- `es/index.html` — versión en español (misma estructura).
-- `healify-mark.png` — el logo (usado en el nav y como favicon).
+- `index.html` — landing en inglés; `es/index.html` — versión en español (misma estructura).
+- `public/logos/` — logos oficiales de las tecnologías soportadas:
+  - `playwright.svg` (descargado de playwright.dev), `selenium.png` y `webdriverio.png`
+    (oficiales), `python.png` (python.org), `dotnet.svg` (Wikimedia, .NET Core).
+  - `cypress.svg` y `java.svg` — extraídos de los SVGs oficiales que ya estaban embebidos
+    en la versión anterior de la landing (path data auténtico).
+- `healify-mark.png` — el logo (nav, favicon y OG image).
 - `report-screenshot.png` — captura del dashboard local de Healify (vitals + 🔥 Selectores
-  Crónicos), generada con Playwright a partir de un mockup fiel al diseño real. Se muestra
-  en la sección "El dashboard" de `index.html` y `es/index.html`. Regenerala si cambia el
-  diseño del dashboard: el mockup fuente vive en `scripts/dashboard-preview.html` (sin
-  build, se abre y se captura el `.sheet`).
+  Crónicos), generada con Playwright desde `scripts/dashboard-preview.html`.
 
 ## Desplegar en Vercel
 
@@ -37,6 +35,11 @@ vercel --prod
 La landing NO menciona el modo cloud viejo (API key, servidor) porque ya no existe. Si
 editás el copy, mantené esa línea: nada de features que la herramienta no tiene.
 
-Los números de la sección de estadísticas y el footer (`1113 tests`, cobertura) son reales
-del repo: si cambian, actualizalos también en `healifyStats()` y en el footer de ambas
+Los números del footer (`1113 tests`) son reales del repo: si cambian, actualizalos en ambas
 versiones (`index.html` y `es/index.html`).
+
+## Pendiente documentado
+
+- **GIF/video del CLI funcionando** (asciinema o similar): todavía no existe. Hoy el hero
+  muestra una terminal estática de ejemplo; cuando se grabe un demo animado, sumalo como
+  `cli-demo.gif` y reemplazá (o acompañá) la terminal del hero.
