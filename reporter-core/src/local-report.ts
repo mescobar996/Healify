@@ -1,4 +1,4 @@
-import { buildDefectId, severityFor, environmentRows, normalizeRun, baseEnvironment, statsFromCases, SEVERITY_LABEL, type RunEnvironment, type RunStats } from './qa-report'
+import { buildDefectId, severityFor, environmentRows, normalizeRun, baseEnvironment, statsFromCases, SEVERITY_LABEL, type RunEnvironment, type RunStats, type NormalizedRun } from './qa-report'
 import { FAILURE_CAUSE_LABEL, type FailureCause } from './failure-cause'
 import type { LocalCaseResult, LocalCaseStatus } from './local-mode'
 
@@ -137,12 +137,16 @@ function sortAttention(a: IndexedCase, b: IndexedCase): number {
   return a.confidence - b.confidence
 }
 
-function renderAttentionCase(c: IndexedCase): string {
-  const pct = Math.round(c.confidence * 100)
+/** Columna "Sugerencia" del diff: el candidato verificado/heurístico, o la marca de que no hay uno confiable. */
+function renderSuggestionDiff(c: IndexedCase): string {
   const hasFixed = c.status === 'review' && c.fixedSelector.length > 0
-
-  const suggestionHtml = hasFixed
-    ? `<div class="diff-col after">
+  if (!hasFixed) {
+    return `<div class="diff-col after empty">
+        <div class="label">Sugerencia</div>
+        <code>— sin candidato confiable —</code>
+      </div>`
+  }
+  return `<div class="diff-col after">
         <div class="label">Sugerencia ${
           c.verified
             ? '<span class="verified-tag">verificada en la página</span>'
@@ -150,45 +154,42 @@ function renderAttentionCase(c: IndexedCase): string {
         }</div>
         <code class="copy-source">${escapeHtml(c.fixedSelector)}</code>
       </div>`
-    : `<div class="diff-col after empty">
-        <div class="label">Sugerencia</div>
-        <code>— sin candidato confiable —</code>
-      </div>`
+}
 
-  const confidenceHtml =
-    c.confidence > 0
-      ? `<div class="confidence">
+/** Medidor de confianza; vacío cuando no hay candidato (confidence 0). */
+function renderConfidence(c: IndexedCase): string {
+  if (c.confidence <= 0) return ''
+  const pct = Math.round(c.confidence * 100)
+  return `<div class="confidence">
           <span class="pct">${pct}%</span>
           <span class="meter"><span style="width:${pct}%"></span></span>
         </div>`
-      : ''
+}
 
-  const copyBtn = hasFixed
-    ? `<button class="btn" data-action="copy" aria-label="Copiar sugerencia">Copiar sugerencia</button>`
-    : ''
-
-  const location = c.testFile ? `${c.testFile}${c.line ? `:${c.line}` : ''}` : ''
-
-  const qaGridHtml =
-    c.expected || c.actual
-      ? `<div class="qa-grid">
+/** Resultado esperado vs obtenido, solo si el reporte trajo alguno de los dos. */
+function renderQaGrid(c: IndexedCase): string {
+  if (!c.expected && !c.actual) return ''
+  return `<div class="qa-grid">
           ${c.expected ? `<div class="qa-field"><div class="label">Resultado esperado</div><div class="value">${escapeHtml(c.expected)}</div></div>` : ''}
           ${c.actual ? `<div class="qa-field"><div class="label">Resultado obtenido</div><div class="value">${escapeHtml(c.actual)}</div></div>` : ''}
         </div>`
-      : ''
+}
 
-  const stepsHtml =
-    c.steps && c.steps.length > 0
-      ? `<div class="qa-field"><div class="label">Pasos para reproducir</div>
+/** Pasos para reproducir, si el reporte los trajo. */
+function renderSteps(c: IndexedCase): string {
+  if (!c.steps || c.steps.length === 0) return ''
+  return `<div class="qa-field"><div class="label">Pasos para reproducir</div>
           <ol class="steps">${c.steps.map((s) => `<li>${escapeHtml(s)}</li>`).join('')}</ol></div>`
-      : ''
+}
 
-  // La evidencia se enlaza al archivo que el framework ya escribió en disco — no se copia ni
-  // se embebe. Si el HTML se mueve de carpeta el link deja de resolver, que es el costo
-  // aceptado a cambio de un reporte liviano.
-  const evidenceHtml =
-    c.attachments && c.attachments.length > 0
-      ? `<div class="qa-field"><div class="label">Evidencia</div>
+/**
+ * La evidencia se enlaza al archivo que el framework ya escribió en disco — no se copia ni
+ * se embebe. Si el HTML se mueve de carpeta el link deja de resolver, que es el costo
+ * aceptado a cambio de un reporte liviano.
+ */
+function renderEvidence(c: IndexedCase): string {
+  if (!c.attachments || c.attachments.length === 0) return ''
+  return `<div class="qa-field"><div class="label">Evidencia</div>
           <div class="evidence">${c.attachments
             .map((a) =>
               a.contentType?.startsWith('image/')
@@ -196,7 +197,11 @@ function renderAttentionCase(c: IndexedCase): string {
                 : `<a href="${escapeHtml(a.path)}" target="_blank" rel="noopener">${escapeHtml(a.name)}</a>`
             )
             .join('')}</div></div>`
-      : ''
+}
+
+function renderAttentionCase(c: IndexedCase): string {
+  const hasFixed = c.status === 'review' && c.fixedSelector.length > 0
+  const location = c.testFile ? `${c.testFile}${c.line ? `:${c.line}` : ''}` : ''
 
   return `
     <article class="case ${c.status}" data-id="${c._id}">
@@ -208,17 +213,17 @@ function renderAttentionCase(c: IndexedCase): string {
           <span class="name">${escapeHtml(c.testName)}</span>
           ${location ? `<span class="path">${escapeHtml(location)}</span>` : ''}
         </span>
-        ${confidenceHtml}
+        ${renderConfidence(c)}
       </div>
       <div class="case-body">
-        ${qaGridHtml}
+        ${renderQaGrid(c)}
         <div class="error">${escapeHtml(c.errorMessage)}</div>
         <div class="diff">
           <div class="diff-col before">
             <div class="label">Selector original</div>
             <code>${escapeHtml(c.selector)}</code>
           </div>
-          ${suggestionHtml}
+          ${renderSuggestionDiff(c)}
         </div>
         ${
           // Con `unresolved` no se muestra la explicación del motor: describe la estrategia
@@ -226,10 +231,10 @@ function renderAttentionCase(c: IndexedCase): string {
           // propuesto algo. Mismo criterio que el Markdown.
           c.explanation && c.status !== 'unresolved' ? `<p class="engine-note">${escapeHtml(c.explanation)}</p>` : ''
         }
-        ${stepsHtml}
-        ${evidenceHtml}
+        ${renderSteps(c)}
+        ${renderEvidence(c)}
         <div class="case-actions">
-          ${copyBtn}
+          ${hasFixed ? `<button class="btn" data-action="copy" aria-label="Copiar sugerencia">Copiar sugerencia</button>` : ''}
           <button class="btn" data-action="fix">Marcar como arreglado</button>
         </div>
       </div>
@@ -247,25 +252,8 @@ function renderHealedCase(c: IndexedCase): string {
     </div>`
 }
 
-/** Genera el reporte HTML standalone del modo local — sin red, sin dependencias externas. */
-export function renderLocalReportHtml(rawRun: LocalRun): string {
-  const run = normalizeRun(rawRun)
-  const indexed: IndexedCase[] = run.cases.map((c, i) => ({ ...c, _id: i }))
-  const total = indexed.length
-  const healedCases = indexed.filter((c) => c.status === 'healed')
-  const attentionCases = indexed.filter((c) => c.status !== 'healed').sort(sortAttention)
-  const reviewCount = attentionCases.filter((c) => c.status === 'review').length
-  const unresolvedCount = attentionCases.filter((c) => c.status === 'unresolved').length
-  const dateStr = run.generatedAt.toLocaleString('es-AR')
-  const storageKey = `healify-fixed:${run.project}:${run.generatedAt.toISOString()}`
-
-  return `<!doctype html>
-<html lang="es">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Healify — Informe local</title>
-<style>
+/** CSS del reporte — autocontenido (dark por defecto con toggle a claro), sin dependencias externas. */
+const REPORT_CSS = `
   :root {
     --background: #000000;
     --card: #0A0A0A;
@@ -543,88 +531,18 @@ export function renderLocalReportHtml(rawRun: LocalRun): string {
     .diff { grid-template-columns: 1fr; }
     .masthead { flex-direction: column; }
   }
-</style>
-</head>
-<body>
-<div class="sheet">
+`
 
-  <div class="masthead">
-    <div class="id">
-      <div class="glyph">H</div>
-      <div>
-        <h1>Informe de sanado — local</h1>
-        <div class="sub">${escapeHtml(run.framework)} · sin conexión a la nube</div>
-      </div>
-    </div>
-    <div class="masthead-right">
-      <button class="heuristica-btn" id="heuristica-trigger" type="button">¿Cómo funciona?</button>
-      <button class="theme-btn" id="theme-toggle" type="button">Tema</button>
-      <span class="local-badge">100% local</span>
-    </div>
-  </div>
-
-  <div class="verdict ${run.verdict === 'passed' ? 'pass' : 'fail'}">
-    <span class="tag">${run.verdict === 'passed' ? 'PASS' : 'FAIL'}</span>
-    <span class="detail">
-      ${run.stats.passed} de ${run.stats.total} test${run.stats.total === 1 ? '' : 's'} sin errores
-      ${run.stats.failed > 0 ? `<span class="muted">· ${run.stats.failed} con fallos</span>` : ''}
-    </span>
-  </div>
-
-  <div class="meta-strip">
-    <div class="meta-cell"><div class="label">Proyecto</div><div class="value">${escapeHtml(run.project)}</div></div>
-    <div class="meta-cell"><div class="label">Generado</div><div class="value mono">${escapeHtml(dateStr)}</div></div>
-    ${environmentRows(run)
-      .map((row) => `<div class="meta-cell"><div class="label">${escapeHtml(row.label)}</div><div class="value mono">${escapeHtml(row.value)}</div></div>`)
-      .join('')}
-  </div>
-
-  <div class="vitals">
-    <div class="vital"><div class="n">${total}</div><div class="l"><span class="dot"></span>Tests con selector roto</div></div>
-    <div class="vital healed"><div class="n" id="vital-healed-n">${healedCases.length}</div><div class="l"><span class="dot"></span>Sanados</div></div>
-    <div class="vital review"><div class="n" id="vital-review-n">${reviewCount}</div><div class="l"><span class="dot"></span>A revisar</div></div>
-    <div class="vital unresolved"><div class="n" id="vital-unresolved-n">${unresolvedCount}</div><div class="l"><span class="dot"></span>Sin sugerencia</div></div>
-  </div>
-
-  <section id="section-attention">
-    <div class="section-head" data-toggle="attention">
-      <h2>Necesita tu atención</h2>
-      <span class="count"><span id="attention-count-n">${attentionCases.length} caso${attentionCases.length === 1 ? '' : 's'}</span><span class="chev">▾</span></span>
-    </div>
-    <div class="cases-wrap" id="attention-wrap">
-      ${
-        attentionCases.length > 0
-          ? `<div class="cases">${attentionCases.map(renderAttentionCase).join('\n')}</div>`
-          : `<div class="empty">${
-              total === 0
-                ? 'Ningún test falló por un selector roto en esta corrida.'
-                : 'Todo limpio — no hay selectores que necesiten revisión manual.'
-            }</div>`
-      }
-    </div>
-  </section>
-
-  <section id="section-healed" class="collapsed">
-    <div class="section-head" data-toggle="healed">
-      <h2>Sanados automáticamente</h2>
-      <span class="count">${healedCases.length} caso${healedCases.length === 1 ? '' : 's'}<span class="chev">▾</span></span>
-    </div>
-    <div class="cases-wrap">
-      ${
-        healedCases.length > 0
-          ? `<div class="cases">${healedCases.map(renderHealedCase).join('\n')}</div>`
-          : `<div class="empty">Aún no hay casos sanados en esta corrida.</div>`
-      }
-    </div>
-  </section>
-
+/** Pie de página — estático, sin interpolación. */
+const REPORT_FOOTER = `
   <div class="foot">
     <span class="privacy"><span class="dot"></span>Ningún dato de este proyecto salió de esta máquina</span>
     <span>healify-report.json y healify-report.md generados junto a este archivo</span>
   </div>
+`
 
-</div>
-
+/** Modal "¿Cómo funciona?" — estático, sin interpolación. */
+const REPORT_MODAL = `
 <dialog class="modal" id="heuristica-modal">
   <div class="modal-header">
     <h2>Heurística local, no IA</h2>
@@ -653,12 +571,14 @@ export function renderLocalReportHtml(rawRun: LocalRun): string {
     </div>
   </div>
 </dialog>
+`
 
-<script>
+/** JS del reporte con placeholder de storageKey — se resuelve en renderReportScript(). */
+const REPORT_SCRIPT_TEMPLATE = `
 (function () {
   'use strict';
   var STORAGE_THEME = 'healify-theme';
-  var STORAGE_FIXED = ${escapeJs(storageKey)};
+  var STORAGE_FIXED = __STORAGE_KEY__;
 
   function applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
@@ -761,6 +681,136 @@ export function renderLocalReportHtml(rawRun: LocalRun): string {
     }
   });
 })();
+`
+
+/** Resuelve el placeholder de storageKey del JS del reporte. */
+function renderReportScript(storageKey: string): string {
+  return REPORT_SCRIPT_TEMPLATE.replace('__STORAGE_KEY__', escapeJs(storageKey))
+}
+
+function renderMasthead(run: NormalizedRun): string {
+  return `
+  <div class="masthead">
+    <div class="id">
+      <div class="glyph">H</div>
+      <div>
+        <h1>Informe de sanado — local</h1>
+        <div class="sub">${escapeHtml(run.framework)} · sin conexión a la nube</div>
+      </div>
+    </div>
+    <div class="masthead-right">
+      <button class="heuristica-btn" id="heuristica-trigger" type="button">¿Cómo funciona?</button>
+      <button class="theme-btn" id="theme-toggle" type="button">Tema</button>
+      <span class="local-badge">100% local</span>
+    </div>
+  </div>`
+}
+
+function renderVerdict(run: NormalizedRun): string {
+  return `
+  <div class="verdict ${run.verdict === 'passed' ? 'pass' : 'fail'}">
+    <span class="tag">${run.verdict === 'passed' ? 'PASS' : 'FAIL'}</span>
+    <span class="detail">
+      ${run.stats.passed} de ${run.stats.total} test${run.stats.total === 1 ? '' : 's'} sin errores
+      ${run.stats.failed > 0 ? `<span class="muted">· ${run.stats.failed} con fallos</span>` : ''}
+    </span>
+  </div>`
+}
+
+function renderMetaStrip(run: NormalizedRun, dateStr: string): string {
+  return `
+  <div class="meta-strip">
+    <div class="meta-cell"><div class="label">Proyecto</div><div class="value">${escapeHtml(run.project)}</div></div>
+    <div class="meta-cell"><div class="label">Generado</div><div class="value mono">${escapeHtml(dateStr)}</div></div>
+    ${environmentRows(run)
+      .map((row) => `<div class="meta-cell"><div class="label">${escapeHtml(row.label)}</div><div class="value mono">${escapeHtml(row.value)}</div></div>`)
+      .join('')}
+  </div>`
+}
+
+function renderVitals(total: number, healedCount: number, reviewCount: number, unresolvedCount: number): string {
+  return `
+  <div class="vitals">
+    <div class="vital"><div class="n">${total}</div><div class="l"><span class="dot"></span>Tests con selector roto</div></div>
+    <div class="vital healed"><div class="n" id="vital-healed-n">${healedCount}</div><div class="l"><span class="dot"></span>Sanados</div></div>
+    <div class="vital review"><div class="n" id="vital-review-n">${reviewCount}</div><div class="l"><span class="dot"></span>A revisar</div></div>
+    <div class="vital unresolved"><div class="n" id="vital-unresolved-n">${unresolvedCount}</div><div class="l"><span class="dot"></span>Sin sugerencia</div></div>
+  </div>`
+}
+
+function renderAttentionSection(attentionCases: IndexedCase[], total: number): string {
+  const body =
+    attentionCases.length > 0
+      ? `<div class="cases">${attentionCases.map(renderAttentionCase).join('\n')}</div>`
+      : `<div class="empty">${
+          total === 0
+            ? 'Ningún test falló por un selector roto en esta corrida.'
+            : 'Todo limpio — no hay selectores que necesiten revisión manual.'
+        }</div>`
+  return `
+  <section id="section-attention">
+    <div class="section-head" data-toggle="attention">
+      <h2>Necesita tu atención</h2>
+      <span class="count"><span id="attention-count-n">${attentionCases.length} caso${attentionCases.length === 1 ? '' : 's'}</span><span class="chev">▾</span></span>
+    </div>
+    <div class="cases-wrap" id="attention-wrap">
+      ${body}
+    </div>
+  </section>`
+}
+
+function renderHealedSection(healedCases: IndexedCase[]): string {
+  const body =
+    healedCases.length > 0
+      ? `<div class="cases">${healedCases.map(renderHealedCase).join('\n')}</div>`
+      : `<div class="empty">Aún no hay casos sanados en esta corrida.</div>`
+  return `
+  <section id="section-healed" class="collapsed">
+    <div class="section-head" data-toggle="healed">
+      <h2>Sanados automáticamente</h2>
+      <span class="count">${healedCases.length} caso${healedCases.length === 1 ? '' : 's'}<span class="chev">▾</span></span>
+    </div>
+    <div class="cases-wrap">
+      ${body}
+    </div>
+  </section>`
+}
+
+/** Genera el reporte HTML standalone del modo local — sin red, sin dependencias externas. */
+export function renderLocalReportHtml(rawRun: LocalRun): string {
+  const run = normalizeRun(rawRun)
+  const indexed: IndexedCase[] = run.cases.map((c, i) => ({ ...c, _id: i }))
+  const total = indexed.length
+  const healedCases = indexed.filter((c) => c.status === 'healed')
+  const attentionCases = indexed.filter((c) => c.status !== 'healed').sort(sortAttention)
+  const reviewCount = attentionCases.filter((c) => c.status === 'review').length
+  const unresolvedCount = attentionCases.filter((c) => c.status === 'unresolved').length
+  const dateStr = run.generatedAt.toLocaleString('es-AR')
+  const storageKey = `healify-fixed:${run.project}:${run.generatedAt.toISOString()}`
+
+  return `<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Healify — Informe local</title>
+<style>
+${REPORT_CSS}
+</style>
+</head>
+<body>
+<div class="sheet">
+${renderMasthead(run)}
+${renderVerdict(run)}
+${renderMetaStrip(run, dateStr)}
+${renderVitals(total, healedCases.length, reviewCount, unresolvedCount)}
+${renderAttentionSection(attentionCases, total)}
+${renderHealedSection(healedCases)}
+${REPORT_FOOTER}
+</div>
+${REPORT_MODAL}
+<script>
+${renderReportScript(storageKey)}
 </script>
 </body>
 </html>

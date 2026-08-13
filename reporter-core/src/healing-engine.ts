@@ -235,14 +235,34 @@ function analyzeSelector(selector: string, testIds: readonly string[] = TESTID_A
     isFragile: false,
   }
 
-  const modernLocatorMatch = selector.match(/^getBy(Role|Text|Label|Placeholder|TestId)\(/)
-  if (modernLocatorMatch) {
-    analysis.isAlreadyModernLocator = true
-    const kind = modernLocatorMatch[1]
-    analysis.type = kind === 'Role' ? 'ROLE' : kind === 'Text' ? 'TEXT' : kind === 'TestId' ? 'TESTID' : 'CSS'
-    return analysis
-  }
+  const modern = detectModernLocator(selector)
+  if (modern) return modern
 
+  classifySelectorType(analysis, selector, testIds)
+  detectFragilityFlags(analysis, selector)
+  detectElementAndAction(analysis, selector)
+
+  return analysis
+}
+
+/** Locators modernos de Playwright (getByRole/getByText/...) ya son la práctica recomendada: no proponer downgrade. */
+function detectModernLocator(selector: string): SelectorAnalysis | null {
+  const match = selector.match(/^getBy(Role|Text|Label|Placeholder|TestId)\(/)
+  if (!match) return null
+  const kind = match[1]
+  return {
+    type: kind === 'Role' ? 'ROLE' : kind === 'Text' ? 'TEXT' : kind === 'TestId' ? 'TESTID' : 'CSS',
+    issues: [],
+    element: 'element',
+    action: 'interact',
+    isDynamic: false,
+    isFragile: false,
+    isAlreadyModernLocator: true,
+  }
+}
+
+/** Clasifica el tipo de selector por prefijo/atributos (ID, CLASS, TESTID, XPATH, ROLE, TEXT, ATTRIBUTE). */
+function classifySelectorType(analysis: SelectorAnalysis, selector: string, testIds: readonly string[]): void {
   if (selector.startsWith('#')) {
     analysis.type = 'ID'
     analysis.issues.push('ID selectors are brittle and can change')
@@ -276,10 +296,10 @@ function analyzeSelector(selector: string, testIds: readonly string[] = TESTID_A
     analysis.attributeKind = 'name'
     analysis.issues.push('The name attribute may not be unique')
   }
+}
 
-  // Independiente del `type` detectado arriba (nth-child puede combinarse con CSS de clase,
-  // de tag, o ir suelto) — depende del orden exacto de hermanos en el DOM, se rompe apenas
-  // se agrega/quita/reordena un elemento vecino, sin que el elemento buscado haya cambiado.
+/** Marca fragilidad estructural (posiciones y combinadores) — independiente del tipo detectado arriba. */
+function detectFragilityFlags(analysis: SelectorAnalysis, selector: string): void {
   if (NTH_POSITION_RE.test(selector)) {
     analysis.isFragile = true
     analysis.issues.push('Position-based selector (nth-child/nth-of-type) depends on exact sibling order in the DOM')
@@ -290,7 +310,10 @@ function analyzeSelector(selector: string, testIds: readonly string[] = TESTID_A
     analysis.isCompoundCombinator = true
     analysis.issues.push('Compound selector with a CSS combinator (descendant/child/sibling) depends on the ancestor/sibling structure in the DOM')
   }
+}
 
+/** Infiere qué elemento busca el selector (botón, input, link...) y la acción asociada. */
+function detectElementAndAction(analysis: SelectorAnalysis, selector: string): void {
   if (/button|btn/i.test(selector)) {
     analysis.element = 'button'
     analysis.action = 'click'
@@ -307,8 +330,6 @@ function analyzeSelector(selector: string, testIds: readonly string[] = TESTID_A
     analysis.element = 'button'
     analysis.action = 'login'
   }
-
-  return analysis
 }
 
 /** Ajuste determinístico por hash del selector — reemplaza Math.random() para resultados reproducibles. */
@@ -396,246 +417,23 @@ function generateHealingStrategies(selector: string, analysis: SelectorAnalysis,
     }]
   }
 
-  const strategies: HealingStrategy[] = []
+  const strategies: HealingStrategy[] = [
+    stableAttributeStrategy(selector, analysis),
+    buttonStrategy(selector, analysis, actions),
+    inputStrategy(selector, analysis, fields),
+    linkStrategy(selector, analysis, actions),
+    testidStrategy(selector, analysis, testIds),
+    xpathStrategy(selector, analysis),
+    nthPositionStrategy(selector, analysis),
+    dynamicClassStrategy(selector, analysis),
+    dynamicIdStrategy(selector, analysis),
+    compoundCombinatorStrategy(selector, analysis, testIds),
+  ].flatMap((strategy) => (strategy ? strategy : []))
 
-  if (analysis.attributeKind === 'aria-label') {
-    strategies.push({
-      selector,
-      type: 'ROLE',
-      confidence: 0.93,
-      explanation: `El selector ya usa aria-label, un atributo de accesibilidad estable. Se conserva tal cual.`,
-      robustnessGain: 0,
-      technicalReason: 'aria-label is an accessibility attribute purpose-built for stable identification',
-      priority: 4,
-    })
-  }
-
-  if (analysis.attributeKind === 'name') {
-    strategies.push({
-      selector,
-      type: 'CSS',
-      confidence: 0.85,
-      explanation: `El selector ya usa el atributo name, razonablemente estable aunque puede no ser único. Se conserva tal cual.`,
-      robustnessGain: 0,
-      technicalReason: 'The name attribute is usually stable but may not be unique across the page',
-      priority: 3,
-    })
-  }
-
-  if (analysis.element === 'button') {
-    const action = extractActionFromSelector(selector, actions)
-    strategies.push({
-      selector: strictRoleSuggestion('button', action),
-      type: 'ROLE',
-      confidence: 0.92,
-      explanation: `Se detectó un ${analysis.type} inestable; se cambió por un selector basado en accesibilidad (ARIA role) para mayor robustez.`,
-      robustnessGain: 45,
-      technicalReason: 'ARIA roles are stable across refactors and DOM restructures',
-      priority: 4,
-    })
-    strategies.push({
-      selector: `button:has-text('${action}')`,
-      type: 'TEXT',
-      confidence: 0.85,
-      explanation: `Selector basado en texto visible del botón. Es menos estable que el rol pero más intuitivo para debugging.`,
-      robustnessGain: 30,
-      technicalReason: 'Text-based selectors work well for user-facing elements',
-      priority: 5,
-    })
-  }
-
-  if (analysis.element === 'input') {
-    const fieldName = extractFieldName(selector, fields)
-    strategies.push({
-      selector: `input[placeholder*='${fieldName}']`,
-      type: 'CSS',
-      confidence: 0.88,
-      explanation: `Selector basado en el placeholder del campo. Los placeholders son más estables que los IDs generados automáticamente.`,
-      robustnessGain: 35,
-      technicalReason: 'Placeholder attributes are typically stable and semantic',
-      priority: 5,
-    })
-    strategies.push({
-      selector: `label:has-text('${fieldName}') + input`,
-      type: 'CSS',
-      confidence: 0.90,
-      explanation: `Selector basado en la relación semántica entre label e input. Altamente resiliente a cambios de estructura.`,
-      robustnessGain: 40,
-      technicalReason: 'Label-input relationships are semantically meaningful',
-      priority: 5,
-    })
-  }
-
-  if (analysis.element === 'link') {
-    strategies.push({
-      selector: strictRoleSuggestion('link', extractActionFromSelector(selector, actions)),
-      type: 'ROLE',
-      confidence: 0.91,
-      explanation: `Selector por rol de enlace con texto. Muy estable y accesible.`,
-      robustnessGain: 42,
-      technicalReason: 'Link roles with names are the gold standard for navigation',
-      priority: 4,
-    })
-  }
-
-  if (analysis.type === 'TESTID') {
-    const attr = testidAttributeName(selector, testIds)
-    strategies.push({
-      selector: `[${attr}='${extractTestid(selector, testIds)}']`,
-      type: 'TESTID',
-      confidence: 0.95,
-      explanation: `El testid se mantiene pero se normaliza la sintaxis. Los atributos ${attr} son la opción más estable cuando están disponibles.`,
-      robustnessGain: 50,
-      technicalReason: `${attr} attributes are purpose-built for testing stability`,
-      priority: 1,
-    })
-  }
-
-  if (analysis.type === 'XPATH') {
-    strategies.push({
-      selector: buildGenericRoleHint('button'),
-      type: 'ROLE',
-      confidence: 0.82,
-      explanation: `Se reemplazó el XPath frágil por un selector de rol. Los XPath dependen de la estructura exacta del DOM que cambia frecuentemente.`,
-      robustnessGain: 55,
-      technicalReason: 'XPath is the most fragile selector type; ARIA roles are preferred',
-      priority: 4,
-    })
-  }
-
-  // Selector basado en posición (nth-child/nth-of-type) sin otro patrón reconocido (element
-  // sigue en 'element' genérico): no hay pista de acción/campo para armar un role con name,
-  // así que se propone un role genérico de baja confianza en vez de caer al fallback
-  // 'visible=' — al menos señala accesibilidad como dirección, requiere revisión manual.
-  if (NTH_POSITION_RE.test(selector) && analysis.element === 'element') {
-    strategies.push({
-      selector: buildGenericRoleHint('button'),
-      type: 'ROLE',
-      confidence: 0.76,
-      explanation: `Selector basado en posición (nth-child/nth-of-type) — depende del orden exacto de hermanos en el DOM, se rompe con solo agregar/quitar un elemento vecino. Se propone un selector de rol como punto de partida; revisar manualmente para afinar el name.`,
-      robustnessGain: 40,
-      technicalReason: 'Position-based selectors (nth-child/nth-of-type) break whenever sibling elements are added, removed, or reordered',
-      priority: 6,
-    })
-  }
-
-  // Clase compuesta con un token volátil pegado a uno semántico estable (ej.
-  // `.btn.css-1a2b3c4d5e`, común con CSS-in-JS) — se propone conservar solo los tokens
-  // estables. Sin esto, un selector así sin keyword de acción reconocible caía
-  // silenciosamente al fallback genérico de abajo pese a que el motor ya detectaba el
-  // fragmento volátil (bug real: isDynamic quedaba en true pero nada lo consumía para CLASS).
-  if (analysis.isDynamic && analysis.type === 'CLASS') {
-    const stableTokens = (selector.match(/\.[a-zA-Z0-9_-]+/g) ?? []).filter(
-      (token) => !VOLATILE_CLASS_RE.test(token.slice(1))
-    )
-    if (stableTokens.length > 0) {
-      const candidate = stableTokens.join('')
-      if (!isUnstableClassCandidate(selector, candidate.slice(1))) {
-        strategies.push({
-          selector: candidate,
-          type: 'CSS',
-          confidence: 0.80,
-          explanation: `Se detectó una clase generada (CSS-in-JS) pegada a una clase semántica estable. Se propone conservar solo la parte estable.`,
-          robustnessGain: 35,
-          technicalReason: 'Generated CSS-in-JS classes change between builds; the semantic class alongside it is preferred',
-          priority: 6,
-        })
-      }
-    }
-  }
-
-  if (analysis.isDynamic && analysis.type === 'ID') {
-    const baseClass = extractBaseClass(selector)
-    if (!isUnstableClassCandidate(selector, baseClass)) {
-      strategies.push({
-        selector: `.${baseClass}`,
-        type: 'CSS',
-        confidence: 0.78,
-        explanation: `Se detectó un ID dinámico con hash o número aleatorio. Se propuso una clase estable como alternativa.`,
-        robustnessGain: 38,
-        technicalReason: 'Dynamic IDs change between builds; stable classes are preferred',
-        priority: 6,
-      })
-    }
-  }
-
-  // Combinador CSS compuesto (`.padre > .hijo`, `.card .title`, `div + span`): a diferencia de
-  // un selector simple, depende de la relación exacta entre dos elementos en el DOM, no solo
-  // del elemento buscado — un wrapper nuevo, hermanos reordenados o un nivel de anidamiento
-  // aplanado lo rompen. Se propone conservar solo el elemento objetivo (el último segmento,
-  // después del combinador más a la derecha), sin la ruta de ancestros. Corre después de todo
-  // lo anterior para poder usar `strategies.length === 0` como "nada más funcionó" en el
-  // fallback genérico de abajo.
-  if (analysis.isCompoundCombinator) {
-    const target = extractCombinatorTarget(selector)
-    const targetTestidAttr = testIds.find((attr) => target.includes(`[${attr}=`))
-
-    if (targetTestidAttr) {
-      // Confianza más alta que el testid "plano" (0.95) a propósito: acá además se identificó
-      // y descartó una ruta de ancestros frágil, así que corresponde ganarle en el sort al
-      // bloque TESTID genérico de arriba — que sobre un selector compuesto con DOS testids
-      // (`[data-testid="card"] [data-testid="buy-btn"]`) extrae el del ancestro por error
-      // (regex sin /g, toma el primer match de todo el string), no el del objetivo real.
-      strategies.push({
-        selector: `[${targetTestidAttr}='${extractTestid(target, testIds)}']`,
-        type: 'TESTID',
-        confidence: 0.96,
-        explanation: `Selector compuesto con combinador CSS — depende de la ruta de ancestros, no solo del elemento buscado. Se conserva el testid del elemento objetivo (${target}), descartando la ruta.`,
-        robustnessGain: 50,
-        technicalReason: 'Combinator-based selectors are brittle to markup restructuring; the target testid attribute is independent of ancestor structure',
-        priority: 1,
-      })
-    } else if (target.startsWith('.') && !hasVolatileClassToken(target)) {
-      strategies.push({
-        selector: target,
-        type: 'CSS',
-        confidence: 0.80,
-        explanation: `Selector compuesto con combinador CSS — depende de la relación exacta entre ancestro y elemento objetivo, se rompe si se agrega un wrapper o se reordena el markup. Se propone conservar solo el elemento objetivo (${target}), sin la ruta de ancestros.`,
-        robustnessGain: 35,
-        technicalReason: 'Combinator-based selectors break when markup structure changes even if the target element itself is unchanged',
-        priority: 6,
-      })
-    } else if (target.startsWith('#') && !VOLATILE_ID_RE.test(target)) {
-      strategies.push({
-        selector: target,
-        type: 'CSS',
-        confidence: 0.80,
-        explanation: `Selector compuesto con combinador CSS — depende de la relación exacta entre ancestro y elemento objetivo. Se propone conservar solo el elemento objetivo (${target}), sin la ruta de ancestros.`,
-        robustnessGain: 35,
-        technicalReason: 'Combinator-based selectors break when markup structure changes even if the target element itself is unchanged',
-        priority: 6,
-      })
-    } else if (target.startsWith('#') && VOLATILE_ID_RE.test(target)) {
-      const baseClass = extractBaseClass(target)
-      if (!isUnstableClassCandidate(target, baseClass)) {
-        strategies.push({
-          selector: `.${baseClass}`,
-          type: 'CSS',
-          confidence: 0.75,
-          explanation: `Selector compuesto con combinador CSS, y el elemento objetivo (${target}) tiene un ID dinámico. Se propone una clase estable derivada, sin la ruta de ancestros.`,
-          robustnessGain: 35,
-          technicalReason: 'Combinator-based selectors are brittle; the target ID is additionally dynamic, so a stable class is proposed instead',
-          priority: 6,
-        })
-      }
-    }
-
-    // Ni testid, ni clase, ni ID estable en el objetivo (ej. un tag suelto, `a`, `span`) — no
-    // hay nada estable para proponer directo. Igual que con nth-child, se ofrece un rol
-    // genérico como punto de partida en vez de dejar caer al fallback `visible=` de abajo, que
-    // solo recorta el PRIMER carácter `.`/`#` de todo el selector sin entender que hay una ruta
-    // de ancestros de por medio (`.card .title` → `visible=card .title`, ni CSS válido).
-    if (strategies.length === 0) {
-      strategies.push({
-        selector: buildGenericRoleHint('button'),
-        type: 'ROLE',
-        confidence: 0.74,
-        explanation: `Selector compuesto con combinador CSS (\`${selector}\`) — depende de la ruta de ancestros/hermanos en el DOM, se rompe con cualquier cambio de markup aunque el elemento buscado no haya cambiado. El elemento objetivo (${target}) no tiene un atributo estable reconocible; se propone un selector de rol como punto de partida, revisar manualmente para afinar el name.`,
-        robustnessGain: 30,
-        technicalReason: 'Combinator-based selectors depend on ancestor/sibling structure; no stable attribute was found on the target element',
-        priority: 6,
-      })
-    }
+  // El fallback del compuesto solo aplica si NINGUNA estrategia anterior (ni la del propio
+  // bloque) encontró algo: si ya hay un candidato, no tiene sentido pisarlo con un role genérico.
+  if (analysis.isCompoundCombinator && strategies.length === 0) {
+    strategies.push(...genericCompoundFallback(selector))
   }
 
   if (strategies.length === 0) {
@@ -652,6 +450,268 @@ function generateHealingStrategies(selector: string, analysis: SelectorAnalysis,
 
   // Escalera de estabilidad primero (prioridad, menor = mejor), confidence como desempate dentro del mismo nivel.
   return strategies.sort((a, b) => a.priority - b.priority || b.confidence - a.confidence)
+}
+
+/** Selectores que ya usan un atributo de accesibilidad estable (aria-label/name): se conservan tal cual. */
+function stableAttributeStrategy(selector: string, analysis: SelectorAnalysis): HealingStrategy[] | null {
+  if (analysis.attributeKind === 'aria-label') {
+    return [{
+      selector,
+      type: 'ROLE',
+      confidence: 0.93,
+      explanation: 'El selector ya usa aria-label, un atributo de accesibilidad estable. Se conserva tal cual.',
+      robustnessGain: 0,
+      technicalReason: 'aria-label is an accessibility attribute purpose-built for stable identification',
+      priority: 4,
+    }]
+  }
+  if (analysis.attributeKind === 'name') {
+    return [{
+      selector,
+      type: 'CSS',
+      confidence: 0.85,
+      explanation: 'El selector ya usa el atributo name, razonablemente estable aunque puede no ser único. Se conserva tal cual.',
+      robustnessGain: 0,
+      technicalReason: 'The name attribute is usually stable but may not be unique across the page',
+      priority: 3,
+    }]
+  }
+  return null
+}
+
+/** Botones: role con la acción deducida del texto del selector + fallback por texto visible. */
+function buttonStrategy(selector: string, analysis: SelectorAnalysis, actions: Record<string, string>): HealingStrategy[] | null {
+  if (analysis.element !== 'button') return null
+  const action = extractActionFromSelector(selector, actions)
+  return [
+    {
+      selector: strictRoleSuggestion('button', action),
+      type: 'ROLE',
+      confidence: 0.92,
+      explanation: `Se detectó un ${analysis.type} inestable; se cambió por un selector basado en accesibilidad (ARIA role) para mayor robustez.`,
+      robustnessGain: 45,
+      technicalReason: 'ARIA roles are stable across refactors and DOM restructures',
+      priority: 4,
+    },
+    {
+      selector: `button:has-text('${action}')`,
+      type: 'TEXT',
+      confidence: 0.85,
+      explanation: 'Selector basado en texto visible del botón. Es menos estable que el rol pero más intuitivo para debugging.',
+      robustnessGain: 30,
+      technicalReason: 'Text-based selectors work well for user-facing elements',
+      priority: 5,
+    },
+  ]
+}
+
+/** Inputs: placeholder y relación semántica label→input. */
+function inputStrategy(selector: string, analysis: SelectorAnalysis, fields: Record<string, string>): HealingStrategy[] | null {
+  if (analysis.element !== 'input') return null
+  const fieldName = extractFieldName(selector, fields)
+  return [
+    {
+      selector: `input[placeholder*='${fieldName}']`,
+      type: 'CSS',
+      confidence: 0.88,
+      explanation: 'Selector basado en el placeholder del campo. Los placeholders son más estables que los IDs generados automáticamente.',
+      robustnessGain: 35,
+      technicalReason: 'Placeholder attributes are typically stable and semantic',
+      priority: 5,
+    },
+    {
+      selector: `label:has-text('${fieldName}') + input`,
+      type: 'CSS',
+      confidence: 0.90,
+      explanation: 'Selector basado en la relación semántica entre label e input. Altamente resiliente a cambios de estructura.',
+      robustnessGain: 40,
+      technicalReason: 'Label-input relationships are semantically meaningful',
+      priority: 5,
+    },
+  ]
+}
+
+/** Links: role de enlace con el texto deducido. */
+function linkStrategy(selector: string, analysis: SelectorAnalysis, actions: Record<string, string>): HealingStrategy[] | null {
+  if (analysis.element !== 'link') return null
+  return [{
+    selector: strictRoleSuggestion('link', extractActionFromSelector(selector, actions)),
+    type: 'ROLE',
+    confidence: 0.91,
+    explanation: 'Selector por rol de enlace con texto. Muy estable y accesible.',
+    robustnessGain: 42,
+    technicalReason: 'Link roles with names are the gold standard for navigation',
+    priority: 4,
+  }]
+}
+
+/** Testid: se conserva el atributo pero se normaliza la sintaxis. */
+function testidStrategy(selector: string, analysis: SelectorAnalysis, testIds: readonly string[]): HealingStrategy[] | null {
+  if (analysis.type !== 'TESTID') return null
+  const attr = testidAttributeName(selector, testIds)
+  return [{
+    selector: `[${attr}='${extractTestid(selector, testIds)}']`,
+    type: 'TESTID',
+    confidence: 0.95,
+    explanation: `El testid se mantiene pero se normaliza la sintaxis. Los atributos ${attr} son la opción más estable cuando están disponibles.`,
+    robustnessGain: 50,
+    technicalReason: `${attr} attributes are purpose-built for testing stability`,
+    priority: 1,
+  }]
+}
+
+/** XPath frágil: se reemplaza por un role genérico. */
+function xpathStrategy(selector: string, analysis: SelectorAnalysis): HealingStrategy[] | null {
+  if (analysis.type !== 'XPATH') return null
+  return [{
+    selector: buildGenericRoleHint('button'),
+    type: 'ROLE',
+    confidence: 0.82,
+    explanation: 'Se reemplazó el XPath frágil por un selector de rol. Los XPath dependen de la estructura exacta del DOM que cambia frecuentemente.',
+    robustnessGain: 55,
+    technicalReason: 'XPath is the most fragile selector type; ARIA roles are preferred',
+    priority: 4,
+  }]
+}
+
+/** Posición (nth-child/nth-of-type) sin pista de acción: role genérico de baja confianza como punto de partida. */
+function nthPositionStrategy(selector: string, analysis: SelectorAnalysis): HealingStrategy[] | null {
+  if (!NTH_POSITION_RE.test(selector) || analysis.element !== 'element') return null
+  return [{
+    selector: buildGenericRoleHint('button'),
+    type: 'ROLE',
+    confidence: 0.76,
+    explanation: 'Selector basado en posición (nth-child/nth-of-type) — depende del orden exacto de hermanos en el DOM, se rompe con solo agregar/quitar un elemento vecino. Se propone un selector de rol como punto de partida; revisar manualmente para afinar el name.',
+    robustnessGain: 40,
+    technicalReason: 'Position-based selectors (nth-child/nth-of-type) break whenever sibling elements are added, removed, or reordered',
+    priority: 6,
+  }]
+}
+
+/** Clase CSS-in-JS con token volátil pegado a uno semántico estable: conservar solo la parte estable. */
+function dynamicClassStrategy(selector: string, analysis: SelectorAnalysis): HealingStrategy[] | null {
+  if (!analysis.isDynamic || analysis.type !== 'CLASS') return null
+  const stableTokens = (selector.match(/\.[a-zA-Z0-9_-]+/g) ?? []).filter(
+    (token) => !VOLATILE_CLASS_RE.test(token.slice(1))
+  )
+  if (stableTokens.length === 0) return null
+  const candidate = stableTokens.join('')
+  if (isUnstableClassCandidate(selector, candidate.slice(1))) return null
+  return [{
+    selector: candidate,
+    type: 'CSS',
+    confidence: 0.80,
+    explanation: 'Se detectó una clase generada (CSS-in-JS) pegada a una clase semántica estable. Se propone conservar solo la parte estable.',
+    robustnessGain: 35,
+    technicalReason: 'Generated CSS-in-JS classes change between builds; the semantic class alongside it is preferred',
+    priority: 6,
+  }]
+}
+
+/** ID dinámico con hash: se propone la clase base estable como alternativa. */
+function dynamicIdStrategy(selector: string, analysis: SelectorAnalysis): HealingStrategy[] | null {
+  if (!analysis.isDynamic || analysis.type !== 'ID') return null
+  const baseClass = extractBaseClass(selector)
+  if (isUnstableClassCandidate(selector, baseClass)) return null
+  return [{
+    selector: `.${baseClass}`,
+    type: 'CSS',
+    confidence: 0.78,
+    explanation: 'Se detectó un ID dinámico con hash o número aleatorio. Se propuso una clase estable como alternativa.',
+    robustnessGain: 38,
+    technicalReason: 'Dynamic IDs change between builds; stable classes are preferred',
+    priority: 6,
+  }]
+}
+
+/**
+ * Selector compuesto con combinador CSS (`.padre > .hijo`, `.card .title`, `div + span`):
+ * depende de la relación exacta entre dos elementos en el DOM, no solo del elemento buscado.
+ * Se propone conservar solo el elemento objetivo (el último segmento, después del combinador
+ * más a la derecha), sin la ruta de ancestros.
+ */
+function compoundCombinatorStrategy(selector: string, analysis: SelectorAnalysis, testIds: readonly string[]): HealingStrategy[] | null {
+  if (!analysis.isCompoundCombinator) return null
+  const target = extractCombinatorTarget(selector)
+  const targetTestidAttr = testIds.find((attr) => target.includes(`[${attr}=`))
+
+  if (targetTestidAttr) {
+    // Confianza más alta que el testid "plano" (0.95) a propósito: acá además se identificó
+    // y descartó una ruta de ancestros frágil, así que corresponde ganarle en el sort al
+    // bloque TESTID genérico — que sobre un selector compuesto con DOS testids
+    // (`[data-testid="card"] [data-testid="buy-btn"]`) extrae el del ancestro por error
+    // (regex sin /g, toma el primer match de todo el string), no el del objetivo real.
+    return [{
+      selector: `[${targetTestidAttr}='${extractTestid(target, testIds)}']`,
+      type: 'TESTID',
+      confidence: 0.96,
+      explanation: `Selector compuesto con combinador CSS — depende de la ruta de ancestros, no solo del elemento buscado. Se conserva el testid del elemento objetivo (${target}), descartando la ruta.`,
+      robustnessGain: 50,
+      technicalReason: 'Combinator-based selectors are brittle to markup restructuring; the target testid attribute is independent of ancestor structure',
+      priority: 1,
+    }]
+  }
+
+  if (target.startsWith('.') && !hasVolatileClassToken(target)) {
+    return [{
+      selector: target,
+      type: 'CSS',
+      confidence: 0.80,
+      explanation: `Selector compuesto con combinador CSS — depende de la relación exacta entre ancestro y elemento objetivo, se rompe si se agrega un wrapper o se reordena el markup. Se propone conservar solo el elemento objetivo (${target}), sin la ruta de ancestros.`,
+      robustnessGain: 35,
+      technicalReason: 'Combinator-based selectors break when markup structure changes even if the target element itself is unchanged',
+      priority: 6,
+    }]
+  }
+
+  if (target.startsWith('#') && !VOLATILE_ID_RE.test(target)) {
+    return [{
+      selector: target,
+      type: 'CSS',
+      confidence: 0.80,
+      explanation: `Selector compuesto con combinador CSS — depende de la relación exacta entre ancestro y elemento objetivo. Se propone conservar solo el elemento objetivo (${target}), sin la ruta de ancestros.`,
+      robustnessGain: 35,
+      technicalReason: 'Combinator-based selectors break when markup structure changes even if the target element itself is unchanged',
+      priority: 6,
+    }]
+  }
+
+  if (target.startsWith('#') && VOLATILE_ID_RE.test(target)) {
+    const baseClass = extractBaseClass(target)
+    if (!isUnstableClassCandidate(target, baseClass)) {
+      return [{
+        selector: `.${baseClass}`,
+        type: 'CSS',
+        confidence: 0.75,
+        explanation: `Selector compuesto con combinador CSS, y el elemento objetivo (${target}) tiene un ID dinámico. Se propone una clase estable derivada, sin la ruta de ancestros.`,
+        robustnessGain: 35,
+        technicalReason: 'Combinator-based selectors are brittle; the target ID is additionally dynamic, so a stable class is proposed instead',
+        priority: 6,
+      }]
+    }
+  }
+
+  return null
+}
+
+/**
+ * Fallback del compuesto: ni testid, ni clase, ni ID estable en el objetivo (ej. un tag
+ * suelto, `a`, `span`) — no hay nada estable para proponer directo. Se ofrece un role
+ * genérico como punto de partida en vez de dejar caer al fallback `visible=` de abajo, que
+ * solo recorta el PRIMER carácter `.`/`#` de todo el selector sin entender que hay una ruta
+ * de ancestros de por medio (`.card .title` → `visible=card .title`, ni CSS válido).
+ */
+function genericCompoundFallback(selector: string): HealingStrategy[] {
+  const target = extractCombinatorTarget(selector)
+  return [{
+    selector: buildGenericRoleHint('button'),
+    type: 'ROLE',
+    confidence: 0.74,
+    explanation: `Selector compuesto con combinador CSS (\`${selector}\`) — depende de la ruta de ancestros/hermanos en el DOM, se rompe con cualquier cambio de markup aunque el elemento buscado no haya cambiado. El elemento objetivo (${target}) no tiene un atributo estable reconocible; se propone un selector de rol como punto de partida, revisar manualmente para afinar el name.`,
+    robustnessGain: 30,
+    technicalReason: 'Combinator-based selectors depend on ancestor/sibling structure; no stable attribute was found on the target element',
+    priority: 6,
+  }]
 }
 
 /** Tipo de elemento que detecta el motor → rol ARIA con el que aparece en el árbol de la página. */
@@ -684,64 +744,27 @@ function applyPageEvidence(
   analysis: SelectorAnalysis
 ): { strategies: HealingStrategy[]; sawPage: boolean } {
   const expectedRole = ELEMENT_TO_ARIA_ROLE[analysis.element]
-
-  const survivors = strategies.filter((strategy) => {
-    const role = parseRoleSuggestion(strategy.selector)
-    if (!role) return true
-    return role.name === undefined
-      ? findMatches(pageElements, role.role).length > 0
-      : existsInPage(pageElements, role.role, role.name)
-  })
+  const survivors = filterSurvivors(strategies, pageElements)
 
   // El rol esperado es solo una pista: si el motor no supo deducirlo del texto del selector,
   // `bestElementFor` igual busca entre los elementos interactivos de la página.
   const real = bestElementFor(pageElements, selector, expectedRole)
   if (real) {
+    const ctx = shadowPierceContext(real)
     const inFrame = real.frame
 
     // MEJORA 3 — el elemento puede vivir dentro de shadow DOM. Un locator CSS/XPath plano NO
     // resuelve ahí: los selectores no atraviesan shadowRoots por especificación, hay que hacer
     // pierce de cada nivel. Igual que el frame, sugerirlo callado manda al usuario a un test
     // que sigue fallando; se avisa la cadena exacta (shadowDepth + shadowPath) para que sepa
-    // qué pierce hacer. `shadowChain`/`pierceNote` van vacíos cuando el elemento está en
+    // qué pierce hacer. `pierceNote`/`pierceReason` van vacíos cuando el elemento está en
     // light DOM, así las ramas de abajo quedan exactamente como antes en ese caso.
-    const inShadow = (real.shadowDepth ?? 0) > 0
-    const shadowChain = inShadow && real.shadowPath?.length ? ` (${real.shadowPath.join(' > ')})` : ''
-    const pierceNote = inShadow
-      ? ` vive dentro de ${real.shadowDepth} shadow root${real.shadowDepth === 1 ? '' : 's'}${shadowChain} — los selectores CSS/XPath no atraviesan shadow DOM por especificación, hay que hacer pierce de cada nivel (\`.shadow()\` en Cypress, \`.shadowRoot\` en Selenium/WebdriverIO) antes de que el selector resuelva`
-      : ''
-    const pierceReason = inShadow
-      ? `; nested ${real.shadowDepth} shadow root${real.shadowDepth === 1 ? '' : 's'} deep (${real.shadowPath?.join(' > ') ?? '?'}): CSS/XPath cannot pierce shadow DOM, each shadowRoot must be pierced before the locator resolves`
-      : ''
 
     // El elemento tiene nombre accesible: se propone el role verificado en vivo (priority 0),
     // la sugerencia más confiable del motor. Su texto se leyó del árbol de accesibilidad
     // capturado cuando el test falló, no se dedujo del selector.
-    //
-    // La confianza solo baja dentro de un iframe: entrar a un frame requiere un paso extra que
-    // ningún locator de rol hace solo (`frameLocator`/`switchTo().frame`). El shadow DOM NO
-    // penaliza — los locators de rol atraviesan shadow roots por especificación en Cypress
-    // (`findAcrossShadowRoots`) y Playwright (`getByRole` piercea el shadow abierto), a
-    // diferencia de un locator CSS/XPath plano. Se avisa la cadena shadowDepth/shadowPath como
-    // información del pierce, pero la sugerencia sigue siendo aplicable sin revisión humana.
-    if (real.name) {
-      survivors.unshift({
-        selector: strictRoleSuggestion(real.role, real.name),
-        type: 'ROLE',
-        confidence: inFrame ? 0.88 : 0.97,
-        explanation: inFrame
-          ? `Verificado contra la página: hay un ${real.role} con el nombre accesible "${real.name}", pero está DENTRO del iframe ${inFrame}. Un locator a nivel de página no lo encuentra: primero hay que entrar al frame (\`frameLocator('${inFrame}')\` en Playwright, \`switchTo().frame(...)\` en Selenium) y recién ahí aplicar el selector.${pierceNote ? ` Además${pierceNote}.` : ''}`
-          : inShadow
-            ? `Verificado contra la página: hay un ${real.role} con el nombre accesible "${real.name}", pero${pierceNote}.`
-            : `Verificado contra la página: hay un ${real.role} con el nombre accesible "${real.name}". El nombre se leyó del árbol de accesibilidad capturado cuando el test falló, no se dedujo del texto del selector.`,
-        robustnessGain: 50,
-        technicalReason: inFrame
-          ? `Confirmed against the accessibility tree captured at failure time, but inside iframe ${inFrame}: a frame switch is required before this locator resolves${pierceReason}`
-          : `Confirmed against the accessibility tree captured at failure time: role=${real.role}, name=${real.name}${pierceReason}`,
-        priority: 0,
-        pageVerified: true,
-      })
-    }
+    const roleEvidence = verifiedRoleEvidence(real, inFrame, ctx)
+    if (roleEvidence) survivors.unshift(roleEvidence)
 
     // MEJORA 1 — sugerir el data-testid REAL del DOM. El probe en vivo (Selenium/WebdriverIO/
     // Cypress) trae el atributo de test-id del elemento encontrado: si existe, se propone como
@@ -751,39 +774,15 @@ function applyPageEvidence(
     //
     // MEJORA 2 — si el elemento NO tiene nombre accesible, el testid pasa a ser la sugerencia
     // principal (index 0): es la mejor señal estable disponible en ese caso.
-    if (real.testId) {
-      const attr = real.testIdAttr ?? 'data-testid'
-      const esTestidPrincipal = !real.name
-      survivors.splice(esTestidPrincipal ? 0 : 1, 0, {
-        selector: `[${attr}='${real.testId}']`,
-        type: 'TESTID',
-        confidence: 0.94,
-        explanation: esTestidPrincipal
-          ? `Verificado contra la página: el elemento sigue presente pero NO expone nombre accesible; conserva el atributo ${attr}="${real.testId}", que es la señal más estable disponible en este caso.${pierceNote ? ` Además${pierceNote}.` : ''}`
-          : `Verificado contra la página: el elemento sigue presente y conserva el atributo ${attr}="${real.testId}". Es el selector más estable disponible — solo el role verificado en vivo lo supera.${pierceNote ? ` Además${pierceNote}.` : ''}`,
-        robustnessGain: 50,
-        technicalReason: `The real DOM element still carries a stable ${attr} attribute${pierceReason}`,
-        priority: 1,
-        pageVerified: true,
-      })
-    }
+    const testidEvidence = verifiedTestidEvidence(real, !real.name, ctx)
+    if (testidEvidence) survivors.splice(!real.name ? 0 : 1, 0, testidEvidence)
 
     // MEJORA 2 — sin nombre accesible y sin testid: no hay ninguna señal estable que proponer.
     // Un role('X') a secas matchea de más y no tiene XPath ejecutable, así que se degrada a una
     // pista de revisión manual (confianza baja, priority alta) en vez de sugerirse como si
     // fuera un selector aplicable. Sigue siendo evidencia de que el elemento existe.
-    if (!real.name && !real.testId) {
-      survivors.unshift({
-        selector: buildGenericRoleHint(real.role),
-        type: 'ROLE',
-        confidence: 0.7,
-        explanation: `Verificado contra la página: hay un ${real.role} en pantalla, pero SIN nombre accesible. Un role('${real.role}') sin name matchearía todos los de ese tipo — requiere revisión manual antes de aplicar.${pierceNote ? ` Además${pierceNote}.` : ''}`,
-        robustnessGain: 20,
-        technicalReason: `The element exists but has no accessible name; a nameless role locator is ambiguous and requires manual review${pierceReason}`,
-        priority: 4,
-        pageVerified: true,
-      })
-    }
+    const namelessEvidence = namelessRoleEvidence(real, ctx)
+    if (namelessEvidence) survivors.unshift(namelessEvidence)
 
     return { strategies: survivors, sawPage: true }
   }
@@ -792,24 +791,110 @@ function applyPageEvidence(
     // Ninguna sugerencia sobrevivió y tampoco hay un elemento del rol esperado. Eso no es un
     // problema de selector: lo que el test buscaba no estaba en la pantalla. Decirlo vale más
     // que ofrecer un candidato inventado.
-    const roleNote = expectedRole ? ` No hay ningún ${expectedRole} en la página.` : ''
-    return {
-      strategies: [
-        {
-          selector,
-          type: 'CSS',
-          confidence: 0.5,
-          explanation: `Ninguna sugerencia sobrevivió al contraste con la página real.${roleNote} Puede que el elemento ya no exista: revisá si la funcionalidad sigue estando, en vez de buscarle otro selector.`,
-          robustnessGain: 0,
-          technicalReason: 'No candidate matched the accessibility tree captured at failure time',
-          priority: 9,
-        },
-      ],
-      sawPage: true,
-    }
+    return { strategies: noEvidenceFallback(selector, expectedRole), sawPage: true }
   }
 
   return { strategies: survivors, sawPage: true }
+}
+
+/**
+ * Conserva solo las estrategias ROLE cuyo rol+nombre existen en la página; las demás quedan
+ * intactas (el árbol de accesibilidad no expone testid/clases, así que TESTID/CSS no se
+ * pueden ni confirmar ni desmentir con este dato).
+ */
+function filterSurvivors(strategies: HealingStrategy[], pageElements: PageElement[]): HealingStrategy[] {
+  return strategies.filter((strategy) => {
+    const role = parseRoleSuggestion(strategy.selector)
+    if (!role) return true
+    return role.name === undefined
+      ? findMatches(pageElements, role.role).length > 0
+      : existsInPage(pageElements, role.role, role.name)
+  })
+}
+
+/** Info del pierce de shadow DOM: cadena de ruta y notas en español/inglés para el reporte. Vacío en light DOM. */
+function shadowPierceContext(real: PageElement): { inShadow: boolean; pierceNote: string; pierceReason: string } {
+  const inShadow = (real.shadowDepth ?? 0) > 0
+  if (!inShadow) return { inShadow, pierceNote: '', pierceReason: '' }
+  const shadowChain = real.shadowPath?.length ? ` (${real.shadowPath.join(' > ')})` : ''
+  return {
+    inShadow,
+    pierceNote: ` vive dentro de ${real.shadowDepth} shadow root${real.shadowDepth === 1 ? '' : 's'}${shadowChain} — los selectores CSS/XPath no atraviesan shadow DOM por especificación, hay que hacer pierce de cada nivel (\`.shadow()\` en Cypress, \`.shadowRoot\` en Selenium/WebdriverIO) antes de que el selector resuelva`,
+    pierceReason: `; nested ${real.shadowDepth} shadow root${real.shadowDepth === 1 ? '' : 's'} deep (${real.shadowPath?.join(' > ') ?? '?'}): CSS/XPath cannot pierce shadow DOM, each shadowRoot must be pierced before the locator resolves`,
+  }
+}
+
+/**
+ * Sugerencia principal: el role verificado en vivo (priority 0). La confianza solo baja dentro
+ * de un iframe: entrar a un frame requiere un paso extra que ningún locator de rol hace solo
+ * (`frameLocator`/`switchTo().frame`). El shadow DOM NO penaliza — los locators de rol
+ * atraviesan shadow roots por especificación — solo se avisa la cadena de pierce.
+ */
+function verifiedRoleEvidence(real: PageElement, inFrame: string | undefined, ctx: { inShadow: boolean; pierceNote: string; pierceReason: string }): HealingStrategy | null {
+  if (!real.name) return null
+  return {
+    selector: strictRoleSuggestion(real.role, real.name),
+    type: 'ROLE',
+    confidence: inFrame ? 0.88 : 0.97,
+    explanation: inFrame
+      ? `Verificado contra la página: hay un ${real.role} con el nombre accesible "${real.name}", pero está DENTRO del iframe ${inFrame}. Un locator a nivel de página no lo encuentra: primero hay que entrar al frame (\`frameLocator('${inFrame}')\` en Playwright, \`switchTo().frame(...)\` en Selenium) y recién ahí aplicar el selector.${ctx.pierceNote ? ` Además${ctx.pierceNote}.` : ''}`
+      : ctx.inShadow
+        ? `Verificado contra la página: hay un ${real.role} con el nombre accesible "${real.name}", pero${ctx.pierceNote}.`
+        : `Verificado contra la página: hay un ${real.role} con el nombre accesible "${real.name}". El nombre se leyó del árbol de accesibilidad capturado cuando el test falló, no se dedujo del texto del selector.`,
+    robustnessGain: 50,
+    technicalReason: inFrame
+      ? `Confirmed against the accessibility tree captured at failure time, but inside iframe ${inFrame}: a frame switch is required before this locator resolves${ctx.pierceReason}`
+      : `Confirmed against the accessibility tree captured at failure time: role=${real.role}, name=${real.name}${ctx.pierceReason}`,
+    priority: 0,
+    pageVerified: true,
+  }
+}
+
+/** El data-testid real del DOM como estrategia TESTID, justo después del role verificado (o primero si no hay nombre). */
+function verifiedTestidEvidence(real: PageElement, isPrimary: boolean, ctx: { pierceNote: string; pierceReason: string }): HealingStrategy | null {
+  if (!real.testId) return null
+  const attr = real.testIdAttr ?? 'data-testid'
+  return {
+    selector: `[${attr}='${real.testId}']`,
+    type: 'TESTID',
+    confidence: 0.94,
+    explanation: isPrimary
+      ? `Verificado contra la página: el elemento sigue presente pero NO expone nombre accesible; conserva el atributo ${attr}="${real.testId}", que es la señal más estable disponible en este caso.${ctx.pierceNote ? ` Además${ctx.pierceNote}.` : ''}`
+      : `Verificado contra la página: el elemento sigue presente y conserva el atributo ${attr}="${real.testId}". Es el selector más estable disponible — solo el role verificado en vivo lo supera.${ctx.pierceNote ? ` Además${ctx.pierceNote}.` : ''}`,
+    robustnessGain: 50,
+    technicalReason: `The real DOM element still carries a stable ${attr} attribute${ctx.pierceReason}`,
+    priority: 1,
+    pageVerified: true,
+  }
+}
+
+/** Sin nombre accesible ni testid: pista de revisión manual (confianza baja, priority alta), no un selector aplicable. */
+function namelessRoleEvidence(real: PageElement, ctx: { pierceNote: string; pierceReason: string }): HealingStrategy | null {
+  if (real.name || real.testId) return null
+  return {
+    selector: buildGenericRoleHint(real.role),
+    type: 'ROLE',
+    confidence: 0.7,
+    explanation: `Verificado contra la página: hay un ${real.role} en pantalla, pero SIN nombre accesible. Un role('${real.role}') sin name matchearía todos los de ese tipo — requiere revisión manual antes de aplicar.${ctx.pierceNote ? ` Además${ctx.pierceNote}.` : ''}`,
+    robustnessGain: 20,
+    technicalReason: `The element exists but has no accessible name; a nameless role locator is ambiguous and requires manual review${ctx.pierceReason}`,
+    priority: 4,
+    pageVerified: true,
+  }
+}
+
+/** Nada sobrevivió y tampoco hay un elemento del rol esperado: lo que el test buscaba no estaba en la pantalla. */
+function noEvidenceFallback(selector: string, expectedRole: string | undefined): HealingStrategy[] {
+  const roleNote = expectedRole ? ` No hay ningún ${expectedRole} en la página.` : ''
+  return [{
+    selector,
+    type: 'CSS',
+    confidence: 0.5,
+    explanation: `Ninguna sugerencia sobrevivió al contraste con la página real.${roleNote} Puede que el elemento ya no exista: revisá si la funcionalidad sigue estando, en vez de buscarle otro selector.`,
+    robustnessGain: 0,
+    technicalReason: 'No candidate matched the accessibility tree captured at failure time',
+    priority: 9,
+  }]
 }
 
 /**
@@ -820,60 +905,101 @@ function applyPageEvidence(
  * sugerencias se confrontan contra lo que había de verdad en pantalla — ver `applyPageEvidence`.
  */
 export function analyzeAndHeal(request: HealRequest): HealResponse {
-  const { selector, customSynonyms, customTestIds } = request
+  const { allTestIds, actions, fields } = resolveRequestInputs(request)
 
-  // Filtrar solo atributos que empiecen con "data-"; silenciosamente ignorar los que no.
-  const allTestIds = customTestIds
-    ? [...TESTID_ATTRS, ...customTestIds.filter((id) => id.startsWith('data-'))]
-    : TESTID_ATTRS
-
-  const analysis = analyzeSelector(selector, allTestIds)
-
-  // Merge built-in dictionaries with project-level custom synonyms.
-  const actions = { ...ACTIONS, ...customSynonyms?.actions }
-  const fields = { ...FIELDS, ...customSynonyms?.fields }
-
-  let strategies = generateHealingStrategies(selector, analysis, actions, fields, allTestIds)
+  const analysis = analyzeSelector(request.selector, allTestIds)
+  let strategies = generateHealingStrategies(request.selector, analysis, actions, fields, allTestIds)
 
   // Sin árbol de página el comportamiento es exactamente el de siempre — de eso se encarga
   // el snapshot del corpus de selectores, que no debe moverse por este cambio.
+  const page = applyPageEvidenceIfAvailable(strategies, request, request.selector, analysis)
+  strategies = page.strategies
+
+  const repertoire = applyRepertoireIfUnverified(request, request.selector, strategies, page.verified)
+
+  return finalizeResponse(repertoire.strategies, analysis, request, repertoire.verified, repertoire.fromRepertoire)
+}
+
+/** Merge de diccionarios del proyecto con los built-in, y filtro de testids válidos (`data-*`). */
+function resolveRequestInputs(request: HealRequest): { allTestIds: readonly string[]; actions: Record<string, string>; fields: Record<string, string> } {
+  const { customSynonyms, customTestIds } = request
+  const allTestIds = customTestIds
+    ? [...TESTID_ATTRS, ...customTestIds.filter((id) => id.startsWith('data-'))]
+    : TESTID_ATTRS
+  return {
+    allTestIds,
+    actions: { ...ACTIONS, ...customSynonyms?.actions },
+    fields: { ...FIELDS, ...customSynonyms?.fields },
+  }
+}
+
+/**
+ * Si la corrida trajo el árbol de accesibilidad (`htmlContext`), confronta las estrategias
+ * contra lo que había de verdad en pantalla — ver `applyPageEvidence`. `verified` se marca
+ * con `pageVerified` y no con `priority === 0`: una pista degradada (rol sin nombre) vive en
+ * priority 4 pero nace igual de la evidencia de la página, y así conserva su confidence.
+ */
+function applyPageEvidenceIfAvailable(
+  strategies: HealingStrategy[],
+  request: HealRequest,
+  selector: string,
+  analysis: SelectorAnalysis
+): { strategies: HealingStrategy[]; verified: boolean } {
   const pageElements = parsePageSnapshot(request.htmlContext)
-  let verified = false
-  if (pageElements.length > 0) {
-    const evidence = applyPageEvidence(strategies, pageElements, selector, analysis)
-    strategies = evidence.strategies
-    // `pageVerified` y no `priority === 0`: una pista degradada (rol sin nombre) vive en
-    // priority 4 pero nace igual de la evidencia de la página, y así conserva su confidence.
-    verified = evidence.sawPage && strategies[0]?.pageVerified === true
-  }
+  if (pageElements.length === 0) return { strategies, verified: false }
 
-  // El repertorio (historial de curaciones ya confirmadas) es un fallback, no una fuente
-  // primaria: si la verificación en vivo de ESTA corrida ya confirmó algo, esa evidencia
-  // manda siempre — la página de ahora es más confiable que la memoria de una corrida
-  // anterior (el texto del botón pudo cambiar desde entonces). El repertorio solo entra
-  // cuando esta corrida no tiene cómo verificar nada por su cuenta (Cypress, siempre; o
-  // cualquier adapter si el snapshot/sondeo no estuvo disponible esa vez).
-  let fromRepertoire = false
-  if (!verified && request.repertoire) {
-    const match = findRepertoireMatch(request.repertoire, selector, request.testFile)
-    if (match) {
-      strategies = [
-        {
-          selector: match.fixedSelector,
-          type: isSelectorType(match.selectorType) ? match.selectorType : 'MIXED',
-          confidence: match.confidence,
-          explanation: `Repertorio: esta misma corrección ya se confirmó contra la página en una corrida anterior (${match.timestamp}), aunque esta corrida no pudo verificarlo por su cuenta.`,
-          robustnessGain: 50,
-          technicalReason: `Reused from a previously verified fix recorded in .healify/history.jsonl (${match.timestamp})`,
-          priority: 0,
-        },
-        ...strategies,
-      ]
-      verified = true
-      fromRepertoire = true
-    }
+  const evidence = applyPageEvidence(strategies, pageElements, selector, analysis)
+  return {
+    strategies: evidence.strategies,
+    verified: evidence.sawPage && evidence.strategies[0]?.pageVerified === true,
   }
+}
 
+/**
+ * El repertorio (historial de curaciones ya confirmadas) es un fallback, no una fuente
+ * primaria: si la verificación en vivo de ESTA corrida ya confirmó algo, esa evidencia
+ * manda siempre — la página de ahora es más confiable que la memoria de una corrida
+ * anterior (el texto del botón pudo cambiar desde entonces). El repertorio solo entra
+ * cuando esta corrida no tiene cómo verificar nada por su cuenta (Cypress, siempre; o
+ * cualquier adapter si el snapshot/sondeo no estuvo disponible esa vez).
+ */
+function applyRepertoireIfUnverified(
+  request: HealRequest,
+  selector: string,
+  strategies: HealingStrategy[],
+  verified: boolean
+): { strategies: HealingStrategy[]; verified: boolean; fromRepertoire: boolean } {
+  if (verified || !request.repertoire) return { strategies, verified, fromRepertoire: false }
+
+  const match = findRepertoireMatch(request.repertoire, selector, request.testFile)
+  if (!match) return { strategies, verified, fromRepertoire: false }
+
+  return {
+    strategies: [
+      {
+        selector: match.fixedSelector,
+        type: isSelectorType(match.selectorType) ? match.selectorType : 'MIXED',
+        confidence: match.confidence,
+        explanation: `Repertorio: esta misma corrección ya se confirmó contra la página en una corrida anterior (${match.timestamp}), aunque esta corrida no pudo verificarlo por su cuenta.`,
+        robustnessGain: 50,
+        technicalReason: `Reused from a previously verified fix recorded in .healify/history.jsonl (${match.timestamp})`,
+        priority: 0,
+      },
+      ...strategies,
+    ],
+    verified: true,
+    fromRepertoire: true,
+  }
+}
+
+/** Elige la mejor estrategia, ajusta la confianza (hash determinístico, solo si no fue verificada) y arma la respuesta. */
+function finalizeResponse(
+  strategies: HealingStrategy[],
+  analysis: SelectorAnalysis,
+  request: HealRequest,
+  verified: boolean,
+  fromRepertoire: boolean
+): HealResponse {
   const bestStrategy = strategies[0] ?? {
     selector: 'body',
     type: 'CSS' as const,
@@ -889,7 +1015,7 @@ export function analyzeAndHeal(request: HealRequest): HealResponse {
   // confianza tal cual, sin ruido de hash.
   const adjustedConfidence = verified
     ? bestStrategy.confidence
-    : Math.max(0.75, Math.min(0.98, bestStrategy.confidence + deterministicAdjustment(selector)))
+    : Math.max(0.75, Math.min(0.98, bestStrategy.confidence + deterministicAdjustment(request.selector)))
   const needsReview = adjustedConfidence < 0.80
 
   return {
