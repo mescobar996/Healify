@@ -37,9 +37,16 @@
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 body{background:var(--bg);color:var(--fg);font-family:'Inter',system-ui,sans-serif;overflow-x:hidden;letter-spacing:-.011em;line-height:1.6}
+/* Detalles que marcan la diferencia: selección teñida y scrollbar con carácter. */
+::selection{background:rgba(16,185,129,.35);color:#fff}
+html{scrollbar-color:rgba(16,185,129,.4) transparent;scrollbar-width:thin}
+::-webkit-scrollbar{width:10px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(16,185,129,.35);border-radius:5px}
+::-webkit-scrollbar-thumb:hover{background:rgba(16,185,129,.55)}
 a{color:inherit;text-decoration:none} code,kbd{font-family:'JetBrains Mono',monospace}
 button{font:inherit;cursor:pointer}
-:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+:focus-visible{outline:2px solid rgba(16,185,129,.5);outline-offset:2px}
 .skip-link{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;z-index:999}
 .skip-link:focus{left:12px;top:12px;width:auto;height:auto;padding:12px 18px;border-radius:11px;background:var(--fg2);color:#000;font-weight:600;font-size:14px;overflow:visible;box-shadow:var(--shadow-2)}
 
@@ -50,6 +57,9 @@ button{font:inherit;cursor:pointer}
 .g2{right:-14%;top:20%;width:520px;height:520px;background:radial-gradient(circle,rgba(37,99,235,.13),rgba(37,99,235,0) 70%)}
 .g3{left:-10%;bottom:-18%;width:640px;height:520px;background:radial-gradient(circle,rgba(34,211,238,.09),rgba(34,211,238,0) 70%)}
 .grid{position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.022;background-image:linear-gradient(rgba(255,255,255,.8) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.8) 1px,transparent 1px);background-size:36px 36px;mask-image:radial-gradient(ellipse at center,black 30%,transparent 80%)}
+/* Textura de ruido orgánico: le quita la perfección plana al gradiente de fondo. */
+.noise{position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.055}
+.noise svg{width:100%;height:100%;display:block}
 
 .wrap{max-width:1040px;margin:0 auto;position:relative;padding:0 24px}
 
@@ -64,9 +74,9 @@ button{font:inherit;cursor:pointer}
 .icon:hover{border-color:var(--border2);color:var(--fg2);background:rgba(255,255,255,.05)}
 
 /* Botones. El CTA principal es ámbar (contraste sobre el gradiente frío). */
-.btn{height:40px;padding:0 20px;border-radius:11px;font-size:14px;font-weight:600;display:inline-flex;align-items:center;gap:8px;transition:all .3s;border:1px solid transparent}
+.btn{height:40px;padding:0 20px;border-radius:11px;font-size:14px;font-weight:600;display:inline-flex;align-items:center;gap:8px;transition:all .3s cubic-bezier(.68,-.55,.27,1.55);border:1px solid transparent}
 .btn-cta{background:var(--amber);color:#241303;box-shadow:0 10px 30px rgba(245,158,11,.28)}
-.btn-cta:hover{background:#FBBF24;transform:translateY(-1px);box-shadow:0 14px 38px rgba(245,158,11,.4)}
+.btn-cta:hover{background:#FBBF24;transform:scale(1.02) translateY(-2px);box-shadow:0 14px 38px rgba(245,158,11,.4)}
 .btn-ghost{border-color:var(--border);color:var(--fg);background:rgba(255,255,255,.03)}
 .btn-ghost:hover{border-color:var(--border2);color:var(--fg2)}
 .pill{height:40px;display:flex;align-items:center;gap:10px;padding:0 6px 0 14px;border-radius:11px;border:1px solid var(--border);background:var(--card)}
@@ -94,7 +104,7 @@ button{font:inherit;cursor:pointer}
 @media(min-width:768px){.hero-logo{width:80px;height:80px}}
 
 /* Terminal — demo del CLI. */
-.terminal{width:100%;max-width:960px;margin-top:14px;border-radius:18px;border:1px solid var(--border);background:linear-gradient(145deg,rgba(18,32,31,.58),rgba(7,13,19,.5));backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:var(--shadow-2);overflow:hidden;text-align:left}
+.terminal{width:100%;max-width:960px;margin-top:14px;border-radius:18px;border:1px solid var(--border);background:linear-gradient(145deg,rgba(18,32,31,.58),rgba(7,13,19,.5));backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:var(--shadow-2);overflow:hidden;text-align:left}
 .bar{height:44px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
 .dots{display:flex;gap:7px}.dots i{width:9px;height:9px;border-radius:50%;display:block}
 .bar-title{font-size:12px;color:var(--muted);font-family:'JetBrains Mono'}
@@ -129,7 +139,9 @@ button{font:inherit;cursor:pointer}
 /* Features — 3, una frase cada una. */
 .features{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 @media(max-width:860px){.features{grid-template-columns:1fr}}
-.feat{border:1px solid var(--border);background:linear-gradient(145deg,rgba(18,32,31,.5),rgba(7,13,19,.45));backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-radius:16px;padding:26px 22px;transition:transform .3s ease,border-color .3s ease,box-shadow .3s ease}
+.feat{position:relative;border:1px solid var(--border);background:linear-gradient(145deg,rgba(18,32,31,.5),rgba(7,13,19,.45));backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:16px;padding:26px 22px;transition:transform .3s ease,border-color .3s ease,box-shadow .3s ease;box-shadow:0 8px 32px rgba(16,185,129,.08)}
+/* Borde superior con gradiente: el toque "orgánico" de la glass card. */
+.feat::before{content:'';position:absolute;top:0;left:16px;right:16px;height:1px;background:linear-gradient(90deg,transparent,rgba(16,185,129,.55),rgba(6,182,212,.55),transparent);opacity:.7}
 .feat:hover{border-color:rgba(34,211,238,.4);transform:translateY(-3px);box-shadow:0 20px 48px rgba(0,0,0,.35),0 0 28px rgba(34,211,238,.08)}
 .feat .ico{font-size:26px;line-height:1;display:block;margin-bottom:14px}
 .feat h3{font-size:16px;font-weight:650;color:var(--fg2);margin-bottom:6px}
@@ -150,8 +162,8 @@ button{font:inherit;cursor:pointer}
 .foot .links{display:flex;gap:16px}
 
 /* Reveal al scroll. */
-.reveal{opacity:0;transform:translateY(16px);transition:opacity .6s cubic-bezier(.16,1,.3,1),transform .6s cubic-bezier(.16,1,.3,1)}
-.reveal.in{opacity:1;transform:translateY(0)}
+.reveal{opacity:0;transform:scale(.98);transition:opacity .6s cubic-bezier(.16,1,.3,1),transform .6s cubic-bezier(.16,1,.3,1)}
+.reveal.in{opacity:1;transform:scale(1)}
 
 @media(prefers-reduced-motion:reduce){
   .hero .anim,.logo,.logo-float,.reveal{animation:none!important;transition:none!important;opacity:1;transform:none}
@@ -180,6 +192,7 @@ button{font:inherit;cursor:pointer}
 <body>
 <a class="skip-link" href="#instalar">Saltar al contenido</a>
 <div class="bg"><div class="glow g1"></div><div class="glow g2"></div><div class="glow g3"></div></div>
+<div class="noise" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="1" stitchTiles="stitch"/><feColorMatrix type="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0.6 0"/></filter><rect width="100%" height="100%" filter="url(#grain)"/></svg></div>
 <div class="grid"></div>
 
 <header class="nav">
