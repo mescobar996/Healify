@@ -54,8 +54,14 @@ Done. Back to what you were doing.
 ```bash
 npm install -g @healify/cli
 cd your-project
+healify init     # detects your framework, configures everything, adds npm scripts
 healify fix --pr
 ```
+
+`healify init` adds three convenience scripts (`npm run healify`, `npm run healify:dry`,
+`npm run healify:dashboard`), runs an instant `healify doctor` check, and never generates
+tests — the first selector it heals is one from your own app. See it before it touches
+anything with `healify init --dry-run`.
 
 ---
 

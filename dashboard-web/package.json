@@ -1,6 +1,6 @@
 {
   "name": "@healify/dashboard-web",
-  "version": "2.7.1",
+  "version": "2.8.0",
   "private": true,
   "description": "UI React del dashboard de Healify — la sirve `healify dashboard --serve` junto con la API JSON.",
   "type": "module",

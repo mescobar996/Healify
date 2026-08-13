@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { BROWSER_PROBE_SCRIPT } from '@healify/reporter-core'
-import { init, type InitReport, type FrameworkInitResult } from './commands/init'
+import { init, HEALIFY_SCRIPTS, type InitReport, type FrameworkInitResult } from './commands/init'
 import { doctor, type DoctorReport } from './commands/doctor'
 import { history, type HistoryReport } from './commands/history'
 import { runHeal, readHealStats, formatHealStatsSummary } from './commands/heal'
@@ -60,40 +60,122 @@ function nextStepFor(result: FrameworkInitResult): string {
 }
 
 function printInitReport(report: InitReport): void {
-  console.log('Healify init\n')
-
-  if (report.prompted) {
-    console.log(`ℹ No detectamos ningún framework de e2e — armamos ${report.results[0].framework} desde cero.\n`)
+  if (report.dryRun) {
+    printInitDryRun(report)
+    return
   }
 
-  for (const r of report.results) {
-    if (r.installed === 'already-installed') console.log(`✅ ${r.package} ya estaba instalado`)
-    else if (r.installed === 'installed') console.log(`✅ ${r.package} instalado`)
-    else console.log(`❌ No pudimos instalar ${r.package} — instalalo a mano: npm install --save-dev ${r.package}`)
+  // Paso 1: detección, con la evidencia — el usuario ve POR QUÉ lo detectamos.
+  const detected = report.detected ?? report.results.map((r) => ({ framework: r.framework, evidence: [] as string[] }))
+  console.log('1/4 Detectando tu framework de tests…')
+  if (report.prompted) {
+    console.log(`   ℹ No detectamos ningún framework de e2e — armamos ${report.results[0].framework} desde cero.`)
+  } else {
+    for (const d of detected) {
+      const label = d.framework.charAt(0).toUpperCase() + d.framework.slice(1)
+      console.log(`   ✔ ${label}${d.evidence.length > 0 ? ` — ${d.evidence.join(' · ')}` : ''}`)
+    }
+  }
 
+  // Paso 2: instalación.
+  console.log('\n2/4 Instalando lo que falta…')
+  for (const r of report.results) {
+    if (r.installed === 'already-installed') console.log(`   ✔ ${r.package} ya estaba instalado`)
+    else if (r.installed === 'installed') console.log(`   ✔ ${r.package} instalado`)
+    else console.log(`   ❌ No pudimos instalar ${r.package} — instalalo a mano: npm install --save-dev ${r.package}`)
+  }
+
+  // Paso 3: configuración.
+  console.log('\n3/4 Conectando Healify…')
+  for (const r of report.results) {
     if (r.config === 'scaffolded') {
       if (r.scaffoldedFiles && r.scaffoldedFiles.length > 0) {
-        console.log(`✅ archivos creados:`)
-        for (const f of r.scaffoldedFiles) console.log(`   - ${f}`)
+        console.log('   ✔ archivos creados:')
+        for (const f of r.scaffoldedFiles) console.log(`     - ${f}`)
       } else {
-        console.log(`✅ ${r.framework} ya tenía todos los archivos de Healify`)
+        console.log(`   ✔ ${r.framework} ya tenía todos los archivos de Healify`)
       }
     } else if (r.config === 'already-wired') {
-      console.log(`✅ el config ya tenía Healify configurado`)
+      console.log(`   ✔ el config ya tenía Healify configurado`)
     } else if (r.config === 'edited') {
-      console.log(`✅ config actualizado con Healify`)
+      console.log(`   ✔ config actualizado con Healify`)
     } else if (r.config === 'no-config-found') {
-      console.log(`⚠ no encontramos el config de ${r.framework} — agregalo a mano, ver README`)
+      console.log(`   ⚠ no encontramos el config de ${r.framework} — agregalo a mano, ver README`)
     } else {
-      console.log(`⚠ el config tiene una forma que no reconocemos — agregá Healify a mano, ver README`)
+      console.log(`   ⚠ el config tiene una forma que no reconocemos — agregá Healify a mano, ver README`)
     }
+  }
 
-    console.log(`\n${nextStepFor(r)}`)
+  // Paso 4: scripts de conveniencia.
+  const scriptsAdded = report.scriptsAdded ?? []
+  console.log('\n4/4 Scripts en tu package.json…')
+  if (scriptsAdded.length > 0) {
+    for (const name of scriptsAdded) {
+      const script = HEALIFY_SCRIPTS.find((s) => s.name === name)
+      if (script) console.log(`   ✔ "${name}": ${script.command}`)
+    }
+  } else {
+    console.log('   ✔ ya estaban todos')
+  }
+
+  // Verificación instantánea: el mismo `healify doctor`, corrido acá para cerrar con el
+  // estado real — nada de "debería andar", se muestra lo que hay.
+  console.log('\nVerificación instantánea — healify doctor:')
+  printDoctorReport(doctor())
+
+  // Cierre: un solo siguiente paso, siempre el mismo camino.
+  console.log('\n🎉 Listo. Tu primer "momento Healify" es así:')
+  console.log('   1. Corré tus tests (los tuyos — Healify no te genera tests).')
+  console.log('   2. Cuando un selector se rompa:  npm run healify')
+  console.log('   3. Mirá lo que pasó:             npm run healify:dashboard')
+
+  if (report.portWarning) console.log(`\n⚠ ${report.portWarning}`)
+
+  // Siguiente paso por framework: para Selenium/WebdriverIO es el patrón de wrap(), para
+  // Playwright/Cypress el snippet de primer test (por si el proyecto todavía no tiene uno).
+  for (const r of report.results) {
+    if (r.framework === 'selenium' || r.framework === 'webdriverio' || r.framework === 'playwright' || r.framework === 'cypress') {
+      console.log(`\n${nextStepFor(r)}`)
+    }
   }
 }
 
-function runInit(): void {
-  printInitReport(init())
+/** `--dry-run`: el plan completo sin tocar nada. */
+function printInitDryRun(report: InitReport): void {
+  const plan = report.plan ?? { install: [], configs: [], scripts: [] }
+  console.log('Healify init --dry-run — nada se escribió, esto es lo que haríamos:\n')
+
+  const detected = report.detected ?? []
+  console.log('Detectar:')
+  if (report.prompted) console.log('   ⚠ ningún framework de e2e — preguntaríamos cuál armar')
+  else if (detected.length === 0) console.log('   — nada detectado')
+  else for (const d of detected) console.log(`   ✔ ${d.framework}${d.evidence.length > 0 ? ` — ${d.evidence.join(' · ')}` : ''}`)
+
+  console.log('\nInstalar:')
+  if (plan.install.length === 0) console.log('   — nada que instalar')
+  else for (const line of plan.install) console.log(`   ✔ ${line}`)
+
+  console.log('\nConfigurar:')
+  if (plan.configs.length === 0) console.log('   — nada que configurar')
+  else for (const line of plan.configs) console.log(`   ✔ ${line}`)
+
+  console.log('\nScripts en package.json:')
+  if (plan.scripts.length === 0) console.log('   — ya estaban todos')
+  else for (const name of plan.scripts) {
+    const script = HEALIFY_SCRIPTS.find((s) => s.name === name)
+    if (script) console.log(`   ✔ "${name}": ${script.command}`)
+  }
+
+  console.log('\nCorré `npx @healify/cli init` para aplicarlo.')
+}
+
+function runInit(args: string[]): void {
+  // El encabezado va antes de init(): en el CASO A interactivo el prompt de elección de
+  // framework ocurre dentro de init(), y el usuario tiene que ver el contexto primero.
+  if (!args.includes('--dry-run')) {
+    console.log('Healify init — dejemos todo listo para tu primera curación.\n')
+  }
+  printInitReport(init(process.cwd(), { dryRun: args.includes('--dry-run') }))
 }
 
 function printDoctorReport(report: DoctorReport): void {
@@ -260,7 +342,7 @@ function printHelp(): void {
   console.log(`Uso: healify <comando>
 
 Comandos:
-  init                                       Detecta tu framework (o te pregunta cuál armar si no hay ninguno), instala lo que falte y configura el reporter/plugin (sin generar tests)
+  init                                       Detecta tu framework (o te pregunta cuál armar si no hay ninguno), instala lo que falte, configura el reporter/plugin y añade scripts npm (sin generar tests). Con --dry-run solo muestra el plan
   doctor                                     Verifica que Healify esté instalado y bien configurado
   fix [reporte.json] [--dry-run] [--force] [--pr] [--no-ast] [--no-pom] [--interactive] [--watch] [--validate] [--suggest-only] [--min-confidence <n>] [--test-command <cmd>]   Aplica las sugerencias de mayor confianza directo en tus archivos de test
                                                         --pr crea branch, commit y PR con los cambios
@@ -324,7 +406,7 @@ export function runCli(args: string[]): void {
   // binario real. --help nunca debe tener efectos secundarios.
   if (args.includes('--help') || args.includes('-h')) return printHelp()
 
-  if (command === 'init') return runInit()
+  if (command === 'init') return runInit(args)
   if (command === 'doctor') return printDoctorReport(doctor())
   if (command === 'fix') return runFix(args)
   if (command === 'history') return printHistoryReport(history())

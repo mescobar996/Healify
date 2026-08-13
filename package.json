@@ -1,6 +1,6 @@
 {
   "name": "healify",
-  "version": "2.7.1",
+  "version": "2.8.0",
   "private": true,
   "_comment_workspaces": "El orden importa: `npm run build --workspaces` respeta este array y NO ordena por dependencias. `cli` importa @healify/ai-local y @healify/reporter-core, asi que va ultimo; con `cli` antes de `ai-local` (el orden anterior) un build desde cero fallaba con TS2307.",
   "workspaces": [

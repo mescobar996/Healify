@@ -11,6 +11,7 @@ import {
   detectBaseUrl,
   type Framework,
   type ModuleType,
+  type DetectResult,
 } from '../detect'
 import { wirePlaywrightConfig, wireCypressConfig, type EditStatus } from '../config-edit'
 import { scaffoldPlaywright, scaffoldCypress, scaffoldSelenium, scaffoldWebdriverio, type ScaffoldFile } from '../scaffold'
@@ -36,8 +37,21 @@ export interface InitReport {
   results: FrameworkInitResult[]
   /** true si no se detectó ningún framework y se eligió uno interactivamente (CASO A). */
   prompted: boolean
+  /** Evidencia de detección por framework — para que el output explique POR QUÉ se detectó. */
+  detected?: Array<{ framework: Framework; evidence: string[] }>
+  /** Scripts añadidos a package.json en esta corrida (`healify`, `healify:dry`, `healify:dashboard`). */
+  scriptsAdded?: string[]
+  /** true en `--dry-run`: nada se instaló, editó ni escribió — `plan` dice qué se haría. */
+  dryRun?: boolean
+  plan?: DryRunPlan
   /** Advertencia sobre el puerto detectado en baseURL — si algo ya responde ahí. */
   portWarning?: string
+}
+
+export interface DryRunPlan {
+  install: string[]
+  configs: string[]
+  scripts: string[]
 }
 
 export interface InitOptions {
@@ -45,6 +59,8 @@ export interface InitOptions {
   chooseFramework?: (defaultFramework: Framework) => Framework
   /** Inyectable para tests — evita el chequeo real de puerto. */
   checkPort?: (port: number) => boolean
+  /** `--dry-run`: detectar y planificar sin tocar nada (sin install, sin scaffold, sin scripts). */
+  dryRun?: boolean
 }
 
 function isInstalled(cwd: string, pkg: string): boolean {
@@ -54,6 +70,45 @@ function isInstalled(cwd: string, pkg: string): boolean {
   } catch {
     return false
   }
+}
+
+/** Scripts de conveniencia que `init` ofrece añadir — los mismos comandos que el usuario
+ * va a necesitar el día que un selector se rompa. Nada de inventos: los tres son reales. */
+export const HEALIFY_SCRIPTS: Array<{ name: string; command: string }> = [
+  { name: 'healify', command: 'healify fix' },
+  { name: 'healify:dry', command: 'healify fix --dry-run' },
+  { name: 'healify:dashboard', command: 'healify dashboard --serve' },
+]
+
+/**
+ * Añade a package.json los scripts de Healify que falten, sin pisar los que ya existen.
+ * Devuelve los nombres añadidos ([] si ya estaban todos o si no hay package.json legible).
+ * `dryRun` solo calcula, no escribe. Se reformatea el JSON con indentación estándar de 2
+ * espacios — lo mismo que hace `npm pkg set`, aceptado como costo menor.
+ */
+export function addNpmScripts(cwd: string, dryRun: boolean = false): string[] {
+  const pkgPath = join(cwd, 'package.json')
+  let pkg: { scripts?: Record<string, string> }
+  try {
+    pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'))
+  } catch {
+    return []
+  }
+
+  const scripts = pkg.scripts ?? {}
+  const added: string[] = []
+  for (const script of HEALIFY_SCRIPTS) {
+    if (typeof scripts[script.name] !== 'string') {
+      scripts[script.name] = script.command
+      added.push(script.name)
+    }
+  }
+
+  if (added.length > 0 && !dryRun) {
+    pkg.scripts = scripts
+    writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n', 'utf-8')
+  }
+  return added
 }
 
 function installPackage(cwd: string, packageManager: ReturnType<typeof detectFramework>['packageManager'], pkg: string): FrameworkInitResult['installed'] {
@@ -131,7 +186,9 @@ function initFramework(cwd: string, framework: Framework, packageManager: Return
  * Healify) solo inyecta el marcador, ya idempotente desde antes.
  */
 export function init(cwd: string = process.cwd(), options: InitOptions = {}): InitReport {
-  const { frameworks, packageManager } = detectFramework(cwd)
+  const { frameworks, evidence, packageManager } = detectFramework(cwd)
+
+  if (options.dryRun) return buildDryRunReport(cwd, frameworks, evidence, packageManager)
 
   let report: InitReport
 
@@ -143,6 +200,12 @@ export function init(cwd: string = process.cwd(), options: InitOptions = {}): In
     const results = frameworks.map((framework) => initFramework(cwd, framework, packageManager))
     report = { frameworks, results, prompted: false }
   }
+
+  report.detected = frameworks.map((framework) => ({
+    framework,
+    evidence: evidence[framework] ?? [],
+  }))
+  report.scriptsAdded = addNpmScripts(cwd)
 
   // Chequeo de puerto: solo informativo, no bloquea nada.
   const baseUrl = detectBaseUrl(cwd)
@@ -160,6 +223,42 @@ export function init(cwd: string = process.cwd(), options: InitOptions = {}): In
   }
 
   return report
+}
+
+/** `--dry-run`: planifica sin side effects. Detección real, cero escrituras, cero installs.
+ * `results` va vacío a propósito: en seco no hay "resultado" que reportar, solo el plan —
+ * el output de dry-run lo imprime desde `plan`, y un results inventado solo mentiría. */
+function buildDryRunReport(
+  cwd: string,
+  frameworks: Framework[],
+  evidence: DetectResult['evidence'],
+  packageManager: ReturnType<typeof detectFramework>['packageManager'],
+): InitReport {
+  const plan: DryRunPlan = { install: [], configs: [], scripts: addNpmScripts(cwd, true) }
+
+  for (const framework of frameworks) {
+    const pkg = healifyPackageFor(framework)
+    if (!isInstalled(cwd, pkg)) plan.install.push(`${pkg} (${installCommand(packageManager, pkg)})`)
+
+    const configPath = framework === 'selenium' || framework === 'webdriverio' ? null : findConfigForFramework(cwd, framework)
+    const files = scaffoldFilesFor(cwd, framework)
+    const pending = files.filter((f) => !existsSync(join(cwd, f.path))).map((f) => f.path)
+    if (configPath) {
+      plan.configs.push(`${configPath} (inyectar marcador Healify)`)
+    } else if (pending.length > 0) {
+      plan.configs.push(...pending.map((p) => `${p} (scaffold nuevo)`))
+    }
+  }
+
+  return {
+    frameworks,
+    results: [],
+    prompted: false,
+    detected: frameworks.map((framework) => ({ framework, evidence: evidence[framework] ?? [] })),
+    scriptsAdded: [],
+    dryRun: true,
+    plan,
+  }
 }
 
 /** 'unknown' cuando no se pudo determinar (ej. sin PowerShell disponible) — nunca se confunde

@@ -6,7 +6,7 @@ import { join } from 'node:path'
 const { mockExecSync } = vi.hoisted(() => ({ mockExecSync: vi.fn() }))
 vi.mock('node:child_process', () => ({ execSync: mockExecSync }))
 
-import { init } from '../commands/init'
+import { init, addNpmScripts, HEALIFY_SCRIPTS } from '../commands/init'
 
 let dir: string
 
@@ -383,5 +383,98 @@ describe('init — forma del proyecto reportada (ext/moduleType)', () => {
 
     expect(result.ext).toBe('ts')
     expect(result.scaffoldedFiles).toContain('healify.selenium.example.ts')
+  })
+})
+
+describe('init — scripts de conveniencia en package.json', () => {
+  it('añade los 3 scripts de Healify cuando no existen', () => {
+    writePkg({ '@playwright/test': '^1.58.0' })
+    writeFileSync(join(dir, 'playwright.config.ts'), `export default defineConfig({\n  use: {},\n})\n`)
+
+    init(dir)
+
+    const pkg = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf-8'))
+    expect(pkg.scripts.healify).toBe('healify fix')
+    expect(pkg.scripts['healify:dry']).toBe('healify fix --dry-run')
+    expect(pkg.scripts['healify:dashboard']).toBe('healify dashboard --serve')
+  })
+
+  it('no pisa scripts existentes y conserva los que ya estaban', () => {
+    writePkg({ '@playwright/test': '^1.58.0' }, { test: 'playwright test', healify: 'mi comando custom' })
+    writeFileSync(join(dir, 'playwright.config.ts'), `export default defineConfig({\n  use: {},\n})\n`)
+
+    init(dir)
+
+    const pkg = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf-8'))
+    expect(pkg.scripts.test).toBe('playwright test')
+    expect(pkg.scripts.healify).toBe('mi comando custom') // no se pisa
+    expect(pkg.scripts['healify:dry']).toBe('healify fix --dry-run')
+  })
+
+  it('idempotente: una segunda corrida no cambia nada', () => {
+    writePkg({ '@playwright/test': '^1.58.0', '@healify/test-runner': '^2.0.0' })
+    writeFileSync(join(dir, 'playwright.config.ts'), `export default defineConfig({\n  use: {},\n})\n`)
+
+    init(dir)
+    const first = readFileSync(join(dir, 'package.json'), 'utf-8')
+    init(dir)
+    const second = readFileSync(join(dir, 'package.json'), 'utf-8')
+
+    expect(second).toBe(first)
+  })
+
+  it('devuelve [] sin package.json legible', () => {
+    expect(addNpmScripts(dir)).toEqual([])
+  })
+
+  it('dryRun calcula pero no escribe', () => {
+    writePkg({ '@playwright/test': '^1.58.0' })
+
+    const planned = addNpmScripts(dir, true)
+    expect(planned).toEqual(HEALIFY_SCRIPTS.map((s) => s.name))
+
+    const pkg = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf-8'))
+    expect(pkg.scripts).toEqual({})
+  })
+})
+
+describe('init — --dry-run (plan sin side effects)', () => {
+  it('no instala, no scaffoldea, no escribe scripts ni config', () => {
+    writePkg({ '@playwright/test': '^1.58.0' })
+    writeFileSync(join(dir, 'playwright.config.ts'), `export default defineConfig({\n  use: {},\n})\n`)
+
+    const report = init(dir, { dryRun: true, checkPort: () => false })
+
+    expect(report.dryRun).toBe(true)
+    expect(report.results).toEqual([])
+    expect(mockExecSync).not.toHaveBeenCalled()
+    expect(report.plan?.install.join('\n')).toContain('@healify/test-runner')
+    expect(report.plan?.install.join('\n')).toContain('npm install --save-dev')
+    expect(report.plan?.configs.join('\n')).toContain('playwright.config.ts (inyectar marcador Healify)')
+    expect(report.plan?.scripts).toEqual(HEALIFY_SCRIPTS.map((s) => s.name))
+    // El config del usuario no se tocó.
+    expect(readFileSync(join(dir, 'playwright.config.ts'), 'utf-8')).toBe(`export default defineConfig({\n  use: {},\n})\n`)
+    expect(readFileSync(join(dir, 'package.json'), 'utf-8')).toContain('"scripts"')
+  })
+
+  it('CASO A seco: sin framework detectado, no instala ni pregunta qué armar', () => {
+    writePkg({})
+
+    const report = init(dir, { dryRun: true })
+
+    expect(report.dryRun).toBe(true)
+    expect(mockExecSync).not.toHaveBeenCalled()
+    expect(report.prompted).toBe(false)
+  })
+
+  it('la evidencia de detección viaja en el reporte', () => {
+    writePkg({ '@playwright/test': '^1.58.0' })
+    writeFileSync(join(dir, 'playwright.config.ts'), `export default defineConfig({\n  use: {},\n})\n`)
+
+    const report = init(dir, { dryRun: true })
+
+    const detected = report.detected?.find((d) => d.framework === 'playwright')
+    expect(detected?.evidence?.join('\n')).toContain('@playwright/test')
+    expect(detected?.evidence?.join('\n')).toContain('playwright.config.ts')
   })
 })

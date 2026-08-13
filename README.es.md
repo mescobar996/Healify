@@ -54,8 +54,14 @@ Listo. Volvé a lo tuyo.
 ```bash
 npm install -g @healify/cli
 cd tu-proyecto
+healify init     # detecta tu framework, configura todo y añade scripts npm
 healify fix --pr
 ```
+
+`healify init` añade tres scripts de conveniencia (`npm run healify`, `npm run healify:dry`,
+`npm run healify:dashboard`), corre una verificación instantánea con `healify doctor` y
+nunca genera tests — el primer selector que cura es uno de tu propia app. Para ver qué
+haría sin tocar nada: `healify init --dry-run`.
 
 ---
 

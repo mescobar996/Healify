@@ -22,7 +22,14 @@ const mocks = vi.hoisted(() => ({
   mockRunConfirm: vi.fn(),
 }))
 
-vi.mock('../commands/init', () => ({ init: mocks.mockInit }))
+vi.mock('../commands/init', () => ({
+  init: mocks.mockInit,
+  HEALIFY_SCRIPTS: [
+    { name: 'healify', command: 'healify fix' },
+    { name: 'healify:dry', command: 'healify fix --dry-run' },
+    { name: 'healify:dashboard', command: 'healify dashboard --serve' },
+  ],
+}))
 vi.mock('../commands/doctor', () => ({ doctor: mocks.mockDoctor }))
 vi.mock('../commands/history', () => ({ history: mocks.mockHistory }))
 vi.mock('../commands/heal', () => ({
@@ -105,6 +112,10 @@ describe('flags globales', () => {
 })
 
 describe('init', () => {
+  beforeEach(() => {
+    mocks.mockDoctor.mockReturnValue({ checks: [] })
+  })
+
   it('imprime el reporte de init con todos los estados y frameworks', () => {
     mocks.mockInit.mockReturnValue({
       frameworks: [],
@@ -133,6 +144,58 @@ describe('init', () => {
     expect(log).toHaveBeenCalledWith(expect.stringContaining("const { test, expect } = require('@playwright/test')"))
     expect(log).toHaveBeenCalledWith(expect.stringContaining("import { test, expect } from '@playwright/test'"))
     expect(log).toHaveBeenCalledWith(expect.stringContaining('cy.get('))
+  })
+
+  it('imprime los pasos numerados y el cierre accionable', () => {
+    mocks.mockInit.mockReturnValue({
+      frameworks: ['playwright'],
+      prompted: false,
+      detected: [{ framework: 'playwright', evidence: ['@playwright/test', 'playwright.config.ts'] }],
+      scriptsAdded: ['healify', 'healify:dry', 'healify:dashboard'],
+      results: [{ framework: 'playwright', package: '@healify/test-runner', installed: 'installed', config: 'edited', ext: 'ts', moduleType: 'esm' }],
+    })
+
+    runCli(['init'])
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('1/4 Detectando tu framework'))
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('2/4 Instalando'))
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('3/4 Conectando Healify'))
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('4/4 Scripts en tu package.json'))
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('@playwright/test · playwright.config.ts'))
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('"healify:dashboard": healify dashboard --serve'))
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('npm run healify'))
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('Healify no te genera tests'))
+    expect(mocks.mockDoctor).toHaveBeenCalled()
+  })
+
+  it('--dry-run imprime el plan sin estados de instalación', () => {
+    mocks.mockInit.mockReturnValue({
+      frameworks: ['playwright'],
+      prompted: false,
+      dryRun: true,
+      detected: [{ framework: 'playwright', evidence: ['@playwright/test'] }],
+      results: [],
+      scriptsAdded: [],
+      plan: {
+        install: ['@healify/test-runner (npm install --save-dev @healify/test-runner)'],
+        configs: ['playwright.config.ts (inyectar marcador Healify)'],
+        scripts: ['healify', 'healify:dashboard'],
+      },
+    })
+
+    runCli(['init', '--dry-run'])
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('Healify init --dry-run'))
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('nada se escribió'))
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('npm install --save-dev @healify/test-runner'))
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('inyectar marcador Healify'))
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('"healify:dashboard": healify dashboard --serve'))
+    expect(log).not.toHaveBeenCalledWith(expect.stringContaining('2/4 Instalando'))
+    expect(mocks.mockDoctor).not.toHaveBeenCalled()
+  })
+
+  it('pasa --dry-run como opción a init()', () => {
+    mocks.mockInit.mockReturnValue({ frameworks: [], prompted: false, results: [], dryRun: true, plan: { install: [], configs: [], scripts: [] } })
+    runCli(['init', '--dry-run'])
+    expect(mocks.mockInit).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ dryRun: true }))
   })
 
   it('sin prompt previo no imprime la línea de framework elegido', () => {

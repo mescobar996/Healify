@@ -17,7 +17,7 @@ Si nunca tocaste la configuración de Playwright/Cypress/Selenium/WebdriverIO, n
 falta editar nada a mano. Tres comandos:
 
 ```bash
-npx @healify/cli init     # detecta tu framework, instala el paquete correcto y configura todo
+npx @healify/cli init     # detecta tu framework, instala lo que falta, configura y añade scripts npm
 npx @healify/cli doctor   # revisa que esté todo bien instalado y configurado, con ✅/❌
 npx @healify/cli fix      # corré esto después de tus tests, para aplicar los fixes sugeridos
 ```
@@ -34,6 +34,17 @@ ningún test**, nunca. Solo deja la config real conectada:
 - **Ya tenés config pero sin Healify** → solo inyecta el reporter/plugin, no toca el resto
   de tu config.
 
+Al terminar, `init` **añade scripts de conveniencia a tu `package.json`** (sin pisar los
+que ya existen) y corre una **verificación instantánea** (`healify doctor`):
+
+| Script | Comando | Para qué |
+|---|---|---|
+| `npm run healify` | `healify fix` | aplicar los fixes cuando un selector se rompa |
+| `npm run healify:dry` | `healify fix --dry-run` | ver sugerencias sin tocar archivos (CI) |
+| `npm run healify:dashboard` | `healify dashboard --serve` | ver tu histórico de curaciones |
+
+Para ver qué haría sin ejecutar nada: `npx @healify/cli init --dry-run`.
+
 Es seguro correrlo más de una vez: si algo ya está instalado o configurado, no lo toca de
 nuevo (nunca pisa un archivo que ya generaste vos).
 
@@ -42,13 +53,32 @@ nuevo (nunca pisa un archivo que ya generaste vos).
 
 ```
 $ npx @healify/cli init
-Healify init
+Healify init — dejemos todo listo para tu primera curación.
 
-ℹ No detectamos ningún framework de e2e — armamos playwright desde cero.
+1/4 Detectando tu framework de tests…
+   ℹ No detectamos ningún framework de e2e — armamos playwright desde cero.
 
-✅ @healify/test-runner instalado
-✅ archivos creados:
-   - playwright.config.ts
+2/4 Instalando lo que falta…
+   ✔ @healify/test-runner instalado
+
+3/4 Conectando Healify…
+   ✔ archivos creados:
+     - playwright.config.ts
+
+4/4 Scripts en tu package.json…
+   ✔ "healify": healify fix
+   ✔ "healify:dry": healify fix --dry-run
+   ✔ "healify:dashboard": healify dashboard --serve
+
+Verificación instantánea — healify doctor:
+✔ Framework detectado: playwright
+✔ @healify/test-runner instalado
+✔ playwright.config.ts tiene Healify configurado
+
+🎉 Listo. Tu primer "momento Healify" es así:
+   1. Corré tus tests (los tuyos — Healify no te genera tests).
+   2. Cuando un selector se rompa:  npm run healify
+   3. Mirá lo que pasó:             npm run healify:dashboard
 
 ✅ Config lista. Healify no te genera tests: el primer selector que cure tiene que ser
    uno de tu propia app. Creá este archivo y editalo:
@@ -77,14 +107,33 @@ no hace falta tocar nada más de la config.
 
 ```
 $ npx @healify/cli init
-Healify init
+Healify init — dejemos todo listo para tu primera curación.
 
-ℹ No detectamos ningún framework de e2e — armamos cypress desde cero.
+1/4 Detectando tu framework de tests…
+   ℹ No detectamos ningún framework de e2e — armamos cypress desde cero.
 
-✅ @healify/cypress-plugin instalado
-✅ archivos creados:
-   - cypress.config.ts
-   - cypress/support/e2e.ts
+2/4 Instalando lo que falta…
+   ✔ @healify/cypress-plugin instalado
+
+3/4 Conectando Healify…
+   ✔ archivos creados:
+     - cypress.config.ts
+     - cypress/support/e2e.ts
+
+4/4 Scripts en tu package.json…
+   ✔ "healify": healify fix
+   ✔ "healify:dry": healify fix --dry-run
+   ✔ "healify:dashboard": healify dashboard --serve
+
+Verificación instantánea — healify doctor:
+✔ Framework detectado: cypress
+✔ @healify/cypress-plugin instalado
+✔ cypress.config.ts tiene Healify configurado
+
+🎉 Listo. Tu primer "momento Healify" es así:
+   1. Corré tus tests (los tuyos — Healify no te genera tests).
+   2. Cuando un selector se rompa:  npm run healify
+   3. Mirá lo que pasó:             npm run healify:dashboard
 
 ✅ Config lista. Healify no te genera tests: el primer selector que cure tiene que ser
    uno de tu propia app. Creá este archivo y editalo:
@@ -111,13 +160,22 @@ tampoco.
 
 ```
 $ npx @healify/cli init
-Healify init
+Healify init — dejemos todo listo para tu primera curación.
 
-ℹ No detectamos ningún framework de e2e — armamos selenium desde cero.
+1/4 Detectando tu framework de tests…
+   ℹ No detectamos ningún framework de e2e — armamos selenium desde cero.
 
-✅ @healify/selenium-plugin instalado
-✅ archivos creados:
-   - healify.selenium.example.ts
+2/4 Instalando lo que falta…
+   ✔ @healify/selenium-plugin instalado
+
+3/4 Conectando Healify…
+   ✔ archivos creados:
+     - healify.selenium.example.ts
+
+4/4 Scripts en tu package.json…
+   ✔ "healify": healify fix
+   ✔ "healify:dry": healify fix --dry-run
+   ✔ "healify:dashboard": healify dashboard --serve
 
 ✅ Instalado. Ver healify.selenium.example.ts para el patrón de wrap() — copialo a tu
    código real, no hay nada que ejecutar acá.
@@ -133,13 +191,22 @@ resultado: muestra cómo envolver tu `WebDriver` real con `HealifySeleniumPlugin
 
 ```
 $ npx @healify/cli init
-Healify init
+Healify init — dejemos todo listo para tu primera curación.
 
-ℹ No detectamos ningún framework de e2e — armamos webdriverio desde cero.
+1/4 Detectando tu framework de tests…
+   ℹ No detectamos ningún framework de e2e — armamos webdriverio desde cero.
 
-✅ @healify/webdriverio-plugin instalado
-✅ archivos creados:
-   - healify.wdio.example.ts
+2/4 Instalando lo que falta…
+   ✔ @healify/webdriverio-plugin instalado
+
+3/4 Conectando Healify…
+   ✔ archivos creados:
+     - healify.wdio.example.ts
+
+4/4 Scripts en tu package.json…
+   ✔ "healify": healify fix
+   ✔ "healify:dry": healify fix --dry-run
+   ✔ "healify:dashboard": healify dashboard --serve
 
 ✅ Instalado. Ver healify.wdio.example.ts para el patrón de wrap() — copialo a tu código
    real, no hay nada que ejecutar acá.

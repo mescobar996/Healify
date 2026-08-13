@@ -7,6 +7,9 @@ export type ModuleType = 'esm' | 'cjs'
 
 export interface DetectResult {
   frameworks: Framework[]
+  /** Evidencia por framework (dependencias + archivos de config) — para que `init` pueda
+   * explicar POR QUÉ detectó cada uno, no solo decir que lo hizo. */
+  evidence: Partial<Record<Framework, string[]>>
   /** Config del primer framework detectado que tiene archivo de config (Playwright/Cypress). null si no hay ninguno, o si es solo Selenium (no tiene convención de config). */
   configPath: string | null
   packageManager: PackageManager
@@ -45,17 +48,31 @@ function readDependencies(cwd: string): Record<string, string> {
 export function detectFramework(cwd: string = process.cwd()): DetectResult {
   const deps = readDependencies(cwd)
   const frameworks: Framework[] = []
+  const evidence: Partial<Record<Framework, string[]>> = {}
 
-  if ('@playwright/test' in deps || findConfig(cwd, 'playwright')) frameworks.push('playwright')
-  if ('cypress' in deps || findConfig(cwd, 'cypress')) frameworks.push('cypress')
-  if ('selenium-webdriver' in deps) frameworks.push('selenium')
-  if ('webdriverio' in deps || findConfig(cwd, 'webdriverio')) frameworks.push('webdriverio')
+  const note = (framework: Framework, clue: string): void => {
+    if (!frameworks.includes(framework)) frameworks.push(framework)
+    const list = evidence[framework]
+    if (list) list.push(clue)
+    else evidence[framework] = [clue]
+  }
+
+  if ('@playwright/test' in deps) note('playwright', '@playwright/test')
+  const playwrightConfig = findConfig(cwd, 'playwright')
+  if (playwrightConfig) note('playwright', playwrightConfig)
+  if ('cypress' in deps) note('cypress', 'cypress')
+  const cypressConfig = findConfig(cwd, 'cypress')
+  if (cypressConfig) note('cypress', cypressConfig)
+  if ('selenium-webdriver' in deps) note('selenium', 'selenium-webdriver')
+  if ('webdriverio' in deps) note('webdriverio', 'webdriverio')
+  const wdioConfig = findConfig(cwd, 'webdriverio')
+  if (wdioConfig) note('webdriverio', wdioConfig)
 
   const configPath =
     (frameworks.includes('playwright') ? findConfig(cwd, 'playwright') : null) ??
     (frameworks.includes('cypress') ? findConfig(cwd, 'cypress') : null)
 
-  return { frameworks, configPath, packageManager: detectPackageManager(cwd) }
+  return { frameworks, evidence, configPath, packageManager: detectPackageManager(cwd) }
 }
 
 /** Config de un framework puntual — usado cuando hay más de un framework detectado y el configPath único de detectFramework() no alcanza. Selenium y WebdriverIO no tienen convención de config editada por Healify: Selenium wirea a mano, WebdriverIO tiene wdio.conf. */

@@ -1,5 +1,25 @@
 # Changelog
 
+## 2.8.0 — 2026-08-13
+
+### Onboarding: `healify init` en 2 minutos (diseño en docs/onboarding-design.md)
+
+- **Output rediseñado por pasos**: `init` ahora narra el flujo completo — 1/4 detección
+  (con la evidencia: "Playwright — @playwright/test · playwright.config.ts"), 2/4
+  instalación, 3/4 configuración, 4/4 scripts — y cierra con un único siguiente paso
+  accionable (`npm run healify` → `npm run healify:dashboard`).
+- **Verificación instantánea**: al terminar, `init` corre `healify doctor` y muestra el
+  estado real del proyecto — nada de "debería andar", se ve lo que hay.
+- **Scripts de conveniencia en package.json** (idempotentes, sin pisar los existentes):
+  `healify` (`healify fix`), `healify:dry` (`healify fix --dry-run`),
+  `healify:dashboard` (`healify dashboard --serve`).
+- **`healify init --dry-run`**: muestra el plan completo (instalar/configurar/scripts)
+  sin tocar nada — para CI y para no asustar.
+- **Detección con evidencia**: `detectFramework` ahora reporta POR QUÉ detectó cada
+  framework (dependencia + archivo de config), y el output lo muestra.
+- Se mantiene la regla de oro: init **no genera tests** — el cierre lo dice explícitamente
+  ("Corré tus tests (los tuyos — Healify no te genera tests)").
+
 ## 2.7.1 — 2026-08-13
 
 ### Dashboard de eficacia (🎯 Eficacia)
