@@ -15,6 +15,10 @@ test-results/
 
 # Herramientas y editores
 .DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.log
 .vscode/
 .vercel
 .claude/
