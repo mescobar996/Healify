@@ -11,9 +11,8 @@ a claro.
 
 ## Archivos
 
-- `index.html` — la landing completa (CSS y JS inline; las secciones de estadísticas y el
-  preview del dashboard usan Tailwind + Alpine por CDN, con CSS propio de respaldo si el CDN
-  no carga).
+- `index.html` — la landing completa (CSS y JS inline; los contadores de estadísticas usan
+  Alpine por CDN, con los valores reales como texto estático de respaldo si el CDN no carga).
 - `es/index.html` — versión en español (misma estructura).
 - `healify-mark.png` — el logo (usado en el nav y como favicon).
 - `report-screenshot.png` — captura del dashboard local de Healify (vitals + 🔥 Selectores

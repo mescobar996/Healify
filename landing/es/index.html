@@ -215,10 +215,8 @@ button{font:inherit;cursor:pointer}
   "programmingLanguage": "TypeScript"
 }
 </script>
-<!-- Tailwind + Alpine por CDN para las secciones nuevas (stats con contadores y preview del
-     dashboard). El sitio sigue siendo estático sin build; si el CDN no carga, las secciones
-     caen a su CSS propio y el contenido sigue siendo legible. -->
-<script src="https://cdn.tailwindcss.com"></script>
+<!-- Alpine por CDN para los contadores de estadísticas (x-data). El sitio sigue siendo
+     estático sin build; si el CDN no carga, los valores ya vienen como texto real en el HTML. -->
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body>
