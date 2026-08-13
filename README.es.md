@@ -4,7 +4,9 @@
   <h3>Tus tests se rompieron. No cambió nada del producto.</h3>
   <p><strong>Healify encuentra el selector nuevo y te lo arregla.<br/>Sin mandar una sola línea de tu código a ningún lado.</strong></p>
 
-  <a href="https://www.npmjs.com/package/@healify/cli"><img src="https://img.shields.io/npm/v/@healify/cli" alt="npm" /></a>
+  <a href="https://www.npmjs.com/package/@healify/cli"><img src="https://img.shields.io/npm/v/@healify/cli?color=blue" alt="versión npm" /></a>
+  <img src="https://img.shields.io/badge/tests-1113%20passing-brightgreen" alt="1113 tests en verde" />
+  <img src="https://img.shields.io/badge/coverage-91.8%25-brightgreen" alt="91.8% cobertura del CLI" />
   <a href="https://github.com/mescobar996/Healify/actions/workflows/ci.yml"><img src="https://github.com/mescobar996/Healify/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <img src="https://img.shields.io/badge/license-MIT-blue" />
   <img src="https://img.shields.io/badge/100%25%20local-true-blue" />
@@ -16,6 +18,12 @@
     <a href="README.md">English</a>
   </p>
 </div>
+
+---
+
+| 🧪 Tests | 📦 Workspaces | 🔒 Cobertura del CLI | ⚡ CI |
+|---|---|---|---|
+| **1,113** en verde | **9** paquetes `@healify/*` | **91.8%** de líneas | ✅ verde en main |
 
 ---
 
@@ -181,6 +189,8 @@ Lo que muestra:
   `GET /api/selectors/:id`.
 - **UI React**: se sirve desde `dashboard-web/dist` si existe; si no, el servidor igual sirve
   la API y una página de fallback.
+
+![Dashboard local de Healify — métricas y 🔥 Selectores Crónicos](landing/report-screenshot.png)
 
 Requiere Node 20+.
 
