@@ -111,6 +111,22 @@ describe('dashboard-serve: lógica pura', () => {
     expect(overview.history.total).toBe(3)
     expect(overview.history.healed).toBe(1)
     expect(overview.history.timeline.length).toBeGreaterThanOrEqual(1)
+    // Sin confirmaciones, la eficacia no miente: rate null y todo sin confirmar.
+    expect(overview.efficacy).toEqual({ accepted: 0, rejected: 0, unconfirmed: 3, rate: null })
+  })
+
+  it('buildStatsOverview calcula la eficacia solo sobre las entradas confirmadas', () => {
+    const entries: HistoryEntry[] = [
+      makeEntry({ selector: '#a', status: 'healed' }),
+      { ...makeEntry({ selector: '#b', status: 'healed' }), accepted: true },
+      { ...makeEntry({ selector: '#c', status: 'healed' }), accepted: true },
+      { ...makeEntry({ selector: '#d', status: 'healed' }), accepted: false },
+    ]
+    const overview = buildStatsOverview(sampleStats(), entries)
+    expect(overview.efficacy.accepted).toBe(2)
+    expect(overview.efficacy.rejected).toBe(1)
+    expect(overview.efficacy.unconfirmed).toBe(1)
+    expect(overview.efficacy.rate).toBeCloseTo(2 / 3)
   })
 
   it('resolveUiDir devuelve null sin UI y detecta dashboard-web/dist', () => {

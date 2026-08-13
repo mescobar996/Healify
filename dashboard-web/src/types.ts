@@ -20,6 +20,13 @@ export interface StatsOverview {
   avgHealingMs: number
   totalHealingMs: number
   healRate: number
+  /** Eficacia de los fixes confirmados con `healify confirm`. rate null = sin confirmaciones. */
+  efficacy: {
+    accepted: number
+    rejected: number
+    unconfirmed: number
+    rate: number | null
+  }
   history: {
     total: number
     healed: number

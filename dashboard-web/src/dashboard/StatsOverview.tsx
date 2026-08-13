@@ -27,13 +27,18 @@ export function StatsOverview() {
   if (error) return <p className="empty">No se pudieron cargar las estadísticas: {error}</p>
   if (!overview) return <p className="empty">Cargando…</p>
 
-  const { history } = overview
-  const cards = [
+  const { history, efficacy } = overview
+  const cards: Array<{ label: string; value: string; hint?: string }> = [
     { label: 'Analizados', value: String(overview.totalAnalyzed) },
     { label: 'Sanados (stats.json)', value: String(overview.healed) },
     { label: 'Fallas', value: String(overview.failed) },
     { label: 'Éxito acumulado', value: pct(overview.healRate) },
     { label: 'Tiempo medio', value: `${overview.avgHealingMs}ms` },
+    {
+      label: 'Eficacia de fixes',
+      value: efficacy.rate === null ? '—' : pct(efficacy.rate),
+      hint: `${efficacy.accepted} aceptados · ${efficacy.rejected} rechazados · ${efficacy.unconfirmed} sin confirmar (healify confirm)`,
+    },
   ]
 
   return (
@@ -50,6 +55,7 @@ export function StatsOverview() {
           <div className="meta-cell" key={c.label}>
             <div className="label">{c.label}</div>
             <div className="value">{c.value}</div>
+            {c.hint ? <div style={{ fontSize: 10.5, color: 'var(--muted)', marginTop: 4 }}>{c.hint}</div> : null}
           </div>
         ))}
       </div>

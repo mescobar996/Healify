@@ -9,6 +9,7 @@ import { runFix } from './commands/fix-pr'
 import { runReport } from './commands/report'
 import { runDashboard, runDashboardServe, type DashboardServeResult } from './commands/dashboard'
 import { runFlake } from './commands/flake'
+import { runConfirm } from './commands/confirm'
 import { getVersion } from './version'
 import { runAiSetup, runAiStatus, runAiExplain, runAiChat, runAiModels } from './commands/ai'
 
@@ -261,13 +262,16 @@ function printHelp(): void {
 Comandos:
   init                                       Detecta tu framework (o te pregunta cuál armar si no hay ninguno), instala lo que falte y configura el reporter/plugin (sin generar tests)
   doctor                                     Verifica que Healify esté instalado y bien configurado
-  fix [reporte.json] [--dry-run] [--force] [--pr] [--no-ast] [--no-pom] [--interactive] [--watch]   Aplica las sugerencias de mayor confianza directo en tus archivos de test
+  fix [reporte.json] [--dry-run] [--force] [--pr] [--no-ast] [--no-pom] [--interactive] [--watch] [--validate] [--suggest-only] [--min-confidence <n>] [--test-command <cmd>]   Aplica las sugerencias de mayor confianza directo en tus archivos de test
                                                         --pr crea branch, commit y PR con los cambios
                                                         --no-ast desactiva la reescritura de sugerencias role(...) (page.click → page.getByRole)
                                                         --no-pom no busca el selector en los page objects cuando no está en el archivo de test
                                                        --interactive pregunta caso por caso en vez de aplicar todo solo (necesita una terminal real)
                                                         --watch [--interval <ms>] se queda vigilando el reporte y re-aplica en cada corrida nueva (Ctrl+C para salir)
                                                         --record-history graba .healify/history.jsonl aunque sea --dry-run (para CI, que nunca toca archivos)
+                                                        --validate vuelve a correr el test del caso tras aplicar; si falla, revierte el cambio (usa --test-command para proyectos custom)
+                                                        --suggest-only imprime las sugerencias (viejo → nuevo, confianza, verificado) sin modificar archivos
+                                                        --min-confidence <n> piso de confianza para aplicar (default 0.8); bajo el umbral, solo sugerencia
   history                                    Muestra selectores recurrentes y re-rotos de .healify/history.jsonl (se graba en cada fix real, no en --dry-run)
   report [reporte.json] [--dry-run]          Reporta los defectos de la corrida a tu Jira (o webhook) — dedupe por defectId, opt-in (agile.enabled: true)
                                                         --dry-run imprime qué se reportaría sin tocar la red
@@ -282,6 +286,7 @@ Comandos:
                                                         --stats imprime el resumen de las estadísticas acumuladas en ~/.healify/stats.json (sin telemetría: nunca sale de tu máquina)
   probe-script                               Imprime el script que hay que correr con execute_script() para sondear el DOM (insumo de "heal")
   explain [selector] [--json]                Explica POR QUÉ un selector es frágil y qué propone el motor. Sin args, analiza el último fallo del reporte
+  confirm --id <defectId> [--accepted|--rejected]   Marca los fixes de un defectId como aceptados o rechazados en el historial (métrica de eficacia del dashboard)
 
 Comandos IA (requiere Ollama):
   ai setup                                   Configura IA local: detecta Ollama, sugiere modelo según RAM, guarda configuración
@@ -329,6 +334,12 @@ export function runCli(args: string[]): void {
   if (command === 'heal') { void runHealCommand(args.slice(1)).catch(handleCommandError); return }
   if (command === 'explain') return runExplainCommand(args.slice(1))
   if (command === 'probe-script') return console.log(BROWSER_PROBE_SCRIPT)
+  if (command === 'confirm') {
+    const result = runConfirm(args.slice(1))
+    for (const line of result.lines) console.log(line)
+    if (!result.ok) process.exit(1)
+    return
+  }
 
   // Comandos IA
   if (command === 'ai') {

@@ -29,6 +29,10 @@ export interface HistoryEntry {
    * escritos antes de que existiera la clasificación no lo tienen, y un archivo viejo tiene
    * que seguir leyéndose sin migración. Ver `computeChronic()`. */
   cause?: FailureCause
+  /** Confirmación del usuario vía `healify confirm`: `true` = el fix se aceptó, `false` = se
+   * revirtió/descartó. `undefined` = todavía sin confirmar. Alimenta la métrica de eficacia
+   * del dashboard (aceptados vs rechazados) — la tasa de "arreglos que se aceptan sin revert". */
+  accepted?: boolean
 }
 
 const HISTORY_RELATIVE_PATH = join('.healify', 'history.jsonl')

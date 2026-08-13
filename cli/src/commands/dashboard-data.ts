@@ -44,6 +44,14 @@ export interface StatsOverview {
   avgHealingMs: number
   totalHealingMs: number
   healRate: number
+  /** Eficacia de los fixes: de los confirmados vía `healify confirm`, cuántos se aceptaron
+   * sin revertir. `rate` es null hasta que haya al menos una confirmación. */
+  efficacy: {
+    accepted: number
+    rejected: number
+    unconfirmed: number
+    rate: number | null
+  }
   history: {
     total: number
     healed: number
@@ -150,6 +158,7 @@ export function buildStatsOverview(healStats: HealStatsLike, entries: HistoryEnt
     avgHealingMs: healStats.avgHealingMs,
     totalHealingMs: healStats.totalHealingMs,
     healRate: healStats.totalAnalyzed > 0 ? healStats.healed / healStats.totalAnalyzed : 0,
+    efficacy: computeEfficacy(entries),
     history: {
       total: history.total,
       healed: history.healed,
@@ -160,6 +169,21 @@ export function buildStatsOverview(healStats: HealStatsLike, entries: HistoryEnt
       lastSeen: history.lastSeen,
       timeline: history.timeline,
     },
+  }
+}
+
+/** Aceptados vs rechazados entre las entradas confirmadas (`healify confirm`); las sin
+ * confirmar no cuentan para la tasa pero se reportan — la eficacia no puede esconder
+ * fixes que nadie validó. */
+function computeEfficacy(entries: HistoryEntry[]): StatsOverview['efficacy'] {
+  const accepted = entries.filter((e) => e.accepted === true).length
+  const rejected = entries.filter((e) => e.accepted === false).length
+  const confirmed = accepted + rejected
+  return {
+    accepted,
+    rejected,
+    unconfirmed: entries.length - confirmed,
+    rate: confirmed > 0 ? accepted / confirmed : null,
   }
 }
 

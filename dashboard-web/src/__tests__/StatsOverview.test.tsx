@@ -15,6 +15,7 @@ const fixture: StatsOverviewType = {
   avgHealingMs: 248,
   totalHealingMs: 2976,
   healRate: 0.75,
+  efficacy: { accepted: 3, rejected: 2, unconfirmed: 1, rate: 0.6 },
   history: {
     total: 5,
     healed: 4,
@@ -43,6 +44,9 @@ describe('StatsOverview', () => {
     expect(screen.getByText('Analizados')).toBeInTheDocument()
     expect(screen.getByText('75%')).toBeInTheDocument()
     expect(screen.getByText('248ms')).toBeInTheDocument()
+    expect(screen.getByText('Eficacia de fixes')).toBeInTheDocument()
+    expect(screen.getByText('60%')).toBeInTheDocument()
+    expect(screen.getByText(/3 aceptados · 2 rechazados · 1 sin confirmar/)).toBeInTheDocument()
   })
 
   it('grafica la timeline del histórico', async () => {

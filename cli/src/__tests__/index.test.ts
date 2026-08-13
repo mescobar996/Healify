@@ -19,6 +19,7 @@ const mocks = vi.hoisted(() => ({
   mockRunAiExplain: vi.fn((): Promise<void> => Promise.resolve()),
   mockRunAiChat: vi.fn((): Promise<void> => Promise.resolve()),
   mockRunAiModels: vi.fn((): Promise<void> => Promise.resolve()),
+  mockRunConfirm: vi.fn(),
 }))
 
 vi.mock('../commands/init', () => ({ init: mocks.mockInit }))
@@ -37,6 +38,7 @@ vi.mock('../commands/dashboard', () => ({
   runDashboardServe: mocks.mockRunDashboardServe,
 }))
 vi.mock('../commands/flake', () => ({ runFlake: mocks.mockRunFlake }))
+vi.mock('../commands/confirm', () => ({ runConfirm: mocks.mockRunConfirm }))
 vi.mock('../version', () => ({ getVersion: mocks.mockGetVersion }))
 vi.mock('../commands/ai', () => ({
   runAiSetup: mocks.mockRunAiSetup,
@@ -373,6 +375,21 @@ describe('ai', () => {
   it('ai sin subcomando: uso + exit 1', () => {
     expect(() => runCli(['ai'])).toThrow('PROCESS_EXIT:1')
     expect(log).toHaveBeenCalledWith('Uso: healify ai <setup|status|explain|chat|models>')
+  })
+})
+
+describe('confirm', () => {
+  it('delega a runConfirm con los args y pasa los id con ok', () => {
+    mocks.mockRunConfirm.mockReturnValue({ ok: true, updated: 2, id: 'HLF-X', accepted: true, lines: ['✅ 2 fixes marcados como aceptado (HLF-X).'] })
+    runCli(['confirm', '--id', 'HLF-X'])
+    expect(mocks.mockRunConfirm).toHaveBeenCalledWith(['--id', 'HLF-X'])
+    expect(log).toHaveBeenCalledWith('✅ 2 fixes marcados como aceptado (HLF-X).')
+  })
+
+  it('ok false: imprime el error y sale con 1', () => {
+    mocks.mockRunConfirm.mockReturnValue({ ok: false, updated: 0, id: 'HLF-X', accepted: true, lines: ['No encontré ningún selector con id HLF-X en el historial.'] })
+    expect(() => runCli(['confirm', '--id', 'HLF-X'])).toThrow('PROCESS_EXIT:1')
+    expect(log).toHaveBeenCalledWith('No encontré ningún selector con id HLF-X en el historial.')
   })
 })
 
