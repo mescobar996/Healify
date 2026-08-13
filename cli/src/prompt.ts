@@ -34,6 +34,7 @@ export function promptLine(question: string): string {
   return answer.trim()
 }
 
+/** Pregunta al usuario qué framework armar (solo cuando no hay ninguno detectado). */
 export function promptFrameworkChoice(defaultFramework: Framework = 'playwright'): Framework {
   const answer = promptLine(
     `No detectamos e2e. ¿Framework? [playwright/cypress/selenium/webdriverio] (default: ${defaultFramework}) `

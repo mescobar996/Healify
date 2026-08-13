@@ -120,6 +120,7 @@ function isSubstitutable(fixedSelector: string): boolean {
   return !/^role\(/.test(fixedSelector)
 }
 
+/** Cuenta apariciones de un substring (sin overlaps). */
 export function countOccurrences(haystack: string, needle: string): number {
   if (!needle) return 0
   let count = 0

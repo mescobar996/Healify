@@ -147,6 +147,7 @@ function healifySearch(root, depth) {
 return healifySearch(document, 0);
 `.trim()
 
+/** Script de sondeo del DOM real vía executeScript/execute: roles, nombres y testids de los elementos interactivos. */
 export const BROWSER_PROBE_SCRIPT = `
 var MAX_DEPTH = 12;
 var MAX_NODES = 3000;

@@ -47,6 +47,7 @@ function hashDom(domSnippet: string | undefined): string | undefined {
   return createHash('sha256').update(domSnippet).digest('hex')
 }
 
+/** Normaliza un evento de healing a una entrada de auditoría (misma forma en todos los adapters). */
 export function buildAuditEntry(
   response: HealResponse,
   request: { selector: string; testName?: string; testFile?: string },
@@ -72,6 +73,7 @@ export function buildAuditEntry(
   }
 }
 
+/** Escribe healify-audit.json en disco — best-effort, nunca rompe la corrida si falla. */
 export function writeAuditReport(
   entries: AuditEntry[],
   outputDir: string,
@@ -92,6 +94,7 @@ export function writeAuditReport(
   return fullPath
 }
 
+/** Agrega una entrada al audit acumulado y persiste el archivo. */
 export function appendAuditEntry(entry: AuditEntry, outputDir: string): void {
   const fullPath = join(outputDir, 'healify-audit.jsonl')
   mkdirSync(dirname(fullPath), { recursive: true })

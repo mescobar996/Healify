@@ -1,4 +1,6 @@
+/** Marca del reporter de Playwright en el config — cómo se detecta que Healify está conectado. */
 export const PLAYWRIGHT_MARKER = '@healify/test-runner/reporter'
+/** Marca del plugin de Cypress en el config — cómo se detecta que Healify está conectado. */
 export const CYPRESS_MARKER = '@healify/cypress-plugin'
 
 export type EditStatus = 'already-wired' | 'edited' | 'unsupported-shape'

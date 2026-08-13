@@ -77,6 +77,7 @@ function issueKeyFromSearch(raw: unknown): string | null {
   return first.key
 }
 
+/** Cliente de la API REST de Jira Cloud — dedupe por defectId, credenciales del usuario. */
 export function createJiraClient(config: ResolvedAgileConfig, fetchImpl: typeof fetch = globalThis.fetch) {
   async function request(method: string, path: string, body?: unknown): Promise<unknown> {
     const response = await fetchImpl(`${apiBase(config)}${path}`, {

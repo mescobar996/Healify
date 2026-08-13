@@ -53,6 +53,7 @@ function saveConfig(config: LocalConfig): void {
 
 // ==================== Comandos ====================
 
+/** Configura IA local: detecta Ollama, sugiere modelo según RAM y guarda la configuración. */
 export async function runAiSetup(): Promise<void> {
   console.log('\n🔧 Healify AI Setup\n')
 
@@ -105,6 +106,7 @@ export async function runAiSetup(): Promise<void> {
   console.log('\n✅ Configuración guardada en healify.config.json')
 }
 
+/** Muestra el estado de Ollama, los modelos instalados y la configuración actual. */
 export async function runAiStatus(): Promise<void> {
   console.log('\n📊 Estado de Healify AI\n')
 
@@ -133,6 +135,7 @@ export async function runAiStatus(): Promise<void> {
   }
 }
 
+/** Explica con IA local por qué un selector es frágil (requiere Ollama). */
 export async function runAiExplain(args: string[]): Promise<void> {
   if (args.length === 0) {
     console.log('Uso: healify ai explain <selector>')
@@ -160,6 +163,7 @@ export async function runAiExplain(args: string[]): Promise<void> {
   }
 }
 
+/** Chat interactivo con la IA local sobre los tests. */
 export async function runAiChat(): Promise<void> {
   const config = loadConfig()
   const ai = new HealifyAI(config.ai)
@@ -215,6 +219,7 @@ export async function runAiChat(): Promise<void> {
   askQuestion()
 }
 
+/** Lista los modelos de Ollama disponibles e instalados, con recomendación según RAM. */
 export async function runAiModels(): Promise<void> {
   console.log('\n📦 Modelos de Ollama\n')
 

@@ -30,6 +30,7 @@ function reasonText(outcome: Extract<FixOutcome, { status: 'skipped' }>, astUsed
   }
 }
 
+/** Imprime el resumen de outcomes de un fix (aplicados / salteados con su razón). */
 export function printOutcomes(outcomes: FixOutcome[], run: LocalRun, astUsed: boolean): void {
   if (run.cases.length === 0) {
     console.log('Ningún selector roto en la última corrida — no hay nada que aplicar.')
@@ -130,6 +131,7 @@ export function applyFixOnce(reportPath: string, opts: ApplyOptions): boolean {
   return true
 }
 
+/** Entrypoint del comando `healify fix` — delega a watch/interactive/PR según los flags. */
 export function runFix(args: string[]): void {
   const dryRun = args.includes('--dry-run')
   const recordHistory = args.includes('--record-history')

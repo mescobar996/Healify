@@ -305,6 +305,7 @@ function handleCommandError(error: unknown): void {
   process.exit(1)
 }
 
+/** Dispatch del CLI: parsea argv, imprime ayuda/versión o delega al comando correspondiente. */
 export function runCli(args: string[]): void {
   const command = args[0]
 

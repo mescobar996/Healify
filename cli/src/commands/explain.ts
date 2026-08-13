@@ -87,6 +87,7 @@ function findLastReportCase(cwd: string): { selector: string } | null {
   return null
 }
 
+/** Explica por qué un selector es frágil y qué propone el motor — sin args analiza el último fallo del reporte. */
 export function runExplain(args: string[]): ExplainResult {
   const cwd = process.cwd()
   const jsonFlag = args.includes('--json')

@@ -81,12 +81,14 @@ export interface ResolvedAgileConfig {
   transitionOnHealed?: string
 }
 
+/** Mapeo por defecto severidad de Healify → prioridad del ticket en Jira. */
 export const DEFAULT_AGILE_PRIORITIES: Record<Severity, string> = {
   blocker: 'Highest',
   major: 'High',
   minor: 'Medium',
 }
 
+/** Config ágil por defecto: provider jira, desactivada — nunca toca la red sin enabled: true. */
 export function defaultAgile(): ResolvedAgileConfig {
   return {
     enabled: false,
@@ -135,6 +137,7 @@ export interface HealifyThresholds {
   maxAlternatives: number
 }
 
+/** Umbrales de confianza por defecto (sanado automático / a revisar / sin sugerencia). */
 export const DEFAULT_THRESHOLDS: HealifyThresholds = {
   healEnabled: true,
   minConfidence: 0.9,

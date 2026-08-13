@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process'
 
+/** true si el binario `gh` (GitHub CLI) está disponible. */
 export function detectGitHubCLI(): boolean {
   try {
     execFileSync('gh', ['--version'], { stdio: 'ignore' })
@@ -19,6 +20,7 @@ function errMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err)
 }
 
+/** Crea la branch `healify/fix-<timestamp>` y devuelve su nombre. */
 export function createBranch(): string {
   const branchName = `healify/fix-${getTimestamp()}`
   try {
@@ -29,6 +31,7 @@ export function createBranch(): string {
   return branchName
 }
 
+/** Stagedea y commitea los archivos del fix. */
 export function createCommit(selectorCount: number, files: string[]): void {
   if (files.length === 0) return
   for (const file of files) {
@@ -45,6 +48,7 @@ export function createCommit(selectorCount: number, files: string[]): void {
   }
 }
 
+/** Instrucciones para abrir el PR a mano (push + gh pr create). */
 export function createPRInstructions(branchName: string): string {
   return `Branch '${branchName}' created and committed.
 
@@ -56,6 +60,7 @@ To create a PR, run:
 Or open https://github.com in your browser and create a PR manually from branch '${branchName}'.`
 }
 
+/** Abre el PR con `gh pr create` y devuelve la URL. */
 export function createPRWithGH(title: string, body: string): string {
   try {
     const result = execFileSync('gh', ['pr', 'create', '--title', title, '--body', body], { encoding: 'utf-8' })

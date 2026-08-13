@@ -53,6 +53,7 @@ export function parseHistoryLines(raw: string): HistoryEntry[] {
 
 /** [] si el archivo no existe o no se puede leer — el repertorio es un complemento, nunca
  * debe bloquear ni romper una corrida por su ausencia. */
+/** Lee el repertorio (.healify/history.jsonl) — [] si no existe o está corrupto. */
 export function readRepertoire(cwd: string = process.cwd()): HistoryEntry[] {
   const fullPath = join(cwd, HISTORY_RELATIVE_PATH)
   if (!existsSync(fullPath)) return []

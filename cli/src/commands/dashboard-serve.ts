@@ -273,6 +273,7 @@ export interface DashboardServeResult {
  *  --port 0 deja que el SO asigne un puerto efímero (sin retry). */
 const MAX_PORT_RETRIES = 10
 
+/** Levanta el servidor local del dashboard (UI estática + API JSON). Resuelve con el resultado o un close(). */
 export function runDashboardServe(args: string[], cwd: string = process.cwd()): Promise<DashboardServeResult> {
   const portIndex = args.indexOf('--port')
   const portArg = portIndex >= 0 ? Number(args[portIndex + 1]) : NaN

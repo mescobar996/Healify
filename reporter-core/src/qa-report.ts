@@ -70,6 +70,7 @@ export function baseEnvironment(framework: string, extra: Partial<RunEnvironment
 
 /** Cuenta los casos por estado. Los adapters que no saben cuántos tests corrieron en total
  * (Selenium/WebdriverIO curan en vivo) omiten `suite` y los totales salen de los casos. */
+/** Deriva las estadísticas de la suite a partir de los casos. */
 export function statsFromCases(
   cases: LocalCaseResult[],
   suite?: { total: number; passed: number; failed: number; durationMs?: number }
@@ -135,12 +136,14 @@ export function severityFor(status: LocalCaseStatus): Severity {
   return 'minor'
 }
 
+/** Etiqueta legible por severidad. */
 export const SEVERITY_LABEL: Record<Severity, string> = {
   blocker: 'Bloqueante',
   major: 'Mayor',
   minor: 'Menor',
 }
 
+/** Formatea una duración en ms a texto humano (ej. "1m 32s"). */
 export function formatDuration(ms: number | undefined): string | undefined {
   if (ms === undefined) return undefined
   if (ms < 1000) return `${ms} ms`

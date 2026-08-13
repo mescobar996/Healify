@@ -46,6 +46,7 @@ function isRunRecord(value: unknown): value is RunRecord {
   return typeof value === 'object' && value !== null && 'type' in value && value.type === 'run'
 }
 
+/** Parseo tolerante línea a línea de .healify/runs.jsonl: una línea corrupta se ignora, nunca rompe el resto. */
 export function parseRunLines(raw: string): RunRecord[] {
   const records: RunRecord[] = []
   for (const line of raw.split('\n')) {

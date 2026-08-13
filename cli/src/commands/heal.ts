@@ -84,6 +84,7 @@ export interface HealStats {
   avgHealingMs: number
 }
 
+/** Estadísticas vacías — el punto de partida de cualquier corrida. */
 export function emptyHealStats(): HealStats {
   return { totalAnalyzed: 0, healed: 0, failed: 0, byType: {}, totalHealingMs: 0, avgHealingMs: 0 }
 }

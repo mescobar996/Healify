@@ -817,6 +817,7 @@ ${renderReportScript(storageKey)}
 `
 }
 
+/** Genera el reporte JSON (mismo contenido que el HTML pero estructurado para consumidores). */
 export function renderLocalReportJson(rawRun: LocalRun): string {
   const run = normalizeRun(rawRun)
   return JSON.stringify(

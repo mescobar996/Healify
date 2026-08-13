@@ -74,6 +74,7 @@ function seleniumExampleContent(): string {
 import { Builder } from 'selenium-webdriver'
 import { HealifySeleniumPlugin } from '@healify/selenium-plugin'
 
+/** Arma un WebDriver de Selenium envuelto por Healify (patrón del ejemplo). */
 export async function createHealedDriver() {
   const raw = await new Builder().forBrowser('chrome').build()
   return new HealifySeleniumPlugin({ onEvent: console.log }).wrap(raw)

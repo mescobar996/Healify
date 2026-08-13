@@ -27,6 +27,7 @@ function splitRepo(repository: string): { owner: string; repo: string } {
   return { owner: owner ?? '', repo: repo ?? '' }
 }
 
+/** Cliente de GitHub Issues — dedupe por defectId, credenciales del usuario, sin nube intermedia. */
 export function createGithubIssuesClient(config: ResolvedAgileConfig, fetchImpl: typeof fetch = globalThis.fetch) {
   const apiBase = (config.baseUrl ?? 'https://api.github.com').replace(/\/+$/, '')
   const { owner, repo } = splitRepo(config.repository ?? '')
