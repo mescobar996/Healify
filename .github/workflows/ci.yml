@@ -567,8 +567,19 @@ jobs:
       - name: Build workspaces
         run: npm run build
 
-      - name: Coverage (por paquete)
+      # `npm run coverage` = bash scripts/coverage.sh (y su espejo coverage.ps1 para Windows).
+      # Los umbrales viven SOLO ahí: si un paquete no llega al suyo, el script sale distinto de
+      # cero y este job se pone en rojo. No hay umbrales hardcodeados en el workflow a propósito.
+      - name: Coverage (por paquete — umbrales en los scripts)
         run: npm run coverage
+
+      # Documentación ejecutable: confirma que el job usó los umbrales de los scripts (la única
+      # fuente de verdad) e imprime cuál se exige a cada paquete. Si esto cambia de fuente,
+      # el comentario de arriba queda desactualizado y el CI lo va a reflejar en la salida.
+      - name: "Umbrales vigentes (fuente única: scripts/coverage.sh)"
+        run: |
+          echo "Umbrales mínimos de líneas por paquete (scripts/coverage.sh):"
+          grep -E '^  \[[a-z-]+\]=[0-9]+' scripts/coverage.sh
 
   # ─── Build ────────────────────────────────────────────────────────────────
   build:
