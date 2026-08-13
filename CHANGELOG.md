@@ -1,5 +1,70 @@
 # Changelog
 
+## 2.7.0 — 2026-08-13
+
+Smart Healing: Healify pasa de "reparación automática" a "diagnóstico + validación +
+sugerencia inteligente", con un rediseño visual completo.
+
+### Smart Healing (feedback de la comunidad)
+
+- **`healify fix --validate`** — después de aplicar un fix, vuelve a correr la prueba más
+  pequeña que fallaba (comando por framework: playwright/cypress/vitest, o
+  `--test-command` para proyectos custom). Si el test falla, el cambio se revierte y el
+  proceso sale con error **antes** de tocar la rama/PR. Framework desconocido → aviso
+  honesto, nunca se adivina.
+- **`healify fix --min-confidence <n>`** (default 0.8) — los healed bajo el umbral se
+  saltean como `low-confidence` (solo sugerencia), antes del reemplazo de texto y del AST.
+- **Output con contexto** — cada fix aplicado muestra: localizador viejo → candidato,
+  confianza, si fue verificado contra la página y el rol+nombre que coincidió
+  (`#old → [data-testid='new'] (95% · verificada en la página · button "Add to cart")`).
+- **`healify fix --suggest-only`** — imprime las sugerencias sin modificar ningún archivo.
+- **`healify confirm --id <defectId> [--accepted|--rejected]`** — métrica de eficacia:
+  cuántos fixes se aceptan sin revertir. El dashboard muestra `Eficacia de fixes`
+  (aceptados · rechazados · sin confirmar).
+
+### Visual overhaul
+
+- **Nuevo logo** escudo + H (SVG animado/estático + pack raster 512/192/180/32/16 + favicon.ico).
+- **Landing rediseñada**: hero a pantalla (82vh), glassmorphism verde-cian-azul, logos
+  oficiales animados con glow, CTA ámbar, cero CDN.
+- **README EN/ES** con storytelling, badges y ejemplo rápido.
+- **Docs**: `docs/project-evaluation.md` y `docs/project-status.md`.
+
+### Calidad
+
+2026-08-13 — calidad, cobertura y presentación (release 2.6.0)
+
+Cierre del ciclo de presentación: el proyecto queda listo para mostrarse, con métricas
+verificables y una cara nueva.
+
+- **Cobertura de los huecos del CLI**: `ai.ts` e `index.ts` de 0% a ~96% (56 tests nuevos);
+  el paquete `cli` de 63% a 91.8%.
+- **Cobertura de `cypress-plugin`**: flujo de curación en vivo de `support.ts` (sondeo, heal
+  css/xpath, shadow-DOM finder, no-suggestion/failed) — de 55.97% a 94.8%.
+- **9 paquetes medidos** con umbrales anti-regresión (`ai-local`, `mcp`, `dashboard-web`
+  incluidos); `cypress-plugin` y `cli` ahora exigen 80%. El CI verifica los umbrales con
+  fuente única en los scripts.
+- **0 usos de `any`/`as`/`!` en producción** (auditoría de tipos: 15 hallazgos, corregidos
+  con type guards y validación runtime).
+- **Refactor de funciones largas**: `healing-engine.ts` (870 líneas) y `local-report.ts`
+  (779) divididos en módulos cohesivos — ninguna función supera las 80 líneas.
+  `dashboard-serve.ts` (329 líneas) partido en 6 módulos.
+- **38 JSDoc agregados** en exports sin documentar de reporter-core y cli.
+- **README EN/ES reescritos** con storytelling, badges y ejemplo rápido.
+- **Landing rediseñada**: minimalista, glassmorphism verde-cian-azul, logos oficiales animados,
+  CTA ámbar, cero CDN. Lighthouse: Performance 99 · Accesibilidad 95 · Best Practices 100.
+- **Captura del dashboard** (`landing/report-screenshot.png`) generada con Playwright.
+- **Documentación**: `docs/project-evaluation.md`, `docs/project-status.md`,
+  `docs/final-review.md`.
+- **Versión alineada a 2.6.0** en los 11 `package.json` del repo.
+- **Corrección**: rutas de assets relativas que rompían `/es/` en la landing (404) — ahora
+  rutas absolutas.
+
+
+### Publicado en npm
+
+8 paquetes (`@healify/*`) — `dashboard-web` queda privado.
+
 ## 2.6.0
 
 > El histórico deja de ser un archivo muerto: `healify dashboard --serve` levanta un servidor
@@ -152,34 +217,6 @@
   verdes después del fix.
 
 - 128 tests nuevos (965 en total).
-
-### 2026-08-13 — calidad, cobertura y presentación (release 2.6.0)
-
-Cierre del ciclo de presentación: el proyecto queda listo para mostrarse, con métricas
-verificables y una cara nueva.
-
-- **Cobertura de los huecos del CLI**: `ai.ts` e `index.ts` de 0% a ~96% (56 tests nuevos);
-  el paquete `cli` de 63% a 91.8%.
-- **Cobertura de `cypress-plugin`**: flujo de curación en vivo de `support.ts` (sondeo, heal
-  css/xpath, shadow-DOM finder, no-suggestion/failed) — de 55.97% a 94.8%.
-- **9 paquetes medidos** con umbrales anti-regresión (`ai-local`, `mcp`, `dashboard-web`
-  incluidos); `cypress-plugin` y `cli` ahora exigen 80%. El CI verifica los umbrales con
-  fuente única en los scripts.
-- **0 usos de `any`/`as`/`!` en producción** (auditoría de tipos: 15 hallazgos, corregidos
-  con type guards y validación runtime).
-- **Refactor de funciones largas**: `healing-engine.ts` (870 líneas) y `local-report.ts`
-  (779) divididos en módulos cohesivos — ninguna función supera las 80 líneas.
-  `dashboard-serve.ts` (329 líneas) partido en 6 módulos.
-- **38 JSDoc agregados** en exports sin documentar de reporter-core y cli.
-- **README EN/ES reescritos** con storytelling, badges y ejemplo rápido.
-- **Landing rediseñada**: minimalista, glassmorphism verde-cian-azul, logos oficiales animados,
-  CTA ámbar, cero CDN. Lighthouse: Performance 99 · Accesibilidad 95 · Best Practices 100.
-- **Captura del dashboard** (`landing/report-screenshot.png`) generada con Playwright.
-- **Documentación**: `docs/project-evaluation.md`, `docs/project-status.md`,
-  `docs/final-review.md`.
-- **Versión alineada a 2.6.0** en los 11 `package.json` del repo.
-- **Corrección**: rutas de assets relativas que rompían `/es/` en la landing (404) — ahora
-  rutas absolutas.
 
 ## 2.4.0
 
