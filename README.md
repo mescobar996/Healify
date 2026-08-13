@@ -39,18 +39,59 @@ test data and real assertion failures are the rest. Healify names those instead 
 them, because a tool that swaps a selector to make a failing assertion pass is hiding the bug
 the test caught. That is worse than a red build.
 
-## Try it
+## How to use it
+
+Five steps. The first time takes two minutes.
+
+**1. Install it once**
 
 ```bash
 npm install -g @healify/cli
-cd your-project
-healify init     # detects your framework, installs and configures everything
-healify fix --pr # applies fixes and opens a PR
 ```
 
-`healify init` adds three npm scripts (`healify`, `healify:dry`, `healify:dashboard`), runs an
-instant `healify doctor` check, and never writes tests: the first selector it heals is one
-from your own app. See the plan without touching anything with `healify init --dry-run`.
+**2. Point it at your project**
+
+```bash
+cd your-project
+healify init
+```
+
+It detects your test framework (Playwright, Cypress, Selenium, WebdriverIO), installs the
+adapter, wires the config, adds `healify` / `healify:dry` / `healify:dashboard` npm scripts,
+and runs a `healify doctor` check. It never writes tests.
+
+**3. Run your tests**
+
+```bash
+npx playwright test   # Playwright
+npx cypress run       # Cypress
+npm test              # Selenium
+npx wdio run          # WebdriverIO
+```
+
+Nothing happens until a selector actually breaks. Healify waits for your suite to fail.
+
+**4. When a selector breaks, heal it**
+
+```bash
+npm run healify            # applies the fix to your test files
+npm run healify:dry        # shows what it would change, touches nothing
+```
+
+The report tells you which selector broke, what it proposes, with what confidence, and
+whether it verified the fix against the real page.
+
+**5. See what you healed**
+
+```bash
+npm run healify:dashboard
+```
+
+Local dashboard with your healing history, acceptance rate per framework and chronic
+selectors. Data stays on your machine.
+
+The full walkthrough, with every command explained, is in the
+[step-by-step guide](docs/guide/README.md).
 
 ## What's in the box
 

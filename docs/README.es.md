@@ -4,13 +4,15 @@
 
 # Documentación
 
-Todo lo que necesitás para usar Healify en serio. Si venís de cero, empezá por
-[Instalación](installation.es.md) — son dos minutos.
+Todo lo que necesitás para usar Healify en serio.
 
-## Empezar
+## Primeros pasos
+
+¿Nunca lo usaste? Empezá acá:
 
 | | |
 |---|---|
+| **[Guía paso a paso](guide/README.md)** | El recorrido completo: instalar, `init`, escribir tu primer test, curar un selector roto, ver el dashboard. Cinco pasos, dos minutos. |
 | **[Instalación](installation.es.md)** | Enchufarlo a Playwright, Cypress, Selenium o WebdriverIO. Es un snippet por runner. |
 | **[Comandos](cli.es.md)** | `doctor`, `fix`, `dashboard`, `flake`, `watch` y el resto del CLI. |
 

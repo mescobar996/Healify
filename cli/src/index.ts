@@ -59,6 +59,23 @@ function nextStepFor(result: FrameworkInitResult): string {
   ].join('\n')
 }
 
+/** Comando para correr la suite de tests según el framework detectado — el primer paso
+ * del cierre de `init` tiene que decir qué ejecutar, no dejar que el usuario lo adivine. */
+function testCommandFor(framework: string): string {
+  switch (framework) {
+    case 'playwright':
+      return 'npx playwright test'
+    case 'cypress':
+      return 'npx cypress run'
+    case 'webdriverio':
+      return 'npx wdio run'
+    case 'selenium':
+      return 'npm test'
+    default:
+      return 'npm test'
+  }
+}
+
 function printInitReport(report: InitReport): void {
   if (report.dryRun) {
     printInitDryRun(report)
@@ -123,9 +140,14 @@ function printInitReport(report: InitReport): void {
   console.log('\nVerificación instantánea — healify doctor:')
   printDoctorReport(doctor())
 
-  // Cierre: un solo siguiente paso, siempre el mismo camino.
+  // Cierre: un solo siguiente paso, siempre el mismo camino — con el comando de test
+  // concreto del framework detectado, no una instrucción genérica.
+  const testCommands = [...new Set(report.results.map((r) => testCommandFor(r.framework)))]
+  const testLine = testCommands.length === 1
+    ? `Corré tus tests: ${testCommands[0]}`
+    : `Corré tus tests (${testCommands.join(' o ')}) — los tuyos, Healify no te genera tests.`
   console.log('\n🎉 Listo. Tu primer "momento Healify" es así:')
-  console.log('   1. Corré tus tests (los tuyos — Healify no te genera tests).')
+  console.log(`   1. ${testLine}`)
   console.log('   2. Cuando un selector se rompa:  npm run healify')
   console.log('   3. Mirá lo que pasó:             npm run healify:dashboard')
 

@@ -162,6 +162,7 @@ describe('init', () => {
     expect(log).toHaveBeenCalledWith(expect.stringContaining('4/4 Scripts en tu package.json'))
     expect(log).toHaveBeenCalledWith(expect.stringContaining('@playwright/test · playwright.config.ts'))
     expect(log).toHaveBeenCalledWith(expect.stringContaining('"healify:dashboard": healify dashboard --serve'))
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('npx playwright test'))
     expect(log).toHaveBeenCalledWith(expect.stringContaining('npm run healify'))
     expect(log).toHaveBeenCalledWith(expect.stringContaining('Healify no te genera tests'))
     expect(mocks.mockDoctor).toHaveBeenCalled()

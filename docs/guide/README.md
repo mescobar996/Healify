@@ -121,6 +121,21 @@ Esto te instala el paquete correcto, te edita el config del framework (o lo crea
 cero), y para Selenium/WebdriverIO te deja un archivo de referencia documental (nunca se
 ejecuta) mostrando cómo envolver tu driver/browser. No duplica nada si ya lo tenías.
 
+El output avanza por pasos: **1/4 detecta** tu framework (con la evidencia: qué
+dependencia y qué archivo de config), **2/4 instala** lo que falta, **3/4 conecta** el
+config, **4/4 agrega** tres scripts npm de conveniencia:
+
+| Script | Comando | Para qué |
+|---|---|---|
+| `npm run healify` | `healify fix` | aplicar los fixes cuando un selector se rompa |
+| `npm run healify:dry` | `healify fix --dry-run` | ver sugerencias sin tocar archivos |
+| `npm run healify:dashboard` | `healify dashboard --serve` | ver tu historial de curaciones |
+
+Al terminar corre una **verificación instantánea** (`healify doctor`) que muestra el
+estado real, y cierra diciéndote el comando exacto para correr tus tests según el
+framework que detectó. Con `npx @healify/cli init --dry-run` ves todo el plan sin
+ejecutar nada.
+
 > **¿Ni siquiera tenés el framework instalado?** No hace falta el Paso 2: corré
 > directamente `npx @healify/cli init`. Te pregunta qué framework armar, lo instala y te
 > deja el config conectado. **No genera ningún test**: el primer selector roto que
@@ -197,6 +212,35 @@ npx @healify/cli fix --interactive   # o decidir vos, caso por caso
 
 Abrí `healify-report.html` para ver algo como `Healed: 1 | Review: 1 | Unresolved: 2`.
 Listo.
+
+**Paso 6: Ver el dashboard y el loop diario**
+
+```bash
+npm run healify:dashboard    # o npx @healify/cli dashboard --serve
+```
+
+Levanta el dashboard local (http://127.0.0.1:5173) con tu historial de curaciones,
+tasa de eficacia por framework y selectores crónicos.
+
+De acá en más el uso diario es un loop de tres comandos:
+
+```bash
+npx playwright test          # 1. corré tus tests (el comando de TU framework)
+npm run healify              # 2. si un selector se rompió, aplicá el fix
+npm run healify:dashboard    # 3. mirá qué curaste y cuánto se aceptó
+```
+
+### Comandos por framework
+
+| Framework | Correr tests | Aplicar fix | Dashboard |
+|---|---|---|---|
+| Playwright | `npx playwright test` | `npm run healify` | `npm run healify:dashboard` |
+| Cypress | `npx cypress run` | `npm run healify` | `npm run healify:dashboard` |
+| Selenium | `npm test` | `npm run healify` | `npm run healify:dashboard` |
+| WebdriverIO | `npx wdio run` | `npm run healify` | `npm run healify:dashboard` |
+
+El cierre de `init` te dice el comando de test correcto según lo que detectó — si te
+olvidaste, corré `npx @healify/cli doctor` y mirá el primer check.
 
 ## Instalación manual (sin `init`)
 
@@ -475,12 +519,15 @@ npm run coverage   # cobertura de líneas por paquete (v8)
 
 | Paquete | Líneas |
 |---|---|
-| reporter-core (el motor) | ~90% |
-| cypress-plugin | 100% |
-| selenium-plugin | 100% |
-| webdriverio-plugin | ~87% |
-| cli | ~72% |
-| test-runner | ~62% |
+| reporter-core (el motor) | 93.4% |
+| cypress-plugin | 94.8% |
+| selenium-plugin | 98.8% |
+| webdriverio-plugin | 87.6% |
+| cli | 93.0% |
+| test-runner | 79.5% |
+| mcp | 88.6% |
+| dashboard-web | 76.8% |
+| ai-local | 33.8% |
 
 Reproducible en tu máquina con `npm run coverage`. El motor de heurística
 (`reporter-core`), que es donde vive toda la lógica real, es el más cubierto; los

@@ -4,14 +4,16 @@
 
 # Documentation
 
-Everything you need to use Healify for real. Coming in cold? Start with
-[Installation](installation.md) — it takes two minutes.
+Everything you need to use Healify for real.
 
-## Get started
+## Getting started
+
+New to Healify? Start here:
 
 | | |
 |---|---|
-| **[Installation](installation.md)** | Wiring it into Playwright, Cypress, Selenium or WebdriverIO. One snippet per runner. |
+| **[Step-by-step guide](guide/README.en.md)** | The full walkthrough: install, `init`, write your first test, heal a broken selector, see the dashboard. Five steps, two minutes. |
+| **[Quickstart (installation)](installation.md)** | Wiring it into Playwright, Cypress, Selenium or WebdriverIO. One snippet per runner. |
 | **[Commands](cli.md)** | `doctor`, `fix`, `dashboard`, `flake`, `watch` and the rest of the CLI. |
 
 ## Tune it

@@ -39,18 +39,59 @@ los fallos e2e. El resto es timing, datos de test y aserciones que fallan de ver
 los nombra en vez de "arreglarlos", porque una herramienta que cambia un selector para que
 una aserción pase está escondiendo el bug que el test encontró. Eso es peor que un build rojo.
 
-## Probalo
+## Cómo se usa
+
+Cinco pasos. La primera vez toma dos minutos.
+
+**1. Instalalo una vez**
 
 ```bash
 npm install -g @healify/cli
-cd tu-proyecto
-healify init     # detecta tu framework, instala y configura todo
-healify fix --pr # aplica los fixes y abre una PR
 ```
 
-`healify init` agrega tres scripts npm (`healify`, `healify:dry`, `healify:dashboard`), corre
-una verificación instantánea con `healify doctor`, y nunca escribe tests: el primer selector
-que cura es uno de tu propia app. Para ver el plan sin tocar nada: `healify init --dry-run`.
+**2. Apuntalo a tu proyecto**
+
+```bash
+cd tu-proyecto
+healify init
+```
+
+Detecta tu framework de tests (Playwright, Cypress, Selenium, WebdriverIO), instala el
+adapter, conecta el config, agrega los scripts npm `healify` / `healify:dry` /
+`healify:dashboard` y corre un chequeo con `healify doctor`. Nunca escribe tests.
+
+**3. Corré tus tests**
+
+```bash
+npx playwright test   # Playwright
+npx cypress run       # Cypress
+npm test              # Selenium
+npx wdio run          # WebdriverIO
+```
+
+No pasa nada hasta que un selector se rompe de verdad. Healify espera a que tu suite falle.
+
+**4. Cuando un selector se rompa, sanalo**
+
+```bash
+npm run healify            # aplica el fix a tus archivos de test
+npm run healify:dry        # muestra qué cambiaría, sin tocar nada
+```
+
+El reporte te dice qué selector se rompió, qué propone, con qué confianza, y si verificó el
+fix contra la página real.
+
+**5. Mirá lo que sanaste**
+
+```bash
+npm run healify:dashboard
+```
+
+Dashboard local con tu historial de curaciones, tasa de aceptación por framework y
+selectores crónicos. Los datos no salen de tu máquina.
+
+El recorrido completo, con cada comando explicado, está en la
+[guía paso a paso](docs/guide/README.md).
 
 ## Qué incluye
 
