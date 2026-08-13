@@ -63,7 +63,7 @@ export function StatsOverview() {
       <section className="card">
         <h2>Curaciones por día</h2>
         {history.timeline.length === 0 ? (
-          <p className="empty">Todavía no hay curaciones que graficar — corré healify fix (sin --dry-run) al menos una vez.</p>
+          <p className="empty">😴 Todavía no hay curaciones que graficar — corré healify fix (sin --dry-run) al menos una vez.</p>
         ) : (
           <TrendChart timeline={history.timeline} />
         )}

@@ -26,7 +26,7 @@ export function ChronicSelectors() {
       </header>
 
       {chronic.length === 0 ? (
-        <p className="empty">No hay selectores crónicos todavía.</p>
+        <p className="empty">😌 No hay selectores crónicos todavía. Que siga así.</p>
       ) : (
         <ul className="chronic-list">
           {chronic.map((s) => (

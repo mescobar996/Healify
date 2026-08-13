@@ -72,7 +72,7 @@ export function SelectorDetail() {
       <section className="card">
         <h2>Tendencia</h2>
         {detail.timeline.length === 0 ? (
-          <p className="empty">Sin actividad registrada para este selector.</p>
+          <p className="empty">🌱 Sin actividad registrada para este selector.</p>
         ) : (
           <TrendChart timeline={detail.timeline} />
         )}

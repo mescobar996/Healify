@@ -56,6 +56,6 @@ describe('ChronicSelectors', () => {
       </MemoryRouter>
     )
 
-    expect(await screen.findByText('No hay selectores crónicos todavía.')).toBeInTheDocument()
+    expect(await screen.findByText('😌 No hay selectores crónicos todavía. Que siga así.')).toBeInTheDocument()
   })
 })

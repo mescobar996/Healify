@@ -46,7 +46,7 @@ export function SelectorList() {
       />
 
       {filtered.length === 0 ? (
-        <p className="empty">Sin resultados para «{query}».</p>
+        <p className="empty">🤷 Sin resultados para «{query}».</p>
       ) : (
         <section className="card">
           <table className="table">
