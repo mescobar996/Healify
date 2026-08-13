@@ -25,8 +25,8 @@ packages=(reporter-core test-runner cypress-plugin cli selenium-plugin webdriver
 declare -A thresholds=(
   [reporter-core]=80
   [test-runner]=79
-  [cypress-plugin]=57
-  [cli]=63
+  [cypress-plugin]=80
+  [cli]=80
   [selenium-plugin]=80
   [webdriverio-plugin]=80
 )
