@@ -19,8 +19,8 @@ const ID_ATTRIBUTE_PATTERN = /^\*\[id="(.*)"\]$/
  * como "no convertible", nunca inventar una heurística nueva acá.
  */
 export function locatorToSelector(locator: By): string | null {
-  const raw = locator as unknown as RawLocator
-  if (typeof raw.using !== 'string' || typeof raw.value !== 'string') return null
+  const raw = rawLocator(locator)
+  if (raw === null) return null
 
   if (raw.using === 'css selector') {
     const idMatch = raw.value.match(ID_ATTRIBUTE_PATTERN)
@@ -31,6 +31,14 @@ export function locatorToSelector(locator: By): string | null {
   if (raw.using === 'xpath') return raw.value
 
   return null
+}
+
+/** Lee `using`/`value` del objeto `By` real (lib/by.js) con validación estructural, sin depender de su tipo estático. */
+function rawLocator(locator: By): RawLocator | null {
+  if (typeof locator !== 'object' || locator === null) return null
+  if (!('using' in locator) || !('value' in locator)) return null
+  if (typeof locator.using !== 'string' || typeof locator.value !== 'string') return null
+  return { using: locator.using, value: locator.value }
 }
 
 /**

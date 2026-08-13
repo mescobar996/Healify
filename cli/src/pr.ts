@@ -15,12 +15,16 @@ function getTimestamp(): string {
   return `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`
 }
 
+function errMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err)
+}
+
 export function createBranch(): string {
   const branchName = `healify/fix-${getTimestamp()}`
   try {
     execFileSync('git', ['checkout', '-b', branchName], { stdio: 'ignore' })
   } catch (err) {
-    throw new Error(`Failed to create branch '${branchName}': ${(err as Error).message}`)
+    throw new Error(`Failed to create branch '${branchName}': ${errMessage(err)}`)
   }
   return branchName
 }
@@ -31,13 +35,13 @@ export function createCommit(selectorCount: number, files: string[]): void {
     try {
       execFileSync('git', ['add', file], { stdio: 'ignore' })
     } catch (err) {
-      throw new Error(`Failed to stage file '${file}': ${(err as Error).message}`)
+      throw new Error(`Failed to stage file '${file}': ${errMessage(err)}`)
     }
   }
   try {
     execFileSync('git', ['commit', '-m', `healify: auto-fix ${selectorCount} broken selectors`], { stdio: 'ignore' })
   } catch (err) {
-    throw new Error(`Failed to create commit: ${(err as Error).message}`)
+    throw new Error(`Failed to create commit: ${errMessage(err)}`)
   }
 }
 
@@ -57,6 +61,6 @@ export function createPRWithGH(title: string, body: string): string {
     const result = execFileSync('gh', ['pr', 'create', '--title', title, '--body', body], { encoding: 'utf-8' })
     return result.trim()
   } catch (err) {
-    throw new Error(`Failed to create pull request: ${(err as Error).message}`)
+    throw new Error(`Failed to create pull request: ${errMessage(err)}`)
   }
 }

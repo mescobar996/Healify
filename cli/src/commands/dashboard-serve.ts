@@ -308,7 +308,7 @@ export function runDashboardServe(args: string[], cwd: string = process.cwd()): 
       })
 
       server.on('error', (err) => {
-        const isAddrInUse = (err as NodeJS.ErrnoException).code === 'EADDRINUSE'
+        const isAddrInUse = 'code' in err && err.code === 'EADDRINUSE'
         if (isAddrInUse && requestedPort !== 0 && attempt < MAX_PORT_RETRIES - 1) {
           currentPort++
           attempt++

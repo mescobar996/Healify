@@ -245,10 +245,10 @@ function readScreenshotPath(result: TestResult): string | undefined {
  */
 function collectAttachments(result: TestResult): CaseAttachment[] | undefined {
   const attachments = (result.attachments ?? [])
-    .filter((a) => a.path)
+    .flatMap((a) => (a.path ? [{ name: a.name, path: a.path, contentType: a.contentType }] : []))
     .map((a) => ({
       name: a.name,
-      path: relative(process.cwd(), a.path as string).replace(/\\/g, '/'),
+      path: relative(process.cwd(), a.path).replace(/\\/g, '/'),
       contentType: a.contentType,
     }))
   return attachments.length > 0 ? attachments : undefined

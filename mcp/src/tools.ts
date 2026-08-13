@@ -55,8 +55,10 @@ const NOTE_CON_FRAMEWORK = (framework: string) =>
 
 function isAnalyzeOutput(value: unknown): value is Record<string, unknown> {
   if (typeof value !== 'object' || value === null) return false
-  const candidate = value as Record<string, unknown>
-  return typeof candidate.selector === 'string' && typeof candidate.selectorType === 'string'
+  return (
+    'selector' in value && typeof value.selector === 'string' &&
+    'selectorType' in value && typeof value.selectorType === 'string'
+  )
 }
 
 export function analyzeSelector(args: Record<string, unknown>, deps: SelectorToolDeps = {}): string {
@@ -117,7 +119,7 @@ export async function batchAnalyzeSelectorsTool(args: Record<string, unknown>, d
   }
   const pageUrl = typeof args.pageUrl === 'string' && args.pageUrl ? args.pageUrl : undefined
 
-  const result = await analyzeBatchSelectors(selectors as string[], pageUrl, framework, deps)
+  const result = await analyzeBatchSelectors(selectors, pageUrl, framework, deps)
   return json(result)
 }
 

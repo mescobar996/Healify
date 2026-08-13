@@ -1,6 +1,6 @@
 import { buildDefectId, severityFor, environmentRows, normalizeRun, baseEnvironment, statsFromCases, SEVERITY_LABEL, type RunEnvironment, type RunStats } from './qa-report'
 import { FAILURE_CAUSE_LABEL, type FailureCause } from './failure-cause'
-import type { LocalCaseResult } from './local-mode'
+import type { LocalCaseResult, LocalCaseStatus } from './local-mode'
 
 export { baseEnvironment, statsFromCases, type RunEnvironment, type RunStats }
 
@@ -31,6 +31,20 @@ export interface HealingEventLike {
   verified?: boolean
 }
 
+/** Mapeo del `type` de un HealingEvent al status de caso sin cast — el switch cubre el union
+ * completo y el default cae a 'review' igual que el ternario original. */
+function eventTypeToStatus(type: string): LocalCaseStatus {
+  switch (type) {
+    case 'healed':
+      return 'healed'
+    case 'no-suggestion':
+    case 'failed':
+      return 'unresolved'
+    default:
+      return 'review'
+  }
+}
+
 /**
  * Convierte los HealingEvent acumulados por un wrap "en vivo" (Selenium/WebdriverIO,
  * sin hook de fin de corrida como Playwright/Cypress) al mismo LocalRun que consumen
@@ -42,7 +56,7 @@ export function buildLocalRunFromEvents(
   options: { project: string; framework: string }
 ): LocalRun {
   const cases: LocalCaseResult[] = events.map((e) => {
-    const status = (e.type === 'healed' ? 'healed' : e.type === 'no-suggestion' || e.type === 'failed' ? 'unresolved' : 'review') as LocalCaseResult['status']
+    const status = eventTypeToStatus(e.type)
     return {
       testName: e.originalSelector,
       selector: e.originalSelector,

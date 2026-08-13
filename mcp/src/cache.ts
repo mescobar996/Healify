@@ -54,15 +54,18 @@ export function readCache(path: string): CacheStore {
     const parsed: unknown = JSON.parse(readFileSync(path, 'utf-8'))
     if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return {}
     const store: CacheStore = {}
-    for (const [key, entry] of Object.entries(parsed as Record<string, unknown>)) {
-      if (typeof entry === 'object' && entry !== null && typeof (entry as CacheEntry).timestamp === 'number') {
-        store[key] = entry as CacheEntry
-      }
+    for (const [key, entry] of Object.entries(parsed)) {
+      if (isCacheEntry(entry)) store[key] = entry
     }
     return store
   } catch {
     return {}
   }
+}
+
+/** Una entrada válida necesita `timestamp` numérico; `value` es `unknown` por diseño y acepta cualquier cosa. */
+function isCacheEntry(value: unknown): value is CacheEntry {
+  return typeof value === 'object' && value !== null && 'timestamp' in value && typeof value.timestamp === 'number'
 }
 
 /** Escribe el cache, podando las entradas vencidas para que no crezca sin límite. Best-effort. */

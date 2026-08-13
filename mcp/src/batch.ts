@@ -37,12 +37,14 @@ export interface BatchDeps {
 /** Guarda de forma: una entrada de `healify_analyze_selector` jamás debe pasar por resultado de batch. */
 function isBatchItemResult(value: unknown): value is BatchItemResult {
   if (typeof value !== 'object' || value === null) return false
-  const candidate = value as BatchItemResult
   return (
-    typeof candidate.original === 'string' &&
-    Array.isArray(candidate.suggestions) &&
-    candidate.suggestions.every((s) => typeof s === 'string') &&
-    typeof candidate.confidence === 'number'
+    'original' in value &&
+    typeof value.original === 'string' &&
+    'suggestions' in value &&
+    Array.isArray(value.suggestions) &&
+    value.suggestions.every((s) => typeof s === 'string') &&
+    'confidence' in value &&
+    typeof value.confidence === 'number'
   )
 }
 
@@ -122,8 +124,8 @@ export async function analyzeBatchSelectors(selectors: string[], pageUrl: string
   const results: BatchItemResult[] = []
   const errors: BatchItemError[] = []
   for (const outcome of outcomes) {
-    if ('suggestions' in outcome) results.push(outcome as BatchItemResult)
-    else errors.push(outcome as BatchItemError)
+    if ('suggestions' in outcome) results.push(outcome)
+    else errors.push(outcome)
   }
   return { results, errors }
 }

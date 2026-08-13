@@ -31,7 +31,13 @@ function isNoElementError(err: unknown): boolean {
 
 interface WdioBrowser {
   $(selector: string): unknown
+  execute: (...args: unknown[]) => Promise<unknown>
   [key: string]: unknown
+}
+
+/** Valida estructuralmente (y sin `instanceof`, que cae en realms distintos) que un valor crudo del browser es un elemento envuelble. */
+function isWdioElement(value: unknown): value is WdioElement {
+  return typeof value === 'object' && value !== null
 }
 
 interface WdioElement {
@@ -63,13 +69,14 @@ export function wrapBrowser(browser: WdioBrowser, options: HealifyWebdriverIOOpt
 
     const wrapped: Record<string, unknown> = {}
     for (const prop of interactionMethods) {
-      if (typeof el[prop] === 'function') {
+      const method = el[prop]
+      if (typeof method === 'function') {
         wrapped[prop] = function (...args: unknown[]) {
           try {
-            const result = (el[prop] as Function).apply(el, args)
+            const result = method.apply(el, args)
             // WebdriverIO v9 returns thenables — catch rejections
-            if (result && typeof (result as Promise<unknown>).then === 'function') {
-              return (result as Promise<unknown>).catch((err: unknown) => {
+            if (result && typeof result.then === 'function') {
+              return result.catch((err: unknown) => {
                 if (!isHealed && isNoElementError(err)) return tryHeal(originalSelector)
                 throw err
               })
@@ -81,7 +88,7 @@ export function wrapBrowser(browser: WdioBrowser, options: HealifyWebdriverIOOpt
           }
         }
       } else {
-        wrapped[prop] = el[prop]
+        wrapped[prop] = method
       }
     }
 
@@ -90,7 +97,7 @@ export function wrapBrowser(browser: WdioBrowser, options: HealifyWebdriverIOOpt
       wrapped.then = el.then
     }
 
-    return wrapped as WdioElement
+    return wrapped
   }
 
   async function tryHeal(originalSelector: string): Promise<unknown> {
@@ -108,7 +115,7 @@ export function wrapBrowser(browser: WdioBrowser, options: HealifyWebdriverIOOpt
     // que Playwright sin el attachment.
     let domContext: string | undefined
     try {
-      domContext = domContextFromProbeResult(await (browser as Record<string, Function>).execute(BROWSER_PROBE_SCRIPT))
+      domContext = domContextFromProbeResult(await browser.execute(BROWSER_PROBE_SCRIPT))
     } catch {
       domContext = undefined
     }
@@ -150,23 +157,7 @@ export function wrapBrowser(browser: WdioBrowser, options: HealifyWebdriverIOOpt
     // so we can detect if the healed selector itself fails.
     let healedEl: WdioElement
     try {
-      // Igual que en Selenium: primero el buscador que atraviesa shadow DOM, despues el
-    // selector. `$()` resuelve por CSS o XPath, y ninguno cruza un shadow root.
-    const parsedRole = parseRoleSuggestion(result.fixedSelector)
-    let fromShadow: WdioElement | null = null
-    if (parsedRole?.name) {
-      try {
-        const found = await (browser as Record<string, Function>).execute(
-          BROWSER_FIND_BY_ROLE_SCRIPT,
-          parsedRole.role,
-          parsedRole.name
-        )
-        fromShadow = (found ?? null) as WdioElement | null
-      } catch {
-        fromShadow = null
-      }
-    }
-    healedEl = fromShadow ?? ((browser as Record<string, Function>).$(retrySelector) as WdioElement)
+      healedEl = await resolveHealedElement(browser, result.fixedSelector, retrySelector)
     } catch {
       emit({ type: 'failed', originalSelector: selector, fixedSelector: result.fixedSelector, confidence: result.confidence, latencyMs: Date.now() - start })
       throw new Error(`Healify: healed selector '${result.fixedSelector}' also failed for '${selector}'`)
@@ -179,12 +170,28 @@ export function wrapBrowser(browser: WdioBrowser, options: HealifyWebdriverIOOpt
     return wrapElement(healedEl, result.fixedSelector, true)
   }
 
+  /** Resuelve el elemento curado: primero el buscador que atraviesa shadow DOM, después el selector. `$()` resuelve por CSS o XPath, y ninguno cruza un shadow root. */
+  async function resolveHealedElement(browser: WdioBrowser, fixedSelector: string, retrySelector: string): Promise<WdioElement> {
+    const parsedRole = parseRoleSuggestion(fixedSelector)
+    if (parsedRole?.name) {
+      try {
+        const found = await browser.execute(BROWSER_FIND_BY_ROLE_SCRIPT, parsedRole.role, parsedRole.name)
+        if (isWdioElement(found)) return found
+      } catch {
+        // se degrada al selector normal — mismo criterio que Selenium.
+      }
+    }
+    const bySelector = browser.$(retrySelector)
+    if (isWdioElement(bySelector)) return bySelector
+    throw new Error(`Healify: healed selector '${fixedSelector}' resolved to nothing in the DOM`)
+  }
+
   return new Proxy(browser, {
     get(target, prop, receiver) {
       if (prop === '$') {
         return function (selector: string) {
           const el = target.$(selector)
-          return wrapElement(el as WdioElement, selector)
+          return wrapElement(isWdioElement(el) ? el : {}, selector)
         }
       }
       const value = Reflect.get(target, prop, receiver)

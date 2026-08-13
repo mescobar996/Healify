@@ -274,7 +274,7 @@ Responde en formato JSON:
           res.on('end', () => {
             settle(() => {
               try {
-                resolve(extract(JSON.parse(responseBody) as T));
+                resolve(extract(JSON.parse(responseBody)));
               } catch {
                 reject(new Error('Error parsing Ollama response'));
               }

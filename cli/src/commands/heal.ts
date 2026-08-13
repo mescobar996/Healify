@@ -96,21 +96,49 @@ export function defaultStatsPath(): string {
 /** Lee las estadísticas acumuladas. Tolerante por diseño: archivo ausente o corrupto → arranca de cero. */
 export function readHealStats(path: string = defaultStatsPath()): HealStats {
   try {
-    const parsed = JSON.parse(readFileSync(path, 'utf-8')) as Partial<HealStats>
-    if (parsed && typeof parsed === 'object' && typeof parsed.totalAnalyzed === 'number') {
+    const parsed: unknown = JSON.parse(readFileSync(path, 'utf-8'))
+    if (isRawStats(parsed)) {
       return {
         totalAnalyzed: parsed.totalAnalyzed,
-        healed: typeof parsed.healed === 'number' ? parsed.healed : 0,
-        failed: typeof parsed.failed === 'number' ? parsed.failed : 0,
-        byType: parsed.byType && typeof parsed.byType === 'object' ? parsed.byType : {},
-        totalHealingMs: typeof parsed.totalHealingMs === 'number' ? parsed.totalHealingMs : 0,
-        avgHealingMs: typeof parsed.avgHealingMs === 'number' ? parsed.avgHealingMs : 0,
+        healed: asNumber(parsed.healed),
+        failed: asNumber(parsed.failed),
+        byType: asCountMap(parsed.byType),
+        totalHealingMs: asNumber(parsed.totalHealingMs),
+        avgHealingMs: asNumber(parsed.avgHealingMs),
       }
     }
   } catch {
     // archivo ausente o corrupto: empezar de cero, nunca romper el heal por esto
   }
   return emptyHealStats()
+}
+
+/** Forma mínima del `stats.json` que escribe el propio Healify; se valida el único campo obligatorio. */
+interface RawStats {
+  totalAnalyzed: number
+  healed?: unknown
+  failed?: unknown
+  byType?: unknown
+  totalHealingMs?: unknown
+  avgHealingMs?: unknown
+}
+
+function isRawStats(value: unknown): value is RawStats {
+  return typeof value === 'object' && value !== null && 'totalAnalyzed' in value && typeof value.totalAnalyzed === 'number'
+}
+
+function asNumber(value: unknown): number {
+  return typeof value === 'number' ? value : 0
+}
+
+/** Reconstruye el mapa por tipo copiando solo entradas numéricas — nunca confiar en el objeto crudo del disco. */
+function asCountMap(value: unknown): Record<string, number> {
+  if (typeof value !== 'object' || value === null) return {}
+  const result: Record<string, number> = {}
+  for (const [key, count] of Object.entries(value)) {
+    if (typeof count === 'number') result[key] = count
+  }
+  return result
 }
 
 /** Escribe las estadísticas. Falla en silencio: perder stats no debe romper el heal. */
@@ -163,8 +191,7 @@ function pluralizeType(type: string, count: number): string {
 
 function isValidInput(value: unknown): value is HealCommandInput {
   if (typeof value !== 'object' || value === null) return false
-  const candidate = value as Record<string, unknown>
-  return typeof candidate.selector === 'string' && candidate.selector.length > 0
+  return 'selector' in value && typeof value.selector === 'string' && value.selector.length > 0
 }
 
 /**

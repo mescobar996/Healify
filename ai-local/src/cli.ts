@@ -27,10 +27,22 @@ interface LocalConfig {
 function loadConfig(): LocalConfig {
   try {
     if (fs.existsSync(CONFIG_PATH)) {
-      return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8')) as LocalConfig;
+      const parsed: unknown = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
+      if (typeof parsed === 'object' && parsed !== null && 'ai' in parsed && isPartialAIConfig(parsed.ai)) {
+        return { ai: parsed.ai };
+      }
     }
   } catch {}
   return {};
+}
+
+/** El `ai` del config lo escribió el propio setup: se validan los campos conocidos, el resto no importa. */
+function isPartialAIConfig(value: unknown): value is Partial<AIConfig> {
+  if (typeof value !== 'object' || value === null) return false;
+  if ('enabled' in value && typeof value.enabled !== 'boolean') return false;
+  if ('model' in value && typeof value.model !== 'string') return false;
+  if ('language' in value && value.language !== 'es' && value.language !== 'en') return false;
+  return !('ollamaUrl' in value) || typeof value.ollamaUrl === 'string';
 }
 
 function saveConfig(config: LocalConfig): void {
@@ -194,7 +206,7 @@ async function cmdChat(): Promise<void> {
         
         askQuestion();
       } catch (error) {
-        console.log(`\n❌ Error: ${(error as Error).message}\n`);
+        console.log(`\n❌ Error: ${error instanceof Error ? error.message : String(error)}\n`);
         askQuestion();
       }
     });

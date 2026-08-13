@@ -65,7 +65,7 @@ declare global {
 // opt-in: se registra como efecto de importar este archivo (`import '@healify/cypress-plugin/support'`
 // en el support file del proyecto), mismo criterio de "un import y listo" que el resto de Healify.
 Cypress.Commands.add('healifyGet', (selector: string, options: HealifyGetOptions = {}) => {
-  const timeout = options.timeout ?? (Cypress.config('defaultCommandTimeout') as number)
+  const timeout = options.timeout ?? Number(Cypress.config('defaultCommandTimeout'))
   const confidenceThreshold = options.confidenceThreshold ?? DEFAULT_CONFIDENCE_THRESHOLD
   return pollForSelector(selector, timeout).then(($el) => {
     if ($el && $el.length > 0) return cy.wrap($el, { log: false })
@@ -214,22 +214,33 @@ function healAndRetry(selector: string, timeout: number, confidenceThreshold: nu
 }
 
 function resolveElement(win: Cypress.AUTWindow, locator: HealTaskOutput['locator']): Element | null {
+  if (locator.value === null) return null
   if (locator.strategy === 'css') {
     try {
-      return win.document.querySelector(locator.value as string)
+      return win.document.querySelector(locator.value)
     } catch {
       return null
     }
   }
   if (locator.strategy === 'xpath') {
     try {
-      const result = win.document.evaluate(locator.value as string, win.document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null)
-      return result.singleNodeValue as Element | null
+      const result = win.document.evaluate(locator.value, win.document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null)
+      const node = result.singleNodeValue
+      return isElementNode(node) ? node : null
     } catch {
       return null
     }
   }
   return null
+}
+
+/**
+ * Chequeo de elemento a prueba de realms: `instanceof Element` falla entre la ventana de Cypress
+ * y la AUT (objetos de otro realm), así que se valida por propiedad estructural (`tagName`), que
+ * existe en los Element de cualquier realm y no en los demás Node.
+ */
+function isElementNode(node: unknown): node is Element {
+  return typeof node === 'object' && node !== null && 'tagName' in node && typeof node.tagName === 'string'
 }
 
 let cachedFindScript: string | null = null
@@ -247,7 +258,8 @@ function findAcrossShadowRoots(win: Cypress.AUTWindow, role: HealTaskOutput['rol
   try {
     // Mismo motivo que en el sondeo: la función tiene que crearse en el realm de la AUT para
     // que su `document` suelto sea el documento real de la página, no el del test-runner.
-    return (new win.Function(cachedFindScript)(role.role, role.name) as Element | null) ?? null
+    const found: unknown = new win.Function(cachedFindScript)(role.role, role.name)
+    return isElementNode(found) ? found : null
   } catch {
     return null
   }

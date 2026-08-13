@@ -294,8 +294,9 @@ export function domContextFromProbeResult(raw: unknown): string | undefined {
   const elements: PageElement[] = raw
     .filter((item): item is PageElement => {
       if (typeof item !== 'object' || item === null) return false
-      const candidate = item as Partial<PageElement>
-      return typeof candidate.role === 'string' && typeof candidate.name === 'string'
+      return (
+        'role' in item && typeof item.role === 'string' && 'name' in item && typeof item.name === 'string'
+      )
     })
     .map((item) => {
       // No se confía en el objeto crudo: se reconstruye campo por campo y se preservan

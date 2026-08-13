@@ -36,11 +36,10 @@ export function readReportCases(projectRoot: string, explicitPath?: string): Rep
     if (!existsSync(fullPath)) continue
 
     try {
-      const parsed = JSON.parse(readFileSync(fullPath, 'utf-8')) as unknown
-      const cases = (parsed as { cases?: unknown }).cases
-      if (!Array.isArray(cases)) continue
-
-      return cases.filter(isReportCase)
+      const parsed: unknown = JSON.parse(readFileSync(fullPath, 'utf-8'))
+      if (typeof parsed === 'object' && parsed !== null && 'cases' in parsed && Array.isArray(parsed.cases)) {
+        return parsed.cases.filter(isReportCase)
+      }
     } catch {
       continue
     }
@@ -51,6 +50,8 @@ export function readReportCases(projectRoot: string, explicitPath?: string): Rep
 
 function isReportCase(value: unknown): value is ReportCase {
   if (typeof value !== 'object' || value === null) return false
-  const candidate = value as Partial<ReportCase>
-  return typeof candidate.selector === 'string' && typeof candidate.status === 'string'
+  return (
+    'selector' in value && typeof value.selector === 'string' &&
+    'status' in value && typeof value.status === 'string'
+  )
 }

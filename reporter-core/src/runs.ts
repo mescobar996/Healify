@@ -42,13 +42,17 @@ export function serializeRunRecord(run: RunRecord): string {
 
 /** Parseo tolerante línea a línea (mismo espíritu que `parseHistoryLines`): una línea
  * corrupta se ignora, nunca rompe el resto. */
+function isRunRecord(value: unknown): value is RunRecord {
+  return typeof value === 'object' && value !== null && 'type' in value && value.type === 'run'
+}
+
 export function parseRunLines(raw: string): RunRecord[] {
   const records: RunRecord[] = []
   for (const line of raw.split('\n')) {
     if (!line.trim()) continue
     try {
-      const parsed = JSON.parse(line)
-      if (parsed?.type === 'run') records.push(parsed as RunRecord)
+      const parsed: unknown = JSON.parse(line)
+      if (isRunRecord(parsed)) records.push(parsed)
     } catch {
       // línea corrupta — se ignora, no revienta el resto.
     }

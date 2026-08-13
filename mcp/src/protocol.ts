@@ -53,6 +53,14 @@ function ok(id: string | number, result: unknown): JsonRpcResponse {
   return { jsonrpc: '2.0', id, result }
 }
 
+/** Copia las propiedades propias de un objeto crudo a un record — nunca confiar en el shape de lo que llegó por stdin. */
+function asRecord(value: unknown): Record<string, unknown> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return {}
+  const result: Record<string, unknown> = {}
+  for (const [key, val] of Object.entries(value)) result[key] = val
+  return result
+}
+
 function fail(id: string | number, code: number, message: string): JsonRpcResponse {
   return { jsonrpc: '2.0', id, error: { code, message } }
 }
@@ -95,7 +103,7 @@ export async function handleMessage(
     const tool = tools.find((t) => t.name === name)
     if (!tool) return fail(id, INVALID_PARAMS, `Herramienta desconocida: ${name}`)
 
-    const args = (params?.arguments ?? {}) as Record<string, unknown>
+    const args = asRecord(params?.arguments)
     try {
       const text = await tool.handler(args)
       return ok(id, { content: [{ type: 'text', text }] })
@@ -126,7 +134,7 @@ export function parseLine(line: string): JsonRpcRequest | null {
     const parsed = JSON.parse(trimmed)
     if (!parsed || typeof parsed !== 'object') return null
     if (typeof parsed.method !== 'string') return null
-    return parsed as JsonRpcRequest
+    return parsed
   } catch {
     return null
   }

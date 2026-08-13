@@ -5,7 +5,7 @@ const BASE = ''
 async function getJson<T>(path: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`)
   if (!res.ok) throw new Error(`GET ${path} → ${res.status}`)
-  return res.json() as Promise<T>
+  return res.json()
 }
 
 /** Cliente mínimo de la API que sirve `healify dashboard --serve`. */

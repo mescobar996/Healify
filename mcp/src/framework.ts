@@ -19,7 +19,7 @@ export type TestFramework = 'playwright' | 'cypress' | 'selenium' | 'webdriverio
 export const TEST_FRAMEWORKS: TestFramework[] = ['playwright', 'cypress', 'selenium', 'webdriverio']
 
 export function isTestFramework(value: unknown): value is TestFramework {
-  return typeof value === 'string' && (TEST_FRAMEWORKS as string[]).includes(value)
+  return typeof value === 'string' && TEST_FRAMEWORKS.some((framework) => framework === value)
 }
 
 function escapeSingleQuoted(value: string): string {

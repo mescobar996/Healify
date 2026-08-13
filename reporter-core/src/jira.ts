@@ -67,6 +67,16 @@ export function toAdf(text: string): Record<string, unknown> {
   }
 }
 
+/** Extrae la key del primer issue de una respuesta `/search/jql`, con validación estructural del cuerpo crudo que devolvió la API. */
+function issueKeyFromSearch(raw: unknown): string | null {
+  if (typeof raw !== 'object' || raw === null) return null
+  if (!('issues' in raw) || !Array.isArray(raw.issues) || raw.issues.length === 0) return null
+  const first = raw.issues[0]
+  if (typeof first !== 'object' || first === null) return null
+  if (!('key' in first) || typeof first.key !== 'string' || first.key.length === 0) return null
+  return first.key
+}
+
 export function createJiraClient(config: ResolvedAgileConfig, fetchImpl: typeof fetch = globalThis.fetch) {
   async function request(method: string, path: string, body?: unknown): Promise<unknown> {
     const response = await fetchImpl(`${apiBase(config)}${path}`, {
@@ -101,12 +111,11 @@ export function createJiraClient(config: ResolvedAgileConfig, fetchImpl: typeof 
       // migrar. Con el endpoint viejo el dedupe fallaba en toda corrida contra un Jira actual,
       // así que cada test roto abría un ticket nuevo cada vez.
       // https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-issue-search/
-      const data = (await request(
+      const data: unknown = await request(
         'GET',
         `/rest/api/3/search/jql?jql=${encodeURIComponent(jql)}&maxResults=1&fields=key`
-      )) as { issues?: { key?: string }[] }
-      if (!Array.isArray(data?.issues) || data.issues.length === 0 || !data.issues[0]?.key) return null
-      return data.issues[0].key as string
+      )
+      return issueKeyFromSearch(data)
     },
 
     async createIssue(input: CreateIssueInput): Promise<string> {
@@ -142,7 +151,11 @@ export function createJiraClient(config: ResolvedAgileConfig, fetchImpl: typeof 
      */
     async addAttachment(issueKey: string, fileName: string, content: Uint8Array): Promise<void> {
       const form = new FormData()
-      form.append('file', new Blob([content as BlobPart]), fileName)
+      // `new Blob` exige `ArrayBuffer` (no `SharedArrayBuffer`): se copian los bytes a un buffer
+      // nuevo que cumple el tipo, en vez de confiar en el buffer del view de entrada.
+      const copy = new Uint8Array(content.byteLength)
+      copy.set(content)
+      form.append('file', new Blob([copy.buffer]), fileName)
 
       const response = await fetchImpl(`${apiBase(config)}/rest/api/3/issue/${encodeURIComponent(issueKey)}/attachments`, {
         method: 'POST',

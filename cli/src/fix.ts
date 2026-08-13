@@ -51,6 +51,12 @@ export interface FixOptions {
   pageObjectRoots?: string[]
 }
 
+/** Lee `error.code` de forma segura — los errores de Node lo llevan en la instancia (ENOENT, EACCES…). */
+function errorCode(error: unknown): string | undefined {
+  if (typeof error !== 'object' || error === null) return undefined
+  return 'code' in error && typeof error.code === 'string' ? error.code : undefined
+}
+
 /**
  * Clasifica el error de leer el reporte para dar un mensaje humano en vez del ENOENT crudo
  * de Node. Un `fix` sin `healify-report.json` NO es un error del usuario: es el estado
@@ -59,7 +65,7 @@ export interface FixOptions {
  * corrupto, permisos) sí es un problema real → exitCode 1 con el detalle técnico.
  */
 export function describeReadError(reportPath: string, error: unknown): { message: string; exitCode: number; stream: 'log' | 'error' } {
-  if (error instanceof Error && (error as NodeJS.ErrnoException).code === 'ENOENT') {
+  if (error instanceof Error && errorCode(error) === 'ENOENT') {
     return {
       message: `No encontré ${reportPath}.\n\nEso pasa si todavía no corriste tus tests, o si pasaron todos (no hubo selectores rotos que reportar).\nCorré tus tests; si alguno falla por un selector, se genera el reporte y fix va a tener algo que aplicar.`,
       exitCode: 0,
@@ -70,7 +76,7 @@ export function describeReadError(reportPath: string, error: unknown): { message
   // suele estar abierto en otro proceso (VS Code, un `tail`, otro `healify fix` corriendo) o
   // el usuario no tiene permisos de lectura ahí. Mensaje concreto en vez del error crudo de
   // Node, mismo criterio que el caso ENOENT de arriba.
-  if (error instanceof Error && ['EACCES', 'EPERM'].includes((error as NodeJS.ErrnoException).code ?? '')) {
+  if (error instanceof Error && ['EACCES', 'EPERM'].includes(errorCode(error) ?? '')) {
     return {
       message: `No se pudo leer ${reportPath}: permisos denegados.\n\nVerificá que el archivo no esté abierto en otro programa (VS Code, otro healify fix corriendo) y que tengas permisos de lectura sobre él.`,
       exitCode: 1,
@@ -331,7 +337,8 @@ function createPageObjectResolver(run: LocalRun, options: FixOptions) {
       return { testFile, selector: c.selector, status: 'skipped', reason: 'dirty-git' }
     }
 
-    const content = contents.get(target) as string
+    const content = contents.get(target)
+    if (content === undefined) return { testFile, selector: c.selector, status: 'skipped', reason: 'not-found' }
     const idx = maskComments(content).indexOf(c.selector)
     contents.set(target, content.slice(0, idx) + replacement + content.slice(idx + c.selector.length))
     touched.add(target)
@@ -342,7 +349,9 @@ function createPageObjectResolver(run: LocalRun, options: FixOptions) {
   function flush(): void {
     if (options.dryRun) return
     for (const file of touched) {
-      writeFileSync(file, contents.get(file) as string, 'utf-8')
+      const content = contents.get(file)
+      if (content === undefined) continue
+      writeFileSync(file, content, 'utf-8')
     }
   }
 

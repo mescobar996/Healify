@@ -27,14 +27,31 @@ import { DEFAULT_CONFIDENCE_THRESHOLD, type HealifySeleniumOptions, type Healing
  */
 function isNoSuchElementError(err: unknown): boolean {
   if (err instanceof error.NoSuchElementError) return true
-  const candidate = err as { name?: unknown; constructor?: { name?: unknown } }
-  return candidate?.name === 'NoSuchElementError' || candidate?.constructor?.name === 'NoSuchElementError'
+  if (typeof err !== 'object' || err === null) return false
+  if ('name' in err && err.name === 'NoSuchElementError') return true
+  return hasConstructorName(err, 'NoSuchElementError')
+}
+
+/** Busca `constructor.name` en la cadena de prototipos — cubre el caso de un error de otro realm, donde `instanceof` no aplica. */
+function hasConstructorName(value: object, target: string): boolean {
+  let proto: unknown = Object.getPrototypeOf(value)
+  for (let depth = 0; proto !== null && depth < 3; depth++) {
+    if (typeof proto !== 'object' || proto === null) break
+    if ('constructor' in proto) {
+      const ctor: unknown = proto.constructor
+      if (typeof ctor === 'object' && ctor !== null && 'name' in ctor && ctor.name === target) return true
+    }
+    proto = Object.getPrototypeOf(proto)
+  }
+  return false
 }
 
 /** Mejor esfuerzo para describir un locator no convertible en el evento emitido — no es un selector real, solo para logging. */
 function rawLocatorValue(locator: By): string {
-  const raw = locator as unknown as { value?: unknown }
-  return typeof raw.value === 'string' ? raw.value : String(locator)
+  if (typeof locator === 'object' && locator !== null && 'value' in locator && typeof locator.value === 'string') {
+    return locator.value
+  }
+  return String(locator)
 }
 
 /**

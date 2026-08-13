@@ -53,6 +53,51 @@ export interface HealRequest {
 
 export type SelectorType = 'CSS' | 'XPATH' | 'TESTID' | 'ROLE' | 'TEXT' | 'MIXED'
 
+/** Type guard: si el string vino de un dato externo (repertorio, JSON), solo se acepta si
+ * es un valor válido de `SelectorType` — sin `as`, sin aceptar ruido. */
+function isSelectorType(value: string): value is SelectorType {
+  switch (value) {
+    case 'CSS':
+    case 'XPATH':
+    case 'TESTID':
+    case 'ROLE':
+    case 'TEXT':
+    case 'MIXED':
+      return true
+    default:
+      return false
+  }
+}
+
+/** `SelectorAnalysis['type']` tiene valores que `SelectorType` no cubre (ID/CLASS/ATTRIBUTE/
+ * COMPOUND clasifican como CSS en `SelectorType`). En el único punto donde se cruzan (estrategia
+ * de locator moderno) el tipo es siempre ROLE/TEXT/TESTID/CSS — el switch las preserva tal cual */
+function selectorTypeForStrategy(type: SelectorAnalysis['type']): SelectorType {
+  switch (type) {
+    case 'TESTID':
+      return 'TESTID'
+    case 'ROLE':
+      return 'ROLE'
+    case 'TEXT':
+      return 'TEXT'
+    case 'XPATH':
+      return 'XPATH'
+    default:
+      return 'CSS'
+  }
+}
+
+/**
+ * `buildRoleSuggestion` devuelve `null` solo cuando el nombre accesible es vacío, y en los tres
+ * puntos que la usan el nombre ya se sabe no vacío (acción con default 'Submit', o `real.name`
+ * chequeado arriba) — el `null` es inalcanzable en la práctica. Este wrapper cierra el tipo sin
+ * non-null assertion (`!`): si igualmente llegara un nombre vacío, cae a la pista genérica de
+ * revisión (un `role('button')` legible) en vez de romper el tipado.
+ */
+function strictRoleSuggestion(role: string, name: string): string {
+  return buildRoleSuggestion(role, name) ?? buildGenericRoleHint(role)
+}
+
 export interface HealResponse {
   /** true si la sugerencia se confrontó contra el árbol real de la página (esta corrida o,
    * vía repertorio, una anterior) y existe ahí. false = heurística a ciegas, el modo de siempre. */
@@ -342,7 +387,7 @@ function generateHealingStrategies(selector: string, analysis: SelectorAnalysis,
   if (analysis.isAlreadyModernLocator) {
     return [{
       selector,
-      type: analysis.type as HealResponse['selectorType'],
+      type: selectorTypeForStrategy(analysis.type),
       confidence: 0.80,
       explanation: 'El selector ya usa un locator moderno de Playwright (getBy*), que es la práctica recomendada. No se propone downgrade — sin acceso al DOM real no se puede saber por qué dejó de encontrar el elemento; puede ser un cambio genuino de la UI que amerita revisión manual.',
       robustnessGain: 0,
@@ -380,7 +425,7 @@ function generateHealingStrategies(selector: string, analysis: SelectorAnalysis,
   if (analysis.element === 'button') {
     const action = extractActionFromSelector(selector, actions)
     strategies.push({
-      selector: buildRoleSuggestion('button', action)!,
+      selector: strictRoleSuggestion('button', action),
       type: 'ROLE',
       confidence: 0.92,
       explanation: `Se detectó un ${analysis.type} inestable; se cambió por un selector basado en accesibilidad (ARIA role) para mayor robustez.`,
@@ -423,7 +468,7 @@ function generateHealingStrategies(selector: string, analysis: SelectorAnalysis,
 
   if (analysis.element === 'link') {
     strategies.push({
-      selector: buildRoleSuggestion('link', extractActionFromSelector(selector, actions))!,
+      selector: strictRoleSuggestion('link', extractActionFromSelector(selector, actions)),
       type: 'ROLE',
       confidence: 0.91,
       explanation: `Selector por rol de enlace con texto. Muy estable y accesible.`,
@@ -681,7 +726,7 @@ function applyPageEvidence(
     // información del pierce, pero la sugerencia sigue siendo aplicable sin revisión humana.
     if (real.name) {
       survivors.unshift({
-        selector: buildRoleSuggestion(real.role, real.name)!,
+        selector: strictRoleSuggestion(real.role, real.name),
         type: 'ROLE',
         confidence: inFrame ? 0.88 : 0.97,
         explanation: inFrame
@@ -815,7 +860,7 @@ export function analyzeAndHeal(request: HealRequest): HealResponse {
       strategies = [
         {
           selector: match.fixedSelector,
-          type: match.selectorType as HealResponse['selectorType'],
+          type: isSelectorType(match.selectorType) ? match.selectorType : 'MIXED',
           confidence: match.confidence,
           explanation: `Repertorio: esta misma corrección ya se confirmó contra la página en una corrida anterior (${match.timestamp}), aunque esta corrida no pudo verificarlo por su cuenta.`,
           robustnessGain: 50,

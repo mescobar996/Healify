@@ -261,8 +261,10 @@ async function openDashboard(context: vscode.ExtensionContext): Promise<void> {
   }
 }
 
+const ENTITY_ESCAPES: Record<string, string> = { '<': '&lt;', '>': '&gt;', '&': '&amp;' }
+
 function errorHtml(detail: string): string {
-  const safe = detail.replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' })[c] as string)
+  const safe = detail.replace(/[<>&]/g, (c) => ENTITY_ESCAPES[c])
   return `<div style="font-family: sans-serif; padding: 2rem">
     <h2>No se pudo generar el panel</h2>
     <p>Healify necesita estar instalado en el proyecto (<code>npm i -D @healify/cli</code>) y haber corrido los tests al menos una vez.</p>

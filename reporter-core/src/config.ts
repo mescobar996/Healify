@@ -61,6 +61,9 @@ export interface HealifyAgileConfig {
   transitionOnHealed?: string
 }
 
+/** Campos de `HealifyAgileConfig` que aceptan valor de variable de entorno (todos `string`). */
+type AgileStringField = 'baseUrl' | 'email' | 'apiToken' | 'repository' | 'project' | 'issueType' | 'webhookUrl'
+
 /** Config agile ya resuelta: todo presente, todo saneado. */
 export interface ResolvedAgileConfig {
   enabled: boolean
@@ -173,6 +176,12 @@ export function loadConfig(cwd: string = process.cwd()): HealifyConfig {
  * Un `.js` que en realidad sea ESM tira `ERR_REQUIRE_ESM` en Node < 22: se captura y se sigue con
  * el siguiente candidato, igual que con un JSON corrupto.
  */
+/** Guard para lo que se carga de un módulo/serializado — valida que sea objeto antes de aceptar
+ * la config; sin `as`, sin confiar en el tipo de `require()`. */
+function isHealifyConfig(value: unknown): value is HealifyConfig {
+  return typeof value === 'object' && value !== null
+}
+
 function loadFromModule(cwd: string, filename: string): HealifyConfig | null {
   const path = join(cwd, filename)
   if (!existsSync(path)) return null
@@ -181,7 +190,7 @@ function loadFromModule(cwd: string, filename: string): HealifyConfig | null {
     delete require.cache[require.resolve(path)]
     const loaded = require(path)
     const config = loaded?.default ?? loaded
-    return config && typeof config === 'object' ? (config as HealifyConfig) : null
+    return isHealifyConfig(config) ? config : null
   } catch {
     return null
   }
@@ -261,7 +270,8 @@ function validateAgile(raw: HealifyAgileConfig): HealifyAgileConfig {
   if (raw.priorityBySeverity && typeof raw.priorityBySeverity === 'object') {
     const priorities: Partial<Record<Severity, string>> = {}
     for (const severity of ['blocker', 'major', 'minor'] as const) {
-      if (isNonEmptyString(raw.priorityBySeverity[severity])) priorities[severity] = raw.priorityBySeverity[severity] as string
+      const value = raw.priorityBySeverity[severity]
+      if (isNonEmptyString(value)) priorities[severity] = value
     }
     if (Object.keys(priorities).length > 0) result.priorityBySeverity = priorities
   }
@@ -329,7 +339,7 @@ function withEnvOverrides(config: HealifyConfig, env: NodeJS.ProcessEnv = proces
   // también la exporta el runner, y tomarla sola convertiría un `healify report` sin
   // configurar en un intento silencioso de escribir issues en el repo.
   const esGithub = agile.provider === 'github'
-  const agileStringFields: [keyof HealifyAgileConfig, string][] = [
+  const agileStringFields: [AgileStringField, string][] = [
     ['baseUrl', env.JIRA_BASE_URL ?? ''],
     ['email', env.JIRA_EMAIL ?? ''],
     ['apiToken', esGithub ? (env.HEALIFY_GITHUB_TOKEN ?? '') : (env.JIRA_API_TOKEN ?? '')],
@@ -340,7 +350,7 @@ function withEnvOverrides(config: HealifyConfig, env: NodeJS.ProcessEnv = proces
   ]
   for (const [field, value] of agileStringFields) {
     if (isNonEmptyString(value)) {
-      ;(agile as Record<string, unknown>)[field] = value
+      agile[field] = value
       agileChanged = true
     }
   }
