@@ -16,6 +16,20 @@
   corrida (campo opcional, back-compat total con historiales viejos).
 - Gráficos interactivos (hover con detalle) con Chart.js — sin dependencias nuevas.
 
+### Landing — secciones orientadas a la acción
+
+- **"Funciona con" interactivo**: los logos de frameworks ahora son botones — el clic
+  actualiza un mini terminal con los comandos reales (Install / Run / Fix) por framework,
+  con tooltip al hover (oculto en táctil, donde el clic abre el terminal).
+- **Frase de unificación** en la sección: "el mismo `healify fix` funciona con todos, sin
+  cambios en tu pipeline" + CTA "Ver integraciones completas" (docs/adapters).
+- **Carrusel del dashboard** (prev/next + dots) con 3 capturas reales del dashboard servido
+  con `healify dashboard --serve` (Resumen, Eficacia, Crónicos) + CTA "Explora el dashboard
+  en tu máquina" con el comando copiable.
+- **Footer ampliado**: GitHub, Changelog, Contributing, Docs y npm + badge "Hecho con ❤".
+- Interacciones en JS vanilla (sin Alpine, sin CDN — se mantiene el rendimiento y la
+  promesa de cero dependencias externas). Número de tests del footer actualizado a 1153.
+
 ## 2.7.0 — 2026-08-13
 
 Smart Healing: Healify pasa de "reparación automática" a "diagnóstico + validación +

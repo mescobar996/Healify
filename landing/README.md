@@ -17,7 +17,20 @@ Diseño minimalista: gradiente verde-cian-azul sutil, glassmorphism ligero
     en la versión anterior de la landing (path data auténtico).
 - `healify-mark.png` — el logo (nav, favicon y OG image).
 - `report-screenshot.png` — captura del dashboard local de Healify (vitals + 🔥 Selectores
-  Crónicos), generada con Playwright desde `scripts/dashboard-preview.html`.
+  Crónicos), generada con Playwright desde `scripts/dashboard-preview.html`. Se usa en los
+  README del repo; la landing usa las capturas de abajo.
+- `dashboard-overview.png`, `dashboard-efficacy.png`, `dashboard-chronic.png` — capturas
+  reales del dashboard servido con `healify dashboard --serve` (vistas Resumen, Eficacia y
+  Crónicos), usadas en el carrusel de la landing.
+
+## Interacciones (sin CDN, JS vanilla)
+
+- **Selector de framework**: los logos de la sección "Funciona con" son botones; el clic
+  actualiza un mini terminal con Install/Run/Fix por framework y un tooltip aparece al
+  hover (oculto en táctil, donde el clic abre el terminal).
+- **Carrusel del dashboard**: prev/next + dots, `aria-hidden` por slide.
+- Los comandos mostrados son reales (`@healify/*` publicados, `healify fix`,
+  `healify probe-script`, `healify heal`).
 
 ## Desplegar en Vercel
 
@@ -35,7 +48,7 @@ vercel --prod
 La landing NO menciona el modo cloud viejo (API key, servidor) porque ya no existe. Si
 editás el copy, mantené esa línea: nada de features que la herramienta no tiene.
 
-Los números del footer (`1113 tests`) son reales del repo: si cambian, actualizalos en ambas
+Los números del footer (`1153 tests`) son reales del repo: si cambian, actualizalos en ambas
 versiones (`index.html` y `es/index.html`).
 
 ## Pendiente documentado

@@ -117,18 +117,10 @@ button{font:inherit;cursor:pointer}
 .codeRow{height:42px;display:flex;align-items:center;justify-content:space-between;gap:12px;background:#000;border:1px solid var(--border);border-radius:10px;padding:0 12px;font-size:12.5px}
 .meta{margin-top:14px;display:flex;gap:16px;font-size:12px;color:var(--muted)} .meta b{color:var(--fg)}
 
-/* Logos — flotan con retraso escalonado, glow en el pico; gris hasta el hover. */
+/* Logos — gris hasta el hover, color y glow al interactuar. */
 .strip{padding:72px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:rgba(255,255,255,.015)}
 .strip-label{display:block;text-align:center;font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--muted2);margin-bottom:32px}
 .logos{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:18px;align-items:center}
-.logo{height:88px;display:grid;place-items:center;padding:10px;border-radius:14px;border:1px solid transparent;filter:grayscale(1) opacity(.62);transition:filter .3s ease,transform .3s ease,border-color .3s ease;animation:floaty 4s ease-in-out infinite}
-.logo img,.logo svg{max-width:100%;max-height:52px;object-fit:contain}
-@keyframes floaty{
-  0%,100%{transform:translateY(0);filter:grayscale(1) opacity(.62) drop-shadow(0 0 0 rgba(16,185,129,0))}
-  50%{transform:translateY(-16px);filter:grayscale(.6) opacity(.9) drop-shadow(0 0 20px rgba(16,185,129,.35))}
-}
-.logo:hover{animation:none;filter:grayscale(0) opacity(1) drop-shadow(0 0 24px rgba(6,182,212,.6));transform:scale(1.08);border-color:var(--border2)}
-.logo:nth-child(2){animation-delay:.5s}.logo:nth-child(3){animation-delay:1s}.logo:nth-child(4){animation-delay:1.5s}.logo:nth-child(5){animation-delay:2s}.logo:nth-child(6){animation-delay:2.5s}.logo:nth-child(7){animation-delay:3s}
 
 /* Secciones: aire generoso (py-24). */
 .section{padding:104px 24px}
@@ -164,6 +156,58 @@ button{font:inherit;cursor:pointer}
 /* Reveal al scroll. */
 .reveal{opacity:0;transform:scale(.98);transition:opacity .6s cubic-bezier(.16,1,.3,1),transform .6s cubic-bezier(.16,1,.3,1)}
 .reveal.in{opacity:1;transform:scale(1)}
+
+/* Works-with: logos clickeables + mini terminal con comandos por framework. */
+.works-head{max-width:640px;margin:0 auto 30px;text-align:center}
+.works-note{color:var(--muted);font-size:15px;line-height:1.6;margin-top:10px}
+.works-note code{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:6px;padding:1px 6px;font-size:13px;color:var(--fg2)}
+.logo{position:relative;height:88px;display:grid;place-items:center;padding:10px;border-radius:14px;border:1px solid transparent;background:none;color:inherit;filter:grayscale(1) opacity(.62);transition:filter .3s ease,transform .3s ease,border-color .3s ease,background .3s ease}
+.logo:hover{filter:grayscale(0) opacity(1) drop-shadow(0 0 24px rgba(6,182,212,.6));transform:scale(1.08);border-color:var(--border2)}
+.logo[aria-pressed="true"]{animation:none;filter:grayscale(0) opacity(1) drop-shadow(0 0 24px rgba(6,182,212,.6));border-color:var(--ring);background:rgba(34,211,238,.06)}
+.logo img,.logo svg{max-width:100%;max-height:52px;object-fit:contain}
+/* Tooltip del logo: solo en dispositivos con hover (en táctil el clic abre el terminal). */
+.fw-tip{position:absolute;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%) translateY(4px);white-space:nowrap;font-size:11.5px;font-family:'JetBrains Mono',monospace;color:var(--cyan);background:rgba(5,13,17,.96);border:1px solid var(--border2);border-radius:8px;padding:5px 10px;opacity:0;pointer-events:none;transition:opacity .18s ease,transform .18s ease;z-index:5}
+.fw-tip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:var(--border2)}
+.logo:hover .fw-tip,.logo:focus-visible .fw-tip,.logo[aria-pressed="true"] .fw-tip{opacity:1;transform:translateX(-50%) translateY(0)}
+@media(hover:none){.fw-tip{display:none}}
+.fw-terminal{margin:34px auto 0;max-width:720px;border-radius:16px;border:1px solid var(--border);background:linear-gradient(145deg,rgba(18,32,31,.55),rgba(7,13,19,.5));backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:var(--shadow-2);overflow:hidden;text-align:left}
+.fw-bar{height:44px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid var(--border)}
+.fw-bar-title{font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--fg2);display:flex;align-items:center;gap:8px}
+.fw-bar-title::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 10px rgba(34,197,94,.7)}
+.fw-tag{font-size:11px;color:var(--muted2);font-family:'JetBrains Mono',monospace;letter-spacing:.04em}
+.fw-body{padding:14px 16px;display:grid;gap:8px}
+.fw-row{display:grid;grid-template-columns:86px 1fr;align-items:center;gap:12px;background:rgba(0,0,0,.5);border:1px solid var(--border);border-radius:10px;padding:9px 12px}
+.fw-row .fw-label{font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted2)}
+.fw-row code{font-size:13px;color:var(--cyan);overflow-wrap:anywhere}
+.works-cta{margin-top:26px;text-align:center}
+.works-cta .btn{margin-top:0}
+
+/* Preview del dashboard: carrusel + CTA. */
+.preview{margin-top:40px;border-radius:20px;overflow:hidden;border:1px solid var(--border);box-shadow:0 30px 90px rgba(0,0,0,.5),0 0 60px rgba(34,211,238,.12)}
+.preview-img{display:block;width:100%;height:auto}
+.carousel{position:relative;background:#000}
+.carousel-slide{display:none}
+.carousel-slide.is-active{display:block}
+.carousel-slide img{display:block;width:100%;height:auto}
+.carousel-caption{padding:14px 18px;border-top:1px solid var(--border);background:rgba(10,10,13,.85);font-size:13.5px;color:var(--muted);display:flex;gap:10px;align-items:baseline}
+.carousel-caption b{color:var(--fg2);font-weight:600}
+.carousel-nav{position:absolute;top:50%;transform:translateY(-50%);width:38px;height:38px;border-radius:50%;border:1px solid var(--border2);background:rgba(0,0,0,.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);color:var(--fg2);font-size:18px;display:grid;place-items:center;z-index:4;transition:border-color .2s,background .2s}
+.carousel-nav:hover{border-color:var(--ring);background:rgba(0,0,0,.8)}
+.carousel-nav[data-prev]{left:14px}
+.carousel-nav[data-next]{right:14px}
+.carousel-dots{display:flex;gap:8px;justify-content:center;padding:12px 0 4px}
+.carousel-dot{width:9px;height:9px;border-radius:50%;border:1px solid var(--border2);background:transparent;padding:0}
+.carousel-dot.is-active{background:var(--cyan);border-color:var(--cyan);box-shadow:0 0 10px rgba(34,211,238,.6)}
+.preview-cta{margin-top:26px;text-align:center}
+.preview-cta .pill{margin:0 auto;justify-content:center}
+.preview-cta .pill code{color:var(--cyan)}
+@media(max-width:640px){.carousel-nav{width:32px;height:32px;font-size:15px}}
+
+/* Footer — enlaces y badge. */
+.foot{border-top:1px solid var(--border);padding:26px 24px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;font-size:13px;color:var(--muted2)}
+.foot a{color:var(--muted);transition:color .15s ease}.foot a:hover{color:var(--fg2)}
+.foot .links{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+.foot .heart{color:var(--green)}
 
 @media(prefers-reduced-motion:reduce){
   .hero .anim,.logo,.logo-float,.reveal{animation:none!important;transition:none!important;opacity:1;transform:none}
@@ -231,15 +275,29 @@ button{font:inherit;cursor:pointer}
 
 <section id="works-with" class="strip" aria-label="Works with">
   <div class="wrap">
-    <span class="strip-label">Works with</span>
+    <div class="works-head">
+      <span class="strip-label">Works with</span>
+      <p class="works-note">The same <code>healify fix</code> command works with Playwright, Cypress, Selenium and WebdriverIO — no changes to your pipeline. Pick a logo to see the exact commands.</p>
+    </div>
     <div class="logos">
-      <span class="logo" title="Playwright"><img src="/public/logos/playwright.svg" alt="Playwright" width="32" height="32"></span>
-      <span class="logo" title="Cypress"><img src="/public/logos/cypress.svg" alt="Cypress" width="32" height="32"></span>
-      <span class="logo" title="Selenium"><img src="/public/logos/selenium.png" alt="Selenium" width="32" height="32"></span>
-      <span class="logo" title="WebdriverIO"><img src="/public/logos/webdriverio.png" alt="WebdriverIO" width="32" height="32"></span>
-      <span class="logo" title="Python"><img src="/public/logos/python.png" alt="Python" width="32" height="32"></span>
-      <span class="logo" title="Java"><img src="/public/logos/java.svg" alt="Java" width="32" height="32"></span>
-      <span class="logo" title=".NET"><img src="/public/logos/dotnet.svg" alt=".NET" width="32" height="32"></span>
+      <button type="button" class="logo" data-fw="playwright" data-label="Playwright" data-install="npm i -D @healify/test-runner" data-run="npx playwright test" data-fix="healify fix" aria-pressed="false"><img src="/public/logos/playwright.svg" alt="Playwright" width="32" height="32"><span class="fw-tip" aria-hidden="true">healify fix</span></button>
+      <button type="button" class="logo" data-fw="cypress" data-label="Cypress" data-install="npm i -D @healify/cypress-plugin" data-run="npx cypress run" data-fix="healify fix" aria-pressed="false"><img src="/public/logos/cypress.svg" alt="Cypress" width="32" height="32"><span class="fw-tip" aria-hidden="true">healify fix</span></button>
+      <button type="button" class="logo" data-fw="selenium" data-label="Selenium" data-install="npm i -D @healify/selenium-plugin" data-run="npm test" data-fix="healify fix" aria-pressed="false"><img src="/public/logos/selenium.png" alt="Selenium" width="32" height="32"><span class="fw-tip" aria-hidden="true">healify fix</span></button>
+      <button type="button" class="logo" data-fw="webdriverio" data-label="WebdriverIO" data-install="npm i -D @healify/webdriverio-plugin" data-run="npx wdio run" data-fix="healify fix" aria-pressed="false"><img src="/public/logos/webdriverio.png" alt="WebdriverIO" width="32" height="32"><span class="fw-tip" aria-hidden="true">healify fix</span></button>
+      <button type="button" class="logo" data-fw="python" data-label="Python" data-install="# docs/adapters/python — reference code" data-run="healify probe-script" data-fix="healify heal" aria-pressed="false"><img src="/public/logos/python.png" alt="Python" width="32" height="32"><span class="fw-tip" aria-hidden="true">healify probe-script</span></button>
+      <button type="button" class="logo" data-fw="java" data-label="Java" data-install="# docs/adapters/java — reference code" data-run="healify probe-script" data-fix="healify heal" aria-pressed="false"><img src="/public/logos/java.svg" alt="Java" width="32" height="32"><span class="fw-tip" aria-hidden="true">healify probe-script</span></button>
+      <button type="button" class="logo" data-fw="dotnet" data-label=".NET" data-install="# docs/adapters/dotnet — reference code" data-run="healify probe-script" data-fix="healify heal" aria-pressed="false"><img src="/public/logos/dotnet.svg" alt=".NET" width="32" height="32"><span class="fw-tip" aria-hidden="true">healify probe-script</span></button>
+    </div>
+    <div class="fw-terminal" id="fw-terminal" aria-live="polite">
+      <div class="fw-bar"><span class="fw-bar-title" id="fw-title">Playwright</span><span class="fw-tag">one CLI · every framework</span></div>
+      <div class="fw-body">
+        <div class="fw-row"><span class="fw-label">Install</span><code id="fw-install">npm i -D @healify/test-runner</code></div>
+        <div class="fw-row"><span class="fw-label">Run</span><code id="fw-run">npx playwright test</code></div>
+        <div class="fw-row"><span class="fw-label">Fix</span><code id="fw-fix">healify fix</code></div>
+      </div>
+    </div>
+    <div class="works-cta">
+      <a href="https://github.com/mescobar996/Healify/tree/main/docs/adapters" target="_blank" rel="noopener" class="btn btn-ghost">See all integrations →</a>
     </div>
   </div>
 </section>
@@ -255,8 +313,33 @@ button{font:inherit;cursor:pointer}
 
 <section id="dashboard" class="wrap section" style="padding-top:0">
   <div class="reveal"><span class="kicker-sec">The dashboard</span><h2 class="h2">Visualize your healings and prioritize technical debt.</h2></div>
-  <div class="preview reveal" style="margin-top:32px">
-    <img class="preview-img" src="/report-screenshot.png" alt="Healify local dashboard: healed selectors, review queue and the 🔥 Selectores Crónicos badge" width="1040" height="379" loading="lazy">
+  <div class="preview reveal" style="margin-top:32px" data-carousel role="group" aria-roledescription="carousel" aria-label="Healify dashboard views">
+    <div class="carousel">
+      <button type="button" class="carousel-nav" data-prev aria-label="Previous dashboard view">‹</button>
+      <figure class="carousel-slide is-active">
+        <img class="preview-img" src="/dashboard-overview.png" alt="Healify dashboard overview: analyzed, healed and failed counters, efficacy rate and daily healing trend" width="1280" height="820" loading="lazy">
+        <figcaption class="carousel-caption"><b>Overview</b> — your healing totals, efficacy rate and daily trend at a glance.</figcaption>
+      </figure>
+      <figure class="carousel-slide">
+        <img class="preview-img" src="/dashboard-efficacy.png" alt="Healify dashboard efficacy view: acceptance donut, rate per framework, 7/30-day trend and failure-cause breakdown" width="1280" height="820" loading="lazy">
+        <figcaption class="carousel-caption"><b>Efficacy</b> — how many fixes are actually accepted, per framework and failure cause.</figcaption>
+      </figure>
+      <figure class="carousel-slide">
+        <img class="preview-img" src="/dashboard-chronic.png" alt="Healify dashboard chronic selectors list: every selector that broke 3 or more times" width="1280" height="820" loading="lazy">
+        <figcaption class="carousel-caption"><b>Chronic selectors</b> — the ones that keep breaking, so you know where to stop patching.</figcaption>
+      </figure>
+      <button type="button" class="carousel-nav" data-next aria-label="Next dashboard view">›</button>
+    </div>
+    <div class="carousel-dots">
+      <button type="button" class="carousel-dot is-active" data-dot="0" aria-label="Go to slide 1"></button>
+      <button type="button" class="carousel-dot" data-dot="1" aria-label="Go to slide 2"></button>
+      <button type="button" class="carousel-dot" data-dot="2" aria-label="Go to slide 3"></button>
+    </div>
+  </div>
+  <div class="preview-cta reveal">
+    <a href="https://www.npmjs.com/package/@healify/cli" target="_blank" rel="noopener" class="btn btn-cta">Explore the dashboard on your machine ↗</a>
+    <p class="sub" style="margin:16px auto 0;text-align:center">It reads your own healing history — nothing leaves your laptop.</p>
+    <div class="pill" style="margin:14px auto 0"><code>healify dashboard --serve</code><button class="copy" data-copy="healify dashboard --serve" aria-label="Copy command">⎙</button></div>
   </div>
 </section>
 
@@ -266,10 +349,12 @@ button{font:inherit;cursor:pointer}
 </section>
 
 <footer class="wrap foot">
-  <span>MIT · © 2026 Matías Escobar · 1113 tests passing</span>
+  <span>MIT · © 2026 Matías Escobar · 1153 tests passing · Made with <span class="heart">❤</span>, 0% cloud</span>
   <span class="links">
-    <a href="https://github.com/mescobar996/Healify/blob/main/docs/README.md" target="_blank" rel="noopener">Docs</a>
     <a href="https://github.com/mescobar996/Healify" target="_blank" rel="noopener">GitHub</a>
+    <a href="https://github.com/mescobar996/Healify/blob/main/CHANGELOG.md" target="_blank" rel="noopener">Changelog</a>
+    <a href="https://github.com/mescobar996/Healify/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">Contributing</a>
+    <a href="https://github.com/mescobar996/Healify/tree/main/docs" target="_blank" rel="noopener">Docs</a>
     <a href="https://www.npmjs.com/package/@healify/cli" target="_blank" rel="noopener">npm</a>
   </span>
 </footer>
@@ -296,6 +381,43 @@ button{font:inherit;cursor:pointer}
       setTimeout(()=>{b.textContent=prev;b.style.color='';},1200);
     })
   })
+
+  // Selector de framework: el clic en un logo actualiza el mini terminal de comandos.
+  const fwButtons=document.querySelectorAll('.logo[data-fw]');
+  if(fwButtons.length){
+    const fwTerm=document.getElementById('fw-terminal');
+    const fwSet=(id,val)=>{const el=document.getElementById(id); if(el) el.textContent=val};
+    const selectFw=btn=>{
+      fwButtons.forEach(b=>b.setAttribute('aria-pressed',String(b===btn)));
+      fwSet('fw-title',btn.dataset.label);
+      fwSet('fw-install',btn.dataset.install);
+      fwSet('fw-run',btn.dataset.run);
+      fwSet('fw-fix',btn.dataset.fix);
+    };
+    fwButtons.forEach(b=>b.addEventListener('click',()=>selectFw(b)));
+    selectFw(fwButtons[0]); // Playwright preseleccionado: el terminal nunca arranca vacío
+  }
+
+  // Carrusel del dashboard: prev/next + dots, sin dependencias.
+  const carousel=document.querySelector('[data-carousel]');
+  if(carousel){
+    const slides=[...carousel.querySelectorAll('.carousel-slide')];
+    const dots=[...carousel.querySelectorAll('.carousel-dot')];
+    let idx=0;
+    const show=i=>{
+      idx=(i+slides.length)%slides.length;
+      slides.forEach((s,k)=>{
+        s.classList.toggle('is-active',k===idx);
+        s.setAttribute('aria-hidden',k===idx?'false':'true');
+      });
+      dots.forEach((d,k)=>d.classList.toggle('is-active',k===idx));
+    };
+    const prev=carousel.querySelector('[data-prev]'), next=carousel.querySelector('[data-next]');
+    if(prev) prev.addEventListener('click',()=>show(idx-1));
+    if(next) next.addEventListener('click',()=>show(idx+1));
+    dots.forEach((d,k)=>d.addEventListener('click',()=>show(k)));
+    show(0);
+  }
 })();
 </script>
 </body>
