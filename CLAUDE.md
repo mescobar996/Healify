@@ -31,6 +31,16 @@ Flujo de Trabajo con la IA
 
 **Skills pre-existentes** (instaladas antes, sin repo >100⭐): security-reviewer, code-reviewer, deep-review, performance-audit, architecture-review.
 
+## Skills de Escritura y Contenido (instaladas 2026-08-13)
+
+| Skill/Herramienta | Qué es | Cuándo usarla en Healify |
+|---|---|---|
+| humanizer | Skill de edición (solo Markdown, sin ejecutable) que quita patrones de texto generado por IA | OBLIGATORIO en todo texto que hable del proyecto: README (EN/ES), docs/, CHANGELOG, landing, mensajes de CLI, issues/PRs. Escribir primero, humanizar antes de commitear docs |
+| caveman | Skill de comunicación tersa (modo a pedido) | Cuando el usuario pida "caveman mode" / "less tokens": respuestas cortas, sustancia técnica intacta, código verbatim |
+| markitdown | CLI Python (`markitdown` vía uv tool) que convierte PDF/DOCX/XLSX/PPTX/HTML a Markdown | Cuando haya que traer contenido de documentos externos a `docs/` o `specs/` (ej. una spec en Word o un PDF de referencia) |
+
+Regla: humanizer aplica SOLO al texto que habla del producto (docs, README, landing, CHANGELOG). El código, tests y mensajes de commit no se pasan por humanizer.
+
 ### Regla de Auditoría (/audit-perfect)
 
 Cada vez que el usuario diga **/audit-perfect**, correr en orden:
