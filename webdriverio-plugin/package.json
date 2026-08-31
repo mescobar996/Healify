@@ -39,9 +39,9 @@
   },
   "devDependencies": {
     "@healify/reporter-core": "*",
-    "esbuild": "^0.28.1",
+    "esbuild": "^0.28.2",
     "typescript": "^5.4.0",
     "vitest": "^4.0.18",
-    "webdriverio": "^9.0.0"
+    "webdriverio": "^9.31.4"
   }
 }
