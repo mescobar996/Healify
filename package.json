@@ -31,11 +31,11 @@
     "access": "public"
   },
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^8.65.0",
+    "@typescript-eslint/eslint-plugin": "^8.70.0",
     "@typescript-eslint/parser": "^8.65.0",
-    "@vitest/coverage-v8": "^4.1.10",
-    "eslint": "^10.8.0",
-    "prettier": "^3.9.6"
+    "@vitest/coverage-v8": "^5.0.1",
+    "eslint": "^10.10.0",
+    "prettier": "^3.9.8"
   },
   "allowScripts": {
     "esbuild@0.28.1": true,
